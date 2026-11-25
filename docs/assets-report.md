@@ -1,22 +1,22 @@
 # Отчёт по ассетам
 
-Сгенерирован `sim assets-check`. Файлов по манифесту: 49, в порядке: 44. PNG всего: 29.9 МБ, из них игровые (terrain + units + objects): 27.8 МБ.
+Сгенерирован `sim assets-check`. Файлов по манифесту: 49, в порядке: 49. PNG всего: 29.9 МБ, из них игровые (terrain + units + objects): 27.8 МБ.
 
-Пороги: шов — средняя разница RGB противоположных краёв > 12; у юнитов и объектов карты прозрачная рамка 1 px. Для справки в деталях — та же метрика между соседними столбцами и строками внутри текстуры: если край близок к ней, шов, скорее всего, на глаз не виден. Модели техники визуально не оценивались.
+Пороги: шов — отношение средней разницы RGB противоположных краёв к средней разнице соседних пикселей внутри > 1.5; у юнитов и объектов карты прозрачная рамка 1 px. Модели техники визуально не оценивались.
 
 Привязка `data/sprites.json`: замечаний нет.
 
 | id | файл | статус | детали |
 | --- | --- | --- | --- |
-| terrain_desert_flat | `terrain/terrain_desert_flat.png` | ок | края: л–п 7.5, в–н 9.7; внутри: соседние столбцы 8.2, строки 8.7 |
-| terrain_dunes | `terrain/terrain_dunes.png` | ок | края: л–п 5.6, в–н 7.0; внутри: соседние столбцы 5.7, строки 6.1 |
-| terrain_hills_rocky | `terrain/terrain_hills_rocky.png` | шов (лево–право 10.1, верх–низ 15.4) | края: л–п 10.1, в–н 15.4; внутри: соседние столбцы 11.6, строки 13.6 |
-| terrain_mountains | `terrain/terrain_mountains.png` | ок | края: л–п 8.2, в–н 8.9; внутри: соседние столбцы 8.6, строки 8.3 |
-| terrain_saltmarsh | `terrain/terrain_saltmarsh.png` | шов (лево–право 11.5, верх–низ 15.1) | края: л–п 11.5, в–н 15.1; внутри: соседние столбцы 11.6, строки 15.4 |
-| terrain_basalt_plateau | `terrain/terrain_basalt_plateau.png` | ок | края: л–п 7.6, в–н 8.4; внутри: соседние столбцы 8.7, строки 8.5 |
-| terrain_farmland | `terrain/terrain_farmland.png` | шов (лево–право 13.1, верх–низ 13.5) | края: л–п 13.1, в–н 13.5; внутри: соседние столбцы 14.3, строки 13.2 |
-| terrain_town | `terrain/terrain_town.png` | шов (лево–право 10.1, верх–низ 14.2) | края: л–п 10.1, в–н 14.2; внутри: соседние столбцы 10.6, строки 16.5 |
-| terrain_water | `terrain/terrain_water.png` | ок | края: л–п 1.6, в–н 2.2; внутри: соседние столбцы 1.9, строки 2.2 |
+| terrain_desert_flat | `terrain/terrain_desert_flat.png` | ок | края л–п 7.5 / внутри 7.6 = 0.99; в–н 9.7 / внутри 9.0 = 1.07 |
+| terrain_dunes | `terrain/terrain_dunes.png` | ок | края л–п 5.6 / внутри 5.3 = 1.04; в–н 7.0 / внутри 6.5 = 1.07 |
+| terrain_hills_rocky | `terrain/terrain_hills_rocky.png` | ок | края л–п 10.1 / внутри 10.9 = 0.93; в–н 15.4 / внутри 13.4 = 1.15 |
+| terrain_mountains | `terrain/terrain_mountains.png` | ок | края л–п 8.2 / внутри 8.0 = 1.03; в–н 8.9 / внутри 9.4 = 0.95 |
+| terrain_saltmarsh | `terrain/terrain_saltmarsh.png` | ок | края л–п 11.5 / внутри 10.8 = 1.07; в–н 15.1 / внутри 12.8 = 1.18 |
+| terrain_basalt_plateau | `terrain/terrain_basalt_plateau.png` | ок | края л–п 7.6 / внутри 8.0 = 0.95; в–н 8.4 / внутри 8.7 = 0.97 |
+| terrain_farmland | `terrain/terrain_farmland.png` | ок | края л–п 13.1 / внутри 13.0 = 1.01; в–н 13.5 / внутри 14.0 = 0.97 |
+| terrain_town | `terrain/terrain_town.png` | ок | края л–п 10.1 / внутри 11.8 = 0.85; в–н 14.2 / внутри 11.7 = 1.22 |
+| terrain_water | `terrain/terrain_water.png` | ок | края л–п 1.6 / внутри 1.7 = 0.97; в–н 2.2 / внутри 2.4 = 0.91 |
 | isr_centurion | `units/isr/isr_centurion.png` | ок |  |
 | isr_m48 | `units/isr/isr_m48.png` | ок |  |
 | isr_m60 | `units/isr/isr_m60.png` | ок |  |
@@ -49,7 +49,7 @@
 | egy_su7 | `units/egy_syr/egy_su7.png` | ок |  |
 | egy_mi8 | `units/egy_syr/egy_mi8.png` | ок |  |
 | egy_osa | `units/egy_syr/egy_osa.png` | ок |  |
-| terrain_fortified | `terrain/terrain_fortified.png` | шов (лево–право 13.9, верх–низ 14.3) | края: л–п 13.9, в–н 14.3; внутри: соседние столбцы 13.0, строки 13.0 |
+| terrain_fortified | `terrain/terrain_fortified.png` | ок | края л–п 13.9 / внутри 11.5 = 1.21; в–н 14.3 / внутри 13.5 = 1.06 |
 | obj_bridge_pontoon | `objects/obj_bridge_pontoon.png` | ок |  |
 | obj_bridge_destroyed | `objects/obj_bridge_destroyed.png` | ок |  |
 | isr_hawk | `units/isr/isr_hawk.png` | ок |  |

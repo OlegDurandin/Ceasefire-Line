@@ -14,9 +14,10 @@ use serde::Deserialize;
 const TERRAIN_SIZE: u32 = 1024;
 /// Unit medallions (R-UI-06).
 const UNIT_SIZE: u32 = 512;
-/// Seamlessness: mean absolute RGB difference (0..255) between opposite
-/// edges, above which a tile shows a seam.
-const SEAM_MAX_MEAN_DIFF: f64 = 12.0;
+/// Seamlessness: (mean RGB difference between opposite edges) / (mean RGB
+/// difference between neighbouring pixels inside the texture). A tile shows a
+/// seam above this ratio.
+const SEAM_MAX_RATIO: f64 = 1.5;
 /// Outer border (px) of a unit image that must be fully transparent.
 const UNIT_EDGE_MARGIN_PX: u32 = 1;
 /// Map objects (bridges): same format as unit medallions, top-down.
@@ -228,7 +229,7 @@ impl Status {
             Status::WrongSize(w, h) => format!("не тот размер ({w}×{h})"),
             Status::NotTransparent(why) => format!("не прозрачный ({why})"),
             Status::TouchesEdge => "касается края".into(),
-            Status::Seam(h, v) => format!("шов (лево–право {h:.1}, верх–низ {v:.1})"),
+            Status::Seam(h, v) => format!("шов (отношение л–п {h:.2}, в–н {v:.2})"),
             Status::Unreadable(e) => format!("не читается ({e})"),
         }
     }
@@ -262,17 +263,33 @@ fn line_diff(
     }
 }
 
-/// Opposite-edge differences and, for context only, the same metric between
-/// two adjacent interior columns and rows (the texture's own variation).
+/// Seam ratios: opposite-edge difference over the mean difference of all
+/// neighbouring columns (left–right) and rows (top–bottom) inside.
+/// Returns (left–right edge, top–bottom edge, inner columns, inner rows).
 fn seam_metrics(img: &DynamicImage) -> [f64; 4] {
     let rgb = img.to_rgb8();
     let (w, h) = rgb.dimensions();
     let lr = line_diff(&rgb, (0..h).map(|y| (0, y)), (0..h).map(|y| (w - 1, y)));
     let tb = line_diff(&rgb, (0..w).map(|x| (x, 0)), (0..w).map(|x| (x, h - 1)));
-    let (mx, my) = (w / 2, h / 2);
-    let cols = line_diff(&rgb, (0..h).map(|y| (mx, y)), (0..h).map(|y| (mx + 1, y)));
-    let rows = line_diff(&rgb, (0..w).map(|x| (x, my)), (0..w).map(|x| (x, my + 1)));
+    let cols = (0..w - 1)
+        .map(|x| line_diff(&rgb, (0..h).map(|y| (x, y)), (0..h).map(|y| (x + 1, y))))
+        .sum::<f64>()
+        / f64::from(w - 1);
+    let rows = (0..h - 1)
+        .map(|y| line_diff(&rgb, (0..w).map(|x| (x, y)), (0..w).map(|x| (x, y + 1))))
+        .sum::<f64>()
+        / f64::from(h - 1);
     [lr, tb, cols, rows]
+}
+
+fn ratio(edge: f64, inner: f64) -> f64 {
+    if inner > 0.0 {
+        edge / inner
+    } else if edge > 0.0 {
+        f64::INFINITY
+    } else {
+        1.0
+    }
 }
 
 fn unit_checks(img: &DynamicImage) -> Vec<Status> {
@@ -335,11 +352,12 @@ fn check_file(
     let mut statuses = Vec::new();
     if terrain {
         let [lr, tb, cols, rows] = seam_metrics(&img);
+        let (rh, rv) = (ratio(lr, cols), ratio(tb, rows));
         notes.push(format!(
-            "края: л–п {lr:.1}, в–н {tb:.1}; внутри: соседние столбцы {cols:.1}, строки {rows:.1}"
+            "края л–п {lr:.1} / внутри {cols:.1} = {rh:.2}; в–н {tb:.1} / внутри {rows:.1} = {rv:.2}"
         ));
-        if lr > SEAM_MAX_MEAN_DIFF || tb > SEAM_MAX_MEAN_DIFF {
-            statuses.push(Status::Seam(lr, tb));
+        if rh > SEAM_MAX_RATIO || rv > SEAM_MAX_RATIO {
+            statuses.push(Status::Seam(rh, rv));
         }
     } else {
         statuses.extend(unit_checks(&img));
@@ -470,7 +488,7 @@ fn render(rows: &[Row], problems: &[String], total: u64, game: u64) -> String {
     );
     let _ = writeln!(
         s,
-        "Пороги: шов — средняя разница RGB противоположных краёв > {SEAM_MAX_MEAN_DIFF}; у юнитов и объектов карты прозрачная рамка {UNIT_EDGE_MARGIN_PX} px. Для справки в деталях — та же метрика между соседними столбцами и строками внутри текстуры: если край близок к ней, шов, скорее всего, на глаз не виден. Модели техники визуально не оценивались.\n"
+        "Пороги: шов — отношение средней разницы RGB противоположных краёв к средней разнице соседних пикселей внутри > {SEAM_MAX_RATIO}; у юнитов и объектов карты прозрачная рамка {UNIT_EDGE_MARGIN_PX} px. Модели техники визуально не оценивались.\n"
     );
     if problems.is_empty() {
         let _ = writeln!(s, "Привязка `data/sprites.json`: замечаний нет.\n");
