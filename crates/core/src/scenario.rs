@@ -122,6 +122,10 @@ struct SideFile {
     loss_sensitivity: u8,
     #[serde(default)]
     purchase_limits: BTreeMap<String, u32>,
+    /// R-UI-03: ring and control colour ("#rrggbb"); client data, the rules ignore it.
+    #[serde(default)]
+    #[allow(dead_code)]
+    color: Option<String>,
 }
 
 fn one() -> u8 {

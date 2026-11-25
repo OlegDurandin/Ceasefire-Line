@@ -10,7 +10,7 @@ import { hexCenter, offsetToAxial } from "./hex";
 import { hillshadePlacement, type HillshadeMeta } from "./hillshade";
 import { Play } from "./play";
 import { drawMap } from "./render/map";
-import { drawUnits, type Token } from "./render/units";
+import { drawUnits, expStars, sideColors, type Token } from "./render/units";
 import { pickSprite, terrainTextureUrl, type SpritesFile } from "./sprites";
 import type { ScenarioView } from "./view";
 import init, { Core, Game } from "./wasm/ceasefire_wasm.js";
@@ -53,10 +53,12 @@ async function main() {
     text(`${base}/map.json`),
     optionalText(`${base}/events.json`),
   ]);
-  const sideKeys = (JSON.parse(scenario) as { sides: { id: number; key: string }[] }).sides.reduce<string[]>((acc, s) => {
+  const scenarioSides = (JSON.parse(scenario) as { sides: { id: number; key: string; color?: string }[] }).sides;
+  const sideKeys = scenarioSides.reduce<string[]>((acc, s) => {
     acc[s.id] = s.key;
     return acc;
   }, []);
+  const colors = sideColors(scenarioSides);
 
   stage("Загрузка ядра…");
   await init();
@@ -133,9 +135,9 @@ async function main() {
         const ref = pickSprite(sprites, u.class, u.nation, v.sides.find((x) => x.id === u.side)?.tech ?? {});
         if (ref && !unitTextures.has(ref.url)) unitTextures.set(ref.url, await load(ref.url));
         tex.set(u.index, ref ? (unitTextures.get(ref.url) ?? null) : null);
-        tokens.push({ key: u.index, side: u.side, col: u.col, row: u.row, label: u.hq_rating !== null ? `★${u.hq_rating}` : String(u.strength), dim: false });
+        tokens.push({ key: u.index, side: u.side, col: u.col, row: u.row, label: u.hq_rating !== null ? `★${u.hq_rating}` : String(u.strength), stars: expStars(u.exp), dim: false });
       }
-      world.addChild(drawUnits(tokens, tex, HEX_SIZE));
+      world.addChild(drawUnits(tokens, tex, HEX_SIZE, colors));
     };
     const terrainIds = (JSON.parse(terrain) as { terrain: { id: string }[] }).terrain.map((t) => t.id);
     const classIds = (JSON.parse(units) as { units: { id: string; target_class: string }[] }).units
@@ -160,7 +162,7 @@ async function main() {
     }
     stage("Ход…");
     const game = new Game(core, scenario, map, events);
-    const play = new Play(game, world, camera, sprites, ru, sideKeys, HEX_SIZE);
+    const play = new Play(game, world, camera, sprites, ru, sideKeys, colors, HEX_SIZE);
     await play.refresh();
     if (!view.issues.length) panel.style.display = "none";
   }

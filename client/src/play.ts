@@ -7,7 +7,7 @@ import type { Camera } from "./camera";
 import type { Forecast, GameStateView, LiveUnit, Reach, Target } from "./game-view";
 import { axialToOffset, pixelToAxial } from "./hex";
 import { drawOverlays } from "./render/overlays";
-import { drawUnits, type Token } from "./render/units";
+import { drawUnits, expStars, type Token } from "./render/units";
 import { pickSprite, type SpritesFile } from "./sprites";
 import type { Game } from "./wasm/ceasefire_wasm.js";
 
@@ -37,6 +37,7 @@ export class Play {
     private sprites: SpritesFile,
     private ru: Locale,
     private sideKeys: string[],
+    private colors: number[],
     private size: number,
   ) {
     world.addChild(this.overlay);
@@ -83,11 +84,12 @@ export class Play {
         col: u.col,
         row: u.row,
         label: u.hq_rating !== null ? `★${u.hq_rating}` : String(u.strength),
+        stars: expStars(u.exp),
         dim: mine && spent,
       });
     }
     this.unitsLayer.removeChildren().forEach((c) => c.destroy({ children: true }));
-    this.unitsLayer.addChild(drawUnits(tokens, tex, this.size));
+    this.unitsLayer.addChild(drawUnits(tokens, tex, this.size, this.colors));
   }
 
   private drawTop() {
