@@ -100,7 +100,7 @@ async function main() {
 
   /** Map layer from a core view; relief shading over the textures, under the grid. */
   const buildMap = (v: ScenarioView) => {
-    const layer = drawMap(v, { terrain: terrainTex, bridge, bridgeDestroyed }, HEX_SIZE);
+    const layer = drawMap(v, { terrain: terrainTex, bridge, bridgeDestroyed }, HEX_SIZE, app.renderer);
     if (meta && shadeTex) {
       const shade = new Sprite(shadeTex);
       const p = hillshadePlacement(meta, HEX_SIZE);
