@@ -1,0 +1,12 @@
+{
+  "road_ap": 0.5,
+  "terrain": [
+    { "id": "plain", "ap": 1, "defense_mult": 1.0, "max_entrench": 2 },
+    { "id": "dunes", "ap": 2, "wheeled_ap": 3, "defense_mult": 1.1, "max_entrench": 2 },
+    { "id": "hills", "ap": 2, "defense_mult": 1.3, "max_entrench": 3 },
+    { "id": "mountains", "ap": 3, "requires_pass": true, "defense_mult": 1.6, "max_entrench": 4 },
+    { "id": "marsh", "ap": 3, "defense_mult": 1.2, "max_entrench": 1 },
+    { "id": "city", "ap": 1, "defense_mult": 1.5, "max_entrench": 4 },
+    { "id": "fortified", "ap": 1, "defense_mult": 1.5, "max_entrench": 5 }
+  ]
+}

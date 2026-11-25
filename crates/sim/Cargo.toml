@@ -1,0 +1,9 @@
+[package]
+name = "sim"
+description = "Ceasefire Line CLI: combat matrix and balance runs"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+
+[dependencies]
+ceasefire-core.workspace = true
