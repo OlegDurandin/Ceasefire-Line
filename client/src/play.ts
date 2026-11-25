@@ -7,6 +7,7 @@ import type { Camera } from "./camera";
 import type { Forecast, GameStateView, LiveUnit, Reach, Target } from "./game-view";
 import { axialToOffset, pixelToAxial } from "./hex";
 import { drawControl } from "./render/control";
+import { setGridActive } from "./render/map";
 import { drawOverlays } from "./render/overlays";
 import { drawUnits, expStars, type Token } from "./render/units";
 import { pickSprite, type SpritesFile } from "./sprites";
@@ -163,6 +164,7 @@ export class Play {
       .map((t) => this.state.units.find((u) => u.id === t.target))
       .filter((u): u is LiveUnit => !!u);
     drawOverlays(this.overlay, this.size, sel?.reach ?? [], targetHexes, sel ? sel.unit : null);
+    setGridActive(this.world, !!sel);
   }
 
   private showInfo(u: LiveUnit) {

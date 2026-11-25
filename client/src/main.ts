@@ -10,7 +10,7 @@ import { hexCenter, offsetToAxial } from "./hex";
 import { hillshadePlacement, type HillshadeMeta } from "./hillshade";
 import { Play } from "./play";
 import { drawControl } from "./render/control";
-import { drawMap } from "./render/map";
+import { drawMap, setGridActive } from "./render/map";
 import { drawUnits, expStars, sideColors, type Token } from "./render/units";
 import { pickSprite, terrainTextureUrl, type SpritesFile } from "./sprites";
 import type { ScenarioView } from "./view";
@@ -130,6 +130,8 @@ async function main() {
     const render = async (v: ScenarioView) => {
       world.removeChildren().forEach((c) => c.destroy({ children: true }));
       world.addChild(buildMap(v));
+      // The editor works hex by hex: grid always shown.
+      setGridActive(world, true);
       const owners = new Map<string, number>();
       for (const h of v.hexes) if (h.owner !== null) owners.set(`${h.col},${h.row}`, h.owner);
       const control = new Graphics();

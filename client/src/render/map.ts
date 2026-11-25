@@ -1,6 +1,7 @@
 // Map layer (GDD R-UI-02): terrain as world-anchored texture sheets blended
-// softly across type borders, a faint grid, roads as smooth lines through hex
-// centres, rivers/canals and bridges on hex sides.
+// softly across type borders, a grid that stays nearly invisible until a unit
+// is selected, roads as smooth lines through hex centres, rivers/canals and
+// bridges on hex sides.
 //
 // Terrain blending: the most common type is one opaque sheet under the whole
 // map; every other type is a sheet covering the map drawn over it through a
@@ -40,7 +41,10 @@ const FALLBACK_COLOR = 0x6b5d45;
 const BLEND_BLUR = 0.18;
 /** Largest mask texture side in pixels (big maps get coarser masks). */
 const MASK_MAX_PX = 2048;
-const GRID_ALPHA = 0.12;
+/** Grid opacity: idle and while a unit is selected. */
+export const GRID_IDLE = 0.05;
+export const GRID_ACTIVE = 0.3;
+const GRID_LABEL = "grid";
 
 const ROAD = 0xd8c39a;
 const ROAD_EDGE = 0x3a2e22;
@@ -131,9 +135,11 @@ export function drawMap(view: ScenarioView, tex: MapTextures, size: number, rend
   root.addChild(terrainLayer(view, tex, size, renderer));
 
   const grid = new Graphics();
+  grid.label = GRID_LABEL;
   for (const h of view.hexes) {
-    grid.poly(flat(hexCorners(hexCenter(h, size), size))).stroke({ width: 1, color: 0x000000, alpha: GRID_ALPHA });
+    grid.poly(flat(hexCorners(hexCenter(h, size), size))).stroke({ width: 1, color: 0x000000 });
   }
+  grid.alpha = GRID_IDLE;
   root.addChild(grid);
 
   const ax = ([col, row]: [number, number]) => offsetToAxial({ col, row });
@@ -173,4 +179,10 @@ export function drawMap(view: ScenarioView, tex: MapTextures, size: number, rend
     root.addChild(s);
   }
   return root;
+}
+
+/** R-UI-02: the grid shows up while a unit is selected. */
+export function setGridActive(world: Container, active: boolean) {
+  const g = world.getChildByLabel(GRID_LABEL, true);
+  if (g) g.alpha = active ? GRID_ACTIVE : GRID_IDLE;
 }
