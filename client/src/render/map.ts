@@ -130,9 +130,11 @@ function terrainLayer(view: ScenarioView, tex: MapTextures, size: number, render
   return layer;
 }
 
-export function drawMap(view: ScenarioView, tex: MapTextures, size: number, renderer: Renderer): Container {
+/** `baked`: terrain, water and roads come from the baked tiles (mapgen bake);
+ * only the grid and bridges (their state changes in play) are drawn here. */
+export function drawMap(view: ScenarioView, tex: MapTextures, size: number, renderer: Renderer, baked = false): Container {
   const root = new Container();
-  root.addChild(terrainLayer(view, tex, size, renderer));
+  if (!baked) root.addChild(terrainLayer(view, tex, size, renderer));
 
   const grid = new Graphics();
   grid.label = GRID_LABEL;
@@ -161,7 +163,7 @@ export function drawMap(view: ScenarioView, tex: MapTextures, size: number, rend
     water.moveTo(p.x, p.y).lineTo(q.x, q.y);
   }
   water.stroke({ width: size * 0.14, color: WATER, cap: "round" });
-  root.addChild(water, roads);
+  if (!baked) root.addChild(water, roads);
 
   for (const b of view.bridges) {
     const t = b.state === "built" ? tex.bridge : tex.bridgeDestroyed;

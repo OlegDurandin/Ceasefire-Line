@@ -28,6 +28,8 @@ export class Camera {
   private multi = false;
   /** Called with screen coordinates when a single pointer taps without dragging. */
   onTap: ((x: number, y: number) => void) | null = null;
+  /** Called after every pan or zoom. */
+  onChange: ((v: View) => void) | null = null;
 
   constructor(
     private world: Container,
@@ -50,6 +52,7 @@ export class Camera {
   private apply() {
     this.world.position.set(this.view.x, this.view.y);
     this.world.scale.set(this.view.scale);
+    this.onChange?.(this.view);
   }
 
   private down = (e: PointerEvent) => {

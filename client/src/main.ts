@@ -6,11 +6,12 @@ import { Editor } from "./editor/editor";
 import type { MapDoc, ScenarioDoc } from "./editor/model";
 
 import { Camera } from "./camera";
-import { hexCenter, offsetToAxial } from "./hex";
+import { hexCenter, hexCorners, offsetToAxial } from "./hex";
 import { hillshadePlacement, type HillshadeMeta } from "./hillshade";
 import { Play } from "./play";
 import { drawControl } from "./render/control";
 import { drawMap, setGridActive } from "./render/map";
+import { BakedMap, pickLevel, type TilesMeta } from "./render/tiles";
 import { drawUnits, expStars, sideColors, type Token } from "./render/units";
 import { pickSprite, terrainTextureUrl, type SpritesFile } from "./sprites";
 import type { ScenarioView } from "./view";
@@ -23,6 +24,8 @@ const HILLSHADE_ALPHA = 0.7;
 const PARAMS = new URLSearchParams(location.search);
 const SCENARIO = PARAMS.get("scenario") ?? "golan67";
 const EDIT = PARAMS.get("mode") === "edit";
+/** `?baked=0` draws the live map even when baked tiles exist (comparisons). */
+const BAKED = PARAMS.get("baked") !== "0";
 
 const text = (url: string) =>
   fetch(url).then((r) => {
@@ -99,10 +102,22 @@ async function main() {
   const meta = shadeMeta ? (JSON.parse(shadeMeta) as HillshadeMeta) : null;
   const shadeTex = meta ? await load(`${base}/${meta.png}`) : null;
 
+  // Painted map from mapgen bake (play only: the editor shows edits live).
+  const tilesText = !EDIT && BAKED ? await optionalText(`${base}/tiles.json`) : undefined;
+  const tilesMeta = tilesText ? (JSON.parse(tilesText) as TilesMeta) : null;
+  const baked = tilesMeta ? new BakedMap(tilesMeta, base, HEX_SIZE) : null;
+
   /** Map layer from a core view; relief shading over the textures, under the grid. */
   const buildMap = (v: ScenarioView) => {
-    const layer = drawMap(v, { terrain: terrainTex, bridge, bridgeDestroyed }, HEX_SIZE, app.renderer);
-    if (meta && shadeTex) {
+    const layer = drawMap(v, { terrain: terrainTex, bridge, bridgeDestroyed }, HEX_SIZE, app.renderer, !!baked);
+    if (baked) {
+      // Clipped to the hexes: the map is where the rules are.
+      const clip = new Graphics();
+      for (const h of v.hexes) clip.poly(hexCorners(hexCenter(h, HEX_SIZE), HEX_SIZE).flatMap((p) => [p.x, p.y])).fill(0xffffff);
+      layer.addChildAt(baked.container, 0);
+      layer.addChild(clip);
+      baked.container.mask = clip;
+    } else if (meta && shadeTex) {
       const shade = new Sprite(shadeTex);
       const p = hillshadePlacement(meta, HEX_SIZE);
       shade.position.set(p.x, p.y);
@@ -123,6 +138,12 @@ async function main() {
   const cy = (Math.min(...xs.map((p) => p.y)) + Math.max(...xs.map((p) => p.y))) / 2;
   const scale = 0.6;
   const camera = new Camera(world, app.canvas, { scale, x: window.innerWidth / 2 - cx * scale, y: window.innerHeight / 2 - cy * scale });
+  if (baked && tilesMeta) {
+    stage("Загрузка карты…");
+    const level = (s: number) => pickLevel(tilesMeta, HEX_SIZE, s);
+    await baked.show(level(scale));
+    camera.onChange = (v) => void baked.show(level(v.scale));
+  }
 
   if (EDIT) {
     // Units drawn from the scenario document, sprites by tier as in play.

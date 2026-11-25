@@ -31,6 +31,7 @@ npm run dev        # dev-сервер Vite
 | Игра, «Голаны-67», хотсит | http://localhost:5173/ |
 | Редактор карты и сценария | http://localhost:5173/?mode=edit |
 | Другой сценарий | добавить `?scenario=<id>` (папка `data/scenarios/<id>/`) |
+| Игра без запечённой карты | добавить `?baked=0` |
 
 Если порт 5173 занят, Vite выберет следующий и напечатает адрес в терминале.
 
@@ -68,7 +69,13 @@ cargo run -p mapgen --release -- \
   --dem data/raw/golan67 \
   --osm data/raw/golan67/israel-and-palestine-latest.osm.pbf --osm data/raw/golan67/syria-latest.osm.pbf \
   --bbox 35.45,32.60,36.50,33.45 --hex-km 5 --out data/scenarios/<id>   # карта из рельефа и OSM
+cargo run -p mapgen --release -- bake --map data/scenarios/golan67 \
+  --dem data/raw/golan67 \
+  --osm data/raw/golan67/israel-and-palestine-latest.osm.pbf --osm data/raw/golan67/syria-latest.osm.pbf \
+  --osm data/raw/golan67/lebanon-latest.osm.pbf --osm data/raw/golan67/jordan-latest.osm.pbf   # живописная карта в тайлы
 ```
+
+`mapgen bake` запекает `map.json` сценария (после правок в редакторе) в пирамиду тайлов `tiles/<z>/<x>_<y>.webp` + `tiles.json`; результат детерминирован (отпечаток `fnv1a64` в `tiles.json`). После правки местности, городов или дорог в редакторе карту нужно запечь заново. Игра рисует тайлы под живыми слоями (контроль, фронт, сетка, подсветки, юниты); редактор — всегда живой рендер; `?baked=0` показывает живой рендер и в игре.
 
 Сырые данные (`data/raw/`) в Git не хранятся; откуда их брать — `docs/decisions.md`, запись R-UI-01.
 
