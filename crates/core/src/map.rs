@@ -42,6 +42,10 @@ impl HexMap {
         self.cells.get(&hex)
     }
 
+    pub fn hexes(&self) -> impl Iterator<Item = Hex> + '_ {
+        self.cells.keys().copied()
+    }
+
     pub fn add_road(&mut self, a: Hex, b: Hex) -> Result<(), RuleError> {
         self.roads.insert(edge(a, b)?);
         Ok(())

@@ -1,0 +1,470 @@
+//! GameState: phases, movement and ZOC, attacks, retreat, determinism.
+
+mod common;
+
+use std::collections::BTreeMap;
+use std::sync::Arc;
+
+use ceasefire_core::game::{
+    Command, Event, GameState, ScenarioSetup, SideState, UnitId, UnitSetup,
+};
+use ceasefire_core::hex::Hex;
+use ceasefire_core::map::{HexCell, HexMap};
+use ceasefire_core::side::SideId;
+use ceasefire_core::supply::SupplySource;
+use ceasefire_core::tech::TechLevels;
+use ceasefire_core::{AttackError, MoveError, RuleError};
+
+const A: SideId = SideId(0);
+const B: SideId = SideId(1);
+
+/// Plain hexes q in 0..=6, r in -3..=3; side A controls q <= 2, side B the rest.
+fn board() -> (HexMap, BTreeMap<Hex, SideId>) {
+    let mut map = HexMap::default();
+    let mut control = BTreeMap::new();
+    for q in 0..=6 {
+        for r in -3..=3 {
+            map.insert(Hex::new(q, r), HexCell::new("plain"));
+            control.insert(Hex::new(q, r), if q <= 2 { A } else { B });
+        }
+    }
+    (map, control)
+}
+
+fn unit(class: &str, side: SideId, hex: Hex) -> UnitSetup {
+    UnitSetup {
+        class: class.into(),
+        side,
+        hex,
+        strength: 10,
+        morale_pct: 90,
+        exp_quarters: 0,
+        entrenchment: 0,
+        supply: Some(8),
+        hq_rating: None,
+    }
+}
+
+fn setup(map: HexMap, control: BTreeMap<Hex, SideId>, units: Vec<UnitSetup>) -> ScenarioSetup {
+    ScenarioSetup {
+        hex_km: None,
+        supply_decay_ap: None,
+        seed: 42,
+        start_turn: 1,
+        sides: vec![
+            SideState {
+                id: A,
+                tech: TechLevels::default(),
+                national_morale_pct: 100,
+            },
+            SideState {
+                id: B,
+                tech: TechLevels::default(),
+                national_morale_pct: 100,
+            },
+        ],
+        map,
+        control,
+        sources: vec![SupplySource {
+            hex: Hex::new(0, 0),
+            value: 10,
+        }],
+        units,
+    }
+}
+
+fn start(setup: ScenarioSetup) -> GameState {
+    GameState::new(Arc::new(common::data()), setup)
+        .expect("valid setup")
+        .0
+}
+
+fn mv(state: &mut GameState, id: u32, path: &[(i32, i32)]) -> Result<Vec<Event>, RuleError> {
+    state.apply(Command::Move {
+        unit: UnitId(id),
+        path: path.iter().map(|&(q, r)| Hex::new(q, r)).collect(),
+    })
+}
+
+fn attack(state: &mut GameState, id: u32, target: u32) -> Result<Vec<Event>, RuleError> {
+    state.apply(Command::Attack {
+        unit: UnitId(id),
+        target: UnitId(target),
+    })
+}
+
+fn ap(state: &GameState, id: u32) -> u32 {
+    state.unit(UnitId(id)).unwrap().ap_halves
+}
+
+fn move_err(r: Result<Vec<Event>, RuleError>) -> MoveError {
+    match r {
+        Err(RuleError::IllegalMove { reason, .. }) => reason,
+        other => panic!("expected illegal move, got {other:?}"),
+    }
+}
+
+/// Tank (1) at (0,0) with supply 10; enemy infantry (2) dug in at (3,0) on a
+/// fortified hex so it holds; friendly infantry (3) next to it at (2,1).
+fn r_move_04_setup() -> GameState {
+    let (mut map, control) = board();
+    map.insert(Hex::new(0, 0), HexCell::new("city"));
+    map.insert(Hex::new(3, 0), HexCell::new("fortified"));
+    let mut tank = unit("tank", A, Hex::new(0, 0));
+    tank.supply = None;
+    let mut enemy = unit("infantry", B, Hex::new(3, 0));
+    enemy.entrenchment = 5;
+    start(setup(
+        map,
+        control,
+        vec![tank, enemy, unit("infantry", A, Hex::new(2, 1))],
+    ))
+}
+
+#[test]
+fn r_move_04_tank_attack_and_exploitation() {
+    let mut s = r_move_04_setup();
+    assert_eq!(ap(&s, 1), 10, "tank 5 AP");
+
+    mv(&mut s, 1, &[(1, 0), (2, 0)]).unwrap();
+    assert_eq!(ap(&s, 1), 6, "3 AP after 2 plain hexes");
+    assert!(
+        !s.unit(UnitId(1)).unwrap().can_move,
+        "entering ZOC ends movement"
+    );
+
+    attack(&mut s, 1, 2).unwrap();
+    assert_eq!(
+        s.unit(UnitId(2)).unwrap().hex,
+        Hex::new(3, 0),
+        "defender holds"
+    );
+    assert_eq!(ap(&s, 1), 4, "2 AP after the attack");
+    assert!(
+        s.unit(UnitId(1)).unwrap().can_move,
+        "exploitation with >= 2 AP"
+    );
+
+    // Option 1: break out with the remaining 2 AP.
+    let mut breakout = s.clone();
+    assert_eq!(
+        breakout.reachable(UnitId(1)).unwrap().get(&Hex::new(0, 0)),
+        Some(&4)
+    );
+    mv(&mut breakout, 1, &[(1, 0), (0, 0)]).unwrap();
+    assert_eq!(ap(&breakout, 1), 0);
+
+    // Option 2: second strike leaves 1 AP and no movement.
+    attack(&mut s, 1, 2).unwrap();
+    assert_eq!(ap(&s, 1), 2, "1 AP after the second attack");
+    assert_eq!(move_err(mv(&mut s, 1, &[(1, 0)])), MoveError::CannotMove);
+    assert!(matches!(
+        attack(&mut s, 1, 2),
+        Err(RuleError::IllegalAttack {
+            reason: AttackError::NoStrikes,
+            ..
+        })
+    ));
+}
+
+#[test]
+fn r_move_04_infantry_loses_ap_after_attack() {
+    let mut s = r_move_04_setup();
+    attack(&mut s, 3, 2).unwrap();
+    assert_eq!(ap(&s, 3), 0);
+    assert_eq!(move_err(mv(&mut s, 3, &[(1, 1)])), MoveError::CannotMove);
+}
+
+#[test]
+fn r_move_06_control_changes_on_entry_and_stays() {
+    let (map, control) = board();
+    let mut s = start(setup(map, control, vec![unit("mech", A, Hex::new(2, 0))]));
+    assert_eq!(s.controller(Hex::new(3, 0)), Some(B));
+    let events = mv(&mut s, 1, &[(3, 0)]).unwrap();
+    assert!(events.contains(&Event::HexCaptured {
+        hex: Hex::new(3, 0),
+        side: A,
+        from: Some(B),
+    }));
+    assert_eq!(s.controller(Hex::new(3, 0)), Some(A));
+    mv(&mut s, 1, &[(4, 0)]).unwrap();
+    assert_eq!(s.controller(Hex::new(3, 0)), Some(A), "vacated hex stays");
+    assert_eq!(s.controller(Hex::new(4, 0)), Some(A));
+}
+
+#[test]
+fn r_move_03_zoc_rules() {
+    let (map, control) = board();
+    // Enemy at (4,0): its ZOC covers (3,0), (3,1), (4,-1), (5,-1), (5,0), (4,1).
+    let units = vec![
+        unit("mech", A, Hex::new(2, 0)),
+        unit("infantry", B, Hex::new(4, 0)),
+        unit("infantry", A, Hex::new(3, 0)),
+    ];
+    let mut s = start(setup(map, control, units));
+
+    // Entering ZOC ends the move.
+    let mut t = s.clone();
+    assert_eq!(
+        move_err(mv(&mut t, 1, &[(3, -1), (4, -1), (4, -2)])),
+        MoveError::ZocStop
+    );
+    // Enemy hex is blocked.
+    assert_eq!(move_err(mv(&mut t, 3, &[(4, 0)])), MoveError::Occupied);
+    // Friendly units can be passed through but not stopped on.
+    assert_eq!(move_err(mv(&mut t, 1, &[(3, 0)])), MoveError::Occupied);
+
+    // Infantry 3 started the phase in ZOC: leaving costs +1 AP.
+    assert!(s.unit(UnitId(3)).unwrap().started_in_zoc);
+    mv(&mut s, 3, &[(2, 1)]).unwrap();
+    assert_eq!(ap(&s, 3), 2, "3 AP − (1 plain + 1 exit)");
+
+    // ZOC to ZOC is forbidden.
+    let (map, control) = board();
+    let units = vec![
+        unit("infantry", B, Hex::new(4, 0)),
+        unit("tank", A, Hex::new(3, 0)),
+    ];
+    let mut s = start(setup(map, control, units));
+    assert_eq!(move_err(mv(&mut s, 2, &[(3, 1)])), MoveError::ZocToZoc);
+    // A detour out of ZOC and back in is legal: 1 + 1 (exit) + 1 AP.
+    assert_eq!(
+        s.reachable(UnitId(2)).unwrap().get(&Hex::new(3, 1)),
+        Some(&6)
+    );
+}
+
+#[test]
+fn r_move_03_weak_units_have_no_zoc() {
+    let (map, control) = board();
+    let mut weak = unit("infantry", B, Hex::new(4, 0));
+    weak.strength = 2;
+    let mut s = start(setup(
+        map,
+        control,
+        vec![unit("mech", A, Hex::new(2, 0)), weak],
+    ));
+    mv(&mut s, 1, &[(3, 0), (3, 1), (4, 1)]).unwrap();
+}
+
+#[test]
+fn r_turn_02_night_costs_ap() {
+    let (map, control) = board();
+    let units = vec![
+        unit("tank", A, Hex::new(2, 0)),
+        unit("commando", A, Hex::new(2, 1)),
+    ];
+    let mut s = start(setup(map, control, units));
+    assert_eq!(ap(&s, 1), 10, "day");
+    s.apply(Command::EndPhase).unwrap();
+    s.apply(Command::EndPhase).unwrap();
+    assert!(s.is_night());
+    assert_eq!(ap(&s, 1), 8, "night −1 AP");
+    assert_eq!(ap(&s, 2), 6, "commando: night combat, no penalty");
+}
+
+#[test]
+fn r_unit_02_low_supply_costs_ap() {
+    let (map, mut control) = board();
+    // Island of A-controlled hex inside B territory: no supply path.
+    control.insert(Hex::new(5, 0), A);
+    let mut cut_off = unit("tank", A, Hex::new(5, 0));
+    cut_off.supply = Some(5);
+    let s = start(setup(map, control, vec![cut_off]));
+    // Inertia: 5 − 3 = 2 ≤ 3 → −1 AP.
+    assert_eq!(s.unit(UnitId(1)).unwrap().supply, 2);
+    assert_eq!(ap(&s, 1), 8);
+}
+
+/// Supply inertia example from docs/decisions.md: unit with supply 8 gets
+/// encircled; morale 80% (= NM cap), 1 star.
+#[test]
+fn r_sup_03_supply_inertia_example() {
+    let (map, mut control) = board();
+    control.insert(Hex::new(5, 0), A);
+    let mut u = unit("infantry", A, Hex::new(5, 0));
+    u.morale_pct = 80;
+    u.exp_quarters = 4;
+    u.supply = Some(8);
+    let mut setup = setup(map, control, vec![u]);
+    setup.sides[0].national_morale_pct = 80;
+    let mut s = start(setup);
+
+    let mut seen = Vec::new();
+    for phase in 1..=4 {
+        if phase > 1 {
+            s.apply(Command::EndPhase).unwrap();
+            s.apply(Command::EndPhase).unwrap();
+        }
+        let x = s.unit(UnitId(1)).unwrap();
+        seen.push((x.supply, x.morale_pct, x.base_readiness_pct, x.strength));
+    }
+    assert_eq!(seen[0], (5, 80, 63, 10));
+    assert_eq!(seen[1], (2, 80, 50, 10));
+    assert_eq!(seen[2], (0, 65, 34, 10));
+    assert_eq!(seen[3].3, 9, "attrition from the second phase at supply 0");
+}
+
+/// Attacker (1) at (0,0), defender (2) with strength 3 at (1,0).
+fn retreat_setup(attacker: &str, full_map: bool) -> GameState {
+    let mut map = HexMap::default();
+    let mut control = BTreeMap::new();
+    let hexes: Vec<Hex> = if full_map {
+        (-2..=3)
+            .flat_map(|q| (-2..=2).map(move |r| Hex::new(q, r)))
+            .collect()
+    } else {
+        vec![Hex::new(0, 0), Hex::new(1, 0)]
+    };
+    for h in hexes {
+        map.insert(h, HexCell::new("plain"));
+        control.insert(h, if h.q <= 0 { A } else { B });
+    }
+    let mut a = unit(attacker, A, Hex::new(0, 0));
+    a.strength = 2;
+    let mut d = unit("infantry", B, Hex::new(1, 0));
+    d.strength = 3;
+    d.entrenchment = 2;
+    start(setup(map, control, vec![a, d]))
+}
+
+#[test]
+fn r_combat_06_weak_defender_retreats() {
+    let mut s = retreat_setup("infantry", true);
+    let events = attack(&mut s, 1, 2).unwrap();
+    assert!(events.contains(&Event::Retreated {
+        unit: UnitId(2),
+        from: Hex::new(1, 0),
+        to: Hex::new(1, 1),
+    }));
+    assert_eq!(s.unit_at(Hex::new(1, 0)), None);
+    assert_eq!(s.pending_advance(), None, "infantry cannot occupy");
+}
+
+#[test]
+fn r_combat_06_no_retreat_costs_two_steps() {
+    let mut s = retreat_setup("infantry", false);
+    let events = attack(&mut s, 1, 2).unwrap();
+    let left = s.unit(UnitId(2)).map_or(0, |u| u.strength);
+    let extra = events.iter().find_map(|e| match e {
+        Event::RetreatBlocked {
+            unit: UnitId(2),
+            extra_losses,
+        } => Some(*extra_losses),
+        _ => None,
+    });
+    // min(2, strength left after the exchange)
+    assert!(matches!(extra, Some(1 | 2)), "{events:?}");
+    assert_eq!(
+        s.unit(UnitId(2)).map(|u| u.hex),
+        (left > 0).then_some(Hex::new(1, 0))
+    );
+}
+
+#[test]
+fn r_combat_06_tank_occupies_vacated_hex() {
+    let mut s = retreat_setup("tank", true);
+    attack(&mut s, 1, 2).unwrap();
+    assert_eq!(s.pending_advance().map(|p| p.hex), Some(Hex::new(1, 0)));
+    let ap_before = ap(&s, 1);
+    s.apply(Command::Advance { unit: UnitId(1) }).unwrap();
+    assert_eq!(s.unit(UnitId(1)).unwrap().hex, Hex::new(1, 0));
+    assert_eq!(ap(&s, 1), ap_before, "advance costs 0 AP");
+    assert_eq!(s.controller(Hex::new(1, 0)), Some(A));
+}
+
+#[test]
+fn r_combat_04_bombardment() {
+    let (map, control) = board();
+    let mut target = unit("infantry", B, Hex::new(4, 0));
+    target.entrenchment = 2;
+    let mut s = start(setup(
+        map,
+        control,
+        vec![unit("artillery", A, Hex::new(2, 0)), target],
+    ));
+    let f = s.forecast_bombard(UnitId(1), UnitId(2)).unwrap();
+    let readiness = u32::from(s.unit(UnitId(1)).unwrap().base_readiness_pct);
+    let events = s
+        .apply(Command::Bombard {
+            unit: UnitId(1),
+            target: UnitId(2),
+        })
+        .unwrap();
+    let Event::Bombarded { params, .. } = events[0] else {
+        panic!("expected bombardment");
+    };
+    assert_eq!(
+        params.n,
+        (10 * readiness + 100) / 200,
+        "half shots, rounded half up"
+    );
+    assert!(f.expected > 0.0);
+    assert_eq!(s.unit(UnitId(1)).unwrap().strength, 10, "no return fire");
+    assert_eq!(s.unit(UnitId(2)).unwrap().entrenchment, 1);
+    assert_eq!(ap(&s, 1), 0, "artillery does not move after firing");
+    assert!(matches!(
+        attack(&mut s, 1, 2),
+        Err(RuleError::IllegalAttack { .. })
+    ));
+}
+
+#[test]
+fn r_combat_03_forecast_matches_resolution_params() {
+    let mut s = r_move_04_setup();
+    mv(&mut s, 1, &[(1, 0), (2, 0)]).unwrap();
+    let f = s.forecast_attack(UnitId(1), UnitId(2)).unwrap();
+    let events = attack(&mut s, 1, 2).unwrap();
+    let Event::CombatResolved { exchange, .. } = events[0] else {
+        panic!("expected combat");
+    };
+    assert_eq!(exchange, f.exchange);
+}
+
+#[test]
+fn failed_command_leaves_state_unchanged() {
+    let mut s = r_move_04_setup();
+    let before = s.clone();
+    assert!(mv(&mut s, 1, &[(1, 0), (2, 0), (3, 0)]).is_err());
+    assert!(attack(&mut s, 2, 1).is_err(), "not the active side");
+    assert_eq!(s, before);
+}
+
+#[test]
+fn r_ai_02_replay_is_deterministic() {
+    let commands = vec![
+        Command::Move {
+            unit: UnitId(1),
+            path: vec![Hex::new(1, 0), Hex::new(2, 0)],
+        },
+        Command::Attack {
+            unit: UnitId(1),
+            target: UnitId(2),
+        },
+        Command::Attack {
+            unit: UnitId(3),
+            target: UnitId(2),
+        },
+        Command::EndPhase,
+        Command::EndPhase,
+    ];
+    let run = |cmds: &[Command]| {
+        let mut s = r_move_04_setup();
+        let events: Vec<Event> = cmds
+            .iter()
+            .flat_map(|c| s.apply(c.clone()).unwrap())
+            .collect();
+        (s, events)
+    };
+    let json = serde_json::to_string(&commands).unwrap();
+    let replayed: Vec<Command> = serde_json::from_str(&json).unwrap();
+    let (s1, e1) = run(&commands);
+    let (s2, e2) = run(&replayed);
+    assert_eq!(e1, e2);
+    assert_eq!(s1, s2);
+    let events_json = serde_json::to_string(&e1).unwrap();
+    assert_eq!(
+        serde_json::from_str::<Vec<Event>>(&events_json).unwrap(),
+        e1
+    );
+}

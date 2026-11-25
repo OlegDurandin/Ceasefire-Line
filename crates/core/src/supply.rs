@@ -69,6 +69,8 @@ pub struct SupplyInput<'a> {
     pub side: SideId,
     pub sources: &'a [SupplySource],
     pub occupancy: &'a Occupancy,
+    /// R-MOVE-06: hex control; supply runs only through `side`'s hexes.
+    pub control: &'a BTreeMap<Hex, SideId>,
     /// HQs of `side`.
     pub hqs: &'a [HqPosition],
 }
@@ -88,7 +90,8 @@ impl SupplyMap {
 /// One Dijkstra run: each source starts with offset `(max − value)·decay`,
 /// so `max − floor(cost / decay)` equals the per-source formula exactly.
 /// A bridge adds `bridge_penalty·decay`, i.e. −`bridge_penalty` supply.
-/// Paths never enter enemy-occupied hexes; a hex in enemy ZOC is reached
+/// Paths run only through hexes controlled by `side` (R-MOVE-06) and never
+/// enter enemy-occupied hexes; a hex in enemy ZOC is reached
 /// but passed through only if a friendly unit stands in it.
 pub fn compute_supply(input: &SupplyInput<'_>) -> Result<SupplyMap, RuleError> {
     let p = input.params;
@@ -96,6 +99,7 @@ pub fn compute_supply(input: &SupplyInput<'_>) -> Result<SupplyMap, RuleError> {
     let zoc = enemy_zoc(input.occupancy, side);
     let enemy_at = |h: Hex| input.occupancy.get(&h).is_some_and(|o| o.side != side);
     let friendly_at = |h: Hex| input.occupancy.get(&h).is_some_and(|o| o.side == side);
+    let own = |h: Hex| input.control.get(&h) == Some(&side);
 
     let mut best: BTreeMap<Hex, u32> = BTreeMap::new();
     let mut heap = BinaryHeap::new();
@@ -106,7 +110,7 @@ pub fn compute_supply(input: &SupplyInput<'_>) -> Result<SupplyMap, RuleError> {
                 source.hex, source.value, p.max
             )));
         }
-        if input.map.cell(source.hex).is_none() || enemy_at(source.hex) {
+        if input.map.cell(source.hex).is_none() || enemy_at(source.hex) || !own(source.hex) {
             continue;
         }
         let cost = u32::from(p.max - source.value) * p.decay_halves;
@@ -124,7 +128,7 @@ pub fn compute_supply(input: &SupplyInput<'_>) -> Result<SupplyMap, RuleError> {
             continue;
         }
         for next in hex.neighbors() {
-            if enemy_at(next) {
+            if enemy_at(next) || !own(next) {
                 continue;
             }
             let Some(step) = entry_cost_halves(
@@ -221,8 +225,13 @@ mod tests {
         map
     }
 
+    fn all_ours(map: &HexMap) -> BTreeMap<Hex, SideId> {
+        map.hexes().map(|h| (h, US)).collect()
+    }
+
     fn run(map: &HexMap, p: &SupplyParams, occupancy: &Occupancy) -> SupplyMap {
         let t = terrain();
+        let control = all_ours(map);
         compute_supply(&SupplyInput {
             map,
             terrain: &t,
@@ -233,6 +242,7 @@ mod tests {
                 value: 10,
             }],
             occupancy,
+            control: &control,
             hqs: &[],
         })
         .unwrap()
@@ -322,6 +332,31 @@ mod tests {
     }
 
     #[test]
+    fn r_move_06_supply_only_through_own_hexes() {
+        let map = line("plain", 4);
+        let t = terrain();
+        let mut control = all_ours(&map);
+        control.insert(Hex::new(2, 0), THEM);
+        let s = compute_supply(&SupplyInput {
+            map: &map,
+            terrain: &t,
+            params: &params(None),
+            side: US,
+            sources: &[SupplySource {
+                hex: Hex::new(0, 0),
+                value: 10,
+            }],
+            occupancy: &Occupancy::new(),
+            control: &control,
+            hqs: &[],
+        })
+        .unwrap();
+        assert_eq!(s.get(Hex::new(1, 0)), 10);
+        assert_eq!(s.get(Hex::new(2, 0)), 0);
+        assert_eq!(s.get(Hex::new(3, 0)), 0);
+    }
+
+    #[test]
     fn r_move_02_canal_blocks_and_bridge_costs_two() {
         let mut map = line("plain", 4);
         map.add_canal(Hex::new(1, 0), Hex::new(2, 0)).unwrap();
@@ -342,6 +377,7 @@ mod tests {
         let map = line("plain", 12);
         let p = params(None);
         let t = terrain();
+        let control = all_ours(&map);
         let at = |hqs: &[HqPosition], hex: Hex| {
             compute_supply(&SupplyInput {
                 map: &map,
@@ -353,6 +389,7 @@ mod tests {
                     value: 10,
                 }],
                 occupancy: &Occupancy::new(),
+                control: &control,
                 hqs,
             })
             .unwrap()

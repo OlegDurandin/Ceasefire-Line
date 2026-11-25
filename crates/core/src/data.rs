@@ -69,6 +69,66 @@ pub struct SupplyRules {
     pub hq_bonus: u8,
     pub hq_bonus_high: u8,
     pub hq_high_rating: u8,
+    /// R-SUP-03: supply at or below this gives −AP and no entrenchment growth.
+    pub low_supply_max: u8,
+    pub entrench_min_supply: u8,
+    /// Supply inertia: a unit's supply drops at most this much per own phase.
+    pub max_drop_per_phase: u8,
+    /// R-SUP-03: attrition starts at this many consecutive phases at supply 0.
+    pub attrition_after_phases: u8,
+    pub attrition_steps: u8,
+    /// R-SUP-01: captured source works at value / divisor (floor).
+    pub captured_source_divisor: u8,
+    pub captured_recovery_per_turn: u8,
+}
+
+/// R-MOVE-03, R-MOVE-04, R-UNIT-02. AP values may be multiples of 0.5.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct MovementRules {
+    pub zoc_min_strength: u8,
+    pub zoc_exit_ap: f64,
+    pub attack_ap: f64,
+    pub exploit_min_ap: f64,
+    pub night_ap_penalty: f64,
+    pub low_supply_ap_penalty: f64,
+    pub min_ap: f64,
+}
+
+/// Unit morale changes (GDD section 3).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct MoraleRules {
+    pub loss_per_step: u8,
+    pub no_supply_loss: u8,
+    pub rest_gain: u8,
+}
+
+/// R-COMBAT-06.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct RetreatRules {
+    pub max_strength: u8,
+    pub heavy_loss_steps: u8,
+    pub low_readiness_pct: u8,
+    pub blocked_extra_losses: u8,
+}
+
+/// Experience in quarter stars (GDD section 3).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ExperienceRules {
+    pub per_combat_quarters: u8,
+    pub win_quarters: u8,
+    pub max_quarters: u8,
+}
+
+/// R-COMBAT-04.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct BombardRules {
+    pub shot_fraction: f64,
+    pub entrench_loss: u8,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -85,6 +145,11 @@ pub struct Rules {
     pub air_defense: AirDefenseRules,
     pub supply: SupplyRules,
     pub scale: ScaleRules,
+    pub movement: MovementRules,
+    pub morale: MoraleRules,
+    pub retreat: RetreatRules,
+    pub experience: ExperienceRules,
+    pub bombard: BombardRules,
 }
 
 impl Rules {
@@ -112,6 +177,22 @@ impl Rules {
         if ap_to_halves(self.supply.decay_ap)? == 0 {
             return Err(RuleError::InvalidData(
                 "supply: decay_ap must be > 0".into(),
+            ));
+        }
+        let m = &self.movement;
+        for ap in [
+            m.zoc_exit_ap,
+            m.attack_ap,
+            m.exploit_min_ap,
+            m.night_ap_penalty,
+            m.low_supply_ap_penalty,
+            m.min_ap,
+        ] {
+            ap_to_halves(ap)?;
+        }
+        if self.supply.captured_source_divisor == 0 {
+            return Err(RuleError::InvalidData(
+                "supply: captured_source_divisor must be > 0".into(),
             ));
         }
         if self.scale.default_hex_km <= 0.0 {

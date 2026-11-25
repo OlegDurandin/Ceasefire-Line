@@ -7,6 +7,7 @@ pub mod air;
 pub mod combat;
 pub mod data;
 pub mod error;
+pub mod game;
 pub mod hex;
 pub mod map;
 pub mod math;
@@ -19,4 +20,4 @@ pub mod supply;
 pub mod tech;
 pub mod unit;
 
-pub use error::RuleError;
+pub use error::{AttackError, MoveError, RuleError};

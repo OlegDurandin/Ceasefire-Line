@@ -5,6 +5,8 @@
 
 mod common;
 
+use std::collections::BTreeMap;
+
 use ceasefire_core::air::forecast_barrage;
 use ceasefire_core::combat::{forecast_ground, GroundAttack};
 use ceasefire_core::hex::Hex;
@@ -61,15 +63,15 @@ fn r_combat_02_tank_vs_infantry_1967() {
 #[test]
 fn r_combat_02_tank_vs_infantry_1973() {
     let d = data();
-    // GDD example: only the infantry's antitank branch is at level 2;
-    // tanks stay at armor level 1 (see docs/decisions.md).
-    let tank_tech = TechLevels::default();
+    // 1973 per docs/decisions.md: tanks at armor level 2, infantry at
+    // antitank level 2 (hard attack 2 + 4 = 6).
+    let tank_tech = TechLevels::default().with(TechBranch::Armor, 2);
     let inf_tech = TechLevels::default().with(TechBranch::Antitank, 2);
     let tanks = unit(&d, "tank", &tank_tech, 10, 90, 1, 0);
     let infantry = unit(&d, "infantry", &inf_tech, 8, 80, 0, 2);
     assert_close(
         infantry.stats.attack.hard,
-        5.0,
+        6.0,
         EPS,
         "hard attack with ATGM 2",
     );
@@ -77,9 +79,12 @@ fn r_combat_02_tank_vs_infantry_1973() {
     let f = forecast_ground(&d.rules.combat, &tanks, &infantry, &plain(&d)).unwrap();
     assert_close(f.exchange.vs_defender.p, 0.318, EPS, "p tanks");
     assert_close(f.defender_losses.expected, 2.86, TOL, "E[infantry losses]");
-    assert_eq!(f.exchange.vs_attacker.n, 6);
-    assert_close(f.exchange.vs_attacker.p, 0.27, EPS, "p infantry");
-    assert_close(f.attacker_losses.expected, 1.62, TOL, "E[tank losses]");
+    let back = f.exchange.vs_attacker;
+    assert_eq!(back.n, 6);
+    assert_close(back.a, 6.0, EPS, "A infantry");
+    assert_close(back.d, 6.6, EPS, "D tanks, armor 2");
+    assert_close(back.p, 0.264, EPS, "p infantry");
+    assert_close(f.attacker_losses.expected, 1.58, TOL, "E[tank losses]");
 }
 
 /// GDD section 17, "Эффект ПТУР": 1967 tanks lose ≤ 1/3 of infantry losses,
@@ -87,9 +92,9 @@ fn r_combat_02_tank_vs_infantry_1973() {
 #[test]
 fn balance_17_antitank_effect() {
     let d = data();
-    let tanks_tech = TechLevels::default();
-    for (at_level, check) in [(1u8, true), (2, false)] {
-        let inf_tech = TechLevels::default().with(TechBranch::Antitank, at_level);
+    for (level, check) in [(1u8, true), (2, false)] {
+        let tanks_tech = TechLevels::default().with(TechBranch::Armor, level);
+        let inf_tech = TechLevels::default().with(TechBranch::Antitank, level);
         let tanks = unit(&d, "tank", &tanks_tech, 10, 90, 1, 0);
         let infantry = unit(&d, "infantry", &inf_tech, 8, 80, 0, 2);
         let f = forecast_ground(&d.rules.combat, &tanks, &infantry, &plain(&d)).unwrap();
@@ -120,6 +125,7 @@ fn r_sup_02_el_arish_example() {
         value: 8,
     }];
     let occupancy = Occupancy::new();
+    let control: BTreeMap<Hex, SideId> = map.hexes().map(|h| (h, SideId(0))).collect();
     let target = Hex::new(8, 0);
 
     let supply = |hqs: &[HqPosition]| {
@@ -130,6 +136,7 @@ fn r_sup_02_el_arish_example() {
             side: SideId(0),
             sources: &sources,
             occupancy: &occupancy,
+            control: &control,
             hqs,
         })
         .unwrap()

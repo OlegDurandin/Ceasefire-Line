@@ -1,0 +1,162 @@
+//! R-TURN-01: start and end of a phase.
+
+use std::sync::Arc;
+
+use crate::data::{ap_to_halves, UnitTag};
+use crate::error::RuleError;
+use crate::movement::enemy_zoc;
+use crate::unit::readiness_pct;
+
+use super::{Event, GameState, UnitId};
+
+impl GameState {
+    /// R-TURN-01 step 1 for the active side: source recovery, supply with
+    /// inertia, morale, attrition, entrenchment, readiness, AP and strikes.
+    pub(super) fn start_phase(&mut self) -> Result<Vec<Event>, RuleError> {
+        let data = Arc::clone(&self.data);
+        let rules = &data.rules;
+        let side = self.active_side();
+        let night = self.is_night();
+        let nm = self.side_state(side)?.national_morale_pct;
+        let mut events = vec![Event::PhaseStarted {
+            turn: self.turn,
+            side,
+            night,
+        }];
+
+        // R-SUP-01: captured sources recover +1 per turn for their owner.
+        for (&hex, src) in self.sources.iter_mut() {
+            if self.control.get(&hex) == Some(&side) && src.current < src.base {
+                src.current = src
+                    .current
+                    .saturating_add(rules.supply.captured_recovery_per_turn)
+                    .min(src.base);
+                events.push(Event::SourceRecovered {
+                    hex,
+                    value: src.current,
+                });
+            }
+        }
+
+        let supply = self.hex_supply(side)?;
+        let zoc = enemy_zoc(&self.occupancy(), side);
+        let ids: Vec<UnitId> = self
+            .units
+            .values()
+            .filter(|u| u.side == side)
+            .map(|u| u.id)
+            .collect();
+
+        for id in ids {
+            let Some(unit) = self.units.get(&id) else {
+                continue;
+            };
+            let class = data.units.get(&unit.class)?;
+            let max_entrench = data
+                .terrain
+                .get(&self.map_terrain(unit.hex)?)?
+                .def
+                .max_entrench;
+            let class_ap = ap_to_halves(
+                class
+                    .ap
+                    .ok_or_else(|| RuleError::InvalidData(format!("`{}` has no AP", class.id)))?,
+            )?;
+            let in_zoc = zoc.contains(&unit.hex);
+            let hex_level = supply.get(unit.hex);
+            let Some(unit) = self.units.get_mut(&id) else {
+                continue;
+            };
+            let s = &rules.supply;
+
+            // Supply inertia: drops at most `max_drop_per_phase`, rises at once.
+            unit.supply = hex_level.max(unit.supply.saturating_sub(s.max_drop_per_phase));
+
+            // R-SUP-03 at supply 0; +morale for a phase in supply without combat.
+            if unit.supply == 0 {
+                unit.zero_supply_phases = unit.zero_supply_phases.saturating_add(1);
+                unit.morale_pct = unit.morale_pct.saturating_sub(rules.morale.no_supply_loss);
+            } else {
+                unit.zero_supply_phases = 0;
+                if !unit.fought {
+                    unit.morale_pct = unit.morale_pct.saturating_add(rules.morale.rest_gain);
+                }
+            }
+            unit.morale_pct = unit.morale_pct.min(nm).min(100);
+            if unit.zero_supply_phases >= s.attrition_after_phases {
+                unit.lose_steps(s.attrition_steps, rules.morale.loss_per_step);
+                events.push(Event::Attrition {
+                    unit: id,
+                    steps: s.attrition_steps,
+                });
+            }
+
+            // Entrenchment grows without movement and with supply above the low band.
+            if !unit.moved && unit.supply >= s.entrench_min_supply {
+                let gain = u8::try_from(class.entrench_per_turn).unwrap_or(u8::MAX);
+                unit.entrenchment = unit.entrenchment.saturating_add(gain).min(max_entrench);
+            }
+            unit.entrenchment = unit.entrenchment.min(max_entrench);
+
+            // R-UNIT-01: readiness; fatigue counters reset.
+            unit.attacks_made = 0;
+            unit.attacks_received = 0;
+            unit.base_readiness_pct = readiness_pct(
+                &rules.readiness,
+                unit.supply,
+                unit.morale_pct,
+                unit.exp_stars(),
+                0,
+            );
+
+            // R-UNIT-02: AP penalties for low supply and night, minimum AP.
+            let mut ap = class_ap;
+            if unit.supply <= s.low_supply_max {
+                ap = ap.saturating_sub(self.ap.low_supply_penalty);
+            }
+            if night && !class.has_tag(UnitTag::NightCombat) {
+                ap = ap.saturating_sub(self.ap.night_penalty);
+            }
+            unit.ap_halves = ap.max(self.ap.min);
+            unit.strikes_left = class.strikes;
+            unit.can_move = true;
+            unit.started_in_zoc = in_zoc;
+            unit.moved = false;
+            unit.fought = false;
+            unit.acted = false;
+
+            events.push(Event::UnitRefreshed {
+                unit: id,
+                supply: unit.supply,
+                morale_pct: unit.morale_pct,
+                readiness_pct: unit.base_readiness_pct,
+                entrenchment: unit.entrenchment,
+                ap_halves: unit.ap_halves,
+            });
+        }
+        self.remove_destroyed(&mut events);
+        Ok(events)
+    }
+
+    /// R-TURN-01 step 3 (victory checks come with NM) and hand-over.
+    pub(super) fn end_phase(&mut self) -> Result<Vec<Event>, RuleError> {
+        let mut events = vec![Event::PhaseEnded {
+            turn: self.turn,
+            side: self.active_side(),
+        }];
+        self.active += 1;
+        if self.active == self.sides.len() {
+            self.active = 0;
+            self.turn += 1;
+        }
+        events.extend(self.start_phase()?);
+        Ok(events)
+    }
+
+    pub(super) fn map_terrain(&self, hex: crate::hex::Hex) -> Result<String, RuleError> {
+        self.map
+            .cell(hex)
+            .map(|c| c.terrain.clone())
+            .ok_or_else(|| RuleError::InvalidData(format!("hex {hex:?} is off-map")))
+    }
+}

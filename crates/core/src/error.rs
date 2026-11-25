@@ -19,4 +19,46 @@ pub enum RuleError {
     NoGroundDefense(String),
     #[error("hexes {0:?} and {1:?} are not adjacent")]
     NotAdjacent(crate::hex::Hex, crate::hex::Hex),
+    #[error("not supported yet: {0}")]
+    Unsupported(String),
+    #[error("unknown unit {0}")]
+    UnknownUnit(u32),
+    #[error("unit {0} does not belong to the active side")]
+    NotYourUnit(u32),
+    #[error("illegal move of unit {unit}: {reason:?}")]
+    IllegalMove { unit: u32, reason: MoveError },
+    #[error("illegal attack by unit {unit}: {reason:?}")]
+    IllegalAttack { unit: u32, reason: AttackError },
+    #[error("unit {0} has no pending advance")]
+    NoPendingAdvance(u32),
+}
+
+/// Why a move is rejected (R-MOVE-01..04).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum MoveError {
+    EmptyPath,
+    /// Entered enemy ZOC this phase, attacked without exploitation, or no AP.
+    CannotMove,
+    NotAdjacent,
+    Impassable,
+    Occupied,
+    /// Path continues after entering enemy ZOC.
+    ZocStop,
+    /// Direct step from one enemy ZOC hex to another.
+    ZocToZoc,
+    NotEnoughAp,
+}
+
+/// Why an attack or bombardment is rejected (R-MOVE-04, R-COMBAT-04).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum AttackError {
+    NoStrikes,
+    NoAp,
+    NotAdjacent,
+    OutOfRange,
+    NotEnemy,
+    NotGroundTarget,
+    /// Artillery attacks only by bombardment.
+    UseBombard,
+    CannotBombard,
 }

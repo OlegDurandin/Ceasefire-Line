@@ -1,7 +1,7 @@
 {
   "unit_effects": [
     { "branch": "armor", "units": ["tank"], "stats": ["attack_hard", "defense_ground"], "by_level": [0, 1, 2] },
-    { "branch": "antitank", "units": ["infantry", "mech"], "stats": ["attack_hard"], "by_level": [0, 3, 4] },
+    { "branch": "antitank", "units": ["infantry", "mech"], "stats": ["attack_hard"], "by_level": [0, 4, 5] },
     { "branch": "air_defense", "units": ["sam_static", "sam_mobile"], "stats": ["attack_air"], "by_level": [0, 2, 3] },
     { "branch": "air_defense", "units": ["sam_mobile"], "stats": ["sam_radius_km"], "by_level": [0, 0, 10] },
     {
