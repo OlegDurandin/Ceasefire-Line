@@ -1,0 +1,93 @@
+{
+  "sprite_sides": {
+    "isr": { "nations": ["israel"] },
+    "egy_syr": { "nations": ["egypt", "syria"] }
+  },
+  "units": {
+    "tank": {
+      "tech_branch": "armor",
+      "isr": [
+        { "tech_min": 1, "sprite": "isr_centurion", "variants": ["isr_m48", "isr_super_sherman"] },
+        { "tech_min": 2, "sprite": "isr_m60" }
+      ],
+      "egy_syr": [
+        { "tech_min": 1, "sprite": "egy_t55" },
+        { "tech_min": 2, "sprite": "egy_t62" }
+      ]
+    },
+    "mech": {
+      "tech_branch": "armor",
+      "isr": [
+        { "tech_min": 1, "sprite": "isr_m3_halftrack" },
+        { "tech_min": 2, "sprite": "isr_m113" }
+      ],
+      "egy_syr": [
+        { "tech_min": 1, "sprite": "egy_btr152", "variants": ["egy_btr50"] },
+        { "tech_min": 2, "sprite": "egy_bmp1" }
+      ]
+    },
+    "infantry": {
+      "tech_branch": "antitank",
+      "isr": [{ "tech_min": 1, "sprite": "isr_infantry" }],
+      "egy_syr": [
+        { "tech_min": 1, "sprite": "egy_infantry" },
+        { "tech_min": 2, "sprite": "egy_atgm_team" }
+      ]
+    },
+    "commando": {
+      "tech_branch": "antitank",
+      "isr": [{ "tech_min": 1, "sprite": "isr_infantry" }],
+      "egy_syr": [
+        { "tech_min": 1, "sprite": "egy_infantry" },
+        { "tech_min": 2, "sprite": "egy_atgm_team" }
+      ]
+    },
+    "artillery": {
+      "tech_branch": null,
+      "isr": [{ "tech_min": 1, "sprite": "isr_m109" }],
+      "egy_syr": [{ "tech_min": 1, "sprite": "egy_m46" }]
+    },
+    "engineer": {
+      "tech_branch": null,
+      "isr": [{ "tech_min": 1, "sprite": "isr_bridging" }],
+      "egy_syr": [{ "tech_min": 1, "sprite": "egy_pmp" }]
+    },
+    "hq": {
+      "tech_branch": null,
+      "isr": [{ "tech_min": 1, "sprite": "isr_hq" }],
+      "egy_syr": [{ "tech_min": 1, "sprite": "egy_hq" }]
+    },
+    "sam_static": {
+      "tech_branch": "air_defense",
+      "isr": [],
+      "egy_syr": [{ "tech_min": 1, "sprite": "egy_sa2" }]
+    },
+    "sam_mobile": {
+      "tech_branch": "air_defense",
+      "isr": [],
+      "egy_syr": [{ "tech_min": 1, "sprite": "egy_sa6", "variants": ["egy_zsu23"] }]
+    },
+    "fighter": {
+      "tech_branch": "aviation",
+      "isr": [
+        { "tech_min": 1, "sprite": "isr_mirage3" },
+        { "tech_min": 2, "sprite": "isr_f4" }
+      ],
+      "egy_syr": [{ "tech_min": 1, "sprite": "egy_mig21" }]
+    },
+    "strike": {
+      "tech_branch": "aviation",
+      "isr": [{ "tech_min": 1, "sprite": "isr_a4" }],
+      "egy_syr": [{ "tech_min": 1, "sprite": "egy_su7" }]
+    },
+    "missile_boat": {
+      "tech_branch": null,
+      "isr": [{ "tech_min": 1, "sprite": "isr_saar3" }],
+      "egy_syr": [{ "tech_min": 1, "sprite": "egy_osa" }]
+    }
+  },
+  "helicopter_transfer": {
+    "isr": "isr_super_frelon",
+    "egy_syr": "egy_mi8"
+  }
+}

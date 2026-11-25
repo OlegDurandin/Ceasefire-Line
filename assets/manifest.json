@@ -1,0 +1,412 @@
+[
+  {
+    "id": "terrain_desert_flat",
+    "file": "terrain/terrain_desert_flat.png",
+    "group": "terrain",
+    "side": null,
+    "template": "terrain",
+    "width": 1024,
+    "height": 1024,
+    "prompt": "Painterly gouache realism, muted natural colors, upper-left lighting, no text, flags or insignia. Seamless square orthographic top-down terrain: hard flat desert gravel plain"
+  },
+  {
+    "id": "terrain_dunes",
+    "file": "terrain/terrain_dunes.png",
+    "group": "terrain",
+    "side": null,
+    "template": "terrain",
+    "width": 1024,
+    "height": 1024,
+    "prompt": "Painterly gouache realism, muted natural colors, upper-left lighting, no text, flags or insignia. Seamless square orthographic top-down terrain: pale sand dunes with wind ripples"
+  },
+  {
+    "id": "terrain_hills_rocky",
+    "file": "terrain/terrain_hills_rocky.png",
+    "group": "terrain",
+    "side": null,
+    "template": "terrain",
+    "width": 1024,
+    "height": 1024,
+    "prompt": "Painterly gouache realism, muted natural colors, upper-left lighting, no text, flags or insignia. Seamless square orthographic top-down terrain: rocky hills and dry wadis"
+  },
+  {
+    "id": "terrain_mountains",
+    "file": "terrain/terrain_mountains.png",
+    "group": "terrain",
+    "side": null,
+    "template": "terrain",
+    "width": 1024,
+    "height": 1024,
+    "prompt": "Painterly gouache realism, muted natural colors, upper-left lighting, no text, flags or insignia. Seamless square orthographic top-down terrain: steep rocky ridges and ravines"
+  },
+  {
+    "id": "terrain_saltmarsh",
+    "file": "terrain/terrain_saltmarsh.png",
+    "group": "terrain",
+    "side": null,
+    "template": "terrain",
+    "width": 1024,
+    "height": 1024,
+    "prompt": "Painterly gouache realism, muted natural colors, upper-left lighting, no text, flags or insignia. Seamless square orthographic top-down terrain: cracked salt crust and damp patches"
+  },
+  {
+    "id": "terrain_basalt_plateau",
+    "file": "terrain/terrain_basalt_plateau.png",
+    "group": "terrain",
+    "side": null,
+    "template": "terrain",
+    "width": 1024,
+    "height": 1024,
+    "prompt": "Painterly gouache realism, muted natural colors, upper-left lighting, no text, flags or insignia. Seamless square orthographic top-down terrain: volcanic stones and dry grass"
+  },
+  {
+    "id": "terrain_farmland",
+    "file": "terrain/terrain_farmland.png",
+    "group": "terrain",
+    "side": null,
+    "template": "terrain",
+    "width": 1024,
+    "height": 1024,
+    "prompt": "Painterly gouache realism, muted natural colors, upper-left lighting, no text, flags or insignia. Seamless square orthographic top-down terrain: irrigated fields and canals"
+  },
+  {
+    "id": "terrain_town",
+    "file": "terrain/terrain_town.png",
+    "group": "terrain",
+    "side": null,
+    "template": "terrain",
+    "width": 1024,
+    "height": 1024,
+    "prompt": "Painterly gouache realism, muted natural colors, upper-left lighting, no text, flags or insignia. Seamless square orthographic top-down terrain: dense flat-roofed town"
+  },
+  {
+    "id": "terrain_water",
+    "file": "terrain/terrain_water.png",
+    "group": "terrain",
+    "side": null,
+    "template": "terrain",
+    "width": 1024,
+    "height": 1024,
+    "prompt": "Painterly gouache realism, muted natural colors, upper-left lighting, no text, flags or insignia. Seamless square orthographic top-down terrain: calm sea water"
+  },
+  {
+    "id": "isr_centurion",
+    "file": "units/isr/isr_centurion.png",
+    "group": "unit",
+    "side": "isr",
+    "template": "ground",
+    "width": 512,
+    "height": 512,
+    "prompt": "Painterly gouache realism, muted natural colors, upper-left lighting, no text, flags or insignia. Transparent square game unit token, 1967–1973 era, three-quarter view facing lower-left: Centurion tank"
+  },
+  {
+    "id": "isr_m48",
+    "file": "units/isr/isr_m48.png",
+    "group": "unit",
+    "side": "isr",
+    "template": "ground",
+    "width": 512,
+    "height": 512,
+    "prompt": "Painterly gouache realism, muted natural colors, upper-left lighting, no text, flags or insignia. Transparent square game unit token, 1967–1973 era, three-quarter view facing lower-left: M48 Patton tank"
+  },
+  {
+    "id": "isr_m60",
+    "file": "units/isr/isr_m60.png",
+    "group": "unit",
+    "side": "isr",
+    "template": "ground",
+    "width": 512,
+    "height": 512,
+    "prompt": "Painterly gouache realism, muted natural colors, upper-left lighting, no text, flags or insignia. Transparent square game unit token, 1967–1973 era, three-quarter view facing lower-left: M60 tank"
+  },
+  {
+    "id": "isr_super_sherman",
+    "file": "units/isr/isr_super_sherman.png",
+    "group": "unit",
+    "side": "isr",
+    "template": "ground",
+    "width": 512,
+    "height": 512,
+    "prompt": "Painterly gouache realism, muted natural colors, upper-left lighting, no text, flags or insignia. Transparent square game unit token, 1967–1973 era, three-quarter view facing lower-left: M51 Super Sherman tank"
+  },
+  {
+    "id": "isr_m3_halftrack",
+    "file": "units/isr/isr_m3_halftrack.png",
+    "group": "unit",
+    "side": "isr",
+    "template": "ground",
+    "width": 512,
+    "height": 512,
+    "prompt": "Painterly gouache realism, muted natural colors, upper-left lighting, no text, flags or insignia. Transparent square game unit token, 1967–1973 era, three-quarter view facing lower-left: M3 half-track carrying infantry"
+  },
+  {
+    "id": "isr_m113",
+    "file": "units/isr/isr_m113.png",
+    "group": "unit",
+    "side": "isr",
+    "template": "ground",
+    "width": 512,
+    "height": 512,
+    "prompt": "Painterly gouache realism, muted natural colors, upper-left lighting, no text, flags or insignia. Transparent square game unit token, 1967–1973 era, three-quarter view facing lower-left: M113 armored personnel carrier"
+  },
+  {
+    "id": "isr_infantry",
+    "file": "units/isr/isr_infantry.png",
+    "group": "unit",
+    "side": "isr",
+    "template": "ground",
+    "width": 512,
+    "height": 512,
+    "prompt": "Painterly gouache realism, muted natural colors, upper-left lighting, no text, flags or insignia. Transparent square game unit token, 1967–1973 era, three-quarter view facing lower-left: four infantrymen in olive-drab fatigues"
+  },
+  {
+    "id": "isr_m109",
+    "file": "units/isr/isr_m109.png",
+    "group": "unit",
+    "side": "isr",
+    "template": "ground",
+    "width": 512,
+    "height": 512,
+    "prompt": "Painterly gouache realism, muted natural colors, upper-left lighting, no text, flags or insignia. Transparent square game unit token, 1967–1973 era, three-quarter view facing lower-left: M109 self-propelled howitzer"
+  },
+  {
+    "id": "isr_bridging",
+    "file": "units/isr/isr_bridging.png",
+    "group": "unit",
+    "side": "isr",
+    "template": "ground",
+    "width": 512,
+    "height": 512,
+    "prompt": "Painterly gouache realism, muted natural colors, upper-left lighting, no text, flags or insignia. Transparent square game unit token, 1967–1973 era, three-quarter view facing lower-left: bridging vehicle carrying pontoon section"
+  },
+  {
+    "id": "isr_hq",
+    "file": "units/isr/isr_hq.png",
+    "group": "unit",
+    "side": "isr",
+    "template": "ground",
+    "width": 512,
+    "height": 512,
+    "prompt": "Painterly gouache realism, muted natural colors, upper-left lighting, no text, flags or insignia. Transparent square game unit token, 1967–1973 era, three-quarter view facing lower-left: command half-track with radio antennas"
+  },
+  {
+    "id": "isr_mirage3",
+    "file": "units/isr/isr_mirage3.png",
+    "group": "unit",
+    "side": "isr",
+    "template": "air",
+    "width": 512,
+    "height": 512,
+    "prompt": "Painterly gouache realism, muted natural colors, upper-left lighting, no text, flags or insignia. Transparent square game unit token, 1967–1973 era, in flight heading upper-left: Mirage III fighter jet"
+  },
+  {
+    "id": "isr_a4",
+    "file": "units/isr/isr_a4.png",
+    "group": "unit",
+    "side": "isr",
+    "template": "air",
+    "width": 512,
+    "height": 512,
+    "prompt": "Painterly gouache realism, muted natural colors, upper-left lighting, no text, flags or insignia. Transparent square game unit token, 1967–1973 era, in flight heading upper-left: A-4 Skyhawk attack jet"
+  },
+  {
+    "id": "isr_f4",
+    "file": "units/isr/isr_f4.png",
+    "group": "unit",
+    "side": "isr",
+    "template": "air",
+    "width": 512,
+    "height": 512,
+    "prompt": "Painterly gouache realism, muted natural colors, upper-left lighting, no text, flags or insignia. Transparent square game unit token, 1967–1973 era, in flight heading upper-left: F-4 Phantom II jet"
+  },
+  {
+    "id": "isr_super_frelon",
+    "file": "units/isr/isr_super_frelon.png",
+    "group": "unit",
+    "side": "isr",
+    "template": "air",
+    "width": 512,
+    "height": 512,
+    "prompt": "Painterly gouache realism, muted natural colors, upper-left lighting, no text, flags or insignia. Transparent square game unit token, 1967–1973 era, in flight heading upper-left: Super Frelon heavy transport helicopter"
+  },
+  {
+    "id": "isr_saar3",
+    "file": "units/isr/isr_saar3.png",
+    "group": "unit",
+    "side": "isr",
+    "template": "ground",
+    "width": 512,
+    "height": 512,
+    "prompt": "Painterly gouache realism, muted natural colors, upper-left lighting, no text, flags or insignia. Transparent square game unit token, 1967–1973 era, three-quarter view facing lower-left: Sa'ar 3 class missile boat on small patch of water"
+  },
+  {
+    "id": "egy_t55",
+    "file": "units/egy_syr/egy_t55.png",
+    "group": "unit",
+    "side": "egy_syr",
+    "template": "ground",
+    "width": 512,
+    "height": 512,
+    "prompt": "Painterly gouache realism, muted natural colors, upper-left lighting, no text, flags or insignia. Transparent square game unit token, 1967–1973 era, three-quarter view facing lower-left: T-55 tank"
+  },
+  {
+    "id": "egy_t62",
+    "file": "units/egy_syr/egy_t62.png",
+    "group": "unit",
+    "side": "egy_syr",
+    "template": "ground",
+    "width": 512,
+    "height": 512,
+    "prompt": "Painterly gouache realism, muted natural colors, upper-left lighting, no text, flags or insignia. Transparent square game unit token, 1967–1973 era, three-quarter view facing lower-left: T-62 tank"
+  },
+  {
+    "id": "egy_btr152",
+    "file": "units/egy_syr/egy_btr152.png",
+    "group": "unit",
+    "side": "egy_syr",
+    "template": "ground",
+    "width": 512,
+    "height": 512,
+    "prompt": "Painterly gouache realism, muted natural colors, upper-left lighting, no text, flags or insignia. Transparent square game unit token, 1967–1973 era, three-quarter view facing lower-left: BTR-152 wheeled armored personnel carrier"
+  },
+  {
+    "id": "egy_btr50",
+    "file": "units/egy_syr/egy_btr50.png",
+    "group": "unit",
+    "side": "egy_syr",
+    "template": "ground",
+    "width": 512,
+    "height": 512,
+    "prompt": "Painterly gouache realism, muted natural colors, upper-left lighting, no text, flags or insignia. Transparent square game unit token, 1967–1973 era, three-quarter view facing lower-left: BTR-50 tracked armored personnel carrier"
+  },
+  {
+    "id": "egy_bmp1",
+    "file": "units/egy_syr/egy_bmp1.png",
+    "group": "unit",
+    "side": "egy_syr",
+    "template": "ground",
+    "width": 512,
+    "height": 512,
+    "prompt": "Painterly gouache realism, muted natural colors, upper-left lighting, no text, flags or insignia. Transparent square game unit token, 1967–1973 era, three-quarter view facing lower-left: BMP-1 infantry fighting vehicle"
+  },
+  {
+    "id": "egy_infantry",
+    "file": "units/egy_syr/egy_infantry.png",
+    "group": "unit",
+    "side": "egy_syr",
+    "template": "ground",
+    "width": 512,
+    "height": 512,
+    "prompt": "Painterly gouache realism, muted natural colors, upper-left lighting, no text, flags or insignia. Transparent square game unit token, 1967–1973 era, three-quarter view facing lower-left: four infantrymen in khaki uniforms"
+  },
+  {
+    "id": "egy_atgm_team",
+    "file": "units/egy_syr/egy_atgm_team.png",
+    "group": "unit",
+    "side": "egy_syr",
+    "template": "ground",
+    "width": 512,
+    "height": 512,
+    "prompt": "Painterly gouache realism, muted natural colors, upper-left lighting, no text, flags or insignia. Transparent square game unit token, 1967–1973 era, three-quarter view facing lower-left: three-man anti-tank team with RPG-7 and ground launcher"
+  },
+  {
+    "id": "egy_m46",
+    "file": "units/egy_syr/egy_m46.png",
+    "group": "unit",
+    "side": "egy_syr",
+    "template": "ground",
+    "width": 512,
+    "height": 512,
+    "prompt": "Painterly gouache realism, muted natural colors, upper-left lighting, no text, flags or insignia. Transparent square game unit token, 1967–1973 era, three-quarter view facing lower-left: M-46 field gun with crew"
+  },
+  {
+    "id": "egy_sa2",
+    "file": "units/egy_syr/egy_sa2.png",
+    "group": "unit",
+    "side": "egy_syr",
+    "template": "ground",
+    "width": 512,
+    "height": 512,
+    "prompt": "Painterly gouache realism, muted natural colors, upper-left lighting, no text, flags or insignia. Transparent square game unit token, 1967–1973 era, three-quarter view facing lower-left: SA-2 launcher"
+  },
+  {
+    "id": "egy_sa6",
+    "file": "units/egy_syr/egy_sa6.png",
+    "group": "unit",
+    "side": "egy_syr",
+    "template": "ground",
+    "width": 512,
+    "height": 512,
+    "prompt": "Painterly gouache realism, muted natural colors, upper-left lighting, no text, flags or insignia. Transparent square game unit token, 1967–1973 era, three-quarter view facing lower-left: SA-6 tracked launcher with three missiles"
+  },
+  {
+    "id": "egy_zsu23",
+    "file": "units/egy_syr/egy_zsu23.png",
+    "group": "unit",
+    "side": "egy_syr",
+    "template": "ground",
+    "width": 512,
+    "height": 512,
+    "prompt": "Painterly gouache realism, muted natural colors, upper-left lighting, no text, flags or insignia. Transparent square game unit token, 1967–1973 era, three-quarter view facing lower-left: ZSU-23-4 Shilka"
+  },
+  {
+    "id": "egy_pmp",
+    "file": "units/egy_syr/egy_pmp.png",
+    "group": "unit",
+    "side": "egy_syr",
+    "template": "ground",
+    "width": 512,
+    "height": 512,
+    "prompt": "Painterly gouache realism, muted natural colors, upper-left lighting, no text, flags or insignia. Transparent square game unit token, 1967–1973 era, three-quarter view facing lower-left: truck carrying folded PMP pontoon"
+  },
+  {
+    "id": "egy_hq",
+    "file": "units/egy_syr/egy_hq.png",
+    "group": "unit",
+    "side": "egy_syr",
+    "template": "ground",
+    "width": 512,
+    "height": 512,
+    "prompt": "Painterly gouache realism, muted natural colors, upper-left lighting, no text, flags or insignia. Transparent square game unit token, 1967–1973 era, three-quarter view facing lower-left: command truck with radio antennas"
+  },
+  {
+    "id": "egy_mig21",
+    "file": "units/egy_syr/egy_mig21.png",
+    "group": "unit",
+    "side": "egy_syr",
+    "template": "air",
+    "width": 512,
+    "height": 512,
+    "prompt": "Painterly gouache realism, muted natural colors, upper-left lighting, no text, flags or insignia. Transparent square game unit token, 1967–1973 era, in flight heading upper-left: MiG-21 fighter jet"
+  },
+  {
+    "id": "egy_su7",
+    "file": "units/egy_syr/egy_su7.png",
+    "group": "unit",
+    "side": "egy_syr",
+    "template": "air",
+    "width": 512,
+    "height": 512,
+    "prompt": "Painterly gouache realism, muted natural colors, upper-left lighting, no text, flags or insignia. Transparent square game unit token, 1967–1973 era, in flight heading upper-left: Su-7 attack jet"
+  },
+  {
+    "id": "egy_mi8",
+    "file": "units/egy_syr/egy_mi8.png",
+    "group": "unit",
+    "side": "egy_syr",
+    "template": "air",
+    "width": 512,
+    "height": 512,
+    "prompt": "Painterly gouache realism, muted natural colors, upper-left lighting, no text, flags or insignia. Transparent square game unit token, 1967–1973 era, in flight heading upper-left: Mi-8 transport helicopter"
+  },
+  {
+    "id": "egy_osa",
+    "file": "units/egy_syr/egy_osa.png",
+    "group": "unit",
+    "side": "egy_syr",
+    "template": "ground",
+    "width": 512,
+    "height": 512,
+    "prompt": "Painterly gouache realism, muted natural colors, upper-left lighting, no text, flags or insignia. Transparent square game unit token, 1967–1973 era, three-quarter view facing lower-left: Osa class missile boat on small patch of water"
+  }
+]

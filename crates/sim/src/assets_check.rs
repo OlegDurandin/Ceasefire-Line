@@ -1,0 +1,439 @@
+//! `sim assets-check`: completeness and format of generated art (GDD R-UI-06)
+//! and the `data/sprites.json` binding. Reports; fixes only with `--fix`, and
+//! only by downscaling a larger image of the right proportions.
+
+use std::collections::{BTreeMap, BTreeSet};
+use std::fmt::Write as _;
+use std::fs;
+use std::path::{Path, PathBuf};
+
+use image::{imageops::FilterType, ColorType, DynamicImage, GenericImageView};
+use serde::Deserialize;
+
+/// Terrain textures (R-UI-06).
+const TERRAIN_SIZE: u32 = 1024;
+/// Unit medallions (R-UI-06).
+const UNIT_SIZE: u32 = 512;
+/// Seamlessness: mean absolute RGB difference (0..255) between opposite
+/// edges, above which a tile shows a seam.
+const SEAM_MAX_MEAN_DIFF: f64 = 12.0;
+/// Outer border (px) of a unit image that must be fully transparent.
+const UNIT_EDGE_MARGIN_PX: u32 = 1;
+const EXPECTED_TERRAIN: usize = 9;
+const EXPECTED_UNITS: usize = 32;
+const SPRITE_SIDES: [&str; 2] = ["isr", "egy_syr"];
+
+pub struct Options {
+    assets: PathBuf,
+    data: PathBuf,
+    report: PathBuf,
+    fix: bool,
+}
+
+pub fn parse_options(args: &[String]) -> Result<Options, String> {
+    let mut o = Options {
+        assets: PathBuf::from("assets"),
+        data: PathBuf::from("data"),
+        report: PathBuf::from("docs/assets-report.md"),
+        fix: false,
+    };
+    let mut it = args.iter();
+    while let Some(flag) = it.next() {
+        if flag == "--fix" {
+            o.fix = true;
+            continue;
+        }
+        let value = it
+            .next()
+            .ok_or_else(|| format!("missing value for {flag}"))?;
+        match flag.as_str() {
+            "--assets" => o.assets = PathBuf::from(value),
+            "--data" => o.data = PathBuf::from(value),
+            "--report" => o.report = PathBuf::from(value),
+            _ => return Err(format!("unknown option {flag}")),
+        }
+    }
+    Ok(o)
+}
+
+#[derive(Debug, Deserialize)]
+struct ManifestEntry {
+    id: String,
+    group: String,
+    side: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct SpriteTier {
+    pub tech_min: u8,
+    pub sprite: String,
+    #[serde(default)]
+    pub variants: Vec<String>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct SpriteClass {
+    pub tech_branch: Option<String>,
+    pub isr: Vec<SpriteTier>,
+    pub egy_syr: Vec<SpriteTier>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct SpritesFile {
+    pub sprite_sides: BTreeMap<String, serde_json::Value>,
+    pub units: BTreeMap<String, SpriteClass>,
+    pub helicopter_transfer: BTreeMap<String, String>,
+}
+
+#[derive(Debug, Deserialize)]
+struct UnitsFile {
+    units: Vec<UnitId>,
+}
+
+#[derive(Debug, Deserialize)]
+struct UnitId {
+    id: String,
+}
+
+/// Every sprite id referenced in `sprites.json`, with the side folder it lives in.
+pub fn referenced_sprites(s: &SpritesFile) -> BTreeSet<(String, String)> {
+    let mut out = BTreeSet::new();
+    for class in s.units.values() {
+        for (side, tiers) in [("isr", &class.isr), ("egy_syr", &class.egy_syr)] {
+            for t in tiers {
+                out.insert((side.to_owned(), t.sprite.clone()));
+                for v in &t.variants {
+                    out.insert((side.to_owned(), v.clone()));
+                }
+            }
+        }
+    }
+    for (side, id) in &s.helicopter_transfer {
+        out.insert((side.clone(), id.clone()));
+    }
+    out
+}
+
+/// Problems with `sprites.json` against `units.json` and the asset folder.
+pub fn check_sprites(data: &Path, assets: &Path) -> Result<Vec<String>, String> {
+    let read = |p: PathBuf| fs::read_to_string(&p).map_err(|e| format!("{}: {e}", p.display()));
+    let sprites: SpritesFile = serde_json::from_str(&read(data.join("sprites.json"))?)
+        .map_err(|e| format!("sprites.json: {e}"))?;
+    let units: UnitsFile = serde_json::from_str(&read(data.join("units.json"))?)
+        .map_err(|e| format!("units.json: {e}"))?;
+    let mut problems = Vec::new();
+    for u in &units.units {
+        if !sprites.units.contains_key(&u.id) {
+            problems.push(format!("unit class `{}` missing in sprites.json", u.id));
+        }
+    }
+    for id in sprites.units.keys() {
+        if !units.units.iter().any(|u| &u.id == id) {
+            problems.push(format!("sprites.json class `{id}` is not in units.json"));
+        }
+    }
+    for side in SPRITE_SIDES {
+        if !sprites.sprite_sides.contains_key(side) {
+            problems.push(format!("sprite side `{side}` not declared"));
+        }
+    }
+    for (class, c) in &sprites.units {
+        for (side, tiers) in [("isr", &c.isr), ("egy_syr", &c.egy_syr)] {
+            if !tiers.windows(2).all(|w| w[0].tech_min < w[1].tech_min) {
+                problems.push(format!("`{class}`/{side}: tech_min must increase"));
+            }
+            if tiers.first().is_some_and(|t| t.tech_min != 1) {
+                problems.push(format!("`{class}`/{side}: first tier must be tech_min 1"));
+            }
+            if tiers.len() > 1 && c.tech_branch.is_none() {
+                problems.push(format!("`{class}`: several tiers need a tech_branch"));
+            }
+        }
+    }
+    for (side, id) in referenced_sprites(&sprites) {
+        let path = assets.join("units").join(&side).join(format!("{id}.png"));
+        if !path.is_file() {
+            problems.push(format!("sprite file missing: {}", path.display()));
+        }
+    }
+    Ok(problems)
+}
+
+#[derive(Debug, Clone, PartialEq)]
+enum Status {
+    Ok,
+    Missing,
+    WrongSize(u32, u32),
+    NotTransparent(String),
+    TouchesEdge,
+    Seam(f64, f64),
+    Unreadable(String),
+}
+
+impl Status {
+    fn label(&self) -> String {
+        match self {
+            Status::Ok => "ок".into(),
+            Status::Missing => "нет".into(),
+            Status::WrongSize(w, h) => format!("не тот размер ({w}×{h})"),
+            Status::NotTransparent(why) => format!("не прозрачный ({why})"),
+            Status::TouchesEdge => "касается края".into(),
+            Status::Seam(h, v) => format!("шов (лево–право {h:.1}, верх–низ {v:.1})"),
+            Status::Unreadable(e) => format!("не читается ({e})"),
+        }
+    }
+}
+
+struct Row {
+    id: String,
+    path: String,
+    statuses: Vec<Status>,
+    notes: Vec<String>,
+}
+
+/// Mean absolute RGB difference between two pixel lines.
+fn line_diff(
+    img: &image::RgbImage,
+    a: impl Iterator<Item = (u32, u32)>,
+    b: impl Iterator<Item = (u32, u32)>,
+) -> f64 {
+    let (mut sum, mut n) = (0u64, 0u64);
+    for ((ax, ay), (bx, by)) in a.zip(b) {
+        let (p, q) = (img.get_pixel(ax, ay), img.get_pixel(bx, by));
+        for c in 0..3 {
+            sum += u64::from(p[c].abs_diff(q[c]));
+            n += 1;
+        }
+    }
+    if n == 0 {
+        0.0
+    } else {
+        sum as f64 / n as f64
+    }
+}
+
+/// Opposite-edge differences and, for context only, the same metric between
+/// two adjacent interior columns and rows (the texture's own variation).
+fn seam_metrics(img: &DynamicImage) -> [f64; 4] {
+    let rgb = img.to_rgb8();
+    let (w, h) = rgb.dimensions();
+    let lr = line_diff(&rgb, (0..h).map(|y| (0, y)), (0..h).map(|y| (w - 1, y)));
+    let tb = line_diff(&rgb, (0..w).map(|x| (x, 0)), (0..w).map(|x| (x, h - 1)));
+    let (mx, my) = (w / 2, h / 2);
+    let cols = line_diff(&rgb, (0..h).map(|y| (mx, y)), (0..h).map(|y| (mx + 1, y)));
+    let rows = line_diff(&rgb, (0..w).map(|x| (x, my)), (0..w).map(|x| (x, my + 1)));
+    [lr, tb, cols, rows]
+}
+
+fn unit_checks(img: &DynamicImage) -> Vec<Status> {
+    let mut out = Vec::new();
+    if img.color() != ColorType::Rgba8 {
+        out.push(Status::NotTransparent(format!(
+            "{:?}, нужен RGBA8",
+            img.color()
+        )));
+        return out;
+    }
+    let rgba = img.to_rgba8();
+    let (w, h) = rgba.dimensions();
+    let corners = [(0, 0), (w - 1, 0), (0, h - 1), (w - 1, h - 1)];
+    if corners.iter().any(|&(x, y)| rgba.get_pixel(x, y)[3] != 0) {
+        out.push(Status::NotTransparent("углы".into()));
+    }
+    let m = UNIT_EDGE_MARGIN_PX.min(w / 2).min(h / 2);
+    let touches = (0..w).any(|x| {
+        (0..m).any(|d| rgba.get_pixel(x, d)[3] != 0 || rgba.get_pixel(x, h - 1 - d)[3] != 0)
+    }) || (0..h).any(|y| {
+        (0..m).any(|d| rgba.get_pixel(d, y)[3] != 0 || rgba.get_pixel(w - 1 - d, y)[3] != 0)
+    });
+    if touches {
+        out.push(Status::TouchesEdge);
+    }
+    out
+}
+
+fn check_file(
+    path: &Path,
+    size: u32,
+    terrain: bool,
+    fix: bool,
+    notes: &mut Vec<String>,
+) -> Vec<Status> {
+    if !path.is_file() {
+        return vec![Status::Missing];
+    }
+    let mut img = match image::open(path) {
+        Ok(i) => i,
+        Err(e) => return vec![Status::Unreadable(e.to_string())],
+    };
+    let (w, h) = img.dimensions();
+    if (w, h) != (size, size) {
+        let larger_same_ratio = w == h && w > size;
+        if larger_same_ratio && fix {
+            img = img.resize_exact(size, size, FilterType::Lanczos3);
+            if let Err(e) = img.save(path) {
+                return vec![Status::Unreadable(format!("save after resize: {e}"))];
+            }
+            notes.push(format!("ресайз {w}×{h} → {size}×{size}"));
+        } else {
+            if larger_same_ratio {
+                notes.push("можно уменьшить: `--fix`".into());
+            }
+            return vec![Status::WrongSize(w, h)];
+        }
+    }
+    let mut statuses = Vec::new();
+    if terrain {
+        let [lr, tb, cols, rows] = seam_metrics(&img);
+        notes.push(format!(
+            "края: л–п {lr:.1}, в–н {tb:.1}; внутри: соседние столбцы {cols:.1}, строки {rows:.1}"
+        ));
+        if lr > SEAM_MAX_MEAN_DIFF || tb > SEAM_MAX_MEAN_DIFF {
+            statuses.push(Status::Seam(lr, tb));
+        }
+    } else {
+        statuses.extend(unit_checks(&img));
+    }
+    if statuses.is_empty() {
+        statuses.push(Status::Ok);
+    }
+    statuses
+}
+
+fn png_bytes(dir: &Path) -> u64 {
+    let Ok(entries) = fs::read_dir(dir) else {
+        return 0;
+    };
+    entries
+        .flatten()
+        .map(|e| {
+            let p = e.path();
+            if p.is_dir() {
+                png_bytes(&p)
+            } else if p.extension().is_some_and(|x| x == "png") {
+                e.metadata().map_or(0, |m| m.len())
+            } else {
+                0
+            }
+        })
+        .sum()
+}
+
+pub fn run(o: &Options) -> Result<(), String> {
+    let manifest_path = o.assets.join("manifest.json");
+    let manifest: Vec<ManifestEntry> = serde_json::from_str(
+        &fs::read_to_string(&manifest_path)
+            .map_err(|e| format!("{}: {e}", manifest_path.display()))?,
+    )
+    .map_err(|e| format!("manifest.json: {e}"))?;
+
+    let mut rows = Vec::new();
+    let (mut terrain_n, mut unit_n) = (0, 0);
+    for e in &manifest {
+        let (rel, size, terrain) = match (e.group.as_str(), e.side.as_deref()) {
+            ("terrain", _) => {
+                terrain_n += 1;
+                (format!("terrain/{}.png", e.id), TERRAIN_SIZE, true)
+            }
+            ("unit", Some(side)) if SPRITE_SIDES.contains(&side) => {
+                unit_n += 1;
+                (format!("units/{side}/{}.png", e.id), UNIT_SIZE, false)
+            }
+            _ => {
+                rows.push(Row {
+                    id: e.id.clone(),
+                    path: "—".into(),
+                    statuses: vec![Status::Unreadable("неизвестная группа или сторона".into())],
+                    notes: vec![],
+                });
+                continue;
+            }
+        };
+        let mut notes = Vec::new();
+        let statuses = check_file(&o.assets.join(&rel), size, terrain, o.fix, &mut notes);
+        rows.push(Row {
+            id: e.id.clone(),
+            path: rel,
+            statuses,
+            notes,
+        });
+    }
+
+    let mut problems = Vec::new();
+    if terrain_n != EXPECTED_TERRAIN {
+        problems.push(format!(
+            "manifest: {terrain_n} terrain entries, expected {EXPECTED_TERRAIN}"
+        ));
+    }
+    if unit_n != EXPECTED_UNITS {
+        problems.push(format!(
+            "manifest: {unit_n} unit entries, expected {EXPECTED_UNITS}"
+        ));
+    }
+    problems.extend(check_sprites(&o.data, &o.assets)?);
+
+    let total = png_bytes(&o.assets);
+    let game = png_bytes(&o.assets.join("terrain")) + png_bytes(&o.assets.join("units"));
+    let bad = rows.iter().filter(|r| r.statuses != [Status::Ok]).count();
+    let report = render(&rows, &problems, total, game);
+    if let Some(dir) = o.report.parent() {
+        fs::create_dir_all(dir).map_err(|e| e.to_string())?;
+    }
+    fs::write(&o.report, report).map_err(|e| format!("{}: {e}", o.report.display()))?;
+    eprintln!(
+        "{} files, {bad} with problems, {} other problems; report: {}",
+        rows.len(),
+        problems.len(),
+        o.report.display()
+    );
+    if bad > 0 || !problems.is_empty() {
+        return Err("asset check failed".into());
+    }
+    Ok(())
+}
+
+fn mb(bytes: u64) -> String {
+    format!("{:.1} МБ", bytes as f64 / (1024.0 * 1024.0))
+}
+
+fn render(rows: &[Row], problems: &[String], total: u64, game: u64) -> String {
+    let mut s = String::new();
+    let ok = rows.iter().filter(|r| r.statuses == [Status::Ok]).count();
+    let _ = writeln!(s, "# Отчёт по ассетам\n");
+    let _ = writeln!(
+        s,
+        "Сгенерирован `sim assets-check`. Файлов по манифесту: {}, в порядке: {ok}. PNG всего: {}, из них игровые (terrain + units): {}.\n",
+        rows.len(),
+        mb(total),
+        mb(game)
+    );
+    let _ = writeln!(
+        s,
+        "Пороги: шов — средняя разница RGB противоположных краёв > {SEAM_MAX_MEAN_DIFF}; у юнитов прозрачная рамка {UNIT_EDGE_MARGIN_PX} px. Для справки в деталях — та же метрика между соседними столбцами и строками внутри текстуры: если край близок к ней, шов, скорее всего, на глаз не виден. Модели техники визуально не оценивались.\n"
+    );
+    if problems.is_empty() {
+        let _ = writeln!(s, "Привязка `data/sprites.json`: замечаний нет.\n");
+    } else {
+        let _ = writeln!(s, "## Замечания\n");
+        for p in problems {
+            let _ = writeln!(s, "- {p}");
+        }
+        let _ = writeln!(s);
+    }
+    let _ = writeln!(
+        s,
+        "| id | файл | статус | детали |\n| --- | --- | --- | --- |"
+    );
+    for r in rows {
+        let status: Vec<String> = r.statuses.iter().map(Status::label).collect();
+        let _ = writeln!(
+            s,
+            "| {} | `{}` | {} | {} |",
+            r.id,
+            r.path,
+            status.join("; "),
+            r.notes.join("; ")
+        );
+    }
+    s
+}
