@@ -125,7 +125,7 @@ impl GameState {
         let attack_ap = self.ap.attack;
         let exploit_min = self.ap.exploit_min;
         if let Some(u) = self.units.get_mut(&id) {
-            u.lose_steps(outcome.attacker_losses, rules.morale.loss_per_step);
+            let lost = u.lose_steps(outcome.attacker_losses, rules.morale.loss_per_step);
             u.attacks_made += 1;
             u.fought = true;
             u.acted = true;
@@ -137,13 +137,15 @@ impl GameState {
                 u.ap_halves = 0;
                 u.can_move = false;
             }
+            self.charge_losses(a.side, lost, &mut events)?;
         }
         // Defender: losses, fatigue.
         if let Some(u) = self.units.get_mut(&target) {
-            u.lose_steps(outcome.defender_losses, rules.morale.loss_per_step);
+            let lost = u.lose_steps(outcome.defender_losses, rules.morale.loss_per_step);
             u.attacks_received += 1;
             u.fought = true;
             u.attacked_by.push(id);
+            self.charge_losses(d.side, lost, &mut events)?;
         }
 
         // R-COMBAT-06: retreat or extra losses.
@@ -175,8 +177,9 @@ impl GameState {
                         None => {
                             let extra = r.blocked_extra_losses.min(defender.strength);
                             if let Some(u) = self.units.get_mut(&target) {
-                                u.lose_steps(extra, rules.morale.loss_per_step);
+                                let lost = u.lose_steps(extra, rules.morale.loss_per_step);
                                 vacated = u.strength == 0;
+                                self.charge_losses(d.side, lost, &mut events)?;
                             }
                             events.push(Event::RetreatBlocked {
                                 unit: target,
@@ -200,7 +203,7 @@ impl GameState {
         }
 
         let attacker_alive = self.units.get(&id).is_some_and(|u| u.strength > 0);
-        self.remove_destroyed(&mut events);
+        self.remove_destroyed(&mut events)?;
         self.pending_advance = (vacated && attacker_alive && occupies).then_some(PendingAdvance {
             unit: id,
             hex: d.hex,
@@ -371,20 +374,21 @@ impl GameState {
             u.ap_halves = 0;
             u.can_move = false;
         }
-        if let Some(u) = self.units.get_mut(&target) {
-            u.lose_steps(losses, rules.morale.loss_per_step);
-            u.entrenchment = u.entrenchment.saturating_sub(rules.bombard.entrench_loss);
-            u.attacks_received += 1;
-            u.fought = true;
-            u.attacked_by.push(id);
-        }
         let mut events = vec![Event::Bombarded {
             unit: id,
             target,
             params,
             losses,
         }];
-        self.remove_destroyed(&mut events);
+        if let Some(u) = self.units.get_mut(&target) {
+            let lost = u.lose_steps(losses, rules.morale.loss_per_step);
+            u.entrenchment = u.entrenchment.saturating_sub(rules.bombard.entrench_loss);
+            u.attacks_received += 1;
+            u.fought = true;
+            u.attacked_by.push(id);
+            self.charge_losses(d.side, lost, &mut events)?;
+        }
+        self.remove_destroyed(&mut events)?;
         Ok(events)
     }
 }

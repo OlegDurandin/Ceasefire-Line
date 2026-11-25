@@ -105,6 +105,10 @@ pub mod scenario {
             units,
             cities: vec![],
             scheduled_income: vec![],
+            objectives: vec![],
+            key_hexes: vec![],
+            last_turn: None,
+            victory: vec![],
         }
     }
 
@@ -117,6 +121,8 @@ pub mod scenario {
             base_income: 0,
             purchase_limits: BTreeMap::new(),
             purchased: BTreeMap::new(),
+            loss_sensitivity: 1,
+            steps_lost: 0,
         }
     }
 

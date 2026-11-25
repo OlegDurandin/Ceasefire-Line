@@ -110,5 +110,12 @@
     "fast_exp_pct": 125,
     "unattached_readiness_pct": 10,
     "destroyed_nm_loss": 3
+  },
+  "national_morale": {
+    "unit_destroyed": 2,
+    "unit_destroyed_encircled": 3,
+    "steps_per_loss": 10,
+    "sudden_death_pct": 20,
+    "objective_taken_share_pct": 50
   }
 }

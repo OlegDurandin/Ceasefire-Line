@@ -5,6 +5,7 @@ mod command;
 mod economy;
 mod hq;
 mod moves;
+mod nm;
 mod phase;
 mod transfer;
 
@@ -13,7 +14,7 @@ use std::sync::Arc;
 
 use serde::{Deserialize, Serialize};
 
-pub use command::{Command, Event, SetupWarning};
+pub use command::{Command, EndReason, Event, NmReason, Outcome, SetupWarning, VictoryLevel};
 
 use crate::data::{ap_to_halves, GameData, ReadinessRules, UnitClass};
 use crate::error::RuleError;
@@ -92,11 +93,14 @@ impl Unit {
         (i32::from(self.base_readiness_pct) + fatigue - crossing).clamp(0, 100) as u8
     }
 
-    fn lose_steps(&mut self, steps: u8, morale_per_step: u8) {
-        self.strength = self.strength.saturating_sub(steps);
+    /// Returns the steps actually lost.
+    fn lose_steps(&mut self, steps: u8, morale_per_step: u8) -> u8 {
+        let lost = steps.min(self.strength);
+        self.strength -= lost;
         self.morale_pct = self
             .morale_pct
-            .saturating_sub(steps.saturating_mul(morale_per_step));
+            .saturating_sub(lost.saturating_mul(morale_per_step));
+        lost
     }
 }
 
@@ -116,6 +120,37 @@ pub struct SideState {
     /// Bought so far, destroyed ones included.
     #[serde(default)]
     pub purchased: BTreeMap<String, u32>,
+    /// R-NM-01: NM lost per `steps_per_loss` steps (1; Israel 2).
+    pub loss_sensitivity: u8,
+    /// Steps lost so far.
+    #[serde(default)]
+    pub steps_lost: u32,
+}
+
+/// R-NM-01, R-NM-02: objective city.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Objective {
+    pub hex: Hex,
+    /// NM lost by the side that loses it (5..15).
+    pub nm_value: u8,
+    /// Victory points for the side holding it at the end.
+    pub vp: i32,
+}
+
+/// R-NM-01: "+1 per turn for holding a bridgehead or key hex".
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub struct KeyHex {
+    pub hex: Hex,
+    pub side: SideId,
+    pub nm_per_turn: u8,
+}
+
+/// R-NM-02: a side wins by date if its VP margin reaches these values.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub struct VictoryThreshold {
+    pub side: SideId,
+    pub decisive: i32,
+    pub victory: i32,
 }
 
 /// R-ECO-01: a city's MPP value; income = value × owner's supply there / max.
@@ -195,6 +230,11 @@ pub struct ScenarioSetup {
     pub units: Vec<UnitSetup>,
     pub cities: Vec<CityValue>,
     pub scheduled_income: Vec<ScheduledIncome>,
+    pub objectives: Vec<Objective>,
+    pub key_hexes: Vec<KeyHex>,
+    /// R-NM-02: the game ends after this turn (ceasefire date).
+    pub last_turn: Option<u32>,
+    pub victory: Vec<VictoryThreshold>,
 }
 
 /// AP rules in half-points.
@@ -225,6 +265,12 @@ pub struct GameState {
     cities: Vec<CityValue>,
     scheduled_income: Vec<ScheduledIncome>,
     arrivals: Vec<Arrival>,
+    objectives: Vec<Objective>,
+    objective_holders: BTreeMap<Hex, Option<SideId>>,
+    key_hexes: Vec<KeyHex>,
+    last_turn: Option<u32>,
+    victory: Vec<VictoryThreshold>,
+    outcome: Option<Outcome>,
     pending_advance: Option<PendingAdvance>,
     rng: Pcg32,
 }
@@ -344,6 +390,19 @@ impl GameState {
                 return Err(invalid(format!("city {:?} is off-map", c.hex)));
             }
         }
+        for o in &setup.objectives {
+            if setup.map.cell(o.hex).is_none() {
+                return Err(invalid(format!("objective {:?} is off-map", o.hex)));
+            }
+        }
+        if setup.last_turn.is_some_and(|t| t < setup.start_turn) {
+            return Err(invalid("last_turn is before start_turn"));
+        }
+        let objective_holders = setup
+            .objectives
+            .iter()
+            .map(|o| (o.hex, setup.control.get(&o.hex).copied()))
+            .collect();
         let next_unit_id = units.len() as u32 + 1;
         let mut state = Self {
             data,
@@ -361,6 +420,12 @@ impl GameState {
             cities: setup.cities,
             scheduled_income: setup.scheduled_income,
             arrivals: Vec::new(),
+            objectives: setup.objectives,
+            objective_holders,
+            key_hexes: setup.key_hexes,
+            last_turn: setup.last_turn,
+            victory: setup.victory,
+            outcome: None,
             pending_advance: None,
             rng: Pcg32::new(setup.seed, 0),
         };
@@ -403,6 +468,9 @@ impl GameState {
 
     /// Applies a command atomically: on error the state is unchanged.
     pub fn apply(&mut self, command: Command) -> Result<Vec<Event>, RuleError> {
+        if self.outcome.is_some() {
+            return Err(RuleError::GameOver);
+        }
         let keeps_pending = matches!(command, Command::Attack { .. } | Command::Advance { .. });
         let backup = self.clone();
         let result = match command {
@@ -480,6 +548,11 @@ impl GameState {
 
     pub fn side(&self, side: SideId) -> Option<&SideState> {
         self.sides.iter().find(|s| s.id == side)
+    }
+
+    /// R-NM-02: set once the game has ended.
+    pub fn outcome(&self) -> Option<&Outcome> {
+        self.outcome.as_ref()
     }
 
     pub fn arrivals(&self) -> &[Arrival] {
@@ -584,21 +657,42 @@ impl GameState {
         events.push(Event::HexCaptured { hex, side, from });
     }
 
-    fn remove_destroyed(&mut self, events: &mut Vec<Event>) {
-        let dead: Vec<UnitId> = self
+    /// Removes units at strength 0. R-NM-01: −2 NM per unit, −3 if its hex
+    /// had no supply path (encircled); R-HQ-02 for HQs.
+    fn remove_destroyed(&mut self, events: &mut Vec<Event>) -> Result<(), RuleError> {
+        let dead: Vec<Unit> = self
             .units
             .values()
             .filter(|u| u.strength == 0)
-            .map(|u| u.id)
+            .cloned()
             .collect();
-        for id in dead {
-            let Some(unit) = self.units.remove(&id) else {
-                continue;
-            };
-            events.push(Event::UnitDestroyed { unit: id });
+        if dead.is_empty() {
+            return Ok(());
+        }
+        let mut supply = BTreeMap::new();
+        for side in dead.iter().map(|u| u.side).collect::<BTreeSet<_>>() {
+            supply.insert(side, self.hex_supply(side)?);
+        }
+        let nm = &self.data.rules.national_morale;
+        let (normal, encircled_loss) = (nm.unit_destroyed, nm.unit_destroyed_encircled);
+        for unit in dead {
+            self.units.remove(&unit.id);
+            events.push(Event::UnitDestroyed { unit: unit.id });
+            let encircled = supply.get(&unit.side).is_none_or(|m| m.get(unit.hex) == 0);
+            let loss = if encircled { encircled_loss } else { normal };
+            self.change_nm(
+                unit.side,
+                -i32::from(loss),
+                NmReason::UnitDestroyed {
+                    unit: unit.id,
+                    encircled,
+                },
+                events,
+            )?;
             if unit.hq_rating.is_some() {
-                self.hq_destroyed(&unit, events);
+                self.hq_destroyed(&unit, events)?;
             }
         }
+        Ok(())
     }
 }

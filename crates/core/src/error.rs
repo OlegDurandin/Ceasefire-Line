@@ -37,6 +37,8 @@ pub enum RuleError {
     IllegalTransfer { unit: u32, reason: TransferError },
     #[error("unit {unit} cannot be pinned to {hq}")]
     IllegalPin { unit: u32, hq: u32 },
+    #[error("the game is over")]
+    GameOver,
 }
 
 /// Why a strategic transfer is rejected (R-MOVE-05).

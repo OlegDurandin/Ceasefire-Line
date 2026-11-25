@@ -71,6 +71,7 @@ impl GameState {
             .map(|u| u.id)
             .collect();
 
+        let mut attrition = Vec::new();
         for id in ids {
             let Some(unit) = self.units.get(&id) else {
                 continue;
@@ -110,10 +111,11 @@ impl GameState {
             }
             unit.morale_pct = unit.morale_pct.min(nm).min(100);
             if unit.zero_supply_phases >= s.attrition_after_phases {
-                unit.lose_steps(s.attrition_steps, rules.morale.loss_per_step);
+                let lost = unit.lose_steps(s.attrition_steps, rules.morale.loss_per_step);
+                attrition.push(lost);
                 events.push(Event::Attrition {
                     unit: id,
-                    steps: s.attrition_steps,
+                    steps: lost,
                 });
             }
 
@@ -162,16 +164,24 @@ impl GameState {
                 ap_halves: unit.ap_halves,
             });
         }
-        self.remove_destroyed(&mut events);
+        let lost: u32 = attrition.iter().map(|&l| u32::from(l)).sum();
+        self.charge_losses(side, u8::try_from(lost).unwrap_or(u8::MAX), &mut events)?;
+        self.remove_destroyed(&mut events)?;
         Ok(events)
     }
 
-    /// R-TURN-01 step 3 (victory checks come with NM) and hand-over.
+    /// R-TURN-01 step 3: objectives, NM, victory; then hand-over.
     pub(super) fn end_phase(&mut self) -> Result<Vec<Event>, RuleError> {
-        let mut events = vec![Event::PhaseEnded {
+        let mut events = Vec::new();
+        self.end_of_phase_checks(&mut events)?;
+        events.push(Event::PhaseEnded {
             turn: self.turn,
             side: self.active_side(),
-        }];
+        });
+        if let Some(outcome) = self.outcome.clone() {
+            events.push(Event::GameOver { outcome });
+            return Ok(events);
+        }
         self.active += 1;
         if self.active == self.sides.len() {
             self.active = 0;

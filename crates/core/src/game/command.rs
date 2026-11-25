@@ -38,6 +38,46 @@ pub enum Command {
     EndPhase,
 }
 
+/// R-NM-01: why national morale changed.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(tag = "kind", rename_all = "snake_case")]
+pub enum NmReason {
+    ObjectiveLost { hex: Hex },
+    ObjectiveTaken { hex: Hex },
+    UnitDestroyed { unit: UnitId, encircled: bool },
+    StepsLost { total: u32 },
+    KeyHexHeld { hex: Hex },
+    HqDestroyed { hq: UnitId },
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum VictoryLevel {
+    Decisive,
+    Victory,
+    Draw,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum EndReason {
+    /// R-NM-02: a side's NM fell to the sudden-death threshold.
+    SuddenDeath,
+    /// R-NM-02: last turn played; decided by victory points.
+    Date,
+}
+
+/// R-NM-02: result of the game.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Outcome {
+    /// `None` for a draw.
+    pub winner: Option<SideId>,
+    pub level: VictoryLevel,
+    pub reason: EndReason,
+    /// Victory points per side: objectives held + NM.
+    pub vp: Vec<(SideId, i32)>,
+}
+
 /// Scenario problems that do not stop loading.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -153,11 +193,26 @@ pub enum Event {
     HqAttached {
         links: Vec<(UnitId, UnitId)>,
     },
-    /// R-HQ-02.
+    /// R-HQ-02 (its NM loss comes as a `NationalMorale` event).
     HqDestroyed {
         hq: UnitId,
-        nm_loss: u8,
-        national_morale_pct: u8,
+    },
+    /// R-NM-01.
+    NationalMorale {
+        side: SideId,
+        change: i32,
+        value: u8,
+        reason: NmReason,
+    },
+    /// R-NM-01: checked at the end of each phase.
+    ObjectiveChanged {
+        hex: Hex,
+        from: Option<SideId>,
+        to: Option<SideId>,
+    },
+    /// R-NM-02.
+    GameOver {
+        outcome: Outcome,
     },
     Transferred {
         unit: UnitId,

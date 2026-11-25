@@ -127,6 +127,20 @@ pub struct ExperienceRules {
     pub max: u16,
 }
 
+/// R-NM-01, R-NM-02.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct NationalMoraleRules {
+    pub unit_destroyed: u8,
+    pub unit_destroyed_encircled: u8,
+    /// NM drops by the side's sensitivity for every this many steps lost.
+    pub steps_per_loss: u32,
+    /// Sudden death at NM at or below this.
+    pub sudden_death_pct: u8,
+    /// New owner of an objective gains this share of its NM value (floor).
+    pub objective_taken_share_pct: u8,
+}
+
 /// R-HQ-01, R-HQ-02.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -208,6 +222,7 @@ pub struct Rules {
     pub unit: UnitRules,
     pub economy: EconomyRules,
     pub hq: HqRules,
+    pub national_morale: NationalMoraleRules,
 }
 
 impl Rules {
@@ -252,6 +267,11 @@ impl Rules {
         if bands.windows(2).any(|w| w[0].min_supply <= w[1].min_supply) {
             return Err(RuleError::InvalidData(
                 "economy: reinforce_bands must be sorted by min_supply, descending".into(),
+            ));
+        }
+        if self.national_morale.steps_per_loss == 0 {
+            return Err(RuleError::InvalidData(
+                "national_morale: steps_per_loss must be > 0".into(),
             ));
         }
         if self.supply.captured_source_divisor == 0 {

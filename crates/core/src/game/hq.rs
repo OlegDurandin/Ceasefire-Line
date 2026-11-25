@@ -8,7 +8,7 @@ use crate::hex::Hex;
 use crate::scale::range_in_hexes;
 use crate::side::SideId;
 
-use super::{Event, GameState, Unit, UnitId};
+use super::{Event, GameState, NmReason, Unit, UnitId};
 
 struct HqSlot {
     id: UnitId,
@@ -147,13 +147,11 @@ impl GameState {
     }
 
     /// R-HQ-02: NM −3 for the owner; its units stay unattached for one phase.
-    pub(super) fn hq_destroyed(&mut self, hq: &Unit, events: &mut Vec<Event>) {
-        let loss = self.data.rules.hq.destroyed_nm_loss;
-        let mut nm = 0;
-        if let Ok(side) = self.side_state_mut(hq.side) {
-            side.national_morale_pct = side.national_morale_pct.saturating_sub(loss);
-            nm = side.national_morale_pct;
-        }
+    pub(super) fn hq_destroyed(
+        &mut self,
+        hq: &Unit,
+        events: &mut Vec<Event>,
+    ) -> Result<(), RuleError> {
         for u in self.units.values_mut() {
             if u.attached_hq == Some(hq.id) {
                 u.attached_hq = None;
@@ -163,11 +161,14 @@ impl GameState {
                 u.pinned_hq = None;
             }
         }
-        events.push(Event::HqDestroyed {
-            hq: hq.id,
-            nm_loss: loss,
-            national_morale_pct: nm,
-        });
+        events.push(Event::HqDestroyed { hq: hq.id });
+        let loss = self.data.rules.hq.destroyed_nm_loss;
+        self.change_nm(
+            hq.side,
+            -i32::from(loss),
+            NmReason::HqDestroyed { hq: hq.id },
+            events,
+        )
     }
 
     /// R-HQ-01: optional manual pin; takes effect at the next own phase start.
