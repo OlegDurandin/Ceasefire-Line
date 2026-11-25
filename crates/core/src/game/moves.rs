@@ -189,20 +189,16 @@ impl GameState {
         Ok(events)
     }
 
-    /// R-MOVE-01..03: hexes the unit can end its move in, with AP cost (half-points).
-    pub fn reachable(&self, id: UnitId) -> Result<BTreeMap<Hex, u32>, RuleError> {
-        let unit = self.get_unit(id)?;
-        let mut result = BTreeMap::new();
-        if !unit.can_move || unit.side != self.active_side() {
-            return Ok(result);
-        }
+    /// Dijkstra over legal steps: best cost and predecessor per hex. Boat
+    /// crossings are terminal and cost all remaining AP.
+    fn search(&self, unit: &Unit) -> Result<BTreeMap<Hex, (u32, Hex)>, RuleError> {
         let view = MoveView::new(self, unit);
         let start = unit.hex;
-        let mut best: BTreeMap<Hex, u32> = BTreeMap::from([(start, 0)]);
+        let mut best: BTreeMap<Hex, (u32, Hex)> = BTreeMap::from([(start, (0, start))]);
         let mut heap = BinaryHeap::from([Reverse((0u32, start))]);
-        let mut boats = BTreeSet::new();
+        let mut boats: BTreeMap<Hex, Hex> = BTreeMap::new();
         while let Some(Reverse((cost, hex))) = heap.pop() {
-            if best.get(&hex).is_some_and(|&b| cost > b) {
+            if best.get(&hex).is_some_and(|&(b, _)| cost > b) {
                 continue;
             }
             if hex != start && view.zoc.contains(&hex) {
@@ -218,9 +214,8 @@ impl GameState {
                     continue;
                 }
                 if step.boat {
-                    // Terminal: needs minimum AP left, then costs everything.
                     if cost.saturating_add(self.ap.min) <= unit.ap_halves {
-                        boats.insert(next);
+                        boats.entry(next).or_insert(hex);
                     }
                     continue;
                 }
@@ -228,20 +223,51 @@ impl GameState {
                 if next_cost > unit.ap_halves {
                     continue;
                 }
-                if best.get(&next).is_none_or(|&b| next_cost < b) {
-                    best.insert(next, next_cost);
+                if best.get(&next).is_none_or(|&(b, _)| next_cost < b) {
+                    best.insert(next, (next_cost, hex));
                     heap.push(Reverse((next_cost, next)));
                 }
             }
         }
-        for hex in boats {
-            best.entry(hex).or_insert(unit.ap_halves);
+        for (hex, from) in boats {
+            best.entry(hex).or_insert((unit.ap_halves, from));
         }
-        for (hex, cost) in best {
-            if hex != start && view.can_end_at(hex) {
-                result.insert(hex, cost);
+        Ok(best)
+    }
+
+    /// R-MOVE-01..03: hexes the unit can end its move in, with AP cost (half-points).
+    pub fn reachable(&self, id: UnitId) -> Result<BTreeMap<Hex, u32>, RuleError> {
+        let unit = self.get_unit(id)?;
+        if !unit.can_move || unit.side != self.active_side() {
+            return Ok(BTreeMap::new());
+        }
+        let view = MoveView::new(self, unit);
+        Ok(self
+            .search(unit)?
+            .into_iter()
+            .filter(|&(hex, _)| hex != unit.hex && view.can_end_at(hex))
+            .map(|(hex, (cost, _))| (hex, cost))
+            .collect())
+    }
+
+    /// Cheapest legal path to `to` (hexes after the start), ready for
+    /// [`super::Command::Move`]; `None` if `to` is not reachable.
+    pub fn path_to(&self, id: UnitId, to: Hex) -> Result<Option<Vec<Hex>>, RuleError> {
+        if !self.reachable(id)?.contains_key(&to) {
+            return Ok(None);
+        }
+        let unit = self.get_unit(id)?;
+        let best = self.search(unit)?;
+        let mut path = vec![to];
+        let mut cur = to;
+        while let Some(&(_, prev)) = best.get(&cur) {
+            if prev == unit.hex {
+                break;
             }
+            path.push(prev);
+            cur = prev;
         }
-        Ok(result)
+        path.reverse();
+        Ok(Some(path))
     }
 }

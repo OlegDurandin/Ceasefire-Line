@@ -1,0 +1,183 @@
+{
+  "_comment": "Голаны-67 (учебный), 9–10 июня 1967. Тестовый сценарий этапа 1: местность грубая, составы условные.",
+  "id": "golan67",
+  "hex_km": 5,
+  "supply_decay_ap": 4,
+  "seed": 1967,
+  "start_turn": 1,
+  "last_turn": 4,
+  "sides": [
+    {
+      "id": 0,
+      "key": "isr",
+      "tech": {},
+      "national_morale_pct": 85,
+      "mpp": 40,
+      "base_income": 20,
+      "loss_sensitivity": 2,
+      "purchase_limits": {}
+    },
+    {
+      "id": 1,
+      "key": "syr",
+      "tech": {},
+      "national_morale_pct": 70,
+      "mpp": 30,
+      "base_income": 15,
+      "loss_sensitivity": 1,
+      "purchase_limits": {}
+    }
+  ],
+  "sources": [
+    {
+      "hex": [0, 13],
+      "value": 10
+    },
+    {
+      "hex": [1, 4],
+      "value": 8
+    },
+    {
+      "hex": [19, 6],
+      "value": 10
+    },
+    {
+      "hex": [11, 6],
+      "value": 6
+    }
+  ],
+  "cities": [
+    {
+      "hex": [11, 6],
+      "value": 5
+    },
+    {
+      "hex": [12, 2],
+      "value": 3
+    }
+  ],
+  "objectives": [
+    {
+      "hex": [11, 6],
+      "nm_value": 10,
+      "vp": 20
+    },
+    {
+      "hex": [12, 2],
+      "nm_value": 5,
+      "vp": 10
+    }
+  ],
+  "key_hexes": [],
+  "victory": [
+    {
+      "side": 0,
+      "decisive": 35,
+      "victory": 15
+    },
+    {
+      "side": 1,
+      "decisive": 30,
+      "victory": 10
+    }
+  ],
+  "scheduled_income": [],
+  "units": [
+    {
+      "class": "tank",
+      "side": 0,
+      "hex": [2, 6],
+      "exp": 100,
+      "formation": "armored_div",
+      "morale_pct": 85,
+      "nation": "israel"
+    },
+    {
+      "class": "tank",
+      "side": 0,
+      "hex": [2, 10],
+      "formation": "armored_div",
+      "morale_pct": 85,
+      "nation": "israel"
+    },
+    {
+      "class": "mech",
+      "side": 0,
+      "hex": [3, 12],
+      "formation": "armored_div",
+      "morale_pct": 85,
+      "nation": "israel"
+    },
+    {
+      "class": "infantry",
+      "side": 0,
+      "hex": [3, 4],
+      "exp": 100,
+      "formation": "infantry_bde",
+      "morale_pct": 85,
+      "nation": "israel"
+    },
+    {
+      "class": "commando",
+      "side": 0,
+      "hex": [1, 8],
+      "morale_pct": 85,
+      "nation": "israel"
+    },
+    {
+      "class": "hq",
+      "side": 0,
+      "hex": [1, 7],
+      "hq_rating": 7,
+      "formation": "armored_div",
+      "morale_pct": 85,
+      "nation": "israel"
+    },
+    {
+      "class": "infantry",
+      "side": 1,
+      "hex": [4, 4],
+      "entrenchment": 4,
+      "morale_pct": 70,
+      "nation": "syria"
+    },
+    {
+      "class": "infantry",
+      "side": 1,
+      "hex": [4, 8],
+      "entrenchment": 4,
+      "morale_pct": 70,
+      "nation": "syria"
+    },
+    {
+      "class": "infantry",
+      "side": 1,
+      "hex": [6, 12],
+      "entrenchment": 4,
+      "morale_pct": 70,
+      "nation": "syria"
+    },
+    {
+      "class": "tank",
+      "side": 1,
+      "hex": [10, 6],
+      "morale_pct": 70,
+      "nation": "syria"
+    },
+    {
+      "class": "artillery",
+      "side": 1,
+      "hex": [8, 9],
+      "morale_pct": 70,
+      "nation": "syria"
+    },
+    {
+      "class": "hq",
+      "side": 1,
+      "hex": [12, 7],
+      "hq_rating": 5,
+      "morale_pct": 70,
+      "nation": "syria"
+    }
+  ]
+}

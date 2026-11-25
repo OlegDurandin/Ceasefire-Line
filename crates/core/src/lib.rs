@@ -15,6 +15,7 @@ pub mod movement;
 pub mod prob;
 pub mod rng;
 pub mod scale;
+pub mod scenario;
 pub mod side;
 pub mod supply;
 pub mod tech;
