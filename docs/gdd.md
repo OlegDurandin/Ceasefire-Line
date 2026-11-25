@@ -593,7 +593,7 @@ NM измеряется от 0 до 100%, стартовое значение з
 
 ### Карта из данных рельефа (R-UI-01)
 
-1. **Импорт.** Рельеф из открытой цифровой модели высот (например, SRTM), дороги, города и вода из OpenStreetMap. Лицензия ODbL требует указать источник в титрах. Исторические дороги 1967–1973 годов правятся вручную в редакторе.
+1. **Импорт.** Рельеф — Copernicus DEM GLO-30 (модель поверхности, 30 м; открытый бакет AWS, Cloud Optimized GeoTIFF). Дороги, города и вода — из OpenStreetMap (выгрузки Geofabrik: Израиль и Палестина, Сирия, Ливан, Иордания); лицензия ODbL требует указать источник в титрах. Для Copernicus в титрах и в LICENSE-DATA.md карты обязательны уведомление «produced using Copernicus WorldDEM-30 © DLR e.V. 2010-2014 and © Airbus Defence and Space GmbH 2014-2018 provided under COPERNICUS by the European Union and ESA; all rights reserved» и фраза «The organisations in charge of the Copernicus programme by law or by delegation do not incur any liability for any use of the Copernicus WorldDEM-30»; впечатления одобрения игры программой Copernicus не создаём. Исторические дороги 1967–1973 годов правятся вручную в редакторе.
 2. **Автоклассификация.** Тип местности гекса определяется по уклону, высоте и покрытию, затем правится кистью в редакторе.
 3. **Художественный слой.** Теневая отмывка рельефа (hillshade) плюс текстуры пустыни, дюн, солончаков и оазисов по маскам типов местности. Поверх можно дорисовать слой художника. Запекается в тайлы.
 
