@@ -4,7 +4,7 @@ use crate::error::{EconomyError, RuleError};
 use crate::side::SideId;
 use crate::supply::SupplyMap;
 
-use super::{Arrival, Event, GameState, Unit, UnitId};
+use super::{Arrival, Event, GameState, Unit, UnitId, UnitSetup};
 
 fn refuse(reason: EconomyError) -> RuleError {
     RuleError::IllegalEconomy(reason)
@@ -182,40 +182,20 @@ impl GameState {
             };
             let id = UnitId(self.next_unit_id);
             self.next_unit_id += 1;
-            self.units.insert(
-                id,
-                Unit {
-                    id,
-                    class: arrival.class.clone(),
-                    side,
-                    hex,
-                    strength: max_strength,
-                    morale_pct: nm.min(100),
-                    exp: 0,
-                    entrenchment: 0,
-                    supply: 0,
-                    zero_supply_phases: 0,
-                    base_readiness_pct: 0,
-                    attacks_made: 0,
-                    attacks_received: 0,
-                    ap_halves: 0,
-                    strikes_left: 0,
-                    can_move: false,
-                    started_in_zoc: false,
-                    moved: false,
-                    fought: false,
-                    acted: false,
-                    reinforced_steps: 0,
-                    hq_rating: None,
-                    formation: None,
-                    nation: None,
-                    pinned_hq: None,
-                    attached_hq: None,
-                    hq_lost: false,
-                    attacked_by: Vec::new(),
-                    crossing_penalty_pct: 0,
-                },
-            );
+            let setup = UnitSetup {
+                class: arrival.class.clone(),
+                side,
+                hex,
+                strength: max_strength,
+                morale_pct: nm,
+                exp: 0,
+                entrenchment: 0,
+                supply: None,
+                hq_rating: None,
+                formation: None,
+                nation: None,
+            };
+            self.units.insert(id, Unit::from_setup(id, &setup, hex));
             events.push(Event::UnitArrived {
                 unit: id,
                 class: arrival.class,

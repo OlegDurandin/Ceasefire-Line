@@ -44,15 +44,32 @@ pub enum Command {
 }
 
 /// R-NM-01: why national morale changed.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum NmReason {
-    ObjectiveLost { hex: Hex },
-    ObjectiveTaken { hex: Hex },
-    UnitDestroyed { unit: UnitId, encircled: bool },
-    StepsLost { total: u32 },
-    KeyHexHeld { hex: Hex },
-    HqDestroyed { hq: UnitId },
+    ObjectiveLost {
+        hex: Hex,
+    },
+    ObjectiveTaken {
+        hex: Hex,
+    },
+    UnitDestroyed {
+        unit: UnitId,
+        encircled: bool,
+    },
+    StepsLost {
+        total: u32,
+    },
+    KeyHexHeld {
+        hex: Hex,
+    },
+    HqDestroyed {
+        hq: UnitId,
+    },
+    /// R-EVT-01.
+    ScenarioEvent {
+        id: String,
+    },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -250,6 +267,23 @@ pub enum Event {
         b: Hex,
         chance: f64,
         destroyed: bool,
+    },
+    /// R-EVT-01.
+    ScenarioEventFired {
+        id: String,
+    },
+    MppChanged {
+        side: SideId,
+        amount: i32,
+        total: u32,
+    },
+    /// R-EVT-01: the ceasefire (last turn) moved.
+    CeasefireMoved {
+        last_turn: u32,
+    },
+    /// Localisation key of a message for the players.
+    Message {
+        key: String,
     },
     PhaseEnded {
         turn: u32,

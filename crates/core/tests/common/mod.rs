@@ -109,6 +109,7 @@ pub mod scenario {
             key_hexes: vec![],
             last_turn: None,
             victory: vec![],
+            events: vec![],
         }
     }
 

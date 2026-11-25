@@ -1,0 +1,188 @@
+//! R-EVT-01: scenario events (trigger → conditions → effects), checked at
+//! the start of every phase (R-TURN-01 step 1). Each event fires once.
+
+use serde::{Deserialize, Serialize};
+
+use crate::error::RuleError;
+use crate::hex::Hex;
+use crate::side::SideId;
+
+use super::{Event, GameState, NmReason, Unit, UnitId, UnitSetup};
+
+/// What an event waits for, and what its conditions test.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(tag = "kind", rename_all = "snake_case")]
+pub enum Predicate {
+    /// Turn number reached.
+    Turn { turn: u32 },
+    /// R-MOVE-06: hex controlled by `side`.
+    HexControl { hex: Hex, side: SideId },
+    /// R-NM-01: NM of `side` at or below `pct`.
+    NmAtMost { side: SideId, pct: u8 },
+    /// Steps lost by `side` so far.
+    LossesAtLeast { side: SideId, steps: u32 },
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(tag = "kind", rename_all = "snake_case")]
+pub enum Effect {
+    /// Units appear; an occupied hex falls back to the nearest free own hex.
+    Reinforcements {
+        units: Vec<UnitSetup>,
+    },
+    Mpp {
+        side: SideId,
+        amount: i32,
+    },
+    Nm {
+        side: SideId,
+        change: i32,
+    },
+    /// R-EVT-01: the ceasefire date moves (negative = earlier).
+    ShiftLastTurn {
+        turns: i32,
+    },
+    SetLastTurn {
+        turn: u32,
+    },
+    /// Localisation key of a message shown to the players.
+    Message {
+        key: String,
+    },
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ScenarioEvent {
+    pub id: String,
+    /// Only checked at the start of this side's phase; `None` = every phase.
+    pub phase_of: Option<SideId>,
+    pub trigger: Predicate,
+    pub conditions: Vec<Predicate>,
+    pub effects: Vec<Effect>,
+}
+
+impl GameState {
+    fn holds(&self, p: &Predicate) -> bool {
+        match p {
+            Predicate::Turn { turn } => self.turn >= *turn,
+            Predicate::HexControl { hex, side } => self.control.get(hex) == Some(side),
+            Predicate::NmAtMost { side, pct } => self
+                .side(*side)
+                .is_some_and(|s| s.national_morale_pct <= *pct),
+            Predicate::LossesAtLeast { side, steps } => {
+                self.side(*side).is_some_and(|s| s.steps_lost >= *steps)
+            }
+        }
+    }
+
+    /// R-EVT-01, at the start of the active side's phase, in file order.
+    pub(super) fn run_events(&mut self, events: &mut Vec<Event>) -> Result<(), RuleError> {
+        let side = self.active_side();
+        let due: Vec<ScenarioEvent> = self
+            .events
+            .iter()
+            .filter(|e| !self.fired_events.contains(&e.id))
+            .filter(|e| e.phase_of.is_none_or(|s| s == side))
+            .filter(|e| self.holds(&e.trigger) && e.conditions.iter().all(|c| self.holds(c)))
+            .cloned()
+            .collect();
+        for e in due {
+            self.fired_events.insert(e.id.clone());
+            events.push(Event::ScenarioEventFired { id: e.id.clone() });
+            for effect in &e.effects {
+                self.apply_effect(&e.id, effect, events)?;
+            }
+        }
+        Ok(())
+    }
+
+    fn apply_effect(
+        &mut self,
+        event_id: &str,
+        effect: &Effect,
+        events: &mut Vec<Event>,
+    ) -> Result<(), RuleError> {
+        match effect {
+            Effect::Reinforcements { units } => {
+                for u in units {
+                    self.place_reinforcement(u, events)?;
+                }
+            }
+            Effect::Mpp { side, amount } => {
+                let s = self.side_state_mut(*side)?;
+                s.mpp = s.mpp.saturating_add_signed(*amount);
+                let total = s.mpp;
+                events.push(Event::MppChanged {
+                    side: *side,
+                    amount: *amount,
+                    total,
+                });
+            }
+            Effect::Nm { side, change } => {
+                self.change_nm(
+                    *side,
+                    *change,
+                    NmReason::ScenarioEvent {
+                        id: event_id.to_owned(),
+                    },
+                    events,
+                )?;
+            }
+            Effect::ShiftLastTurn { turns } => {
+                if let Some(last) = self.last_turn {
+                    let new = last.saturating_add_signed(*turns).max(self.turn);
+                    self.set_last_turn(new, events);
+                }
+            }
+            Effect::SetLastTurn { turn } => self.set_last_turn((*turn).max(self.turn), events),
+            Effect::Message { key } => events.push(Event::Message { key: key.clone() }),
+        }
+        Ok(())
+    }
+
+    fn set_last_turn(&mut self, turn: u32, events: &mut Vec<Event>) {
+        self.last_turn = Some(turn);
+        events.push(Event::CeasefireMoved { last_turn: turn });
+    }
+
+    /// The requested hex if free, else the nearest free hex the side controls
+    /// (ties: lower (q, r)). No room at all is a data error.
+    fn place_reinforcement(
+        &mut self,
+        u: &UnitSetup,
+        events: &mut Vec<Event>,
+    ) -> Result<(), RuleError> {
+        let class = self.data.units.get(&u.class)?;
+        if !class.target_class.is_ground() {
+            return Err(RuleError::Unsupported(format!(
+                "`{}`: air and naval reinforcements",
+                u.class
+            )));
+        }
+        let occupied = self.occupancy();
+        let free = |h: &Hex| self.map.cell(*h).is_some() && !occupied.contains_key(h);
+        let hex = if free(&u.hex) {
+            u.hex
+        } else {
+            self.control
+                .iter()
+                .filter(|(h, s)| **s == u.side && free(h))
+                .map(|(h, _)| *h)
+                .min_by_key(|h| (h.distance(u.hex), *h))
+                .ok_or_else(|| {
+                    RuleError::InvalidData(format!("no room for reinforcement `{}`", u.class))
+                })?
+        };
+        let id = UnitId(self.next_unit_id);
+        self.next_unit_id += 1;
+        let mut unit = Unit::from_setup(id, u, hex);
+        unit.supply = u.supply.unwrap_or(0);
+        self.units.insert(id, unit);
+        events.push(Event::UnitArrived {
+            unit: id,
+            class: u.class.clone(),
+            hex,
+        });
+        Ok(())
+    }
+}

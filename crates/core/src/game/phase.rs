@@ -24,6 +24,12 @@ impl GameState {
             night,
         }];
 
+        // R-TURN-01 step 1 starts with events (R-EVT-01).
+        self.run_events(&mut events)?;
+        if self.outcome.is_some() {
+            return Ok(events);
+        }
+
         // R-COMBAT-06: "attacked this phase" is per phase, for both sides.
         for u in self.units.values_mut() {
             u.attacked_by.clear();

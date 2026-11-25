@@ -11,13 +11,18 @@ use ceasefire_core::scenario::{load_scenario, validate, ScenarioIssue};
 
 const SCENARIO: &str = include_str!("../../../data/scenarios/golan67/scenario.json");
 const MAP: &str = include_str!("../../../data/scenarios/golan67/map.json");
+const EVENTS: &str = include_str!("../../../data/scenarios/golan67/events.json");
+const LOCALE_RU: &str = include_str!("../../../data/locale/ru.json");
 
 fn load() -> (
     Arc<ceasefire_core::data::GameData>,
     ceasefire_core::game::ScenarioSetup,
 ) {
     let data = Arc::new(common::data());
-    (data, load_scenario(SCENARIO, MAP).expect("scenario parses"))
+    (
+        data,
+        load_scenario(SCENARIO, MAP, Some(EVENTS)).expect("scenario parses"),
+    )
 }
 
 #[test]
@@ -26,6 +31,16 @@ fn golan67_loads_and_validates() {
     assert_eq!(setup.hex_km, Some(5.0));
     assert_eq!(setup.map.hexes().count(), 20 * 16);
     assert_eq!(validate(&data, &setup), vec![]);
+    assert_eq!(setup.events.len(), 3);
+    // Every message key used by the scenario has a Russian string.
+    let ru: std::collections::BTreeMap<String, String> = serde_json::from_str(LOCALE_RU).unwrap();
+    for e in &setup.events {
+        for effect in &e.effects {
+            if let ceasefire_core::game::Effect::Message { key } = effect {
+                assert!(ru.contains_key(key), "missing ru string for {key}");
+            }
+        }
+    }
     let (_, events) = GameState::new(data, setup).unwrap();
     assert!(!events
         .iter()

@@ -11,8 +11,8 @@ use serde::Deserialize;
 use crate::data::{GameData, TargetClass, UnitTag};
 use crate::error::RuleError;
 use crate::game::{
-    CityValue, KeyHex, Objective, ScenarioSetup, ScheduledIncome, SideState, UnitSetup,
-    VictoryThreshold,
+    CityValue, Effect, KeyHex, Objective, Predicate, ScenarioEvent, ScenarioSetup, ScheduledIncome,
+    SideState, UnitSetup, VictoryThreshold,
 };
 use crate::hex::Hex;
 use crate::map::{HexCell, HexMap};
@@ -193,6 +193,119 @@ fn first_turn() -> u32 {
     1
 }
 
+fn unit_setup(u: UnitFile) -> UnitSetup {
+    UnitSetup {
+        class: u.class,
+        side: SideId(u.side),
+        hex: offset_to_axial(u.hex),
+        strength: u.strength,
+        morale_pct: u.morale_pct,
+        exp: u.exp,
+        entrenchment: u.entrenchment,
+        supply: u.supply,
+        hq_rating: u.hq_rating,
+        formation: u.formation,
+        nation: u.nation,
+    }
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
+enum PredicateFile {
+    Turn { turn: u32 },
+    HexControl { hex: [i32; 2], side: u8 },
+    NmAtMost { side: u8, pct: u8 },
+    LossesAtLeast { side: u8, steps: u32 },
+}
+
+impl From<PredicateFile> for Predicate {
+    fn from(p: PredicateFile) -> Self {
+        match p {
+            PredicateFile::Turn { turn } => Predicate::Turn { turn },
+            PredicateFile::HexControl { hex, side } => Predicate::HexControl {
+                hex: offset_to_axial(hex),
+                side: SideId(side),
+            },
+            PredicateFile::NmAtMost { side, pct } => Predicate::NmAtMost {
+                side: SideId(side),
+                pct,
+            },
+            PredicateFile::LossesAtLeast { side, steps } => Predicate::LossesAtLeast {
+                side: SideId(side),
+                steps,
+            },
+        }
+    }
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
+enum EffectFile {
+    Reinforcements { units: Vec<UnitFile> },
+    Mpp { side: u8, amount: i32 },
+    Nm { side: u8, change: i32 },
+    ShiftLastTurn { turns: i32 },
+    SetLastTurn { turn: u32 },
+    Message { key: String },
+}
+
+impl From<EffectFile> for Effect {
+    fn from(e: EffectFile) -> Self {
+        match e {
+            EffectFile::Reinforcements { units } => Effect::Reinforcements {
+                units: units.into_iter().map(unit_setup).collect(),
+            },
+            EffectFile::Mpp { side, amount } => Effect::Mpp {
+                side: SideId(side),
+                amount,
+            },
+            EffectFile::Nm { side, change } => Effect::Nm {
+                side: SideId(side),
+                change,
+            },
+            EffectFile::ShiftLastTurn { turns } => Effect::ShiftLastTurn { turns },
+            EffectFile::SetLastTurn { turn } => Effect::SetLastTurn { turn },
+            EffectFile::Message { key } => Effect::Message { key },
+        }
+    }
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct EventFile {
+    id: String,
+    #[serde(default)]
+    phase_of: Option<u8>,
+    trigger: PredicateFile,
+    #[serde(default)]
+    conditions: Vec<PredicateFile>,
+    effects: Vec<EffectFile>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct EventsFile {
+    #[serde(default, rename = "_comment")]
+    _comment: Option<String>,
+    events: Vec<EventFile>,
+}
+
+/// R-EVT-01: `events.json`.
+fn parse_events(json: &str) -> Result<Vec<ScenarioEvent>, RuleError> {
+    let file: EventsFile = parse(json, "events.json")?;
+    Ok(file
+        .events
+        .into_iter()
+        .map(|e| ScenarioEvent {
+            id: e.id,
+            phase_of: e.phase_of.map(SideId),
+            trigger: e.trigger.into(),
+            conditions: e.conditions.into_iter().map(Into::into).collect(),
+            effects: e.effects.into_iter().map(Into::into).collect(),
+        })
+        .collect())
+}
+
 fn parse_map(json: &str) -> Result<(HexMap, BTreeMap<Hex, SideId>), RuleError> {
     let file: MapFile = parse(json, "map.json")?;
     if file.terrain.len() != file.height || file.control.len() != file.height {
@@ -247,8 +360,13 @@ fn parse_map(json: &str) -> Result<(HexMap, BTreeMap<Hex, SideId>), RuleError> {
     Ok((map, control))
 }
 
-/// Builds a [`ScenarioSetup`] from `scenario.json` and `map.json` texts.
-pub fn load_scenario(scenario_json: &str, map_json: &str) -> Result<ScenarioSetup, RuleError> {
+/// Builds a [`ScenarioSetup`] from `scenario.json`, `map.json` and the
+/// optional `events.json` texts.
+pub fn load_scenario(
+    scenario_json: &str,
+    map_json: &str,
+    events_json: Option<&str>,
+) -> Result<ScenarioSetup, RuleError> {
     let file: ScenarioFile = parse(scenario_json, "scenario.json")?;
     let (map, control) = parse_map(map_json)?;
     let hex = offset_to_axial;
@@ -286,23 +404,7 @@ pub fn load_scenario(scenario_json: &str, map_json: &str) -> Result<ScenarioSetu
                 })
             })
             .collect::<Result<_, RuleError>>()?,
-        units: file
-            .units
-            .into_iter()
-            .map(|u| UnitSetup {
-                class: u.class,
-                side: SideId(u.side),
-                hex: hex(u.hex),
-                strength: u.strength,
-                morale_pct: u.morale_pct,
-                exp: u.exp,
-                entrenchment: u.entrenchment,
-                supply: u.supply,
-                hq_rating: u.hq_rating,
-                formation: u.formation,
-                nation: u.nation,
-            })
-            .collect(),
+        units: file.units.into_iter().map(unit_setup).collect(),
         cities: file
             .cities
             .iter()
@@ -349,6 +451,10 @@ pub fn load_scenario(scenario_json: &str, map_json: &str) -> Result<ScenarioSetu
                 victory: v.victory,
             })
             .collect(),
+        events: events_json
+            .map(parse_events)
+            .transpose()?
+            .unwrap_or_default(),
     })
 }
 

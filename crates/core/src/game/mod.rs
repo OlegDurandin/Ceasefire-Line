@@ -4,6 +4,7 @@ mod attack;
 mod bridge;
 mod command;
 mod economy;
+mod events;
 mod hq;
 mod moves;
 mod nm;
@@ -16,6 +17,7 @@ use std::sync::Arc;
 use serde::{Deserialize, Serialize};
 
 pub use command::{Command, EndReason, Event, NmReason, Outcome, SetupWarning, VictoryLevel};
+pub use events::{Effect, Predicate, ScenarioEvent};
 
 use crate::data::{ap_to_halves, GameData, ReadinessRules, UnitClass};
 use crate::error::RuleError;
@@ -83,6 +85,42 @@ pub struct Unit {
 }
 
 impl Unit {
+    /// A fresh unit from scenario data, placed at `hex`; phase-start refresh
+    /// fills in supply, readiness and AP.
+    pub fn from_setup(id: UnitId, u: &UnitSetup, hex: Hex) -> Self {
+        Self {
+            id,
+            class: u.class.clone(),
+            side: u.side,
+            hex,
+            strength: u.strength,
+            morale_pct: u.morale_pct.min(100),
+            exp: u.exp,
+            entrenchment: u.entrenchment,
+            supply: 0,
+            zero_supply_phases: 0,
+            base_readiness_pct: 0,
+            attacks_made: 0,
+            attacks_received: 0,
+            ap_halves: 0,
+            strikes_left: 0,
+            can_move: false,
+            started_in_zoc: false,
+            moved: false,
+            fought: false,
+            acted: false,
+            reinforced_steps: 0,
+            hq_rating: u.hq_rating,
+            formation: u.formation.clone(),
+            nation: u.nation.clone(),
+            pinned_hq: None,
+            attached_hq: None,
+            hq_lost: false,
+            attacked_by: Vec::new(),
+            crossing_penalty_pct: 0,
+        }
+    }
+
     pub fn exp_stars(&self) -> u8 {
         u8::try_from(self.exp / 100).unwrap_or(u8::MAX)
     }
@@ -204,7 +242,7 @@ pub struct PendingAdvance {
     pub by_boat: bool,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct UnitSetup {
     pub class: String,
     pub side: SideId,
@@ -245,6 +283,8 @@ pub struct ScenarioSetup {
     /// R-NM-02: the game ends after this turn (ceasefire date).
     pub last_turn: Option<u32>,
     pub victory: Vec<VictoryThreshold>,
+    /// R-EVT-01.
+    pub events: Vec<ScenarioEvent>,
 }
 
 /// AP rules in half-points.
@@ -281,6 +321,8 @@ pub struct GameState {
     last_turn: Option<u32>,
     victory: Vec<VictoryThreshold>,
     outcome: Option<Outcome>,
+    events: Vec<ScenarioEvent>,
+    fired_events: BTreeSet<String>,
     pending_bridges: Vec<PendingBridge>,
     pending_advance: Option<PendingAdvance>,
     rng: Pcg32,
@@ -360,40 +402,7 @@ impl GameState {
             }
             let id = UnitId(i as u32 + 1);
             supply_overrides.push((id, u.supply));
-            units.insert(
-                id,
-                Unit {
-                    id,
-                    class: u.class.clone(),
-                    side: u.side,
-                    hex: u.hex,
-                    strength: u.strength,
-                    morale_pct: u.morale_pct.min(100),
-                    exp: u.exp,
-                    entrenchment: u.entrenchment,
-                    supply: 0,
-                    zero_supply_phases: 0,
-                    base_readiness_pct: 0,
-                    attacks_made: 0,
-                    attacks_received: 0,
-                    ap_halves: 0,
-                    strikes_left: 0,
-                    can_move: false,
-                    started_in_zoc: false,
-                    moved: false,
-                    fought: false,
-                    acted: false,
-                    reinforced_steps: 0,
-                    hq_rating: u.hq_rating,
-                    formation: u.formation.clone(),
-                    nation: u.nation.clone(),
-                    pinned_hq: None,
-                    attached_hq: None,
-                    hq_lost: false,
-                    attacked_by: Vec::new(),
-                    crossing_penalty_pct: 0,
-                },
-            );
+            units.insert(id, Unit::from_setup(id, u, u.hex));
         }
 
         for c in &setup.cities {
@@ -437,6 +446,8 @@ impl GameState {
             last_turn: setup.last_turn,
             victory: setup.victory,
             outcome: None,
+            events: setup.events,
+            fired_events: BTreeSet::new(),
             pending_bridges: Vec::new(),
             pending_advance: None,
             rng: Pcg32::new(setup.seed, 0),
@@ -567,6 +578,11 @@ impl GameState {
     /// R-NM-02: set once the game has ended.
     pub fn outcome(&self) -> Option<&Outcome> {
         self.outcome.as_ref()
+    }
+
+    /// R-NM-02 / R-EVT-01: current ceasefire turn.
+    pub fn last_turn(&self) -> Option<u32> {
+        self.last_turn
     }
 
     pub fn pending_bridges(&self) -> &[PendingBridge] {

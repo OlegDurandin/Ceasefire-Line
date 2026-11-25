@@ -240,6 +240,7 @@ mod tests {
             key_hexes: vec![],
             last_turn: None,
             victory: vec![],
+            events: vec![],
         };
         GameState::new(Arc::new(data), setup).unwrap().0
     }
