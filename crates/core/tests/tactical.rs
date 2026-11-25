@@ -6,7 +6,7 @@ mod common;
 use ceasefire_core::game::{Command, Event, GameState, UnitId};
 use ceasefire_core::hex::Hex;
 use ceasefire_core::map::HexCell;
-use ceasefire_core::prob::{hits_distribution, percentile};
+use ceasefire_core::prob::{hits_distribution, percentile, quantile};
 use ceasefire_core::tactical::{CombatSource, Origin, Role, TacticalOutcome, TacticalScenario};
 use ceasefire_core::RuleError;
 
@@ -99,11 +99,11 @@ fn tactical_outcomes_pick_percentiles_of_the_forecast() {
         // Same numbers straight from the snapshot's forecast.
         let q = snap.outcome_percentiles[&outcome];
         let x = snap.forecast.exchange;
-        let def = percentile(
+        let def = quantile(
             &hits_distribution(&[(x.vs_defender.n, x.vs_defender.p)], 10),
             q,
         );
-        let att = percentile(
+        let att = quantile(
             &hits_distribution(&[(x.vs_attacker.n, x.vs_attacker.p)], 10),
             1.0 - q,
         );
@@ -118,6 +118,27 @@ fn tactical_outcomes_pick_percentiles_of_the_forecast() {
     assert!(
         best.2 > worst.2 || best.1 < worst.1,
         "skill must matter: {results:?}"
+    );
+}
+
+#[test]
+fn extreme_outcomes_are_the_distribution_bounds() {
+    let mut s = duel();
+    let (combat, snap) = declare(&mut s);
+    let (a, d, _) = resolve(&mut s, combat, Some(TacticalOutcome::AttackerDecisive));
+    let x = snap.forecast.exchange;
+    assert_eq!(
+        (a, d),
+        (0, x.vs_defender.n.min(10) as u8),
+        "attacker's best: no own losses, every shot hits"
+    );
+    let mut s = duel();
+    let (combat, _) = declare(&mut s);
+    let (a, d, _) = resolve(&mut s, combat, Some(TacticalOutcome::AttackerRout));
+    assert_eq!(
+        (a, d),
+        (x.vs_attacker.n.min(10) as u8, 0),
+        "attacker's worst"
     );
 }
 

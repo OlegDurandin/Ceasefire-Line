@@ -298,10 +298,10 @@ impl Rules {
                 .tactical
                 .percentiles
                 .get(o)
-                .is_some_and(|q| *q > 0.0 && *q < 1.0)
+                .is_some_and(|q| (0.0..=1.0).contains(q))
         }) {
             return Err(RuleError::InvalidData(
-                "tactical: every outcome needs a percentile in (0, 1)".into(),
+                "tactical: every outcome needs a quantile in [0, 1]".into(),
             ));
         }
         if self.national_morale.steps_per_loss == 0 {

@@ -47,6 +47,25 @@ impl LossForecast {
     }
 }
 
+/// Point of a distribution for a quantile `q`: `q ≤ 0` is the smallest and
+/// `q ≥ 1` the largest outcome with non-zero probability; otherwise the
+/// percentile (smallest k with P(X ≤ k) ≥ q).
+pub fn quantile(dist: &[f64], q: f64) -> u32 {
+    let support = || {
+        dist.iter()
+            .enumerate()
+            .filter(|(_, &w)| w > 0.0)
+            .map(|(k, _)| k as u32)
+    };
+    if q <= 0.0 {
+        support().next().unwrap_or(0)
+    } else if q >= 1.0 {
+        support().next_back().unwrap_or(0)
+    } else {
+        percentile(dist, q)
+    }
+}
+
 /// Smallest k with P(X <= k) >= q.
 pub fn percentile(dist: &[f64], q: f64) -> u32 {
     let mut cumulative = 0.0;
@@ -76,6 +95,16 @@ mod tests {
         let dist = hits_distribution(&[(5, 0.9)], 2);
         assert_eq!(dist.len(), 3);
         assert!((dist.iter().sum::<f64>() - 1.0).abs() < 1e-12);
+    }
+
+    #[test]
+    fn quantile_extremes_are_the_support_bounds() {
+        let dist = hits_distribution(&[(9, 0.05)], 10);
+        assert_eq!(quantile(&dist, 0.0), 0);
+        assert_eq!(quantile(&dist, 1.0), 9, "every shot hits, however unlikely");
+        assert_eq!(quantile(&dist, 0.5), percentile(&dist, 0.5));
+        let capped = hits_distribution(&[(9, 0.5)], 4);
+        assert_eq!(quantile(&capped, 1.0), 4, "capped at the target's strength");
     }
 
     #[test]

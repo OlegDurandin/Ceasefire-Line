@@ -14,7 +14,7 @@ use crate::prob::LossForecast;
 use crate::scale::range_in_hexes;
 
 use super::{DeclaredAttack, Event, GameState, PendingAdvance, Unit, UnitId};
-use crate::prob::{hits_distribution, percentile};
+use crate::prob::{hits_distribution, quantile};
 use crate::tactical::CombatSource;
 
 fn illegal(unit: UnitId, reason: AttackError) -> RuleError {
@@ -161,8 +161,9 @@ impl GameState {
     }
 
     /// Losses for a declared combat: dice (defender first, then attacker) or
-    /// the tactical outcome's percentile — defender losses at q, attacker
-    /// losses at 1 − q of the forecast distributions.
+    /// the tactical outcome's quantile — defender losses at q, attacker
+    /// losses at 1 − q of the forecast distributions (q = 1 / 0: the
+    /// distribution's maximum / minimum).
     fn combat_losses(
         &mut self,
         c: &DeclaredAttack,
@@ -193,8 +194,8 @@ impl GameState {
                     })?;
                 let dist =
                     |p: &FireParams, cap: u8| hits_distribution(&[(p.n, p.p)], u32::from(cap));
-                let d = percentile(&dist(&x.vs_defender, c.defender_strength), q);
-                let a = percentile(&dist(&x.vs_attacker, c.attacker_strength), 1.0 - q);
+                let d = quantile(&dist(&x.vs_defender, c.defender_strength), q);
+                let a = quantile(&dist(&x.vs_attacker, c.attacker_strength), 1.0 - q);
                 Ok((
                     capped(a, c.attacker_strength),
                     capped(d, c.defender_strength),
