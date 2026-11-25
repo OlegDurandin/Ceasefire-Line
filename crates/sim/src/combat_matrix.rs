@@ -8,13 +8,15 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use ceasefire_core::combat::{forecast_ground, resolve_ground, Combatant, GroundAttack};
+use ceasefire_core::combat::{
+    forecast_ground, resolve_ground, Combatant, ExchangeForecast, GroundAttack,
+};
 use ceasefire_core::data::{GameData, GameDataJson, UnitTag};
 use ceasefire_core::rng::Pcg32;
 use ceasefire_core::tech::{TechBranch, TechLevels};
 
 /// Share of runs that makes an attack "always" free or suicidal.
-const FLAG_SHARE: f64 = 0.9;
+pub const FLAG_SHARE: f64 = 0.9;
 const ENTRENCH_LEVELS: [u8; 3] = [0, 2, 4];
 const TECH_LEVELS: [u8; 2] = [1, 2];
 
@@ -57,7 +59,7 @@ pub fn parse_options(args: &[String]) -> Result<Options, String> {
     Ok(opts)
 }
 
-fn load(dir: &Path) -> Result<GameData, String> {
+pub fn load(dir: &Path) -> Result<GameData, String> {
     let read = |name: &str| {
         let path = dir.join(name);
         fs::read_to_string(&path).map_err(|e| format!("{}: {e}", path.display()))
@@ -77,7 +79,7 @@ fn load(dir: &Path) -> Result<GameData, String> {
     .map_err(|e| e.to_string())
 }
 
-fn tech_at(level: u8) -> TechLevels {
+pub fn tech_at(level: u8) -> TechLevels {
     [
         TechBranch::Armor,
         TechBranch::Antitank,
@@ -89,8 +91,43 @@ fn tech_at(level: u8) -> TechLevels {
     .fold(TechLevels::default(), |t, b| t.with(b, level))
 }
 
-pub fn combat_matrix(opts: &Options) -> Result<(), String> {
-    let data = load(&opts.data)?;
+/// One attacker × defender × terrain × entrenchment × tech cell.
+pub struct MatrixRow {
+    pub tech: u8,
+    pub attacker: String,
+    pub defender: String,
+    pub terrain: String,
+    pub entrench: u8,
+    pub forecast: ExchangeForecast,
+    pub mc_def_loss: f64,
+    pub mc_att_loss: f64,
+    /// Share of runs where only the defender lost steps.
+    pub free_share: f64,
+    /// Share of runs where only the attacker lost steps.
+    pub suicide_share: f64,
+}
+
+impl MatrixRow {
+    pub fn flag(&self) -> &'static str {
+        if self.free_share >= FLAG_SHARE {
+            "FREE"
+        } else if self.suicide_share >= FLAG_SHARE {
+            "SUICIDE"
+        } else {
+            ""
+        }
+    }
+}
+
+/// Ground attackers (not artillery) × ground defenders on every terrain, at
+/// entrenchment 0/2/4 (capped) and tech levels 1/2, forecast + Monte-Carlo.
+pub fn matrix(
+    data: &GameData,
+    runs: u32,
+    seed: u64,
+    strength: u8,
+    readiness: u8,
+) -> Result<Vec<MatrixRow>, String> {
     let rules = &data.rules.combat;
     let attackers: Vec<_> = data
         .units
@@ -102,12 +139,7 @@ pub fn combat_matrix(opts: &Options) -> Result<(), String> {
         .iter()
         .filter(|u| u.target_class.is_ground())
         .collect();
-
-    println!(
-        "tech,attacker,defender,terrain,entrench,n_att,p_att,e_def_loss,n_def,p_def,e_att_loss,\
-         mc_def_loss,mc_att_loss,free_share,suicide_share,flag"
-    );
-    let (mut rows, mut flagged) = (0u64, 0u64);
+    let mut out = Vec::new();
     for level in TECH_LEVELS {
         let tech = tech_at(level);
         for att_class in &attackers {
@@ -118,39 +150,32 @@ pub fn combat_matrix(opts: &Options) -> Result<(), String> {
                         ENTRENCH_LEVELS.iter().map(|&e| e.min(max_e)).collect();
                     levels.dedup();
                     for entrench in levels {
-                        let attacker = Combatant {
-                            class: att_class,
-                            stats: data
-                                .tech
-                                .unit_stats(att_class, &tech)
-                                .map_err(|e| e.to_string())?,
-                            strength: opts.strength,
-                            readiness_pct: opts.readiness,
-                            exp_stars: 0,
-                            entrenchment: 0,
+                        let combatant = |class, entrenchment| -> Result<Combatant<'_>, String> {
+                            Ok(Combatant {
+                                class,
+                                stats: data
+                                    .tech
+                                    .unit_stats(class, &tech)
+                                    .map_err(|e| e.to_string())?,
+                                strength,
+                                readiness_pct: readiness,
+                                exp_stars: 0,
+                                entrenchment,
+                            })
                         };
-                        let defender = Combatant {
-                            class: def_class,
-                            stats: data
-                                .tech
-                                .unit_stats(def_class, &tech)
-                                .map_err(|e| e.to_string())?,
-                            strength: opts.strength,
-                            readiness_pct: opts.readiness,
-                            exp_stars: 0,
-                            entrenchment: entrench,
-                        };
+                        let attacker = combatant(att_class, 0)?;
+                        let defender = combatant(def_class, entrench)?;
                         let ctx = GroundAttack {
                             terrain_mult: terrain.def.defense_mult,
                             night: false,
                             across_canal: false,
                         };
-                        let f = forecast_ground(rules, &attacker, &defender, &ctx)
+                        let forecast = forecast_ground(rules, &attacker, &defender, &ctx)
                             .map_err(|e| e.to_string())?;
-                        let mut rng = Pcg32::new(opts.seed, rows);
+                        let mut rng = Pcg32::new(seed, out.len() as u64);
                         let (mut def_sum, mut att_sum, mut free, mut suicide) =
                             (0u64, 0u64, 0u32, 0u32);
-                        for _ in 0..opts.runs {
+                        for _ in 0..runs {
                             let o = resolve_ground(rules, &attacker, &defender, &ctx, &mut rng)
                                 .map_err(|e| e.to_string())?;
                             def_sum += u64::from(o.defender_losses);
@@ -158,42 +183,60 @@ pub fn combat_matrix(opts: &Options) -> Result<(), String> {
                             free += u32::from(o.attacker_losses == 0 && o.defender_losses > 0);
                             suicide += u32::from(o.defender_losses == 0 && o.attacker_losses > 0);
                         }
-                        let runs = f64::from(opts.runs.max(1));
-                        let free_share = f64::from(free) / runs;
-                        let suicide_share = f64::from(suicide) / runs;
-                        let flag = if free_share >= FLAG_SHARE {
-                            "FREE"
-                        } else if suicide_share >= FLAG_SHARE {
-                            "SUICIDE"
-                        } else {
-                            ""
-                        };
-                        if !flag.is_empty() {
-                            flagged += 1;
-                        }
-                        let x = f.exchange;
-                        println!(
-                            "{level},{},{},{},{entrench},{},{:.3},{:.2},{},{:.3},{:.2},{:.2},{:.2},{:.3},{:.3},{flag}",
-                            att_class.id,
-                            def_class.id,
-                            terrain.def.id,
-                            x.vs_defender.n,
-                            x.vs_defender.p,
-                            f.defender_losses.expected,
-                            x.vs_attacker.n,
-                            x.vs_attacker.p,
-                            f.attacker_losses.expected,
-                            def_sum as f64 / runs,
-                            att_sum as f64 / runs,
-                            free_share,
-                            suicide_share,
-                        );
-                        rows += 1;
+                        let n = f64::from(runs.max(1));
+                        out.push(MatrixRow {
+                            tech: level,
+                            attacker: att_class.id.clone(),
+                            defender: def_class.id.clone(),
+                            terrain: terrain.def.id.clone(),
+                            entrench,
+                            forecast,
+                            mc_def_loss: def_sum as f64 / n,
+                            mc_att_loss: att_sum as f64 / n,
+                            free_share: f64::from(free) / n,
+                            suicide_share: f64::from(suicide) / n,
+                        });
                     }
                 }
             }
         }
     }
-    eprintln!("{rows} rows, {flagged} flagged (FREE/SUICIDE at {FLAG_SHARE} share of runs)");
+    Ok(out)
+}
+
+pub fn combat_matrix(opts: &Options) -> Result<(), String> {
+    let data = load(&opts.data)?;
+    let rows = matrix(&data, opts.runs, opts.seed, opts.strength, opts.readiness)?;
+    println!(
+        "tech,attacker,defender,terrain,entrench,n_att,p_att,e_def_loss,n_def,p_def,e_att_loss,\
+         mc_def_loss,mc_att_loss,free_share,suicide_share,flag"
+    );
+    for r in &rows {
+        let x = r.forecast.exchange;
+        println!(
+            "{},{},{},{},{},{},{:.3},{:.2},{},{:.3},{:.2},{:.2},{:.2},{:.3},{:.3},{}",
+            r.tech,
+            r.attacker,
+            r.defender,
+            r.terrain,
+            r.entrench,
+            x.vs_defender.n,
+            x.vs_defender.p,
+            r.forecast.defender_losses.expected,
+            x.vs_attacker.n,
+            x.vs_attacker.p,
+            r.forecast.attacker_losses.expected,
+            r.mc_def_loss,
+            r.mc_att_loss,
+            r.free_share,
+            r.suicide_share,
+            r.flag(),
+        );
+    }
+    let flagged = rows.iter().filter(|r| !r.flag().is_empty()).count();
+    eprintln!(
+        "{} rows, {flagged} flagged (FREE/SUICIDE at {FLAG_SHARE} share of runs)",
+        rows.len()
+    );
     Ok(())
 }
