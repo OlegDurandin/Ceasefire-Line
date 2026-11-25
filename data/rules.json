@@ -125,11 +125,11 @@
   },
   "tactical": {
     "percentiles": {
-      "attacker_decisive": 1.0,
+      "attacker_decisive": 0.975,
       "attacker_victory": 0.7,
       "draw": 0.5,
       "attacker_defeat": 0.3,
-      "attacker_rout": 0.0
+      "attacker_rout": 0.025
     },
     "snapshot_format": 1
   }

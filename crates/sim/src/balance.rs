@@ -251,7 +251,7 @@ fn check_cost(data: &GameData) -> Result<Check, String> {
         for att_class in &compared {
             let (mut inf, mut rec, mut n) = (0.0, 0.0, 0u32);
             for def_class in &defenders {
-                for terrain in data.terrain.iter() {
+                for terrain in data.terrain.iter().filter(|t| !t.def.impassable) {
                     let mut levels: Vec<u8> = [0u8, 2, 4]
                         .iter()
                         .map(|&e| e.min(terrain.def.max_entrench))
@@ -278,7 +278,7 @@ fn check_cost(data: &GameData) -> Result<Check, String> {
             // For reference: the same class defending against every compared attacker.
             let (mut d_inf, mut d_rec, mut dn) = (0.0, 0.0, 0u32);
             for other in &compared {
-                for terrain in data.terrain.iter() {
+                for terrain in data.terrain.iter().filter(|t| !t.def.impassable) {
                     let mut levels: Vec<u8> = [0u8, 2, 4]
                         .iter()
                         .map(|&e| e.min(terrain.def.max_entrench))

@@ -121,24 +121,58 @@ fn tactical_outcomes_pick_percentiles_of_the_forecast() {
     );
 }
 
+/// R-TAC-02: an almost hopeless attack stays almost hopeless. Infantry
+/// (hard attack 2) against dug-in veteran tanks on hills hits with p = 0.05;
+/// even a decisive tactical win takes the 97.5th percentile, not every shot.
 #[test]
-fn extreme_outcomes_are_the_distribution_bounds() {
+fn hopeless_attack_stays_hopeless_even_with_a_decisive_win() {
+    let (mut map, control) = board();
+    map.insert(Hex::new(3, 0), HexCell::new("hills"));
+    let mut tanks = unit("tank", B, Hex::new(3, 0));
+    tanks.exp = 300;
+    tanks.entrenchment = 2;
+    let mut s = start(setup(
+        map,
+        control,
+        vec![unit("infantry", A, Hex::new(2, 0)), tanks],
+    ));
+    let (combat, snap) = declare(&mut s);
+    let x = snap.forecast.exchange;
+    assert!(
+        (x.vs_defender.p - 0.05).abs() < 1e-12,
+        "p at the floor: {}",
+        x.vs_defender.p
+    );
+    assert_eq!(
+        snap.outcome_percentiles[&TacticalOutcome::AttackerDecisive],
+        0.975
+    );
+    let (_, d, _) = resolve(&mut s, combat, Some(TacticalOutcome::AttackerDecisive));
+    let dist = hits_distribution(&[(x.vs_defender.n, x.vs_defender.p)], 10);
+    assert_eq!(u32::from(d), percentile(&dist, 0.975));
+    assert!(d <= 2, "{d} of {} shots", x.vs_defender.n);
+    assert!(u32::from(d) < x.vs_defender.n, "not every shot hits");
+}
+
+#[test]
+fn rout_is_the_2_5th_percentile() {
     let mut s = duel();
     let (combat, snap) = declare(&mut s);
-    let (a, d, _) = resolve(&mut s, combat, Some(TacticalOutcome::AttackerDecisive));
+    let (a, d, _) = resolve(&mut s, combat, Some(TacticalOutcome::AttackerRout));
     let x = snap.forecast.exchange;
     assert_eq!(
-        (a, d),
-        (0, x.vs_defender.n.min(10) as u8),
-        "attacker's best: no own losses, every shot hits"
+        u32::from(d),
+        percentile(
+            &hits_distribution(&[(x.vs_defender.n, x.vs_defender.p)], 10),
+            0.025
+        )
     );
-    let mut s = duel();
-    let (combat, _) = declare(&mut s);
-    let (a, d, _) = resolve(&mut s, combat, Some(TacticalOutcome::AttackerRout));
     assert_eq!(
-        (a, d),
-        (x.vs_attacker.n.min(10) as u8, 0),
-        "attacker's worst"
+        u32::from(a),
+        percentile(
+            &hits_distribution(&[(x.vs_attacker.n, x.vs_attacker.p)], 10),
+            0.975
+        )
     );
 }
 

@@ -144,7 +144,7 @@ pub fn matrix(
         let tech = tech_at(level);
         for att_class in &attackers {
             for def_class in &defenders {
-                for terrain in data.terrain.iter() {
+                for terrain in data.terrain.iter().filter(|t| !t.def.impassable) {
                     let max_e = terrain.def.max_entrench;
                     let mut levels: Vec<u8> =
                         ENTRENCH_LEVELS.iter().map(|&e| e.min(max_e)).collect();
