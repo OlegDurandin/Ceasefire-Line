@@ -29,6 +29,11 @@ pub enum Command {
     },
     /// R-ECO-02, R-ECO-03: buy a unit; it arrives after a delay.
     Purchase { class: String },
+    /// R-MOVE-05: strategic transfer by road to `to`; the route is found by the engine.
+    Transfer { unit: UnitId, to: Hex },
+    /// R-HQ-01: pin a unit to an HQ (`None` removes the pin); applied at the
+    /// start of the next own phase.
+    PinToHq { unit: UnitId, hq: Option<UnitId> },
     /// R-TURN-01: end of the active side's phase.
     EndPhase,
 }
@@ -129,6 +134,25 @@ pub enum Event {
     ArrivalDelayed {
         side: SideId,
         class: String,
+    },
+    /// R-HQ-01: attachments of the active side at the start of its phase.
+    HqAttached {
+        links: Vec<(UnitId, UnitId)>,
+    },
+    /// R-HQ-02.
+    HqDestroyed {
+        hq: UnitId,
+        nm_loss: u8,
+        national_morale_pct: u8,
+    },
+    Transferred {
+        unit: UnitId,
+        path: Vec<Hex>,
+        cost: u32,
+    },
+    Pinned {
+        unit: UnitId,
+        hq: Option<UnitId>,
     },
     PhaseEnded {
         turn: u32,

@@ -76,10 +76,12 @@ pub mod scenario {
             hex,
             strength: 10,
             morale_pct: 90,
-            exp_quarters: 0,
+            exp: 0,
             entrenchment: 0,
             supply: Some(8),
             hq_rating: None,
+            formation: None,
+            nation: None,
         }
     }
 
@@ -115,6 +117,14 @@ pub mod scenario {
             base_income: 0,
             purchase_limits: BTreeMap::new(),
             purchased: BTreeMap::new(),
+        }
+    }
+
+    /// HQ of rating `rating`: neutral effect at 5 (R-HQ-02).
+    pub fn hq(side: SideId, hex: Hex, rating: u8) -> UnitSetup {
+        UnitSetup {
+            hq_rating: Some(rating),
+            ..unit("hq", side, hex)
         }
     }
 

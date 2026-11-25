@@ -71,7 +71,7 @@ fn r_sup_03_reinforcement_full_supply() {
     let (map, control) = board();
     let mut u = unit("infantry", A, Hex::new(1, 0));
     u.strength = 5;
-    u.exp_quarters = 4;
+    u.exp = 100;
     let mut sc = setup(map, control, vec![u]);
     sc.sides[0].mpp = 100;
     let mut s = start(sc);
@@ -84,11 +84,7 @@ fn r_sup_03_reinforcement_full_supply() {
     );
     reinforce(&mut s, 1, 3, false).unwrap();
     let x = s.unit(UnitId(1)).unwrap();
-    assert_eq!(
-        (x.strength, x.exp_quarters),
-        (8, 2),
-        "1 star × 5/8 → 0.5 star"
-    );
+    assert_eq!((x.strength, x.exp), (8, 62), "1 star × 5/8 → 0.62 star");
     assert_eq!(mpp(&s), 82);
     assert_eq!(
         refused(reinforce(&mut s, 1, 1, false)),
@@ -103,7 +99,7 @@ fn r_sup_03_reinforcement_bands_and_elite() {
     control.insert(Hex::new(5, 0), A);
     let mut u = unit("infantry", A, Hex::new(5, 0));
     u.strength = 4;
-    u.exp_quarters = 8;
+    u.exp = 200;
     let mut sc = setup(map, control, vec![u]);
     sc.sides[0].mpp = 200;
     let mut s = start(sc);
@@ -120,8 +116,8 @@ fn r_sup_03_reinforcement_bands_and_elite() {
     );
     reinforce(&mut s, 1, 2, true).unwrap();
     assert_eq!(
-        s.unit(UnitId(1)).unwrap().exp_quarters,
-        8,
+        s.unit(UnitId(1)).unwrap().exp,
+        200,
         "elite keeps experience"
     );
 

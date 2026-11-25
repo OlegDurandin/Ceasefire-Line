@@ -9,7 +9,7 @@ use ceasefire_core::hex::Hex;
 use ceasefire_core::map::{HexCell, HexMap};
 use ceasefire_core::{AttackError, MoveError, RuleError};
 
-use common::scenario::{board, setup, start, unit, A, B};
+use common::scenario::{board, hq, setup, start, unit, A, B};
 
 fn mv(state: &mut GameState, id: u32, path: &[(i32, i32)]) -> Result<Vec<Event>, RuleError> {
     state.apply(Command::Move {
@@ -214,9 +214,10 @@ fn encircled(nm: u8, morale: u8) -> Vec<(u8, u8, u8, u8)> {
     control.insert(Hex::new(5, 0), A);
     let mut u = unit("infantry", A, Hex::new(5, 0));
     u.morale_pct = morale;
-    u.exp_quarters = 4;
+    u.exp = 100;
     u.supply = Some(8);
-    let mut setup = setup(map, control, vec![u]);
+    // Attached to a rating-5 HQ: no HQ bonus, no unattached penalty.
+    let mut setup = setup(map, control, vec![u, hq(A, Hex::new(1, 0), 5)]);
     setup.sides[0].national_morale_pct = nm;
     let mut s = start(setup);
     let mut seen = Vec::new();

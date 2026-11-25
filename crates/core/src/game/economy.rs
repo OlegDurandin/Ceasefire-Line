@@ -11,7 +11,7 @@ fn refuse(reason: EconomyError) -> RuleError {
 }
 
 /// Integer division rounded half up.
-fn div_half_up(num: u64, den: u64) -> u64 {
+pub(super) fn div_half_up(num: u64, den: u64) -> u64 {
     (2 * num + den) / (2 * den)
 }
 
@@ -41,6 +41,7 @@ impl GameState {
     }
 
     /// R-ECO-02 + R-SUP-03: price of `steps` steps for this unit now.
+    /// Bought units carry no formation or nation tag yet.
     pub fn reinforce_cost(&self, id: UnitId, steps: u8, elite: bool) -> Result<u32, RuleError> {
         let unit = self.get_unit(id)?;
         self.check_reinforce(unit, steps).map(|(_, cost_pct)| {
@@ -80,7 +81,7 @@ impl GameState {
     }
 
     /// R-ECO-02: elite steps keep experience; green steps dilute it
-    /// (`exp × old / new`, floor, in quarter stars).
+    /// (`exp × old / new`, floor, in hundredths of a star).
     pub(super) fn reinforce(
         &mut self,
         id: UnitId,
@@ -102,7 +103,7 @@ impl GameState {
         let old = u32::from(unit.strength);
         let new = old + u32::from(steps);
         if !elite {
-            unit.exp_quarters = (u32::from(unit.exp_quarters) * old / new) as u8;
+            unit.exp = (u32::from(unit.exp) * old / new) as u16;
         }
         unit.strength = new as u8;
         unit.reinforced_steps += steps;
@@ -190,7 +191,7 @@ impl GameState {
                     hex,
                     strength: max_strength,
                     morale_pct: nm.min(100),
-                    exp_quarters: 0,
+                    exp: 0,
                     entrenchment: 0,
                     supply: 0,
                     zero_supply_phases: 0,
@@ -206,6 +207,11 @@ impl GameState {
                     acted: false,
                     reinforced_steps: 0,
                     hq_rating: None,
+                    formation: None,
+                    nation: None,
+                    pinned_hq: None,
+                    attached_hq: None,
+                    hq_lost: false,
                 },
             );
             events.push(Event::UnitArrived {

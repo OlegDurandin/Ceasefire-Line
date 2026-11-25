@@ -66,9 +66,9 @@
     "blocked_extra_losses": 2
   },
   "experience": {
-    "per_combat_quarters": 1,
-    "win_quarters": 2,
-    "max_quarters": 12
+    "per_combat": 25,
+    "win": 50,
+    "max": 300
   },
   "bombard": {
     "shot_fraction": 0.5,
@@ -98,6 +98,16 @@
       }
     ],
     "purchase_delay_turns": 2,
-    "arrival_source_value": 10
+    "arrival_source_value": 10,
+    "transfer_cost_pct": 10
+  },
+  "hq": {
+    "attach_radius_km": 50,
+    "rating_base": 5,
+    "bonus_per_rating_pct": 3,
+    "fast_exp_rating": 8,
+    "fast_exp_pct": 125,
+    "unattached_readiness_pct": 10,
+    "destroyed_nm_loss": 3
   }
 }

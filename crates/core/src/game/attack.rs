@@ -180,22 +180,14 @@ impl GameState {
             }
         }
 
-        // Experience: +per_combat each; the attacker gets win_quarters instead
-        // when the defender left the hex.
+        // Experience: +per_combat each; the attacker gets `win` instead when
+        // the defender left the hex. R-HQ-02: ×fast_exp_pct under a strong HQ.
         let e = &rules.experience;
-        for (uid, gain) in [
-            (
-                id,
-                if vacated {
-                    e.win_quarters
-                } else {
-                    e.per_combat_quarters
-                },
-            ),
-            (target, e.per_combat_quarters),
-        ] {
+        let attacker_gain = if vacated { e.win } else { e.per_combat };
+        for (uid, gain) in [(id, attacker_gain), (target, e.per_combat)] {
+            let gain = self.exp_gain(uid, gain);
             if let Some(u) = self.units.get_mut(&uid) {
-                u.exp_quarters = u.exp_quarters.saturating_add(gain).min(e.max_quarters);
+                u.exp = u.exp.saturating_add(gain).min(e.max);
             }
         }
 

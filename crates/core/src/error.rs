@@ -33,6 +33,20 @@ pub enum RuleError {
     NoPendingAdvance(u32),
     #[error("illegal economy action: {0:?}")]
     IllegalEconomy(EconomyError),
+    #[error("illegal strategic transfer of unit {unit}: {reason:?}")]
+    IllegalTransfer { unit: u32, reason: TransferError },
+    #[error("unit {unit} cannot be pinned to {hq}")]
+    IllegalPin { unit: u32, hq: u32 },
+}
+
+/// Why a strategic transfer is rejected (R-MOVE-05).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TransferError {
+    Acted,
+    StartsInZoc,
+    /// No road route through own hexes outside enemy ZOC to a free destination.
+    NoRoute,
+    NotEnoughMpp,
 }
 
 /// Why a reinforcement or purchase is rejected (R-ECO-02, R-ECO-03, R-SUP-03).

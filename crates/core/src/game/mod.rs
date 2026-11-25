@@ -3,8 +3,10 @@
 mod attack;
 mod command;
 mod economy;
+mod hq;
 mod moves;
 mod phase;
+mod transfer;
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
@@ -39,8 +41,8 @@ pub struct Unit {
     pub hex: Hex,
     pub strength: u8,
     pub morale_pct: u8,
-    /// Experience in quarter stars; formulas use whole stars.
-    pub exp_quarters: u8,
+    /// Experience in hundredths of a star; formulas use whole stars.
+    pub exp: u16,
     pub entrenchment: u8,
     /// Unit supply with inertia (see docs/decisions.md).
     pub supply: u8,
@@ -62,11 +64,21 @@ pub struct Unit {
     /// Steps added this phase (R-SUP-03 limit per phase).
     pub reinforced_steps: u8,
     pub hq_rating: Option<u8>,
+    /// R-HQ-01: formation tag ("brigade of division N").
+    pub formation: Option<String>,
+    /// R-HQ-01: units attach only to HQs of the same nation.
+    pub nation: Option<String>,
+    /// R-HQ-01: optional manual pin.
+    pub pinned_hq: Option<UnitId>,
+    /// R-HQ-01: set at the start of each own phase.
+    pub attached_hq: Option<UnitId>,
+    /// R-HQ-02: HQ destroyed; stays unattached for the next own phase.
+    pub hq_lost: bool,
 }
 
 impl Unit {
     pub fn exp_stars(&self) -> u8 {
-        self.exp_quarters / 4
+        u8::try_from(self.exp / 100).unwrap_or(u8::MAX)
     }
 
     /// R-UNIT-01: readiness including fatigue.
@@ -147,11 +159,14 @@ pub struct UnitSetup {
     pub hex: Hex,
     pub strength: u8,
     pub morale_pct: u8,
-    pub exp_quarters: u8,
+    /// Hundredths of a star.
+    pub exp: u16,
     pub entrenchment: u8,
     /// Starting unit supply; `None` takes the hex supply.
     pub supply: Option<u8>,
     pub hq_rating: Option<u8>,
+    pub formation: Option<String>,
+    pub nation: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -274,6 +289,11 @@ impl GameState {
             if u.strength == 0 {
                 return Err(invalid(format!("unit {i}: strength must be > 0")));
             }
+            if class.has_tag(crate::data::UnitTag::Hq) != u.hq_rating.is_some() {
+                return Err(invalid(format!(
+                    "unit {i}: hq_rating is required for HQs only"
+                )));
+            }
             let id = UnitId(i as u32 + 1);
             supply_overrides.push((id, u.supply));
             units.insert(
@@ -285,7 +305,7 @@ impl GameState {
                     hex: u.hex,
                     strength: u.strength,
                     morale_pct: u.morale_pct.min(100),
-                    exp_quarters: u.exp_quarters,
+                    exp: u.exp,
                     entrenchment: u.entrenchment,
                     supply: 0,
                     zero_supply_phases: 0,
@@ -301,6 +321,11 @@ impl GameState {
                     acted: false,
                     reinforced_steps: 0,
                     hq_rating: u.hq_rating,
+                    formation: u.formation.clone(),
+                    nation: u.nation.clone(),
+                    pinned_hq: None,
+                    attached_hq: None,
+                    hq_lost: false,
                 },
             );
         }
@@ -365,6 +390,8 @@ impl GameState {
             Command::Advance { unit } => self.advance(unit),
             Command::Reinforce { unit, steps, elite } => self.reinforce(unit, steps, elite),
             Command::Purchase { class } => self.purchase(&class),
+            Command::Transfer { unit, to } => self.transfer(unit, to),
+            Command::PinToHq { unit, hq } => self.pin_to_hq(unit, hq),
             Command::EndPhase => self.end_phase(),
         };
         match result {
@@ -543,8 +570,13 @@ impl GameState {
             .map(|u| u.id)
             .collect();
         for id in dead {
-            self.units.remove(&id);
+            let Some(unit) = self.units.remove(&id) else {
+                continue;
+            };
             events.push(Event::UnitDestroyed { unit: id });
+            if unit.hq_rating.is_some() {
+                self.hq_destroyed(&unit, events);
+            }
         }
     }
 }

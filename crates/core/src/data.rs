@@ -116,13 +116,26 @@ pub struct RetreatRules {
     pub blocked_extra_losses: u8,
 }
 
-/// Experience in quarter stars (GDD section 3).
+/// Experience in hundredths of a star (GDD section 3).
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ExperienceRules {
-    pub per_combat_quarters: u8,
-    pub win_quarters: u8,
-    pub max_quarters: u8,
+    pub per_combat: u16,
+    pub win: u16,
+    pub max: u16,
+}
+
+/// R-HQ-01, R-HQ-02.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct HqRules {
+    pub attach_radius_km: f64,
+    pub rating_base: u8,
+    pub bonus_per_rating_pct: u8,
+    pub fast_exp_rating: u8,
+    pub fast_exp_pct: u16,
+    pub unattached_readiness_pct: u8,
+    pub destroyed_nm_loss: u8,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -150,6 +163,8 @@ pub struct EconomyRules {
     /// Sorted by `min_supply` descending (checked on load).
     pub reinforce_bands: Vec<ReinforceBand>,
     pub purchase_delay_turns: u32,
+    /// R-MOVE-05: strategic transfer price as percent of the unit price.
+    pub transfer_cost_pct: u32,
     /// Bought units arrive in an own source with at least this value.
     pub arrival_source_value: u8,
 }
@@ -190,6 +205,7 @@ pub struct Rules {
     pub bombard: BombardRules,
     pub unit: UnitRules,
     pub economy: EconomyRules,
+    pub hq: HqRules,
 }
 
 impl Rules {

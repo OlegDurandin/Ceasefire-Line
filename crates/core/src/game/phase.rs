@@ -49,6 +49,15 @@ impl GameState {
             amount: income,
             total: side_state.mpp,
         });
+        // R-HQ-01, R-HQ-02.
+        let links = self.attach_hqs(side);
+        events.push(Event::HqAttached { links });
+        let hq_effects: std::collections::BTreeMap<UnitId, (u8, i32)> = self
+            .units
+            .values()
+            .filter(|u| u.side == side)
+            .map(|u| (u.id, self.hq_effect(u)))
+            .collect();
         let zoc = enemy_zoc(&self.occupancy(), side);
         let ids: Vec<UnitId> = self
             .units
@@ -73,6 +82,7 @@ impl GameState {
                     .ok_or_else(|| RuleError::InvalidData(format!("`{}` has no AP", class.id)))?,
             )?;
             let in_zoc = zoc.contains(&unit.hex);
+            let (hq_morale, hq_readiness) = hq_effects.get(&id).copied().unwrap_or((0, 0));
             let hex_level = supply.get(unit.hex);
             let Some(unit) = self.units.get_mut(&id) else {
                 continue;
@@ -109,15 +119,15 @@ impl GameState {
             }
             unit.entrenchment = unit.entrenchment.min(max_entrench);
 
-            // R-UNIT-01: readiness; fatigue counters reset.
+            // R-UNIT-01 + R-HQ-02: readiness; fatigue counters reset.
             unit.attacks_made = 0;
             unit.attacks_received = 0;
             unit.base_readiness_pct = readiness_pct(
                 &rules.readiness,
                 unit.supply,
-                unit.morale_pct,
+                unit.morale_pct.saturating_add(hq_morale).min(100),
                 unit.exp_stars(),
-                0,
+                hq_readiness,
             );
 
             // R-UNIT-02: AP penalties for low supply and night, minimum AP.
