@@ -29,7 +29,7 @@ fn load() -> (
 fn golan67_loads_and_validates() {
     let (data, setup) = load();
     assert_eq!(setup.hex_km, Some(5.0));
-    assert_eq!(setup.map.hexes().count(), 20 * 16);
+    assert_eq!(setup.map.hexes().count(), 22 * 18);
     assert_eq!(validate(&data, &setup), vec![]);
     assert_eq!(setup.events.len(), 3);
     assert_eq!(setup.tech_boosts.len(), 2);
@@ -55,7 +55,7 @@ fn validation_reports_scenario_problems() {
     setup.units.retain(|u| !(u.class == "hq" && u.side.0 == 1));
     let first = setup.units[0].hex;
     setup.units[1].hex = first;
-    setup.units[2].hex = ceasefire_core::scenario::offset_to_axial([17, 0]);
+    setup.units[2].hex = ceasefire_core::scenario::offset_to_axial([7, 0]);
     let issues = validate(&data, &setup);
     assert!(
         issues.contains(&ScenarioIssue::NoHq { side: 1 }),
@@ -67,7 +67,7 @@ fn validation_reports_scenario_problems() {
     }));
     assert!(issues.contains(&ScenarioIssue::Impassable {
         unit: 2,
-        hex: [17, 0]
+        hex: [7, 0]
     }));
 }
 

@@ -88,6 +88,10 @@
       "city",
       "town"
     ],
+    "city_kinds": [
+      "city"
+    ],
+    "city_min_population": 25000,
     "water_exclude": [
       {
         "name": "Hula (drained 1951–1958)",

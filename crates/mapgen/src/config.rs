@@ -58,8 +58,13 @@ pub struct OsmConfig {
     pub river_line_weight: f64,
     /// Checked in order before the relief rules; the first reaching its share wins.
     pub areas: Vec<AreaRule>,
-    /// `place` values that make their hex a city.
+    /// `place` values read and listed in `geo.places` for the editor.
     pub places: Vec<String>,
+    /// Places of these kinds always make their hex a city.
+    pub city_kinds: Vec<String>,
+    /// Other listed places make a city only with at least this population
+    /// (OSM populations are present-day: historical cities are fixed in the editor).
+    pub city_min_population: u64,
     pub water_exclude: Vec<WaterExclude>,
 }
 

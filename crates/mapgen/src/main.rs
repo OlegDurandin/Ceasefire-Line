@@ -144,14 +144,18 @@ pub fn generate(
             });
         }
     }
-    // Places make their hex a city (never water) and are listed for the editor.
+    // Places are listed for the editor; big ones (config) make their hex a
+    // city (never water).
     let mut places = Vec::new();
     for p in &osm.places {
         let Some([col, row]) = features::hex_at(&grid, proj.to_km(p.at.0, p.at.1)) else {
             continue;
         };
         let cell = &mut terrain[row as usize][col as usize];
-        if cell != "water" {
+        let big = cfg.osm.city_kinds.contains(&p.kind)
+            || p.population
+                .is_some_and(|n| n >= cfg.osm.city_min_population);
+        if big && cell != "water" {
             *cell = "city".to_owned();
         }
         places.push(serde_json::json!({ "name": p.name, "kind": p.kind, "hex": [col, row], "population": p.population }));
@@ -409,12 +413,21 @@ mod tests {
                 kind: "primary".into(),
                 pts: vec![(35.31, 33.30), (36.09, 33.30)],
             }],
-            places: vec![Place {
-                name: "Testtown".into(),
-                kind: "town".into(),
-                population: Some(5000),
-                at: (35.40, 33.00),
-            }],
+            places: vec![
+                Place {
+                    name: "Testtown".into(),
+                    kind: "city".into(),
+                    population: None,
+                    at: (35.40, 33.00),
+                },
+                // A small town is listed but stays relief.
+                Place {
+                    name: "Smalltown".into(),
+                    kind: "town".into(),
+                    population: Some(900),
+                    at: (35.40, 32.80),
+                },
+            ],
         };
         osm::drop_excluded_water(&mut data, &cfg.osm);
         assert_eq!(data.areas.len(), 1, "Hula is dropped");
@@ -439,6 +452,8 @@ mod tests {
             "road over the river has a bridge"
         );
         assert_eq!(g.map["geo"]["places"][0]["name"], "Testtown");
+        assert_eq!(g.map["geo"]["places"][1]["name"], "Smalltown");
+        assert_eq!(all.matches('c').count(), 1, "only the city:\n{all}");
         let (map, _) = ceasefire_core::scenario::load_map(&g.map.to_string()).unwrap();
         assert!(map.bridges().count() > 0);
     }

@@ -1,5 +1,5 @@
 {
-  "_comment": "Голаны-67 (учебный), 9–10 июня 1967. Тестовый сценарий этапа 1: местность грубая, составы условные.",
+  "_comment": "Голаны-67 (учебный), 9–10 июня 1967. Карта из рельефа и OSM (этап 2); составы условные.",
   "id": "golan67",
   "hex_km": 5,
   "supply_decay_ap": 4,
@@ -32,40 +32,64 @@
   ],
   "sources": [
     {
-      "hex": [0, 13],
+      "hex": [
+        1,
+        14
+      ],
       "value": 10
     },
     {
-      "hex": [1, 4],
+      "hex": [
+        2,
+        5
+      ],
       "value": 8
     },
     {
-      "hex": [19, 6],
+      "hex": [
+        16,
+        0
+      ],
       "value": 10
     },
     {
-      "hex": [11, 6],
+      "hex": [
+        7,
+        6
+      ],
       "value": 6
     }
   ],
   "cities": [
     {
-      "hex": [11, 6],
+      "hex": [
+        7,
+        6
+      ],
       "value": 5
     },
     {
-      "hex": [12, 2],
+      "hex": [
+        6,
+        4
+      ],
       "value": 3
     }
   ],
   "objectives": [
     {
-      "hex": [11, 6],
+      "hex": [
+        7,
+        6
+      ],
       "nm_value": 10,
       "vp": 20
     },
     {
-      "hex": [12, 2],
+      "hex": [
+        6,
+        4
+      ],
       "nm_value": 5,
       "vp": 10
     }
@@ -104,7 +128,10 @@
     {
       "class": "tank",
       "side": 0,
-      "hex": [2, 6],
+      "hex": [
+        3,
+        6
+      ],
       "exp": 100,
       "formation": "armored_div",
       "morale_pct": 85,
@@ -113,7 +140,10 @@
     {
       "class": "tank",
       "side": 0,
-      "hex": [2, 10],
+      "hex": [
+        3,
+        8
+      ],
       "formation": "armored_div",
       "morale_pct": 85,
       "nation": "israel"
@@ -121,7 +151,10 @@
     {
       "class": "mech",
       "side": 0,
-      "hex": [3, 12],
+      "hex": [
+        3,
+        11
+      ],
       "formation": "armored_div",
       "morale_pct": 85,
       "nation": "israel"
@@ -129,7 +162,10 @@
     {
       "class": "infantry",
       "side": 0,
-      "hex": [3, 4],
+      "hex": [
+        3,
+        4
+      ],
       "exp": 100,
       "formation": "infantry_bde",
       "morale_pct": 85,
@@ -138,14 +174,20 @@
     {
       "class": "commando",
       "side": 0,
-      "hex": [1, 8],
+      "hex": [
+        2,
+        9
+      ],
       "morale_pct": 85,
       "nation": "israel"
     },
     {
       "class": "hq",
       "side": 0,
-      "hex": [1, 7],
+      "hex": [
+        1,
+        10
+      ],
       "hq_rating": 7,
       "formation": "armored_div",
       "morale_pct": 85,
@@ -154,7 +196,10 @@
     {
       "class": "infantry",
       "side": 1,
-      "hex": [4, 4],
+      "hex": [
+        4,
+        5
+      ],
       "entrenchment": 4,
       "morale_pct": 70,
       "nation": "syria"
@@ -162,7 +207,10 @@
     {
       "class": "infantry",
       "side": 1,
-      "hex": [4, 8],
+      "hex": [
+        4,
+        9
+      ],
       "entrenchment": 4,
       "morale_pct": 70,
       "nation": "syria"
@@ -170,7 +218,10 @@
     {
       "class": "infantry",
       "side": 1,
-      "hex": [6, 12],
+      "hex": [
+        4,
+        13
+      ],
       "entrenchment": 4,
       "morale_pct": 70,
       "nation": "syria"
@@ -178,21 +229,30 @@
     {
       "class": "tank",
       "side": 1,
-      "hex": [10, 6],
+      "hex": [
+        7,
+        5
+      ],
       "morale_pct": 70,
       "nation": "syria"
     },
     {
       "class": "artillery",
       "side": 1,
-      "hex": [8, 9],
+      "hex": [
+        6,
+        8
+      ],
       "morale_pct": 70,
       "nation": "syria"
     },
     {
       "class": "hq",
       "side": 1,
-      "hex": [12, 7],
+      "hex": [
+        9,
+        5
+      ],
       "hq_rating": 5,
       "morale_pct": 70,
       "nation": "syria"
