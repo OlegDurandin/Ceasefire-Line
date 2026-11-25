@@ -23,6 +23,46 @@ pub struct HillshadeConfig {
     pub z_factor: f64,
 }
 
+/// An OSM area kind: any of `tags` (key, value) makes a way or multipolygon count.
+#[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct AreaRule {
+    pub terrain: String,
+    pub tags: Vec<(String, String)>,
+    /// Share of the hex's samples inside such areas for the hex to take this terrain.
+    pub min_share: f64,
+}
+
+/// Water inside this box is ignored (Lake Hula, drained before 1967).
+#[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct WaterExclude {
+    pub name: String,
+    /// West, south, east, north.
+    pub bbox: [f64; 4],
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct OsmConfig {
+    /// Extra degrees around the bbox when reading OSM.
+    pub margin_deg: f64,
+    /// `highway` values drawn as roads.
+    pub roads: Vec<String>,
+    /// Added with `--secondary-roads`.
+    pub secondary_roads: Vec<String>,
+    /// `waterway` values drawn as canals/major rivers on hex sides.
+    pub rivers: Vec<String>,
+    pub river_min_length_km: f64,
+    /// How strongly a river's hex-side path sticks to the OSM line.
+    pub river_line_weight: f64,
+    /// Checked in order before the relief rules; the first reaching its share wins.
+    pub areas: Vec<AreaRule>,
+    /// `place` values that make their hex a city.
+    pub places: Vec<String>,
+    pub water_exclude: Vec<WaterExclude>,
+}
+
 #[derive(Debug, Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Config {
@@ -39,6 +79,7 @@ pub struct Config {
     pub legend: BTreeMap<String, char>,
     /// Character for a mountain hex with a pass.
     pub pass_char: char,
+    pub osm: OsmConfig,
     pub hillshade: HillshadeConfig,
 }
 

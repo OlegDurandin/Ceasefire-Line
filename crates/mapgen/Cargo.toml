@@ -11,5 +11,7 @@ serde.workspace = true
 serde_json.workspace = true
 # GeoTIFF elevation tiles (SRTM), pure Rust; georeferencing tags are parsed here.
 tiff = "0.11"
+# OpenStreetMap .osm.pbf reader, pure Rust.
+osmpbf = "0.3"
 # Hillshade output.
 image = { version = "0.25", default-features = false, features = ["png"] }

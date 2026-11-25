@@ -15,6 +15,10 @@ pub struct MapInput<'a> {
     pub bbox: BBox,
     pub hex_km: f64,
     pub sources: &'a [String],
+    pub roads: &'a [[[i32; 2]; 2]],
+    pub canals: &'a [[[i32; 2]; 2]],
+    pub bridges: &'a [[[i32; 2]; 2]],
+    pub places: &'a [Value],
 }
 
 /// Builds map.json rows from terrain ids; control is left to the editor.
@@ -28,6 +32,10 @@ pub fn map_json(m: &MapInput<'_>) -> Result<Value, String> {
         bbox,
         hex_km,
         sources,
+        roads,
+        canals,
+        bridges,
+        places,
     } = *m;
     let ch = |t: &str| {
         legend
@@ -64,14 +72,15 @@ pub fn map_json(m: &MapInput<'_>) -> Result<Value, String> {
         "terrain": rows,
         "control_legend": {},
         "control": control,
-        "roads": [],
-        "canals": [],
-        "bridges": [],
+        "roads": roads,
+        "canals": canals,
+        "bridges": bridges,
         "geo": {
             "bbox": [bbox.west, bbox.south, bbox.east, bbox.north],
             "hex_km": hex_km,
             "hillshade": "hillshade.png",
             "sources": sources,
+            "places": places,
         }
     }))
 }

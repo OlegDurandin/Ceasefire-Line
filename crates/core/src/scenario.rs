@@ -85,6 +85,20 @@ struct GeoFile {
     hillshade: Option<String>,
     #[serde(default)]
     sources: Vec<String>,
+    /// Named places from OSM, for the editor.
+    #[serde(default)]
+    places: Vec<PlaceFile>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+#[allow(dead_code)]
+struct PlaceFile {
+    name: String,
+    kind: String,
+    hex: [i32; 2],
+    #[serde(default)]
+    population: Option<u64>,
 }
 
 #[derive(Debug, Deserialize)]

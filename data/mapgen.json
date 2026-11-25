@@ -4,8 +4,16 @@
   "samples_per_hex_side": 9,
   "slope_step_m": 90,
   "relief_rules": [
-    { "terrain": "mountains", "min_relief_m": 700, "min_slope_deg": 14 },
-    { "terrain": "hills", "min_relief_m": 220, "min_slope_deg": 6 }
+    {
+      "terrain": "mountains",
+      "min_relief_m": 700,
+      "min_slope_deg": 14
+    },
+    {
+      "terrain": "hills",
+      "min_relief_m": 220,
+      "min_slope_deg": 6
+    }
   ],
   "default_terrain": "plain",
   "legend": {
@@ -19,5 +27,83 @@
     "water": "w"
   },
   "pass_char": "P",
-  "hillshade": { "px_per_km": 20, "azimuth_deg": 315, "altitude_deg": 45, "z_factor": 1.0 }
+  "osm": {
+    "margin_deg": 0.1,
+    "roads": [
+      "trunk",
+      "primary"
+    ],
+    "secondary_roads": [
+      "secondary"
+    ],
+    "rivers": [
+      "river",
+      "canal"
+    ],
+    "river_min_length_km": 8,
+    "river_line_weight": 20,
+    "areas": [
+      {
+        "terrain": "water",
+        "tags": [
+          [
+            "natural",
+            "water"
+          ]
+        ],
+        "min_share": 0.5
+      },
+      {
+        "terrain": "city",
+        "tags": [
+          [
+            "landuse",
+            "residential"
+          ]
+        ],
+        "min_share": 0.35
+      },
+      {
+        "terrain": "marsh",
+        "tags": [
+          [
+            "natural",
+            "wetland"
+          ]
+        ],
+        "min_share": 0.4
+      },
+      {
+        "terrain": "dunes",
+        "tags": [
+          [
+            "natural",
+            "sand"
+          ]
+        ],
+        "min_share": 0.4
+      }
+    ],
+    "places": [
+      "city",
+      "town"
+    ],
+    "water_exclude": [
+      {
+        "name": "Hula (drained 1951–1958)",
+        "bbox": [
+          35.55,
+          33.02,
+          35.66,
+          33.16
+        ]
+      }
+    ]
+  },
+  "hillshade": {
+    "px_per_km": 20,
+    "azimuth_deg": 315,
+    "altitude_deg": 45,
+    "z_factor": 1.0
+  }
 }
