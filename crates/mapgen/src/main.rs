@@ -1,9 +1,12 @@
-//! mapgen: DEM (GeoTIFF) → Ceasefire Line `map.json` + hillshade (stage 2).
+//! mapgen: DEM (GeoTIFF) → Ceasefire Line `map.json` + hillshade (stage 2),
+//! and `mapgen bake`: the painted map of a (possibly edited) map.json in tiles.
 //!
 //! `mapgen --dem <tif|dir>... --bbox W,S,E,N --hex-km 5 [--config data/mapgen.json] --out <dir>`
+//! `mapgen bake --map <dir> --dem <tif|dir>... [--osm <pbf>...] [--config ...] [--assets assets] [--sprites data/sprites.json]`
 //!
 //! Deterministic: inputs are sorted, outputs depend only on them.
 
+mod bake;
 mod config;
 mod dem;
 mod features;
@@ -13,6 +16,7 @@ mod osm;
 mod output;
 mod relief;
 
+use std::collections::BTreeMap;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
@@ -244,7 +248,7 @@ fn license_text(sources: &[&str]) -> String {
     let osm = sources.iter().any(|s| s.contains("OpenStreetMap"));
     let mut t = String::from(
         "# Лицензия данных карты\n\n\
-         `map.json`, `hillshade.png` и `hillshade.json` в этой папке построены утилитой `mapgen` из открытых данных.\n\n\
+         `map.json`, `hillshade.png`, `hillshade.json`, `tiles.json` и `tiles/` в этой папке построены утилитой `mapgen` из открытых данных.\n\n\
          ## Рельеф: Copernicus DEM GLO-30\n\n\
          Типы местности по рельефу и отмывка — изменённые данные Copernicus WorldDEM-30 (лицензия Copernicus WorldDEM-30, статья 6):\n\n",
     );
@@ -258,7 +262,7 @@ fn license_text(sources: &[&str]) -> String {
     if osm {
         t.push_str(
             "\n## OpenStreetMap\n\n\
-             Дороги, реки, водоёмы, застройка и названия — из OpenStreetMap: © OpenStreetMap contributors, \
+             Дороги, реки, водоёмы, леса и сады, застройка и названия — из OpenStreetMap: © OpenStreetMap contributors, \
              Open Database License (ODbL) 1.0, https://opendatacommons.org/licenses/odbl/. \
              `map.json` — производная база данных и распространяется на тех же условиях (ODbL 1.0) с указанием источника.\n",
         );
@@ -270,6 +274,9 @@ fn license_text(sources: &[&str]) -> String {
 }
 
 fn run(args: &[String]) -> Result<(), String> {
+    if args.first().map(String::as_str) == Some("bake") {
+        return run_bake(&args[1..]);
+    }
     let a = parse(args)?;
     let cfg = Config::from_json(
         &fs::read_to_string(&a.config).map_err(|e| format!("{}: {e}", a.config.display()))?,
@@ -305,6 +312,250 @@ fn run(args: &[String]) -> Result<(), String> {
         a.out.join("map.json").display()
     );
     Ok(())
+}
+
+struct BakeArgs {
+    map: PathBuf,
+    dem: Vec<PathBuf>,
+    osm: Vec<PathBuf>,
+    config: PathBuf,
+    assets: PathBuf,
+    sprites: PathBuf,
+}
+
+fn parse_bake(args: &[String]) -> Result<BakeArgs, String> {
+    let usage = "usage: mapgen bake --map DIR --dem <tif|dir>... [--osm <file.osm.pbf>...] [--config data/mapgen.json] [--assets assets] [--sprites data/sprites.json]";
+    let mut a = BakeArgs {
+        map: PathBuf::new(),
+        dem: Vec::new(),
+        osm: Vec::new(),
+        config: PathBuf::from("data/mapgen.json"),
+        assets: PathBuf::from("assets"),
+        sprites: PathBuf::from("data/sprites.json"),
+    };
+    let mut it = args.iter();
+    while let Some(flag) = it.next() {
+        let v = PathBuf::from(
+            it.next()
+                .ok_or_else(|| format!("missing value for {flag}\n{usage}"))?,
+        );
+        match flag.as_str() {
+            "--map" => a.map = v,
+            "--dem" => a.dem.push(v),
+            "--osm" => a.osm.push(v),
+            "--config" => a.config = v,
+            "--assets" => a.assets = v,
+            "--sprites" => a.sprites = v,
+            _ => return Err(format!("unknown option {flag}\n{usage}")),
+        }
+    }
+    if a.map.as_os_str().is_empty() || a.dem.is_empty() {
+        return Err(usage.into());
+    }
+    a.osm.sort();
+    Ok(a)
+}
+
+fn read_json(p: &Path) -> Result<serde_json::Value, String> {
+    let t = fs::read_to_string(p).map_err(|e| format!("{}: {e}", p.display()))?;
+    serde_json::from_str(&t).map_err(|e| format!("{}: {e}", p.display()))
+}
+
+/// Terrain ids per [row][col] from map.json (legend characters).
+fn hex_terrain(map: &serde_json::Value) -> Result<Vec<Vec<String>>, String> {
+    let legend = map["legend"].as_object().ok_or("map.json: no legend")?;
+    map["terrain"]
+        .as_array()
+        .ok_or("map.json: no terrain")?
+        .iter()
+        .map(|row| {
+            row.as_str()
+                .ok_or("map.json: terrain row")?
+                .chars()
+                .map(|ch| {
+                    legend
+                        .get(&ch.to_string())
+                        .and_then(|l| l["terrain"].as_str())
+                        .map(str::to_owned)
+                        .ok_or_else(|| format!("map.json: unknown character '{ch}'"))
+                })
+                .collect()
+        })
+        .collect()
+}
+
+fn run_bake(args: &[String]) -> Result<(), String> {
+    let a = parse_bake(args)?;
+    let cfg = Config::from_json(
+        &fs::read_to_string(&a.config).map_err(|e| format!("{}: {e}", a.config.display()))?,
+    )?;
+    let map = read_json(&a.map.join("map.json"))?;
+    let geo = &map["geo"];
+    let b: Vec<f64> = geo["bbox"]
+        .as_array()
+        .map(|v| v.iter().filter_map(serde_json::Value::as_f64).collect())
+        .unwrap_or_default();
+    let [west, south, east, north] = b[..] else {
+        return Err("map.json: geo.bbox is required for bake".into());
+    };
+    let bbox = BBox {
+        west,
+        south,
+        east,
+        north,
+    };
+    let hex_km = geo["hex_km"].as_f64().ok_or("map.json: geo.hex_km")?;
+    let proj = Projection::new(bbox, cfg.earth_radius_km);
+    let grid = Grid::fit(proj.size_km(), hex_km)?;
+    if Some(u64::from(grid.cols)) != map["width"].as_u64()
+        || Some(u64::from(grid.rows)) != map["height"].as_u64()
+    {
+        return Err("map.json: width/height do not match geo.bbox and hex_km".into());
+    }
+    let terrain = hex_terrain(&map)?;
+    let tiles = tiff_files(&a.dem)?
+        .iter()
+        .map(|f| Tile::open(f))
+        .collect::<Result<Vec<_>, _>>()?;
+    let dem = Mosaic(tiles);
+    let mut sources = vec![COPERNICUS_NOTICE.to_owned()];
+    let osm = if a.osm.is_empty() {
+        OsmData::default()
+    } else {
+        sources.push(OSM_NOTICE.to_owned());
+        let mut oc = cfg.osm.clone();
+        oc.roads = cfg.bake.roads.iter().map(|r| r.kind.clone()).collect();
+        oc.secondary_roads.clear();
+        oc.areas.retain(|r| r.terrain == "water");
+        oc.areas
+            .extend(cfg.bake.vegetation.iter().map(|v| config::AreaRule {
+                terrain: format!("{}{}", bake::VEG, v.kind),
+                tags: v.tags.clone(),
+                min_share: 1.0,
+            }));
+        osm::read(&a.osm, bbox, &oc, false)?
+    };
+    // City icons: the main place in each city hex, else its centre.
+    let mut cities = Vec::new();
+    for (row, line) in terrain.iter().enumerate() {
+        for (col, t) in line.iter().enumerate() {
+            if t != "city" {
+                continue;
+            }
+            let best = osm
+                .places
+                .iter()
+                .filter(|p| {
+                    features::hex_at(&grid, proj.to_km(p.at.0, p.at.1))
+                        == Some([col as i32, row as i32])
+                })
+                .max_by(|x, y| {
+                    let rank = |p: &osm::Place| {
+                        (
+                            cfg.osm.city_kinds.contains(&p.kind),
+                            p.population.unwrap_or(0),
+                        )
+                    };
+                    rank(x).cmp(&rank(y)).then_with(|| y.name.cmp(&x.name))
+                });
+            cities.push(match best {
+                Some(p) => proj.to_km(p.at.0, p.at.1),
+                None => grid.center(col as u32, row as u32),
+            });
+        }
+    }
+    // Art from sprites.json; missing pictures are drawn procedurally.
+    let sprites = read_json(&a.sprites)?;
+    let mut textures = BTreeMap::new();
+    if let Some(t) = sprites["terrain"].as_object() {
+        for (id, file) in t {
+            let Some(file) = file.as_str() else { continue };
+            let p = a.assets.join("terrain").join(format!("{file}.png"));
+            let img = image::open(&p).map_err(|e| format!("{}: {e}", p.display()))?;
+            textures.insert(id.clone(), img.to_rgb8());
+        }
+    }
+    let object = |role: &str| -> Option<image::RgbaImage> {
+        let id = sprites["map_objects"][role].as_str()?;
+        image::open(a.assets.join("objects").join(format!("{id}.png")))
+            .ok()
+            .map(|i| i.to_rgba8())
+    };
+    let (tree, city) = (object("tree"), object("city"));
+    let img = bake::bake(&bake::BakeInput {
+        dem: &dem,
+        osm: &osm,
+        map: &bake::HexMap { terrain },
+        grid: &grid,
+        proj: &proj,
+        cities: &cities,
+        art: bake::Art {
+            terrain: &textures,
+            tree: tree.as_ref(),
+            city: city.as_ref(),
+        },
+        cfg: &cfg.bake,
+        shade: &cfg.hillshade,
+    })?;
+    let digest = fnv1a(img.as_raw());
+    let (width, height) = img.dimensions();
+    let tile = cfg.bake.tile_px;
+    let dir = a.map.join("tiles");
+    if dir.exists() {
+        fs::remove_dir_all(&dir).map_err(|e| format!("{}: {e}", dir.display()))?;
+    }
+    let mut levels = Vec::new();
+    for (z, level) in bake::pyramid(img, tile).iter().enumerate() {
+        let (cols, rows) = (level.width().div_ceil(tile), level.height().div_ceil(tile));
+        let zdir = dir.join(z.to_string());
+        fs::create_dir_all(&zdir).map_err(|e| format!("{}: {e}", zdir.display()))?;
+        for ty in 0..rows {
+            for tx in 0..cols {
+                let (x0, y0) = (tx * tile, ty * tile);
+                let (w, h) = (tile.min(level.width() - x0), tile.min(level.height() - y0));
+                let part = image::imageops::crop_imm(level, x0, y0, w, h).to_image();
+                let path = zdir.join(format!("{tx}_{ty}.webp"));
+                let file =
+                    fs::File::create(&path).map_err(|e| format!("{}: {e}", path.display()))?;
+                image::codecs::webp::WebPEncoder::new_lossless(std::io::BufWriter::new(file))
+                    .encode(part.as_raw(), w, h, image::ExtendedColorType::Rgb8)
+                    .map_err(|e| format!("{}: {e}", path.display()))?;
+            }
+        }
+        levels.push(serde_json::json!({
+            "z": z, "width": level.width(), "height": level.height(), "cols": cols, "rows": rows,
+        }));
+    }
+    let r = grid.radius_km;
+    let meta = serde_json::json!({
+        "_comment": "mapgen bake: painted map tiles (R-UI-01). tiles/<z>/<x>_<y>.webp; level z is 2^z times smaller.",
+        "format": "webp",
+        "tile_px": tile,
+        "px_per_km": cfg.bake.px_per_km,
+        "hex_radius_km": r,
+        "top_left_from_hex00_km": [-r, -r * 3f64.sqrt() / 2.0],
+        "width_px": width,
+        "height_px": height,
+        "levels": levels,
+        "fnv1a64": format!("{digest:016x}"),
+    });
+    let pretty = serde_json::to_string_pretty(&meta).map_err(|e| e.to_string())? + "\n";
+    fs::write(a.map.join("tiles.json"), pretty).map_err(|e| e.to_string())?;
+    let srcs: Vec<&str> = sources.iter().map(String::as_str).collect();
+    fs::write(a.map.join("LICENSE-DATA.md"), license_text(&srcs)).map_err(|e| e.to_string())?;
+    eprintln!(
+        "{width} × {height} px, {} levels, fnv1a64 {digest:016x} → {}",
+        meta["levels"].as_array().map_or(0, Vec::len),
+        dir.display()
+    );
+    Ok(())
+}
+
+/// FNV-1a 64 over the full-size pixels: a fingerprint to check determinism.
+fn fnv1a(bytes: &[u8]) -> u64 {
+    bytes.iter().fold(0xcbf2_9ce4_8422_2325, |h, &b| {
+        (h ^ u64::from(b)).wrapping_mul(0x0100_0000_01b3)
+    })
 }
 
 fn main() -> ExitCode {
@@ -456,6 +707,89 @@ mod tests {
         assert_eq!(all.matches('c').count(), 1, "only the city:\n{all}");
         let (map, _) = ceasefire_core::scenario::load_map(&g.map.to_string()).unwrap();
         assert!(map.bridges().count() > 0);
+    }
+
+    #[test]
+    fn bake_is_deterministic_and_paints_every_layer() {
+        use osm::{Area, Line, Place};
+        let mut cfg = cfg();
+        cfg.bake.px_per_km = 12.0;
+        let bbox = BBox::parse("35.30,32.70,36.10,33.45").unwrap();
+        let proj = Projection::new(bbox, cfg.earth_radius_km);
+        let grid = Grid::fit(proj.size_km(), 5.0).unwrap();
+        let rows = grid.rows as usize;
+        let cols = grid.cols as usize;
+        let mut terrain = vec![vec!["plain".to_owned(); cols]; rows];
+        terrain[2][2] = "city".into();
+        let data = OsmData {
+            areas: vec![
+                Area {
+                    terrain: "water".into(),
+                    segments: square(35.52, 32.72, 35.65, 32.88),
+                },
+                Area {
+                    terrain: format!("{}forest", bake::VEG),
+                    segments: square(35.80, 33.20, 35.95, 33.35),
+                },
+            ],
+            rivers: vec![Line {
+                kind: "river".into(),
+                pts: vec![(35.70, 33.44), (35.70, 32.95)],
+            }],
+            roads: vec![Line {
+                kind: "primary".into(),
+                pts: vec![(35.31, 33.10), (36.09, 33.10)],
+            }],
+            places: vec![Place {
+                name: "Testtown".into(),
+                kind: "city".into(),
+                population: None,
+                at: (35.40, 33.30),
+            }],
+        };
+        let mut textures = BTreeMap::new();
+        textures.insert(
+            "plain".to_owned(),
+            image::RgbImage::from_pixel(64, 64, image::Rgb([200, 160, 100])),
+        );
+        let cities = [grid.center(2, 2)];
+        let run = || {
+            bake::bake(&bake::BakeInput {
+                dem: &Synthetic,
+                osm: &data,
+                map: &bake::HexMap {
+                    terrain: terrain.clone(),
+                },
+                grid: &grid,
+                proj: &proj,
+                cities: &cities,
+                art: bake::Art {
+                    terrain: &textures,
+                    tree: None,
+                    city: None,
+                },
+                cfg: &cfg.bake,
+                shade: &cfg.hillshade,
+            })
+            .unwrap()
+        };
+        let (a, b) = (run(), run());
+        assert_eq!(fnv1a(a.as_raw()), fnv1a(b.as_raw()), "same inputs, same pixels");
+        let at = |lon: f64, lat: f64| {
+            let k = proj.to_km(lon, lat);
+            let p = cfg.bake.px_per_km;
+            a.get_pixel((k.x * p) as u32, (k.y * p) as u32).0
+        };
+        let lake = at(35.585, 32.80);
+        assert!(lake[2] > lake[0], "lake is blue: {lake:?}");
+        let road = at(35.40, 33.10);
+        assert!(road[0] > 200 && road[1] > 190, "road is light: {road:?}");
+        let forest = at(35.875, 33.275);
+        assert!(forest[1] > forest[2] && forest[0] < 150, "forest is green: {forest:?}");
+        // The pyramid ends in one tile.
+        let levels = bake::pyramid(a, 64);
+        let last = levels.last().unwrap();
+        assert!(last.width() <= 64 && last.height() <= 64);
     }
 
     #[test]

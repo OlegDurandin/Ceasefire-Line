@@ -14,7 +14,7 @@ pub type Off = [i32; 2];
 const SQRT3: f64 = 1.732_050_807_568_877_2;
 
 /// Axial hex containing a km point (unbounded).
-fn axial_at(grid: &Grid, p: Km) -> Hex {
+pub(crate) fn axial_at(grid: &Grid, p: Km) -> Hex {
     let r = grid.radius_km;
     let (x, y) = (p.x - r, p.y - SQRT3 * r / 2.0);
     let fq = (2.0 / 3.0 * x) / r;

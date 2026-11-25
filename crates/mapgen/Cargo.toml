@@ -14,4 +14,5 @@ tiff = "0.11"
 # OpenStreetMap .osm.pbf reader, pure Rust.
 osmpbf = "0.3"
 # Hillshade output.
-image = { version = "0.25", default-features = false, features = ["png"] }
+image = { version = "0.25", default-features = false, features = ["png", "webp"] }
+tiny-skia = { version = "0.11", default-features = false, features = ["std"] }

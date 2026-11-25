@@ -86,6 +86,85 @@ pub struct Config {
     pub pass_char: char,
     pub osm: OsmConfig,
     pub hillshade: HillshadeConfig,
+    pub bake: BakeConfig,
+}
+
+/// `mapgen bake`: the painted map under the hexes (R-UI-01, R-UI-02).
+#[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct BakeConfig {
+    /// Resolution of the finest zoom level.
+    pub px_per_km: f64,
+    pub tile_px: u32,
+    /// Size of one terrain texture pixel on the ground.
+    pub texture_km_per_px: f64,
+    /// Width of the soft border between terrain types, in hexes (distance between centres).
+    pub blend_blur_hex: f64,
+    /// Multiply strength of the relief shading (0 = none).
+    pub shade_strength: f64,
+    /// Hypsometric tint, stops by elevation.
+    pub tint: Vec<TintStop>,
+    pub water: WaterStyle,
+    pub vegetation: Vec<VegetationRule>,
+    /// `highway` classes drawn, thinnest first.
+    pub roads: Vec<RoadStyle>,
+    pub road_color: String,
+    pub road_edge_color: String,
+    pub road_edge_km: f64,
+    pub city: CityStyle,
+    /// Seed for the scatter of trees.
+    pub seed: u64,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct TintStop {
+    pub elevation_m: f64,
+    pub color: String,
+    pub alpha: f64,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct WaterStyle {
+    pub color: String,
+    pub edge_color: String,
+    pub edge_km: f64,
+    /// Smaller lakes and ponds are left out (mostly later reservoirs).
+    pub min_lake_km2: f64,
+    /// `waterway` class → line width, km.
+    pub river_km: BTreeMap<String, f64>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct VegetationRule {
+    pub kind: String,
+    pub tags: Vec<(String, String)>,
+    /// Ground tint under the trees.
+    pub ground_color: String,
+    pub ground_alpha: f64,
+    /// Distance between trees and how far each is moved from its cell (0..1).
+    pub spacing_km: f64,
+    pub jitter: f64,
+    pub crown_km: f64,
+    pub crown_color: String,
+    pub highlight_color: String,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct RoadStyle {
+    pub kind: String,
+    pub width_km: f64,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct CityStyle {
+    pub size_km: f64,
+    pub roof_color: String,
+    pub edge_color: String,
 }
 
 impl Config {
