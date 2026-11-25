@@ -1,4 +1,4 @@
 /target
 # External asset archives and review sheets (not game assets)
 /assets/*.zip
-/assets/contact_sheet.png
+/assets/contact_sheet*.png

@@ -408,5 +408,85 @@
     "width": 512,
     "height": 512,
     "prompt": "Painterly gouache realism, muted natural colors, upper-left lighting, no text, flags or insignia. Transparent square game unit token, 1967–1973 era, three-quarter view facing lower-left: Osa class missile boat on small patch of water"
+  },
+  {
+    "id": "terrain_fortified",
+    "file": "terrain/terrain_fortified.png",
+    "group": "terrain",
+    "side": null,
+    "template": "terrain",
+    "width": 1024,
+    "height": 1024,
+    "prompt": "Painterly gouache realism, muted natural colors, upper-left lighting, no text, flags or insignia. Seamless square terrain texture, 1024×1024, strictly orthographic top-down, tileable on all sides, no vignette, no border shadows, no large isolated features at the edges. Subject: Seamless square orthographic top-down terrain: desert fortified line — sand ramparts, zigzag trenches, concrete strongpoints and barbed wire, 1960s–70s"
+  },
+  {
+    "id": "obj_bridge_pontoon",
+    "file": "objects/obj_bridge_pontoon.png",
+    "group": "object",
+    "side": null,
+    "template": "object",
+    "width": 512,
+    "height": 512,
+    "prompt": "Painterly gouache realism, muted natural colors, upper-left lighting, no text, flags or insignia. Map object, 512×512, PNG RGBA with transparent background, strictly top-down, long axis horizontal through the center, all four corners fully transparent, at least 8 px transparent padding. Subject: Orthographic top-down transparent map object: military pontoon bridge, horizontal, olive-drab pontoon sections, short ramps at both ends, no water drawn"
+  },
+  {
+    "id": "obj_bridge_destroyed",
+    "file": "objects/obj_bridge_destroyed.png",
+    "group": "object",
+    "side": null,
+    "template": "object",
+    "width": 512,
+    "height": 512,
+    "prompt": "Painterly gouache realism, muted natural colors, upper-left lighting, no text, flags or insignia. Map object, 512×512, PNG RGBA with transparent background, strictly top-down, long axis horizontal through the center, all four corners fully transparent, at least 8 px transparent padding. Subject: Orthographic top-down transparent map object: the same pontoon bridge broken in the middle, sections scattered and half-sunk, debris, no water drawn"
+  },
+  {
+    "id": "isr_hawk",
+    "file": "units/isr/isr_hawk.png",
+    "group": "unit",
+    "side": "isr",
+    "template": "ground",
+    "width": 512,
+    "height": 512,
+    "prompt": "Painterly gouache realism, muted natural colors, upper-left lighting, no text, flags or insignia. Unit token, 512×512, PNG RGBA with transparent background, three-quarter view, facing lower-left, 1967–1973 era, all four corners fully transparent, at least 8 px transparent padding, no ground, no scenery. Subject: MIM-23 HAWK surface-to-air missile launcher with three missiles, towed battery"
+  },
+  {
+    "id": "isr_atgm_team",
+    "file": "units/isr/isr_atgm_team.png",
+    "group": "unit",
+    "side": "isr",
+    "template": "ground",
+    "width": 512,
+    "height": 512,
+    "prompt": "Painterly gouache realism, muted natural colors, upper-left lighting, no text, flags or insignia. Unit token, 512×512, PNG RGBA with transparent background, three-quarter view, facing lower-left, 1967–1973 era, all four corners fully transparent, at least 8 px transparent padding, no ground, no scenery. Subject: Israeli infantry anti-tank team with TOW launcher and M72 LAW, 1973"
+  },
+  {
+    "id": "isr_paratroopers",
+    "file": "units/isr/isr_paratroopers.png",
+    "group": "unit",
+    "side": "isr",
+    "template": "ground",
+    "width": 512,
+    "height": 512,
+    "prompt": "Painterly gouache realism, muted natural colors, upper-left lighting, no text, flags or insignia. Unit token, 512×512, PNG RGBA with transparent background, three-quarter view, facing lower-left, 1967–1973 era, all four corners fully transparent, at least 8 px transparent padding, no ground, no scenery. Subject: Israeli paratroopers squad in combat gear, light weapons, 1967"
+  },
+  {
+    "id": "egy_saiqa",
+    "file": "units/egy_syr/egy_saiqa.png",
+    "group": "unit",
+    "side": "egy_syr",
+    "template": "ground",
+    "width": 512,
+    "height": 512,
+    "prompt": "Painterly gouache realism, muted natural colors, upper-left lighting, no text, flags or insignia. Unit token, 512×512, PNG RGBA with transparent background, three-quarter view, facing lower-left, 1967–1973 era, all four corners fully transparent, at least 8 px transparent padding, no ground, no scenery. Subject: Egyptian Saiqa commando squad with AK-47 and RPG-7, 1973"
+  },
+  {
+    "id": "egy_mig17",
+    "file": "units/egy_syr/egy_mig17.png",
+    "group": "unit",
+    "side": "egy_syr",
+    "template": "air",
+    "width": 512,
+    "height": 512,
+    "prompt": "Painterly gouache realism, muted natural colors, upper-left lighting, no text, flags or insignia. Air unit token, 512×512, PNG RGBA with transparent background, three-quarter aerial view, heading upper-left, 1967–1973 era, all four corners fully transparent, at least 8 px transparent padding, no clouds, no ground, no scenery. Subject: MiG-17 fighter-bomber in flight, carrying rockets"
   }
 ]

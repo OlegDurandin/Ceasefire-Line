@@ -19,8 +19,12 @@ const UNIT_SIZE: u32 = 512;
 const SEAM_MAX_MEAN_DIFF: f64 = 12.0;
 /// Outer border (px) of a unit image that must be fully transparent.
 const UNIT_EDGE_MARGIN_PX: u32 = 1;
-const EXPECTED_TERRAIN: usize = 9;
-const EXPECTED_UNITS: usize = 32;
+/// Map objects (bridges): same format as unit medallions, top-down.
+const OBJECT_SIZE: u32 = 512;
+/// Packs v1 + v2.
+const EXPECTED_TERRAIN: usize = 10;
+const EXPECTED_UNITS: usize = 37;
+const EXPECTED_OBJECTS: usize = 2;
 const SPRITE_SIDES: [&str; 2] = ["isr", "egy_syr"];
 
 pub struct Options {
@@ -79,15 +83,28 @@ pub struct SpriteClass {
 }
 
 #[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct SpritesFile {
     pub sprite_sides: BTreeMap<String, serde_json::Value>,
+    /// Terrain id from data/terrain.json → texture id in assets/terrain.
+    pub terrain: BTreeMap<String, String>,
+    /// Textures kept for later terrain types or variants.
+    #[serde(default)]
+    pub unused_terrain_textures: Vec<String>,
     pub units: BTreeMap<String, SpriteClass>,
     pub helicopter_transfer: BTreeMap<String, String>,
+    /// Map object role → id in assets/objects.
+    pub map_objects: BTreeMap<String, String>,
 }
 
 #[derive(Debug, Deserialize)]
 struct UnitsFile {
     units: Vec<UnitId>,
+}
+
+#[derive(Debug, Deserialize)]
+struct TerrainFile {
+    terrain: Vec<UnitId>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -148,6 +165,39 @@ pub fn check_sprites(data: &Path, assets: &Path) -> Result<Vec<String>, String> 
             if tiers.len() > 1 && c.tech_branch.is_none() {
                 problems.push(format!("`{class}`: several tiers need a tech_branch"));
             }
+        }
+    }
+    let terrain: TerrainFile = serde_json::from_str(&read(data.join("terrain.json"))?)
+        .map_err(|e| format!("terrain.json: {e}"))?;
+    for t in &terrain.terrain {
+        match sprites.terrain.get(&t.id) {
+            None => problems.push(format!("terrain `{}` has no texture in sprites.json", t.id)),
+            Some(tex) if !assets.join("terrain").join(format!("{tex}.png")).is_file() => {
+                problems.push(format!(
+                    "terrain `{}`: texture file `{tex}.png` missing",
+                    t.id
+                ));
+            }
+            Some(_) => {}
+        }
+    }
+    for id in sprites.terrain.keys() {
+        if !terrain.terrain.iter().any(|t| &t.id == id) {
+            problems.push(format!(
+                "sprites.json terrain `{id}` is not in terrain.json"
+            ));
+        }
+    }
+    for tex in &sprites.unused_terrain_textures {
+        if !assets.join("terrain").join(format!("{tex}.png")).is_file() {
+            problems.push(format!("unused terrain texture `{tex}.png` missing"));
+        }
+    }
+    for (role, id) in &sprites.map_objects {
+        if !assets.join("objects").join(format!("{id}.png")).is_file() {
+            problems.push(format!(
+                "map object `{role}`: file `objects/{id}.png` missing"
+            ));
         }
     }
     for (side, id) in referenced_sprites(&sprites) {
@@ -328,7 +378,7 @@ pub fn run(o: &Options) -> Result<(), String> {
     .map_err(|e| format!("manifest.json: {e}"))?;
 
     let mut rows = Vec::new();
-    let (mut terrain_n, mut unit_n) = (0, 0);
+    let (mut terrain_n, mut unit_n, mut object_n) = (0, 0, 0);
     for e in &manifest {
         let (rel, size, terrain) = match (e.group.as_str(), e.side.as_deref()) {
             ("terrain", _) => {
@@ -338,6 +388,10 @@ pub fn run(o: &Options) -> Result<(), String> {
             ("unit", Some(side)) if SPRITE_SIDES.contains(&side) => {
                 unit_n += 1;
                 (format!("units/{side}/{}.png", e.id), UNIT_SIZE, false)
+            }
+            ("object", None) => {
+                object_n += 1;
+                (format!("objects/{}.png", e.id), OBJECT_SIZE, false)
             }
             _ => {
                 rows.push(Row {
@@ -370,10 +424,17 @@ pub fn run(o: &Options) -> Result<(), String> {
             "manifest: {unit_n} unit entries, expected {EXPECTED_UNITS}"
         ));
     }
+    if object_n != EXPECTED_OBJECTS {
+        problems.push(format!(
+            "manifest: {object_n} object entries, expected {EXPECTED_OBJECTS}"
+        ));
+    }
     problems.extend(check_sprites(&o.data, &o.assets)?);
 
     let total = png_bytes(&o.assets);
-    let game = png_bytes(&o.assets.join("terrain")) + png_bytes(&o.assets.join("units"));
+    let game = png_bytes(&o.assets.join("terrain"))
+        + png_bytes(&o.assets.join("units"))
+        + png_bytes(&o.assets.join("objects"));
     let bad = rows.iter().filter(|r| r.statuses != [Status::Ok]).count();
     let report = render(&rows, &problems, total, game);
     if let Some(dir) = o.report.parent() {
@@ -402,14 +463,14 @@ fn render(rows: &[Row], problems: &[String], total: u64, game: u64) -> String {
     let _ = writeln!(s, "# Отчёт по ассетам\n");
     let _ = writeln!(
         s,
-        "Сгенерирован `sim assets-check`. Файлов по манифесту: {}, в порядке: {ok}. PNG всего: {}, из них игровые (terrain + units): {}.\n",
+        "Сгенерирован `sim assets-check`. Файлов по манифесту: {}, в порядке: {ok}. PNG всего: {}, из них игровые (terrain + units + objects): {}.\n",
         rows.len(),
         mb(total),
         mb(game)
     );
     let _ = writeln!(
         s,
-        "Пороги: шов — средняя разница RGB противоположных краёв > {SEAM_MAX_MEAN_DIFF}; у юнитов прозрачная рамка {UNIT_EDGE_MARGIN_PX} px. Для справки в деталях — та же метрика между соседними столбцами и строками внутри текстуры: если край близок к ней, шов, скорее всего, на глаз не виден. Модели техники визуально не оценивались.\n"
+        "Пороги: шов — средняя разница RGB противоположных краёв > {SEAM_MAX_MEAN_DIFF}; у юнитов и объектов карты прозрачная рамка {UNIT_EDGE_MARGIN_PX} px. Для справки в деталях — та же метрика между соседними столбцами и строками внутри текстуры: если край близок к ней, шов, скорее всего, на глаз не виден. Модели техники визуально не оценивались.\n"
     );
     if problems.is_empty() {
         let _ = writeln!(s, "Привязка `data/sprites.json`: замечаний нет.\n");

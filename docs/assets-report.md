@@ -1,8 +1,8 @@
 # Отчёт по ассетам
 
-Сгенерирован `sim assets-check`. Файлов по манифесту: 41, в порядке: 37. PNG всего: 25.4 МБ, из них игровые (terrain + units): 24.0 МБ.
+Сгенерирован `sim assets-check`. Файлов по манифесту: 49, в порядке: 44. PNG всего: 29.9 МБ, из них игровые (terrain + units + objects): 27.8 МБ.
 
-Пороги: шов — средняя разница RGB противоположных краёв > 12; у юнитов прозрачная рамка 1 px. Для справки в деталях — та же метрика между соседними столбцами и строками внутри текстуры: если край близок к ней, шов, скорее всего, на глаз не виден. Модели техники визуально не оценивались.
+Пороги: шов — средняя разница RGB противоположных краёв > 12; у юнитов и объектов карты прозрачная рамка 1 px. Для справки в деталях — та же метрика между соседними столбцами и строками внутри текстуры: если край близок к ней, шов, скорее всего, на глаз не виден. Модели техники визуально не оценивались.
 
 Привязка `data/sprites.json`: замечаний нет.
 
@@ -49,3 +49,11 @@
 | egy_su7 | `units/egy_syr/egy_su7.png` | ок |  |
 | egy_mi8 | `units/egy_syr/egy_mi8.png` | ок |  |
 | egy_osa | `units/egy_syr/egy_osa.png` | ок |  |
+| terrain_fortified | `terrain/terrain_fortified.png` | шов (лево–право 13.9, верх–низ 14.3) | края: л–п 13.9, в–н 14.3; внутри: соседние столбцы 13.0, строки 13.0 |
+| obj_bridge_pontoon | `objects/obj_bridge_pontoon.png` | ок |  |
+| obj_bridge_destroyed | `objects/obj_bridge_destroyed.png` | ок |  |
+| isr_hawk | `units/isr/isr_hawk.png` | ок |  |
+| isr_atgm_team | `units/isr/isr_atgm_team.png` | ок |  |
+| isr_paratroopers | `units/isr/isr_paratroopers.png` | ок |  |
+| egy_saiqa | `units/egy_syr/egy_saiqa.png` | ок |  |
+| egy_mig17 | `units/egy_syr/egy_mig17.png` | ок |  |

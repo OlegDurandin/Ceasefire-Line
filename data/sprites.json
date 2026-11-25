@@ -1,8 +1,31 @@
 {
   "sprite_sides": {
-    "isr": { "nations": ["israel"] },
-    "egy_syr": { "nations": ["egypt", "syria"] }
+    "isr": {
+      "nations": [
+        "israel"
+      ]
+    },
+    "egy_syr": {
+      "nations": [
+        "egypt",
+        "syria"
+      ]
+    }
   },
+  "terrain": {
+    "plain": "terrain_desert_flat",
+    "dunes": "terrain_dunes",
+    "hills": "terrain_hills_rocky",
+    "mountains": "terrain_mountains",
+    "marsh": "terrain_saltmarsh",
+    "city": "terrain_town",
+    "fortified": "terrain_fortified"
+  },
+  "unused_terrain_textures": [
+    "terrain_basalt_plateau",
+    "terrain_farmland",
+    "terrain_water"
+  ],
   "units": {
     "tank": {
       "tech_branch": "armor",
@@ -28,44 +51,66 @@
     },
     "infantry": {
       "tech_branch": "antitank",
-      "isr": [{ "tech_min": 1, "sprite": "isr_infantry" }],
+      "isr": [
+        { "tech_min": 1, "sprite": "isr_infantry" },
+        { "tech_min": 2, "sprite": "isr_atgm_team" }
+      ],
       "egy_syr": [
         { "tech_min": 1, "sprite": "egy_infantry" },
         { "tech_min": 2, "sprite": "egy_atgm_team" }
       ]
     },
     "commando": {
-      "tech_branch": "antitank",
-      "isr": [{ "tech_min": 1, "sprite": "isr_infantry" }],
+      "tech_branch": null,
+      "isr": [
+        { "tech_min": 1, "sprite": "isr_paratroopers" }
+      ],
       "egy_syr": [
-        { "tech_min": 1, "sprite": "egy_infantry" },
-        { "tech_min": 2, "sprite": "egy_atgm_team" }
+        { "tech_min": 1, "sprite": "egy_saiqa" }
       ]
     },
     "artillery": {
       "tech_branch": null,
-      "isr": [{ "tech_min": 1, "sprite": "isr_m109" }],
-      "egy_syr": [{ "tech_min": 1, "sprite": "egy_m46" }]
+      "isr": [
+        { "tech_min": 1, "sprite": "isr_m109" }
+      ],
+      "egy_syr": [
+        { "tech_min": 1, "sprite": "egy_m46" }
+      ]
     },
     "engineer": {
       "tech_branch": null,
-      "isr": [{ "tech_min": 1, "sprite": "isr_bridging" }],
-      "egy_syr": [{ "tech_min": 1, "sprite": "egy_pmp" }]
+      "isr": [
+        { "tech_min": 1, "sprite": "isr_bridging" }
+      ],
+      "egy_syr": [
+        { "tech_min": 1, "sprite": "egy_pmp" }
+      ]
     },
     "hq": {
       "tech_branch": null,
-      "isr": [{ "tech_min": 1, "sprite": "isr_hq" }],
-      "egy_syr": [{ "tech_min": 1, "sprite": "egy_hq" }]
+      "isr": [
+        { "tech_min": 1, "sprite": "isr_hq" }
+      ],
+      "egy_syr": [
+        { "tech_min": 1, "sprite": "egy_hq" }
+      ]
     },
     "sam_static": {
       "tech_branch": "air_defense",
-      "isr": [],
-      "egy_syr": [{ "tech_min": 1, "sprite": "egy_sa2" }]
+      "isr": [
+        { "tech_min": 1, "sprite": "isr_hawk" }
+      ],
+      "egy_syr": [
+        { "tech_min": 1, "sprite": "egy_sa2" }
+      ]
     },
     "sam_mobile": {
       "tech_branch": "air_defense",
       "isr": [],
-      "egy_syr": [{ "tech_min": 1, "sprite": "egy_sa6", "variants": ["egy_zsu23"] }]
+      "egy_syr": [
+        { "tech_min": 1, "sprite": "egy_sa6", "variants": ["egy_zsu23"] }
+      ]
     },
     "fighter": {
       "tech_branch": "aviation",
@@ -73,21 +118,36 @@
         { "tech_min": 1, "sprite": "isr_mirage3" },
         { "tech_min": 2, "sprite": "isr_f4" }
       ],
-      "egy_syr": [{ "tech_min": 1, "sprite": "egy_mig21" }]
+      "egy_syr": [
+        { "tech_min": 1, "sprite": "egy_mig21" }
+      ]
     },
     "strike": {
       "tech_branch": "aviation",
-      "isr": [{ "tech_min": 1, "sprite": "isr_a4" }],
-      "egy_syr": [{ "tech_min": 1, "sprite": "egy_su7" }]
+      "isr": [
+        { "tech_min": 1, "sprite": "isr_a4" }
+      ],
+      "egy_syr": [
+        { "tech_min": 1, "sprite": "egy_mig17" },
+        { "tech_min": 2, "sprite": "egy_su7" }
+      ]
     },
     "missile_boat": {
       "tech_branch": null,
-      "isr": [{ "tech_min": 1, "sprite": "isr_saar3" }],
-      "egy_syr": [{ "tech_min": 1, "sprite": "egy_osa" }]
+      "isr": [
+        { "tech_min": 1, "sprite": "isr_saar3" }
+      ],
+      "egy_syr": [
+        { "tech_min": 1, "sprite": "egy_osa" }
+      ]
     }
   },
   "helicopter_transfer": {
     "isr": "isr_super_frelon",
     "egy_syr": "egy_mi8"
+  },
+  "map_objects": {
+    "bridge": "obj_bridge_pontoon",
+    "bridge_destroyed": "obj_bridge_destroyed"
   }
 }
