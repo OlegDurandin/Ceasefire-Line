@@ -124,7 +124,7 @@ impl GameState {
         let chance = self.data.rules.bridge.bombard_destroy_chance;
         let destroyed = self.rng.chance(chance);
         if destroyed {
-            self.map.remove_bridge(a, b);
+            self.map.destroy_bridge(a, b)?;
         }
         if let Some(u) = self.units.get_mut(&id) {
             u.attacks_made += 1;

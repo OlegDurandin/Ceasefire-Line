@@ -4,6 +4,7 @@ mod common;
 
 use ceasefire_core::game::{Command, Event, GameState, ScenarioSetup, UnitId, UnitSetup};
 use ceasefire_core::hex::Hex;
+use ceasefire_core::map::BridgeState;
 use ceasefire_core::{BridgeError, MoveError, RuleError};
 
 use common::scenario::{board, setup, start, unit, A, B};
@@ -244,6 +245,15 @@ fn r_move_02_bombarded_bridge_falls_about_30_percent() {
         };
         assert!((chance - 0.3).abs() < 1e-12);
         assert_eq!(d, !s.map().has_bridge(Hex::new(2, 0), Hex::new(3, 0)));
+        let state = s.map().bridge_state(Hex::new(2, 0), Hex::new(3, 0));
+        assert_eq!(
+            state,
+            Some(if d {
+                BridgeState::Destroyed
+            } else {
+                BridgeState::Built
+            })
+        );
         destroyed += u64::from(d);
     }
     let share = destroyed as f64 / runs as f64;
@@ -275,6 +285,11 @@ fn r_move_02_rebuild_after_destruction() {
             (!s.map().has_bridge(Hex::new(2, 0), Hex::new(3, 0))).then_some(s)
         })
         .expect("some seed destroys it");
+    assert_eq!(
+        s.map().bridge_state(Hex::new(2, 0), Hex::new(3, 0)),
+        Some(BridgeState::Destroyed),
+        "remains stay on the edge"
+    );
     end_turn(&mut s);
     build(&mut s, 1, 3, 0).unwrap();
     assert!(!s.map().has_bridge(Hex::new(2, 0), Hex::new(3, 0)));

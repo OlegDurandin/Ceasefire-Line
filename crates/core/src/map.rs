@@ -21,12 +21,20 @@ impl HexCell {
     }
 }
 
+/// R-MOVE-02: bridge state on a hex side (absent = no bridge).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum BridgeState {
+    Built,
+    Destroyed,
+}
+
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct HexMap {
     cells: BTreeMap<Hex, HexCell>,
     roads: BTreeSet<HexEdge>,
     canals: BTreeSet<HexEdge>,
-    bridges: BTreeSet<HexEdge>,
+    bridges: BTreeMap<HexEdge, BridgeState>,
 }
 
 fn edge(a: Hex, b: Hex) -> Result<HexEdge, RuleError> {
@@ -56,17 +64,25 @@ impl HexMap {
         Ok(())
     }
 
-    /// R-MOVE-02: bridge across a canal edge.
+    /// R-MOVE-02: a built bridge across a canal edge (also a rebuilt one).
     pub fn add_bridge(&mut self, a: Hex, b: Hex) -> Result<(), RuleError> {
-        self.bridges.insert(edge(a, b)?);
+        self.bridges.insert(edge(a, b)?, BridgeState::Built);
         Ok(())
     }
 
-    /// R-MOVE-02: a destroyed bridge disappears; engineers rebuild it.
-    pub fn remove_bridge(&mut self, a: Hex, b: Hex) {
-        if let Some(e) = HexEdge::new(a, b) {
-            self.bridges.remove(&e);
-        }
+    /// R-MOVE-02: the bridge is destroyed; its remains stay until rebuilt.
+    pub fn destroy_bridge(&mut self, a: Hex, b: Hex) -> Result<(), RuleError> {
+        self.bridges.insert(edge(a, b)?, BridgeState::Destroyed);
+        Ok(())
+    }
+
+    pub fn bridge_state(&self, a: Hex, b: Hex) -> Option<BridgeState> {
+        HexEdge::new(a, b).and_then(|e| self.bridges.get(&e).copied())
+    }
+
+    /// Every bridge on the map with its state (for rendering).
+    pub fn bridges(&self) -> impl Iterator<Item = (HexEdge, BridgeState)> + '_ {
+        self.bridges.iter().map(|(&e, &s)| (e, s))
     }
 
     fn has(set: &BTreeSet<HexEdge>, a: Hex, b: Hex) -> bool {
@@ -81,7 +97,8 @@ impl HexMap {
         Self::has(&self.canals, a, b)
     }
 
+    /// Only a built bridge carries traffic and supply.
     pub fn has_bridge(&self, a: Hex, b: Hex) -> bool {
-        Self::has(&self.bridges, a, b)
+        self.bridge_state(a, b) == Some(BridgeState::Built)
     }
 }

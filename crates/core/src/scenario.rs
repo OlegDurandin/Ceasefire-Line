@@ -64,6 +64,9 @@ struct MapFile {
     canals: Vec<[[i32; 2]; 2]>,
     #[serde(default)]
     bridges: Vec<[[i32; 2]; 2]>,
+    /// R-MOVE-02: destroyed bridges (remains on the canal edge).
+    #[serde(default)]
+    destroyed_bridges: Vec<[[i32; 2]; 2]>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -368,6 +371,9 @@ fn parse_map(json: &str) -> Result<(HexMap, BTreeMap<Hex, SideId>), RuleError> {
     }
     for [a, b] in &file.bridges {
         map.add_bridge(offset_to_axial(*a), offset_to_axial(*b))?;
+    }
+    for [a, b] in &file.destroyed_bridges {
+        map.destroy_bridge(offset_to_axial(*a), offset_to_axial(*b))?;
     }
     Ok((map, control))
 }
