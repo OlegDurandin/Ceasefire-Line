@@ -228,19 +228,42 @@ fn write(out: &Path, g: &Generated) -> Result<(), String> {
         .map_err(|e| e.to_string())
 }
 
-/// ODbL notice for a map built from OpenStreetMap (map.json only; scenario
-/// files, code and art are not covered).
+/// Copernicus WorldDEM-30 licence, Article 6(b): notice for adapted data.
+pub const COPERNICUS_NOTICE: &str = "produced using Copernicus WorldDEM-30 © DLR e.V. 2010-2014 and © Airbus Defence and Space GmbH 2014-2018 provided under COPERNICUS by the European Union and ESA; all rights reserved";
+/// Article 6(c): the liability sentence for the licence covering distribution.
+pub const COPERNICUS_LIABILITY: &str = "The organisations in charge of the Copernicus programme by law or by delegation do not incur any liability for any use of the Copernicus WorldDEM-30";
+pub const OSM_NOTICE: &str = "© OpenStreetMap contributors (ODbL)";
+
+/// Licence notes for a generated map: Copernicus DEM (always) and ODbL for
+/// OpenStreetMap-derived data (when used). Scenario files, code and art are
+/// not covered.
 fn license_text(sources: &[&str]) -> String {
-    let list: String = sources.iter().map(|s| format!("- {s}\n")).collect();
-    format!(
+    let osm = sources.iter().any(|s| s.contains("OpenStreetMap"));
+    let mut t = String::from(
         "# Лицензия данных карты\n\n\
-         `map.json` в этой папке построен утилитой `mapgen` из открытых данных:\n\n{list}\n\
-         Данные OpenStreetMap © OpenStreetMap contributors, доступны по лицензии Open Database License (ODbL) 1.0: \
-         https://opendatacommons.org/licenses/odbl/. Карта `map.json` — производная база данных и распространяется \
-         на тех же условиях (ODbL 1.0) с указанием источника. Это не распространяется на `scenario.json`, \
-         `events.json`, код и графику игры.\n\n\
-         Рельеф: NASA / USGS SRTM (общественное достояние). `hillshade.png` построен из рельефа.\n"
-    )
+         `map.json`, `hillshade.png` и `hillshade.json` в этой папке построены утилитой `mapgen` из открытых данных.\n\n\
+         ## Рельеф: Copernicus DEM GLO-30\n\n\
+         Типы местности по рельефу и отмывка — изменённые данные Copernicus WorldDEM-30 (лицензия Copernicus WorldDEM-30, статья 6):\n\n",
+    );
+    t.push_str(&format!(
+        "> {COPERNICUS_NOTICE}\n\n> {COPERNICUS_LIABILITY}\n\n"
+    ));
+    t.push_str(
+        "Проект не связан с программой Copernicus, Европейским союзом, ESA, DLR или Airbus и не одобрен ими. \
+         Эти условия действуют и для всех, кто получает карту от нас дальше (статья 6(e)).\n",
+    );
+    if osm {
+        t.push_str(
+            "\n## OpenStreetMap\n\n\
+             Дороги, реки, водоёмы, застройка и названия — из OpenStreetMap: © OpenStreetMap contributors, \
+             Open Database License (ODbL) 1.0, https://opendatacommons.org/licenses/odbl/. \
+             `map.json` — производная база данных и распространяется на тех же условиях (ODbL 1.0) с указанием источника.\n",
+        );
+    }
+    t.push_str(
+        "\nЭто не распространяется на `scenario.json`, `events.json`, код и графику игры.\n",
+    );
+    t
 }
 
 fn run(args: &[String]) -> Result<(), String> {
@@ -256,11 +279,11 @@ fn run(args: &[String]) -> Result<(), String> {
         .iter()
         .map(|f| Tile::open(f))
         .collect::<Result<Vec<_>, _>>()?;
-    let mut sources = vec!["NASA / USGS SRTM".to_owned()];
+    let mut sources = vec![COPERNICUS_NOTICE.to_owned()];
     let osm = if a.osm.is_empty() {
         None
     } else {
-        sources.push("© OpenStreetMap contributors (ODbL)".to_owned());
+        sources.push(OSM_NOTICE.to_owned());
         Some(osm::read(&a.osm, a.bbox, &cfg.osm, a.secondary_roads)?)
     };
     let g = generate(

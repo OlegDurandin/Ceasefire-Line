@@ -1,4 +1,5 @@
-//! Elevation from GeoTIFF tiles (SRTM 1″). Georeferencing from the
+//! Elevation from GeoTIFF tiles (Copernicus DEM GLO-30 COG: tiled, DEFLATE,
+//! float32; SRTM-style int16 works too). Georeferencing from the
 //! ModelTiepoint / ModelPixelScale tags and the GeoKey raster type.
 
 use std::fs::File;
@@ -13,7 +14,7 @@ pub trait Elevation {
     fn elevation(&self, lon: f64, lat: f64) -> Option<f64>;
 }
 
-/// SRTM void marker.
+/// Void marker used by SRTM (Copernicus has no voids over land).
 const VOID: f64 = -32768.0;
 /// GeoKey GTRasterTypeGeoKey and its PixelIsPoint value.
 const RASTER_TYPE_KEY: u16 = 1025;
