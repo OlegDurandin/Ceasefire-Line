@@ -19,6 +19,8 @@ pub struct MapInput<'a> {
     pub canals: &'a [[[i32; 2]; 2]],
     pub bridges: &'a [[[i32; 2]; 2]],
     pub places: &'a [Value],
+    /// Extent of the bbox in km (east, south), for underlays in the editor.
+    pub size_km: crate::geo::Km,
 }
 
 /// Builds map.json rows from terrain ids; control is left to the editor.
@@ -36,6 +38,7 @@ pub fn map_json(m: &MapInput<'_>) -> Result<Value, String> {
         canals,
         bridges,
         places,
+        size_km,
     } = *m;
     let ch = |t: &str| {
         legend
@@ -80,6 +83,7 @@ pub fn map_json(m: &MapInput<'_>) -> Result<Value, String> {
             "hex_km": hex_km,
             "hillshade": "hillshade.png",
             "sources": sources,
+            "size_km": [size_km.x, size_km.y],
             "places": places,
         }
     }))

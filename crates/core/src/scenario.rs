@@ -88,6 +88,9 @@ struct GeoFile {
     /// Named places from OSM, for the editor.
     #[serde(default)]
     places: Vec<PlaceFile>,
+    /// Extent of the bbox in km (east, south).
+    #[serde(default)]
+    size_km: Option<[f64; 2]>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -522,7 +525,8 @@ pub fn load_scenario(
 
 /// Problems that make a scenario unplayable. Hexes are reported in offset
 /// coordinates, as in the files.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize)]
+#[serde(tag = "kind", rename_all = "snake_case")]
 pub enum ScenarioIssue {
     UnknownSide {
         unit: usize,

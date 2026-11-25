@@ -70,8 +70,8 @@ struct ScenarioView {
     bridges: Vec<BridgeView>,
     sides: Vec<SideView>,
     units: Vec<UnitView>,
-    /// `validate()` output, `{kind: {...fields}}` as Debug text for now.
-    issues: Vec<String>,
+    /// `validate()` output: `{kind, ...fields}`, hexes in offset coordinates.
+    issues: Vec<ScenarioIssue>,
 }
 
 fn edge(e: HexEdge) -> EdgeView {
@@ -113,10 +113,7 @@ impl Core {
         events: Option<String>,
     ) -> Result<String, JsError> {
         let setup = load_scenario(scenario, map, events.as_deref()).map_err(js)?;
-        let issues: Vec<String> = validate(&self.data, &setup)
-            .iter()
-            .map(issue_text)
-            .collect();
+        let issues = validate(&self.data, &setup);
         let (hex_map, control) = load_map(map).map_err(js)?;
         let control: BTreeMap<Hex, u8> = control.into_iter().map(|(h, s)| (h, s.0)).collect();
         let view = ScenarioView {
@@ -178,10 +175,6 @@ impl Core {
         };
         serde_json::to_string(&view).map_err(|e| JsError::new(&e.to_string()))
     }
-}
-
-fn issue_text(i: &ScenarioIssue) -> String {
-    format!("{i:?}")
 }
 
 fn to_json<T: Serialize>(v: &T) -> Result<String, JsError> {

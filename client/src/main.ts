@@ -1,13 +1,17 @@
-// Stage 2: the client plays a scenario on the rules core (WASM), hotseat.
+// Stage 2: the client plays (hotseat) or edits (?mode=edit) a scenario on the rules core (WASM).
 
 import { Application, Assets, Container, Sprite, type Texture } from "pixi.js";
+
+import { Editor } from "./editor/editor";
+import type { MapDoc, ScenarioDoc } from "./editor/model";
 
 import { Camera } from "./camera";
 import { hexCenter, offsetToAxial } from "./hex";
 import { hillshadePlacement, type HillshadeMeta } from "./hillshade";
 import { Play } from "./play";
 import { drawMap } from "./render/map";
-import { terrainTextureUrl, type SpritesFile } from "./sprites";
+import { drawUnits, type Token } from "./render/units";
+import { pickSprite, terrainTextureUrl, type SpritesFile } from "./sprites";
 import type { ScenarioView } from "./view";
 import init, { Core, Game } from "./wasm/ceasefire_wasm.js";
 
@@ -15,7 +19,9 @@ import init, { Core, Game } from "./wasm/ceasefire_wasm.js";
 const HEX_SIZE = 48;
 /** How strongly the relief shading darkens the terrain textures. */
 const HILLSHADE_ALPHA = 0.7;
-const SCENARIO = new URLSearchParams(location.search).get("scenario") ?? "golan67";
+const PARAMS = new URLSearchParams(location.search);
+const SCENARIO = PARAMS.get("scenario") ?? "golan67";
+const EDIT = PARAMS.get("mode") === "edit";
 
 const text = (url: string) =>
   fetch(url).then((r) => {
@@ -71,7 +77,7 @@ async function main() {
     });
   const terrainTex = new Map<string, Texture>();
   await Promise.all(
-    [...new Set(view.hexes.map((h) => h.terrain))].map(async (t) => {
+    Object.keys(sprites.terrain).map(async (t) => {
       const url = terrainTextureUrl(sprites, t);
       const tex = url ? await load(url) : null;
       if (tex) terrainTex.set(t, tex);
@@ -82,25 +88,31 @@ async function main() {
     return id ? ((await load(`/assets/objects/${id}.png`)) ?? undefined) : undefined;
   };
 
-  const world = new Container();
-  const mapLayer = drawMap(view, { terrain: terrainTex, bridge: await object("bridge"), bridgeDestroyed: await object("bridge_destroyed") }, HEX_SIZE);
-  world.addChild(mapLayer);
+  const bridge = await object("bridge");
+  const bridgeDestroyed = await object("bridge_destroyed");
+  // Relief shading only for generated maps (map.json geo.hillshade).
+  const hasShade = !!(JSON.parse(map) as { geo?: { hillshade?: string } }).geo?.hillshade;
+  const shadeMeta = hasShade ? await optionalText(`${base}/hillshade.json`) : undefined;
+  const meta = shadeMeta ? (JSON.parse(shadeMeta) as HillshadeMeta) : null;
+  const shadeTex = meta ? await load(`${base}/${meta.png}`) : null;
 
-  // Relief underlay from mapgen, if the scenario has one: over the textures, under the grid.
-  const shadeMeta = await optionalText(`${base}/hillshade.json`);
-  if (shadeMeta) {
-    const meta = JSON.parse(shadeMeta) as HillshadeMeta;
-    const tex = await load(`${base}/${meta.png}`);
-    if (tex) {
-      const shade = new Sprite(tex);
+  /** Map layer from a core view; relief shading over the textures, under the grid. */
+  const buildMap = (v: ScenarioView) => {
+    const layer = drawMap(v, { terrain: terrainTex, bridge, bridgeDestroyed }, HEX_SIZE);
+    if (meta && shadeTex) {
+      const shade = new Sprite(shadeTex);
       const p = hillshadePlacement(meta, HEX_SIZE);
       shade.position.set(p.x, p.y);
       shade.scale.set(p.scale);
       shade.blendMode = "multiply";
       shade.alpha = HILLSHADE_ALPHA;
-      mapLayer.addChildAt(shade, 1);
+      layer.addChildAt(shade, 1);
     }
-  }
+    return layer;
+  };
+
+  const world = new Container();
+  world.addChild(buildMap(view));
   app.stage.addChild(world);
 
   const xs = view.hexes.map((h) => hexCenter(h, HEX_SIZE));
@@ -109,18 +121,49 @@ async function main() {
   const scale = 0.6;
   const camera = new Camera(world, app.canvas, { scale, x: window.innerWidth / 2 - cx * scale, y: window.innerHeight / 2 - cy * scale });
 
-  // Scenario validation stays visible only when something is wrong.
-  if (view.issues.length) {
-    panel.innerHTML = `<p class="bad">${ru["ui.validation.problems"] ?? "Problems"}: ${view.issues.length}</p><ul>${view.issues.map((i) => `<li>${i}</li>`).join("")}</ul>`;
+  if (EDIT) {
+    // Units drawn from the scenario document, sprites by tier as in play.
+    const unitTextures = new Map<string, Texture | null>();
+    const render = async (v: ScenarioView) => {
+      world.removeChildren().forEach((c) => c.destroy({ children: true }));
+      world.addChild(buildMap(v));
+      const tex = new Map<number, Texture | null>();
+      const tokens: Token[] = [];
+      for (const u of v.units) {
+        const ref = pickSprite(sprites, u.class, u.nation, v.sides.find((x) => x.id === u.side)?.tech ?? {});
+        if (ref && !unitTextures.has(ref.url)) unitTextures.set(ref.url, await load(ref.url));
+        tex.set(u.index, ref ? (unitTextures.get(ref.url) ?? null) : null);
+        tokens.push({ key: u.index, side: u.side, col: u.col, row: u.row, label: u.hq_rating !== null ? `★${u.hq_rating}` : String(u.strength), dim: false });
+      }
+      world.addChild(drawUnits(tokens, tex, HEX_SIZE));
+    };
+    const terrainIds = (JSON.parse(terrain) as { terrain: { id: string }[] }).terrain.map((t) => t.id);
+    const classIds = (JSON.parse(units) as { units: { id: string; target_class: string }[] }).units
+      .filter((u) => u.target_class === "soft" || u.target_class === "hard")
+      .map((u) => u.id);
+    const editor = new Editor(
+      { render, world, camera, hexSize: HEX_SIZE, view: (scn, m) => JSON.parse(core.scenarioView(scn, m, events)) as ScenarioView },
+      JSON.parse(map) as MapDoc,
+      JSON.parse(scenario) as ScenarioDoc,
+      SCENARIO,
+      ru,
+      terrainIds,
+      classIds,
+    );
+    await editor.refresh();
   } else {
-    panel.style.display = "none";
+    // Scenario validation stays visible only when something is wrong.
+    if (view.issues.length) {
+      panel.innerHTML = `<p class="bad">${ru["ui.validation.problems"] ?? "Problems"}: ${view.issues.length}</p><ul>${view.issues.map((i) => `<li>${JSON.stringify(i)}</li>`).join("")}</ul>`;
+    } else {
+      panel.style.display = "none";
+    }
+    stage("Ход…");
+    const game = new Game(core, scenario, map, events);
+    const play = new Play(game, world, camera, sprites, ru, sideKeys, HEX_SIZE);
+    await play.refresh();
+    if (!view.issues.length) panel.style.display = "none";
   }
-
-  stage("Ход…");
-  const game = new Game(core, scenario, map, events);
-  const play = new Play(game, world, camera, sprites, ru, sideKeys, HEX_SIZE);
-  await play.refresh();
-  if (!view.issues.length) panel.style.display = "none";
 
   // Dev-only hook for end-to-end checks: hex → screen coordinates.
   if (import.meta.env.DEV) {

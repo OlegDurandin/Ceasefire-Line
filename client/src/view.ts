@@ -39,5 +39,6 @@ export interface ScenarioView {
   bridges: BridgeView[];
   sides: { id: number; tech: Record<string, number> }[];
   units: UnitView[];
-  issues: string[];
+  /** `validate()` output: `{kind, ...fields}`, hexes in offset coordinates. */
+  issues: Record<string, unknown>[];
 }

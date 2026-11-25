@@ -191,6 +191,7 @@ pub fn generate(
         canals: &canals,
         bridges: &bridges,
         places: &places,
+        size_km: proj.size_km(),
     })?;
     let hillshade = hillshade::hillshade(dem, &proj, &cfg.hillshade);
     let hillshade_meta = output::hillshade_json(
@@ -219,10 +220,8 @@ fn write(out: &Path, g: &Generated) -> Result<(), String> {
         .as_array()
         .map(|a| a.iter().filter_map(|v| v.as_str()).collect())
         .unwrap_or_default();
-    if sources.iter().any(|s| s.contains("OpenStreetMap")) {
-        fs::write(out.join("LICENSE-DATA.md"), license_text(&sources))
-            .map_err(|e| e.to_string())?;
-    }
+    // Copernicus DEM notices are always required; the ODbL part only with OSM.
+    fs::write(out.join("LICENSE-DATA.md"), license_text(&sources)).map_err(|e| e.to_string())?;
     g.hillshade
         .save(out.join("hillshade.png"))
         .map_err(|e| e.to_string())
@@ -442,5 +441,15 @@ mod tests {
         assert_eq!(g.map["geo"]["places"][0]["name"], "Testtown");
         let (map, _) = ceasefire_core::scenario::load_map(&g.map.to_string()).unwrap();
         assert!(map.bridges().count() > 0);
+    }
+
+    #[test]
+    fn licence_text_carries_the_mandatory_notices() {
+        let dem_only = license_text(&[COPERNICUS_NOTICE]);
+        assert!(dem_only.contains(COPERNICUS_NOTICE), "Copernicus 6(b)");
+        assert!(dem_only.contains(COPERNICUS_LIABILITY), "Copernicus 6(c)");
+        assert!(!dem_only.contains("ODbL"), "no OSM, no ODbL section");
+        let with_osm = license_text(&[COPERNICUS_NOTICE, OSM_NOTICE]);
+        assert!(with_osm.contains("ODbL") && with_osm.contains("© OpenStreetMap contributors"));
     }
 }

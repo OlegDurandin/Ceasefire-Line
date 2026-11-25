@@ -1,7 +1,9 @@
-import { cpSync, createReadStream, existsSync, statSync } from "node:fs";
+import { cpSync, createReadStream, existsSync, statSync, writeFileSync } from "node:fs";
 import { extname, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { defineConfig, type Plugin } from "vite";
+
+import { savePath } from "./save-path";
 
 const here = fileURLToPath(new URL(".", import.meta.url));
 const repo = resolve(here, "..");
@@ -15,6 +17,32 @@ function repoFiles(): Plugin {
   return {
     name: "ceasefire-repo-files",
     configureServer(server) {
+      // Editor saves (dev server only): POST /__editor/save?scenario=<id>&file=<map.json|scenario.json>
+      server.middlewares.use("/__editor/save", (req, res) => {
+        const url = new URL(req.url ?? "", "http://localhost");
+        const target = savePath(repo, url.searchParams.get("scenario") ?? "", url.searchParams.get("file") ?? "");
+        if (req.method !== "POST" || !target) {
+          res.statusCode = 400;
+          res.end("bad save request");
+          return;
+        }
+        let body = "";
+        req.setEncoding("utf8");
+        req.on("data", (chunk: string) => {
+          body += chunk;
+          if (body.length > 5_000_000) req.destroy();
+        });
+        req.on("end", () => {
+          try {
+            const pretty = JSON.stringify(JSON.parse(body), null, 2) + "\n";
+            writeFileSync(target, pretty);
+            res.end("saved");
+          } catch (e) {
+            res.statusCode = 400;
+            res.end(String(e));
+          }
+        });
+      });
       server.middlewares.use((req, res, next) => {
         const url = decodeURIComponent((req.url ?? "").split("?")[0] ?? "");
         const top = url.split("/")[1] ?? "";
