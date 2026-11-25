@@ -60,7 +60,7 @@ pub fn entry_cost_halves(
         return Ok(None);
     }
     let t = terrain.get(&cell.terrain)?;
-    if t.def.requires_pass && !cell.pass {
+    if t.def.impassable || (t.def.requires_pass && !cell.pass) {
         return Ok(None);
     }
     if map.has_road(from, to) && !to_in_enemy_zoc {

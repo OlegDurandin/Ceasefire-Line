@@ -315,6 +315,9 @@ pub struct TerrainDef {
     /// R-MOVE-01: mountains are entered only through hexes marked as passes.
     #[serde(default)]
     pub requires_pass: bool,
+    /// R-MOVE-01: lakes — no ground movement or supply, nobody controls them.
+    #[serde(default)]
+    pub impassable: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

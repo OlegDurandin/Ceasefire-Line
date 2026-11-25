@@ -598,3 +598,28 @@ fn r_combat_06_retreat_keeps_away_from_all_attackers_this_phase() {
         "{events:?}"
     );
 }
+
+#[test]
+fn r_move_01_water_blocks_movement_and_supply() {
+    let (mut map, mut control) = board();
+    // A lake across row 0 between q = 1 and q = 3.
+    for h in [
+        Hex::new(2, -1),
+        Hex::new(2, 0),
+        Hex::new(1, 0),
+        Hex::new(2, 1),
+        Hex::new(1, 1),
+        Hex::new(1, -1),
+    ] {
+        map.insert(h, HexCell::new("water"));
+        control.remove(&h);
+    }
+    let mut s = start(setup(map, control, vec![unit("mech", A, Hex::new(0, 0))]));
+    assert_eq!(move_err(mv(&mut s, 1, &[(1, 0)])), MoveError::Impassable);
+    assert!(!s
+        .reachable(UnitId(1))
+        .unwrap()
+        .contains_key(&Hex::new(2, 0)));
+    let supply = s.hex_supply(A).unwrap();
+    assert_eq!(supply.get(Hex::new(1, 0)), 0, "no supply on water");
+}

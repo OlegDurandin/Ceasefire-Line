@@ -65,7 +65,10 @@ impl<'a> MoveView<'a> {
                 .cell(to)
                 .ok_or_else(|| self.illegal(MoveError::Impassable))?;
             let terrain = self.state.data.terrain.get(&cell.terrain)?;
-            if !class.has_tag(UnitTag::BoatCrossing) || (terrain.def.requires_pass && !cell.pass) {
+            if !class.has_tag(UnitTag::BoatCrossing)
+                || terrain.def.impassable
+                || (terrain.def.requires_pass && !cell.pass)
+            {
                 return Err(self.illegal(MoveError::Impassable));
             }
             return Ok(Step {

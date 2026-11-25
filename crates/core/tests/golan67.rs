@@ -71,6 +71,51 @@ fn validation_reports_scenario_problems() {
     }));
 }
 
+#[test]
+fn validation_reports_event_boost_and_water_problems() {
+    let (data, mut setup) = load();
+    // R-EVT-01: duplicate id, unknown class, unknown side, off-map hex.
+    setup.events[0].id = setup.events[1].id.clone();
+    if let ceasefire_core::game::Effect::Reinforcements { units } = &mut setup.events[0].effects[0]
+    {
+        units[0].class = "battleship".into();
+        units[1].hex = ceasefire_core::scenario::offset_to_axial([40, 40]);
+    }
+    setup.events[1].phase_of = Some(ceasefire_core::side::SideId(7));
+    // R-TECH-02: duplicate boost id.
+    let dup = setup.tech_boosts[0].clone();
+    setup.tech_boosts.push(dup);
+    // R-MOVE-01: a controlled water hex.
+    let lake = ceasefire_core::scenario::offset_to_axial([10, 10]);
+    setup
+        .map
+        .insert(lake, ceasefire_core::map::HexCell::new("water"));
+
+    let issues = validate(&data, &setup);
+    let ev = "kuneitra_falls".to_owned();
+    for expected in [
+        ScenarioIssue::DuplicateEvent { id: ev.clone() },
+        ScenarioIssue::EventUnknownClass {
+            event: ev.clone(),
+            class: "battleship".into(),
+        },
+        ScenarioIssue::EventHexOffMap {
+            event: ev.clone(),
+            hex: [40, 40],
+        },
+        ScenarioIssue::EventUnknownSide { event: ev, side: 7 },
+        ScenarioIssue::DuplicateBoost {
+            id: "isr_emergency_atgm".into(),
+        },
+        ScenarioIssue::ControlledWater { hex: [10, 10] },
+    ] {
+        assert!(
+            issues.contains(&expected),
+            "missing {expected:?} in {issues:?}"
+        );
+    }
+}
+
 /// Plays until the game ends, choosing only commands the core's own queries
 /// call legal; any rule error is a bug.
 fn play(seed: u64) -> (GameState, Vec<Event>) {

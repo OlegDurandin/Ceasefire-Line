@@ -19,12 +19,12 @@
     "mountains": "terrain_mountains",
     "marsh": "terrain_saltmarsh",
     "city": "terrain_town",
-    "fortified": "terrain_fortified"
+    "fortified": "terrain_fortified",
+    "water": "terrain_water"
   },
   "unused_terrain_textures": [
     "terrain_basalt_plateau",
-    "terrain_farmland",
-    "terrain_water"
+    "terrain_farmland"
   ],
   "units": {
     "tank": {

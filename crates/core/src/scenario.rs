@@ -527,6 +527,34 @@ pub enum ScenarioIssue {
         what: &'static str,
         hex: [i32; 2],
     },
+    /// R-MOVE-01: water belongs to nobody.
+    ControlledWater {
+        hex: [i32; 2],
+    },
+    /// R-TECH-02.
+    DuplicateBoost {
+        id: String,
+    },
+    BoostUnknownSide {
+        boost: String,
+        side: u8,
+    },
+    /// R-EVT-01.
+    DuplicateEvent {
+        id: String,
+    },
+    EventUnknownSide {
+        event: String,
+        side: u8,
+    },
+    EventUnknownClass {
+        event: String,
+        class: String,
+    },
+    EventHexOffMap {
+        event: String,
+        hex: [i32; 2],
+    },
 }
 
 /// Scenario checks beyond what `GameState::new` enforces, reported all at once.
@@ -541,6 +569,16 @@ pub fn validate(data: &GameData, setup: &ScenarioSetup) -> Vec<ScenarioIssue> {
                     terrain: cell.terrain.clone(),
                 });
             }
+        }
+    }
+    for hex in setup.control.keys() {
+        let water = setup
+            .map
+            .cell(*hex)
+            .and_then(|c| data.terrain.get(&c.terrain).ok())
+            .is_some_and(|t| t.def.impassable);
+        if water {
+            issues.push(ScenarioIssue::ControlledWater { hex: off(*hex) });
         }
     }
     let sides: BTreeSet<SideId> = setup.sides.iter().map(|s| s.id).collect();
@@ -582,7 +620,7 @@ pub fn validate(data: &GameData, setup: &ScenarioSetup) -> Vec<ScenarioIssue> {
         let blocked = data
             .terrain
             .get(&cell.terrain)
-            .is_ok_and(|t| t.def.requires_pass && !cell.pass);
+            .is_ok_and(|t| t.def.impassable || (t.def.requires_pass && !cell.pass));
         if layer == "ground" && blocked {
             issues.push(ScenarioIssue::Impassable {
                 unit: i,
@@ -616,7 +654,80 @@ pub fn validate(data: &GameData, setup: &ScenarioSetup) -> Vec<ScenarioIssue> {
             });
         }
     }
+    let mut boost_ids = BTreeSet::new();
+    for b in &setup.tech_boosts {
+        if !boost_ids.insert(b.id.as_str()) {
+            issues.push(ScenarioIssue::DuplicateBoost { id: b.id.clone() });
+        }
+        if !sides.contains(&b.side) {
+            issues.push(ScenarioIssue::BoostUnknownSide {
+                boost: b.id.clone(),
+                side: b.side.0,
+            });
+        }
+    }
+    validate_events(data, setup, &sides, &mut issues);
     issues
+}
+
+/// R-EVT-01: unique ids, known sides and classes, hexes on the map.
+fn validate_events(
+    data: &GameData,
+    setup: &ScenarioSetup,
+    sides: &BTreeSet<SideId>,
+    issues: &mut Vec<ScenarioIssue>,
+) {
+    let mut ids = BTreeSet::new();
+    for e in &setup.events {
+        let ev = || e.id.clone();
+        if !ids.insert(e.id.as_str()) {
+            issues.push(ScenarioIssue::DuplicateEvent { id: ev() });
+        }
+        let mut side_refs: Vec<SideId> = e.phase_of.into_iter().collect();
+        let mut hexes = Vec::new();
+        for p in std::iter::once(&e.trigger).chain(&e.conditions) {
+            match p {
+                Predicate::HexControl { hex, side } => {
+                    side_refs.push(*side);
+                    hexes.push(*hex);
+                }
+                Predicate::NmAtMost { side, .. } | Predicate::LossesAtLeast { side, .. } => {
+                    side_refs.push(*side)
+                }
+                Predicate::Turn { .. } => {}
+            }
+        }
+        for effect in &e.effects {
+            match effect {
+                Effect::Reinforcements { units } => {
+                    for u in units {
+                        side_refs.push(u.side);
+                        hexes.push(u.hex);
+                        if data.units.get(&u.class).is_err() {
+                            issues.push(ScenarioIssue::EventUnknownClass {
+                                event: ev(),
+                                class: u.class.clone(),
+                            });
+                        }
+                    }
+                }
+                Effect::Mpp { side, .. } | Effect::Nm { side, .. } => side_refs.push(*side),
+                _ => {}
+            }
+        }
+        for side in side_refs.into_iter().filter(|s| !sides.contains(s)) {
+            issues.push(ScenarioIssue::EventUnknownSide {
+                event: ev(),
+                side: side.0,
+            });
+        }
+        for hex in hexes.into_iter().filter(|h| setup.map.cell(*h).is_none()) {
+            issues.push(ScenarioIssue::EventHexOffMap {
+                event: ev(),
+                hex: axial_to_offset(hex),
+            });
+        }
+    }
 }
 
 #[cfg(test)]

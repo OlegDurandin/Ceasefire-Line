@@ -7,6 +7,7 @@
     { "id": "mountains", "ap": 3, "requires_pass": true, "defense_mult": 1.6, "max_entrench": 4 },
     { "id": "marsh", "ap": 3, "defense_mult": 1.2, "max_entrench": 1 },
     { "id": "city", "ap": 1, "defense_mult": 1.5, "max_entrench": 4 },
-    { "id": "fortified", "ap": 1, "defense_mult": 1.5, "max_entrench": 5 }
+    { "id": "fortified", "ap": 1, "defense_mult": 1.5, "max_entrench": 5 },
+    { "id": "water", "ap": 0, "defense_mult": 1.0, "max_entrench": 0, "impassable": true }
   ]
 }
