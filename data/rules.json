@@ -20,10 +20,6 @@
     "fatigue_per_attack_pct": 5,
     "fatigue_per_attacked_pct": 10
   },
-  "air_defense": {
-    "shot_fraction": 0.5,
-    "next_sam_mult": 0.7
-  },
   "supply": {
     "max": 10,
     "decay_ap": 2,
@@ -122,5 +118,9 @@
   "bridge": {
     "bombard_destroy_chance": 0.3,
     "air_strike_destroy_chance": 0.5
+  },
+  "sam": {
+    "shot_fraction": 0.5,
+    "next_sam_mult": 0.7
   }
 }

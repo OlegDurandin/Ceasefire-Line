@@ -34,7 +34,7 @@ pub fn sam_barrage(
                 &FireInput {
                     strength: sam.strength,
                     readiness_pct: sam.readiness_pct,
-                    shot_fraction: rules.air_defense.shot_fraction,
+                    shot_fraction: rules.sam.shot_fraction,
                     attack: sam.stats.attack.air,
                     shooter_exp: sam.exp_stars,
                     attack_mult: 1.0,
@@ -52,7 +52,7 @@ pub fn sam_barrage(
     let mut mult = 1.0;
     for shot in &mut shots {
         shot.params.p *= mult;
-        mult *= rules.air_defense.next_sam_mult;
+        mult *= rules.sam.next_sam_mult;
     }
     shots
 }

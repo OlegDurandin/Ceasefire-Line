@@ -53,7 +53,7 @@ pub struct ReadinessRules {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
-pub struct AirDefenseRules {
+pub struct SamRules {
     pub shot_fraction: f64,
     pub next_sam_mult: f64,
 }
@@ -222,7 +222,8 @@ pub struct ScaleRules {
 pub struct Rules {
     pub combat: CombatRules,
     pub readiness: ReadinessRules,
-    pub air_defense: AirDefenseRules,
+    /// R-AIR-03: SAM fire.
+    pub sam: SamRules,
     pub supply: SupplyRules,
     pub scale: ScaleRules,
     pub movement: MovementRules,

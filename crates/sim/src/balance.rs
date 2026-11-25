@@ -171,43 +171,60 @@ fn check_atgm(data: &GameData) -> Result<Check, String> {
     })
 }
 
-/// Expected defender losses per phase from one attacker class: ground attack ×
-/// strikes, artillery by bombardment (R-COMBAT-04).
-fn damage_per_phase(
+/// One phase of attacks by `att` on `def`: (steps inflicted, steps received).
+/// Each further strike is made with fatigue on both sides (R-UNIT-01:
+/// −5% per own attack, −10% per attack received); artillery bombards
+/// (R-COMBAT-04) and takes no return fire.
+fn exchange_per_phase(
     data: &GameData,
     att: &Combatant<'_>,
     def: &Combatant<'_>,
     ctx: &GroundAttack,
-) -> Result<f64, String> {
-    let class = att.class;
-    if class.has_tag(UnitTag::Bombard) {
-        let rules = &data.rules;
-        let params = fire_params(
-            &rules.combat,
-            &FireInput {
-                strength: att.strength,
-                readiness_pct: att.readiness_pct,
-                shot_fraction: rules.bombard.shot_fraction,
-                attack: att.stats.attack.against(def.class.target_class),
-                shooter_exp: 0,
-                attack_mult: 1.0,
-                defense: def.stats.defense.ground.unwrap_or(0.0),
-                target_exp: 0,
-                terrain_mult: ctx.terrain_mult,
-                entrenchment: def.entrenchment,
-                defense_mult: 1.0,
-                p_shift: 0.0,
-            },
-        );
-        return Ok(
-            forecast_fire(&rules.combat, &params, def.strength).expected * f64::from(class.strikes)
-        );
+) -> Result<(f64, f64), String> {
+    let rules = &data.rules;
+    let fatigue_att = rules.readiness.fatigue_per_attack_pct;
+    let fatigue_def = rules.readiness.fatigue_per_attacked_pct;
+    let (mut inflicted, mut received) = (0.0, 0.0);
+    for k in 0..att.class.strikes {
+        let k8 = u8::try_from(k).unwrap_or(u8::MAX);
+        let mut a = att.clone();
+        let mut d = def.clone();
+        a.readiness_pct = a
+            .readiness_pct
+            .saturating_sub(k8.saturating_mul(fatigue_att));
+        d.readiness_pct = d
+            .readiness_pct
+            .saturating_sub(k8.saturating_mul(fatigue_def));
+        if a.class.has_tag(UnitTag::Bombard) {
+            let params = fire_params(
+                &rules.combat,
+                &FireInput {
+                    strength: a.strength,
+                    readiness_pct: a.readiness_pct,
+                    shot_fraction: rules.bombard.shot_fraction,
+                    attack: a.stats.attack.against(d.class.target_class),
+                    shooter_exp: 0,
+                    attack_mult: 1.0,
+                    defense: d.stats.defense.ground.unwrap_or(0.0),
+                    target_exp: 0,
+                    terrain_mult: ctx.terrain_mult,
+                    entrenchment: d.entrenchment,
+                    defense_mult: 1.0,
+                    p_shift: 0.0,
+                },
+            );
+            inflicted += forecast_fire(&rules.combat, &params, d.strength).expected;
+        } else {
+            let f = forecast_ground(&rules.combat, &a, &d, ctx).map_err(|e| e.to_string())?;
+            inflicted += f.defender_losses.expected;
+            received += f.attacker_losses.expected;
+        }
     }
-    let f = forecast_ground(&data.rules.combat, att, def, ctx).map_err(|e| e.to_string())?;
-    Ok(f.defender_losses.expected * f64::from(class.strikes))
+    Ok((inflicted, received))
 }
 
-/// «Стоимость юнитов»: mean damage per MPP by class, within ±25% of the mean.
+/// «Стоимость юнитов»: net exchange (inflicted − received) per MPP by class,
+/// within ±25% of the mean over the compared classes.
 fn check_cost(data: &GameData) -> Result<Check, String> {
     let compared: Vec<&UnitClass> = data
         .units
@@ -221,13 +238,14 @@ fn check_cost(data: &GameData) -> Result<Check, String> {
         .iter()
         .filter(|u| u.target_class.is_ground())
         .collect();
-    let mut body = String::from("Средние ожидаемые потери противника за фазу (с учётом ударов; артиллерия — обстрелом) по всем наземным целям, местностям и окопам 0/2/4, делённые на цену.\n\n| тех. | класс | цена | урон за фазу | урон / 100 MPP | отклонение |\n| --- | --- | --- | --- | --- | --- |\n");
+    let mut body = String::from("Чистый размен за фазу: ожидаемые потери противника минус свои, по всем ударам фазы (второй удар — с усталостью обеих сторон; артиллерия — обстрелом без ответа), в среднем по всем наземным целям, местностям и окопам 0/2/4, делённый на цену.\n\n| тех. | класс | цена | нанесено | получено | размен | размен / 100 MPP | отклонение |\n| --- | --- | --- | --- | --- | --- | --- | --- |\n");
     let mut pass = true;
+    let mut defense_rows: Vec<(u8, String, f64)> = Vec::new();
     for level in [1u8, 2] {
         let tech = tech_at(level);
-        let mut per_mpp = Vec::new();
+        let mut rows = Vec::new();
         for att_class in &compared {
-            let (mut sum, mut n) = (0.0, 0u32);
+            let (mut inf, mut rec, mut n) = (0.0, 0.0, 0u32);
             for def_class in &defenders {
                 for terrain in data.terrain.iter() {
                     let mut levels: Vec<u8> = [0u8, 2, 4]
@@ -244,28 +262,60 @@ fn check_cost(data: &GameData) -> Result<Check, String> {
                             night: false,
                             across_canal: false,
                         };
-                        sum += damage_per_phase(data, &att, &def, &ctx)?;
+                        let (i, r) = exchange_per_phase(data, &att, &def, &ctx)?;
+                        inf += i;
+                        rec += r;
                         n += 1;
                     }
                 }
             }
-            let damage = sum / f64::from(n.max(1));
-            per_mpp.push((
+            let n = f64::from(n.max(1));
+            let (inf, rec) = (inf / n, rec / n);
+            // For reference: the same class defending against every compared attacker.
+            let (mut d_inf, mut d_rec, mut dn) = (0.0, 0.0, 0u32);
+            for other in &compared {
+                for terrain in data.terrain.iter() {
+                    let mut levels: Vec<u8> = [0u8, 2, 4]
+                        .iter()
+                        .map(|&e| e.min(terrain.def.max_entrench))
+                        .collect();
+                    levels.dedup();
+                    for entrench in levels {
+                        let att = unit(data, &other.id, &tech, STRENGTH, READINESS, 0, 0)?;
+                        let def =
+                            unit(data, &att_class.id, &tech, STRENGTH, READINESS, 0, entrench)?;
+                        let ctx = GroundAttack {
+                            terrain_mult: terrain.def.defense_mult,
+                            night: false,
+                            across_canal: false,
+                        };
+                        let (i, r) = exchange_per_phase(data, &att, &def, &ctx)?;
+                        d_inf += r;
+                        d_rec += i;
+                        dn += 1;
+                    }
+                }
+            }
+            let defense = (d_inf - d_rec) / f64::from(dn.max(1)) / f64::from(att_class.cost_mpp);
+            defense_rows.push((level, att_class.id.clone(), defense));
+            rows.push((
                 att_class.id.clone(),
                 att_class.cost_mpp,
-                damage,
-                damage / f64::from(att_class.cost_mpp),
+                inf,
+                rec,
+                (inf - rec) / f64::from(att_class.cost_mpp),
             ));
         }
-        let mean = per_mpp.iter().map(|r| r.3).sum::<f64>() / per_mpp.len().max(1) as f64;
-        for (id, cost, damage, v) in &per_mpp {
+        let mean = rows.iter().map(|r| r.4).sum::<f64>() / rows.len().max(1) as f64;
+        for (id, cost, inf, rec, v) in &rows {
             let dev = v / mean - 1.0;
             let ok = dev.abs() <= COST_SPREAD;
             pass &= ok;
             let mark = if ok { "" } else { " ✗" };
             let _ = writeln!(
                 body,
-                "| {level} | {id} | {cost} | {damage:.2} | {:.2} | {:+.0}%{mark} |",
+                "| {level} | {id} | {cost} | {inf:.2} | {rec:.2} | {:.2} | {:.2} | {:+.0}%{mark} |",
+                inf - rec,
                 v * 100.0,
                 dev * 100.0
             );
@@ -277,8 +327,12 @@ fn check_cost(data: &GameData) -> Result<Check, String> {
         COST_SPREAD * 100.0,
         SPECIAL_ROLE.join(", ")
     );
+    body.push_str("\nДля справки (в критерий не входит) — размен того же класса в обороне против всех сравниваемых атакующих, на 100 MPP:\n\n| тех. | класс | оборона / 100 MPP |\n| --- | --- | --- |\n");
+    for (level, id, v) in &defense_rows {
+        let _ = writeln!(body, "| {level} | {id} | {:.2} |", v * 100.0);
+    }
     Ok(Check {
-        name: "Урон за MPP",
+        name: "Размен за MPP",
         pass,
         body,
     })
