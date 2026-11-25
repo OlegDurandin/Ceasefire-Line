@@ -38,9 +38,22 @@ pub enum Command {
     EndPhase,
 }
 
+/// Scenario problems that do not stop loading.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum SetupWarning {
+    /// R-HQ-02: line units but no HQ; all of them get the unattached penalty.
+    NoHq,
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum Event {
+    /// Emitted by `GameState::new` only.
+    SetupWarning {
+        side: SideId,
+        warning: SetupWarning,
+    },
     PhaseStarted {
         turn: u32,
         side: SideId,
@@ -106,6 +119,7 @@ pub enum Event {
     Advanced {
         unit: UnitId,
         to: Hex,
+        by_boat: bool,
     },
     /// R-ECO-01.
     IncomeReceived {

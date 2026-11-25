@@ -96,7 +96,7 @@ impl SupplyMap {
 pub fn compute_supply(input: &SupplyInput<'_>) -> Result<SupplyMap, RuleError> {
     let p = input.params;
     let side = input.side;
-    let zoc = enemy_zoc(input.occupancy, side);
+    let zoc = enemy_zoc(input.map, input.occupancy, side);
     let enemy_at = |h: Hex| input.occupancy.get(&h).is_some_and(|o| o.side != side);
     let friendly_at = |h: Hex| input.occupancy.get(&h).is_some_and(|o| o.side == side);
     let own = |h: Hex| input.control.get(&h) == Some(&side);

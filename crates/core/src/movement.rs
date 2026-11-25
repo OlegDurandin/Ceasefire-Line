@@ -25,12 +25,17 @@ pub struct Occupant {
 
 pub type Occupancy = BTreeMap<Hex, Occupant>;
 
-/// R-MOVE-03: hexes in the ZOC of `side`'s enemies.
-pub fn enemy_zoc(occupancy: &Occupancy, side: SideId) -> BTreeSet<Hex> {
+/// R-MOVE-03: hexes in the ZOC of `side`'s enemies. ZOC does not reach
+/// across a canal edge without a bridge (R-MOVE-02).
+pub fn enemy_zoc(map: &HexMap, occupancy: &Occupancy, side: SideId) -> BTreeSet<Hex> {
     occupancy
         .iter()
         .filter(|(_, o)| o.side != side && o.exerts_zoc)
-        .flat_map(|(h, _)| h.neighbors())
+        .flat_map(|(&h, _)| {
+            h.neighbors()
+                .into_iter()
+                .filter(move |&n| !map.has_canal(h, n) || map.has_bridge(h, n))
+        })
         .collect()
 }
 

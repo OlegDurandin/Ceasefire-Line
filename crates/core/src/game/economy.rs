@@ -212,6 +212,8 @@ impl GameState {
                     pinned_hq: None,
                     attached_hq: None,
                     hq_lost: false,
+                    attacked_by: Vec::new(),
+                    crossing_penalty_pct: 0,
                 },
             );
             events.push(Event::UnitArrived {

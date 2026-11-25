@@ -105,7 +105,14 @@ impl GameState {
         let def = self.combatant(&data, &d)?;
         let outcome = resolve_ground(&rules.combat, &att, &def, &ctx, &mut self.rng)?;
         let exploits = att.class.has_tag(UnitTag::Exploitation);
-        let occupies = att.class.has_tag(UnitTag::OccupyHex);
+        // R-COMBAT-06 + R-MOVE-02: across a canal without a bridge only
+        // infantry may occupy, by boat.
+        let by_boat = self.map.has_canal(a.hex, d.hex) && !self.map.has_bridge(a.hex, d.hex);
+        let occupies = if by_boat {
+            att.class.has_tag(UnitTag::BoatCrossing)
+        } else {
+            att.class.has_tag(UnitTag::OccupyHex)
+        };
         let mut events = vec![Event::CombatResolved {
             attacker: id,
             defender: target,
@@ -136,6 +143,7 @@ impl GameState {
             u.lose_steps(outcome.defender_losses, rules.morale.loss_per_step);
             u.attacks_received += 1;
             u.fought = true;
+            u.attacked_by.push(id);
         }
 
         // R-COMBAT-06: retreat or extra losses.
@@ -149,7 +157,7 @@ impl GameState {
                     || (outcome.defender_losses >= r.heavy_loss_steps
                         && def.readiness_pct < r.low_readiness_pct);
                 if must_retreat {
-                    match self.retreat_hex(&defender, a.hex)? {
+                    match self.retreat_hex(&defender)? {
                         Some(to) => {
                             self.take_hex(to, defender.side, &mut events);
                             if let Some(u) = self.units.get_mut(&target) {
@@ -196,18 +204,33 @@ impl GameState {
         self.pending_advance = (vacated && attacker_alive && occupies).then_some(PendingAdvance {
             unit: id,
             hex: d.hex,
+            by_boat,
         });
         Ok(events)
     }
 
-    /// R-COMBAT-06: free hex one step farther from the attacker, passable,
-    /// outside enemy ZOC. Prefers own hexes, then the lowest coordinates.
-    fn retreat_hex(&self, unit: &Unit, attacker_hex: Hex) -> Result<Option<Hex>, RuleError> {
+    /// R-COMBAT-06: a free, passable neighbour outside enemy ZOC, at distance
+    /// ≥ 2 from every unit that attacked this one in the current phase, not
+    /// enemy-controlled. Preference: own hex over neutral, higher supply,
+    /// higher terrain defense, lower (q, r).
+    fn retreat_hex(&self, unit: &Unit) -> Result<Option<Hex>, RuleError> {
         let occupancy = self.occupancy();
-        let zoc = enemy_zoc(&occupancy, unit.side);
-        let mut best: Option<(bool, Hex)> = None;
+        let zoc = enemy_zoc(&self.map, &occupancy, unit.side);
+        let supply = self.hex_supply(unit.side)?;
+        let attackers: Vec<Hex> = unit
+            .attacked_by
+            .iter()
+            .filter_map(|id| self.units.get(id))
+            .map(|u| u.hex)
+            .collect();
+        let mut candidates = Vec::new();
         for to in unit.hex.neighbors() {
-            if to.distance(attacker_hex) != 2 || occupancy.contains_key(&to) || zoc.contains(&to) {
+            let owner = self.control.get(&to).copied();
+            if owner.is_some_and(|s| s != unit.side)
+                || attackers.iter().any(|&a| to.distance(a) < 2)
+                || occupancy.contains_key(&to)
+                || zoc.contains(&to)
+            {
                 continue;
             }
             if entry_cost_halves(
@@ -222,12 +245,21 @@ impl GameState {
             {
                 continue;
             }
-            let key = (self.control.get(&to) != Some(&unit.side), to);
-            if best.is_none_or(|b| key < b) {
-                best = Some(key);
-            }
+            let defense = self
+                .data
+                .terrain
+                .get(&self.map_terrain(to)?)?
+                .def
+                .defense_mult;
+            candidates.push((owner == Some(unit.side), supply.get(to), defense, to));
         }
-        Ok(best.map(|(_, h)| h))
+        candidates.sort_by(|x, y| {
+            y.0.cmp(&x.0)
+                .then(y.1.cmp(&x.1))
+                .then(y.2.total_cmp(&x.2))
+                .then(x.3.cmp(&y.3))
+        });
+        Ok(candidates.first().map(|c| c.3))
     }
 
     /// R-COMBAT-06: occupy the vacated hex for 0 AP.
@@ -241,10 +273,12 @@ impl GameState {
         if occupancy.contains_key(&pending.hex) {
             return Err(RuleError::NoPendingAdvance(id.0));
         }
-        let in_zoc = enemy_zoc(&occupancy, side).contains(&pending.hex);
+        let in_zoc = enemy_zoc(&self.map, &occupancy, side).contains(&pending.hex);
+        let boat_penalty = self.data.rules.movement.boat_crossing_readiness_pct;
         let mut events = vec![Event::Advanced {
             unit: id,
             to: pending.hex,
+            by_boat: pending.by_boat,
         }];
         self.take_hex(pending.hex, side, &mut events);
         if let Some(u) = self.units.get_mut(&id) {
@@ -253,6 +287,12 @@ impl GameState {
             u.moved = true;
             if in_zoc {
                 u.can_move = false;
+            }
+            // R-MOVE-02: a boat crossing takes all AP and −30% readiness.
+            if pending.by_boat {
+                u.ap_halves = 0;
+                u.can_move = false;
+                u.crossing_penalty_pct = boat_penalty;
             }
         }
         self.pending_advance = None;
@@ -336,6 +376,7 @@ impl GameState {
             u.entrenchment = u.entrenchment.saturating_sub(rules.bombard.entrench_loss);
             u.attacks_received += 1;
             u.fought = true;
+            u.attacked_by.push(id);
         }
         let mut events = vec![Event::Bombarded {
             unit: id,

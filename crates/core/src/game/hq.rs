@@ -107,11 +107,12 @@ impl GameState {
         assigned.into_iter().collect()
     }
 
-    /// R-HQ-02: (morale bonus in the readiness formula, readiness modifier in
-    /// percentage points). HQs themselves are neither attached nor penalised.
-    pub(super) fn hq_effect(&self, unit: &Unit) -> (u8, i32) {
+    /// R-HQ-02: readiness modifier in percentage points, applied after the
+    /// R-UNIT-01 formula: +(rating − base) × per_rating attached, −unattached
+    /// otherwise. Morale is not changed. HQs themselves get nothing.
+    pub(super) fn hq_effect(&self, unit: &Unit) -> i32 {
         if unit.hq_rating.is_some() {
-            return (0, 0);
+            return 0;
         }
         let h = &self.data.rules.hq;
         match unit
@@ -119,13 +120,12 @@ impl GameState {
             .and_then(|id| self.units.get(&id))
             .and_then(|hq| hq.hq_rating)
         {
-            Some(rating) => {
-                let bonus = rating
+            Some(rating) => i32::from(
+                rating
                     .saturating_sub(h.rating_base)
-                    .saturating_mul(h.bonus_per_rating_pct);
-                (bonus, i32::from(bonus))
-            }
-            None => (0, -i32::from(h.unattached_readiness_pct)),
+                    .saturating_mul(h.bonus_per_rating_pct),
+            ),
+            None => -i32::from(h.unattached_readiness_pct),
         }
     }
 

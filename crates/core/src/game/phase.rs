@@ -24,6 +24,11 @@ impl GameState {
             night,
         }];
 
+        // R-COMBAT-06: "attacked this phase" is per phase, for both sides.
+        for u in self.units.values_mut() {
+            u.attacked_by.clear();
+        }
+
         // R-SUP-01: captured sources recover +1 per turn for their owner.
         for (&hex, src) in self.sources.iter_mut() {
             if self.control.get(&hex) == Some(&side) && src.current < src.base {
@@ -52,13 +57,13 @@ impl GameState {
         // R-HQ-01, R-HQ-02.
         let links = self.attach_hqs(side);
         events.push(Event::HqAttached { links });
-        let hq_effects: std::collections::BTreeMap<UnitId, (u8, i32)> = self
+        let hq_effects: std::collections::BTreeMap<UnitId, i32> = self
             .units
             .values()
             .filter(|u| u.side == side)
             .map(|u| (u.id, self.hq_effect(u)))
             .collect();
-        let zoc = enemy_zoc(&self.occupancy(), side);
+        let zoc = enemy_zoc(&self.map, &self.occupancy(), side);
         let ids: Vec<UnitId> = self
             .units
             .values()
@@ -82,7 +87,7 @@ impl GameState {
                     .ok_or_else(|| RuleError::InvalidData(format!("`{}` has no AP", class.id)))?,
             )?;
             let in_zoc = zoc.contains(&unit.hex);
-            let (hq_morale, hq_readiness) = hq_effects.get(&id).copied().unwrap_or((0, 0));
+            let hq_readiness = hq_effects.get(&id).copied().unwrap_or(0);
             let hex_level = supply.get(unit.hex);
             let Some(unit) = self.units.get_mut(&id) else {
                 continue;
@@ -122,10 +127,11 @@ impl GameState {
             // R-UNIT-01 + R-HQ-02: readiness; fatigue counters reset.
             unit.attacks_made = 0;
             unit.attacks_received = 0;
+            unit.crossing_penalty_pct = 0;
             unit.base_readiness_pct = readiness_pct(
                 &rules.readiness,
                 unit.supply,
-                unit.morale_pct.saturating_add(hq_morale).min(100),
+                unit.morale_pct,
                 unit.exp_stars(),
                 hq_readiness,
             );

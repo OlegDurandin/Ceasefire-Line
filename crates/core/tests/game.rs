@@ -427,3 +427,174 @@ fn r_ai_02_replay_is_deterministic() {
         e1
     );
 }
+
+/// Attacker (1) at (0,0) across a canal edge from a strength-3 defender (2) at (1,0).
+fn canal_setup(attacker: &str) -> GameState {
+    let (mut map, control) = board();
+    map.add_canal(Hex::new(0, 0), Hex::new(1, 0)).unwrap();
+    let mut a = unit(attacker, A, Hex::new(0, 0));
+    a.strength = 2;
+    let mut d = unit("infantry", B, Hex::new(1, 0));
+    d.strength = 3;
+    let mut sc = setup(map, control, vec![a, d]);
+    sc.control.insert(Hex::new(1, 0), B);
+    for h in [Hex::new(2, 0), Hex::new(2, -1), Hex::new(1, 1)] {
+        sc.control.insert(h, B);
+    }
+    start(sc)
+}
+
+#[test]
+fn r_move_02_zoc_does_not_cross_canal_without_bridge() {
+    let (mut map, control) = board();
+    map.add_canal(Hex::new(2, 0), Hex::new(3, 0)).unwrap();
+    let units = vec![
+        unit("mech", A, Hex::new(1, 0)),
+        unit("infantry", B, Hex::new(3, 0)),
+    ];
+    let mut s = start(setup(map, control, units));
+    // (2,0) is next to the enemy, but across the canal: no ZOC, movement goes on.
+    mv(&mut s, 1, &[(2, 0), (2, -1)]).unwrap();
+}
+
+#[test]
+fn r_combat_06_no_tank_advance_across_canal_without_bridge() {
+    let mut s = canal_setup("tank");
+    attack(&mut s, 1, 2).unwrap();
+    assert_eq!(s.unit_at(Hex::new(1, 0)), None, "defender left");
+    assert_eq!(s.pending_advance(), None);
+}
+
+#[test]
+fn r_combat_06_infantry_advances_across_canal_by_boat() {
+    let mut s = canal_setup("infantry");
+    attack(&mut s, 1, 2).unwrap();
+    let pending = s.pending_advance().expect("infantry may occupy by boat");
+    assert!(pending.by_boat);
+    let before = s
+        .unit(UnitId(1))
+        .unwrap()
+        .readiness_pct(&s.data().rules.readiness);
+    s.apply(Command::Advance { unit: UnitId(1) }).unwrap();
+    let u = s.unit(UnitId(1)).unwrap();
+    assert_eq!((u.hex, u.ap_halves), (Hex::new(1, 0), 0), "all AP");
+    assert_eq!(
+        u.readiness_pct(&s.data().rules.readiness),
+        before.saturating_sub(30)
+    );
+}
+
+/// Defender (2) of strength 3 at (1,0), attacker (1) at (0,0); retreat
+/// candidates (2,0), (2,-1), (1,1).
+fn retreat_choice(tweak: impl FnOnce(&mut ceasefire_core::game::ScenarioSetup)) -> Option<Hex> {
+    let (map, control) = board();
+    let mut a = unit("infantry", A, Hex::new(0, 0));
+    a.strength = 2;
+    let mut d = unit("infantry", B, Hex::new(1, 0));
+    d.strength = 3;
+    let mut sc = setup(map, control, vec![a, d]);
+    for h in [
+        Hex::new(1, 0),
+        Hex::new(2, 0),
+        Hex::new(2, -1),
+        Hex::new(1, 1),
+    ] {
+        sc.control.insert(h, B);
+    }
+    tweak(&mut sc);
+    let mut s = start(sc);
+    let events = attack(&mut s, 1, 2).unwrap();
+    events.iter().find_map(|e| match e {
+        Event::Retreated { to, .. } => Some(*to),
+        _ => None,
+    })
+}
+
+#[test]
+fn r_combat_06_retreat_never_into_enemy_hex_and_prefers_own() {
+    assert_eq!(
+        retreat_choice(|_| {}),
+        Some(Hex::new(1, 1)),
+        "all equal: lowest (q, r)"
+    );
+    let to = retreat_choice(|sc| {
+        sc.control.insert(Hex::new(1, 1), A);
+        sc.control.remove(&Hex::new(2, -1));
+    });
+    assert_eq!(
+        to,
+        Some(Hex::new(2, 0)),
+        "enemy hex excluded, own before neutral"
+    );
+}
+
+#[test]
+fn r_combat_06_retreat_prefers_supply_then_terrain() {
+    let to = retreat_choice(|sc| {
+        sc.map.insert(Hex::new(2, -1), HexCell::new("hills"));
+    });
+    assert_eq!(to, Some(Hex::new(2, -1)), "higher terrain defense");
+    let to = retreat_choice(|sc| {
+        sc.map.insert(Hex::new(2, -1), HexCell::new("hills"));
+        // B source at (3,0): (2,0) gets 6, (1,1) and hills (2,-1) get 5.
+        sc.sources.push(ceasefire_core::supply::SupplySource {
+            hex: Hex::new(3, 0),
+            value: 6,
+        });
+    });
+    assert_eq!(to, Some(Hex::new(2, 0)), "supply beats terrain");
+}
+
+#[test]
+fn r_combat_06_retreat_keeps_away_from_all_attackers_this_phase() {
+    let to = retreat_choice(|sc| {
+        sc.map.insert(Hex::new(2, 0), HexCell::new("hills"));
+        // Artillery at (3,-1) bombards first: (2,0) and (2,-1) are next to it.
+        sc.units.push(unit("artillery", A, Hex::new(3, -1)));
+        sc.control.insert(Hex::new(3, -1), A);
+    });
+    assert_eq!(
+        to,
+        Some(Hex::new(2, 0)),
+        "without the bombardment hills win"
+    );
+
+    let (map, control) = board();
+    let mut a = unit("infantry", A, Hex::new(0, 0));
+    a.strength = 2;
+    let mut d = unit("infantry", B, Hex::new(1, 0));
+    d.strength = 3;
+    let mut sc = setup(
+        map,
+        control,
+        vec![a, d, unit("artillery", A, Hex::new(3, -1))],
+    );
+    for h in [
+        Hex::new(1, 0),
+        Hex::new(2, 0),
+        Hex::new(2, -1),
+        Hex::new(1, 1),
+    ] {
+        sc.control.insert(h, B);
+    }
+    sc.map.insert(Hex::new(2, 0), HexCell::new("hills"));
+    let mut s = start(sc);
+    s.apply(Command::Bombard {
+        unit: UnitId(3),
+        target: UnitId(2),
+    })
+    .unwrap();
+    assert!(
+        s.unit(UnitId(2)).is_some(),
+        "defender survives the bombardment (seeded)"
+    );
+    let events = attack(&mut s, 1, 2).unwrap();
+    assert!(
+        events.contains(&Event::Retreated {
+            unit: UnitId(2),
+            from: Hex::new(1, 0),
+            to: Hex::new(1, 1),
+        }),
+        "{events:?}"
+    );
+}

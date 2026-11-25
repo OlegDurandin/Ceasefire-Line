@@ -93,6 +93,8 @@ pub struct MovementRules {
     pub night_ap_penalty: f64,
     pub low_supply_ap_penalty: f64,
     pub min_ap: f64,
+    /// R-MOVE-02: readiness penalty for a boat crossing, until the next own phase.
+    pub boat_crossing_readiness_pct: u8,
 }
 
 /// Unit morale changes (GDD section 3).

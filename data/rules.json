@@ -51,7 +51,8 @@
     "exploit_min_ap": 2,
     "night_ap_penalty": 1,
     "low_supply_ap_penalty": 1,
-    "min_ap": 1
+    "min_ap": 1,
+    "boat_crossing_readiness_pct": 30
   },
   "morale": {
     "loss_per_step": 5,

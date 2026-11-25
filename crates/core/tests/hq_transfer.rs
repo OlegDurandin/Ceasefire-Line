@@ -4,7 +4,7 @@ mod common;
 
 use std::collections::BTreeMap;
 
-use ceasefire_core::game::{Command, Event, GameState, UnitId};
+use ceasefire_core::game::{Command, Event, GameState, SetupWarning, UnitId};
 use ceasefire_core::hex::Hex;
 use ceasefire_core::map::{HexCell, HexMap};
 use ceasefire_core::side::SideId;
@@ -43,8 +43,8 @@ fn r_hq_02_attached_bonus_and_unattached_penalty() {
     );
     assert_eq!(
         s.unit(UnitId(1)).unwrap().base_readiness_pct,
-        82,
-        "(70 + 6)% morale → 76%, + 6 = 82%"
+        76,
+        "70% + (7 − 5) × 3 = 76%; morale untouched"
     );
     assert_eq!(attached(&s, 2), None, "other nation");
     assert_eq!(
@@ -56,6 +56,47 @@ fn r_hq_02_attached_bonus_and_unattached_penalty() {
         s.unit(UnitId(3)).unwrap().base_readiness_pct,
         100,
         "HQ itself (morale 90 + 10): no HQ bonus or penalty"
+    );
+}
+
+/// Designer's example: HQ rating 8, morale 80%, supply 10, 1 star → 84% + 9 = 93%.
+#[test]
+fn r_hq_02_bonus_after_formula() {
+    let (map, control) = board();
+    let mut u = unit("infantry", A, Hex::new(1, 1));
+    u.morale_pct = 80;
+    u.exp = 100;
+    let mut sc = setup(map, control, vec![u, hq(A, Hex::new(1, 0), 8)]);
+    sc.sides[0].national_morale_pct = 80;
+    let s = start(sc);
+    let x = s.unit(UnitId(1)).unwrap();
+    assert_eq!((x.supply, x.morale_pct), (10, 80));
+    assert_eq!(x.base_readiness_pct, 93);
+}
+
+#[test]
+fn r_hq_02_side_without_hq_warns() {
+    let (map, control) = board();
+    let units = vec![
+        unit("infantry", A, Hex::new(1, 0)),
+        unit("infantry", B, Hex::new(4, 0)),
+        hq(B, Hex::new(5, 0), 5),
+    ];
+    let (_, events) = GameState::new(
+        std::sync::Arc::new(common::data()),
+        setup(map, control, units),
+    )
+    .unwrap();
+    let warnings: Vec<_> = events
+        .iter()
+        .filter(|e| matches!(e, Event::SetupWarning { .. }))
+        .collect();
+    assert_eq!(
+        warnings,
+        vec![&Event::SetupWarning {
+            side: A,
+            warning: SetupWarning::NoHq,
+        }]
     );
 }
 

@@ -26,7 +26,7 @@ impl GameState {
             return Err(refuse(id, TransferError::Acted));
         }
         let occupancy = self.occupancy();
-        let zoc = enemy_zoc(&occupancy, unit.side);
+        let zoc = enemy_zoc(&self.map, &occupancy, unit.side);
         if zoc.contains(&unit.hex) {
             return Err(refuse(id, TransferError::StartsInZoc));
         }

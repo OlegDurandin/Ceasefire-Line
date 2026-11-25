@@ -29,7 +29,7 @@ impl<'a> MoveView<'a> {
         Self {
             state,
             unit,
-            zoc: enemy_zoc(&occupancy, unit.side),
+            zoc: enemy_zoc(&state.map, &occupancy, unit.side),
             ground: occupancy.iter().map(|(&h, o)| (h, o.side)).collect(),
         }
     }

@@ -13,7 +13,7 @@ use std::sync::Arc;
 
 use serde::{Deserialize, Serialize};
 
-pub use command::{Command, Event};
+pub use command::{Command, Event, SetupWarning};
 
 use crate::data::{ap_to_halves, GameData, ReadinessRules, UnitClass};
 use crate::error::RuleError;
@@ -74,6 +74,10 @@ pub struct Unit {
     pub attached_hq: Option<UnitId>,
     /// R-HQ-02: HQ destroyed; stays unattached for the next own phase.
     pub hq_lost: bool,
+    /// R-COMBAT-06: units that attacked this one in the current phase.
+    pub attacked_by: Vec<UnitId>,
+    /// R-MOVE-02: boat crossing penalty, until the next own phase.
+    pub crossing_penalty_pct: u8,
 }
 
 impl Unit {
@@ -84,7 +88,8 @@ impl Unit {
     /// R-UNIT-01: readiness including fatigue.
     pub fn readiness_pct(&self, rules: &ReadinessRules) -> u8 {
         let fatigue = fatigue_pct(rules, self.attacks_made, self.attacks_received);
-        (i32::from(self.base_readiness_pct) + fatigue).clamp(0, 100) as u8
+        let crossing = i32::from(self.crossing_penalty_pct);
+        (i32::from(self.base_readiness_pct) + fatigue - crossing).clamp(0, 100) as u8
     }
 
     fn lose_steps(&mut self, steps: u8, morale_per_step: u8) {
@@ -150,6 +155,8 @@ pub struct SourceState {
 pub struct PendingAdvance {
     pub unit: UnitId,
     pub hex: Hex,
+    /// R-MOVE-02: across a canal without a bridge (infantry by boat).
+    pub by_boat: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -326,6 +333,8 @@ impl GameState {
                     pinned_hq: None,
                     attached_hq: None,
                     hq_lost: false,
+                    attacked_by: Vec::new(),
+                    crossing_penalty_pct: 0,
                 },
             );
         }
@@ -375,7 +384,20 @@ impl GameState {
                 );
             }
         }
-        let events = state.start_phase()?;
+        // R-HQ-02: a side with line units but no HQ gets −10% everywhere.
+        let mut events: Vec<Event> = state
+            .sides
+            .iter()
+            .filter(|side| {
+                let mine = || state.units.values().filter(|u| u.side == side.id);
+                mine().any(|u| u.hq_rating.is_none()) && !mine().any(|u| u.hq_rating.is_some())
+            })
+            .map(|side| Event::SetupWarning {
+                side: side.id,
+                warning: SetupWarning::NoHq,
+            })
+            .collect();
+        events.extend(state.start_phase()?);
         Ok((state, events))
     }
 
