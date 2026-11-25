@@ -110,6 +110,7 @@ pub mod scenario {
             last_turn: None,
             victory: vec![],
             events: vec![],
+            tech_boosts: vec![],
         }
     }
 

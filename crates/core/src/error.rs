@@ -80,6 +80,12 @@ pub enum EconomyError {
     NotEnoughMpp,
     /// Scenario force limit for this class reached (destroyed units count).
     PurchaseLimit,
+    /// R-TECH-02.
+    UnknownBoost,
+    NotYourBoost,
+    BoostAlreadyBought,
+    /// The branch would go more than one level above its scenario start.
+    BoostCap,
 }
 
 /// Why a move is rejected (R-MOVE-01..04).

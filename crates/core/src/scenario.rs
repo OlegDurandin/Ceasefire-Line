@@ -12,7 +12,7 @@ use crate::data::{GameData, TargetClass, UnitTag};
 use crate::error::RuleError;
 use crate::game::{
     CityValue, Effect, KeyHex, Objective, Predicate, ScenarioEvent, ScenarioSetup, ScheduledIncome,
-    SideState, UnitSetup, VictoryThreshold,
+    SideState, TechBoost, UnitSetup, VictoryThreshold,
 };
 use crate::hex::Hex;
 use crate::map::{HexCell, HexMap};
@@ -186,7 +186,19 @@ struct ScenarioFile {
     victory: Vec<VictoryFile>,
     #[serde(default)]
     scheduled_income: Vec<IncomeFile>,
+    #[serde(default)]
+    tech_boosts: Vec<BoostFile>,
     units: Vec<UnitFile>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct BoostFile {
+    id: String,
+    side: u8,
+    branch: crate::tech::TechBranch,
+    cost: u32,
+    turns: u32,
 }
 
 fn first_turn() -> u32 {
@@ -455,6 +467,17 @@ pub fn load_scenario(
             .map(parse_events)
             .transpose()?
             .unwrap_or_default(),
+        tech_boosts: file
+            .tech_boosts
+            .into_iter()
+            .map(|b| TechBoost {
+                id: b.id,
+                side: SideId(b.side),
+                branch: b.branch,
+                cost: b.cost,
+                turns: b.turns,
+            })
+            .collect(),
     })
 }
 

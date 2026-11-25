@@ -1,6 +1,7 @@
 //! R-TURN-01: game state. It changes only through [`GameState::apply`].
 
 mod attack;
+mod boosts;
 mod bridge;
 mod command;
 mod economy;
@@ -16,6 +17,7 @@ use std::sync::Arc;
 
 use serde::{Deserialize, Serialize};
 
+pub use boosts::{PendingBoost, TechBoost};
 pub use command::{Command, EndReason, Event, NmReason, Outcome, SetupWarning, VictoryLevel};
 pub use events::{Effect, Predicate, ScenarioEvent};
 
@@ -285,6 +287,8 @@ pub struct ScenarioSetup {
     pub victory: Vec<VictoryThreshold>,
     /// R-EVT-01.
     pub events: Vec<ScenarioEvent>,
+    /// R-TECH-02.
+    pub tech_boosts: Vec<TechBoost>,
 }
 
 /// AP rules in half-points.
@@ -323,6 +327,11 @@ pub struct GameState {
     outcome: Option<Outcome>,
     events: Vec<ScenarioEvent>,
     fired_events: BTreeSet<String>,
+    tech_boosts: Vec<TechBoost>,
+    /// R-TECH-02: tech levels at the start of the scenario (the cap base).
+    start_tech: BTreeMap<SideId, TechLevels>,
+    bought_boosts: BTreeSet<String>,
+    pending_boosts: Vec<PendingBoost>,
     pending_bridges: Vec<PendingBridge>,
     pending_advance: Option<PendingAdvance>,
     rng: Pcg32,
@@ -423,6 +432,12 @@ impl GameState {
             .iter()
             .map(|o| (o.hex, setup.control.get(&o.hex).copied()))
             .collect();
+        let start_tech = setup.sides.iter().map(|s| (s.id, s.tech.clone())).collect();
+        for b in &setup.tech_boosts {
+            if !side_ids.contains(&b.side) {
+                return Err(invalid(format!("tech boost `{}`: unknown side", b.id)));
+            }
+        }
         let next_unit_id = units.len() as u32 + 1;
         let mut state = Self {
             data,
@@ -448,6 +463,10 @@ impl GameState {
             outcome: None,
             events: setup.events,
             fired_events: BTreeSet::new(),
+            tech_boosts: setup.tech_boosts,
+            start_tech,
+            bought_boosts: BTreeSet::new(),
+            pending_boosts: Vec::new(),
             pending_bridges: Vec::new(),
             pending_advance: None,
             rng: Pcg32::new(setup.seed, 0),
@@ -507,6 +526,7 @@ impl GameState {
             Command::PinToHq { unit, hq } => self.pin_to_hq(unit, hq),
             Command::BuildBridge { unit, toward } => self.build_bridge(unit, toward),
             Command::BombardBridge { unit, a, b } => self.bombard_bridge(unit, a, b),
+            Command::BuyTechBoost { id } => self.buy_tech_boost(&id),
             Command::EndPhase => self.end_phase(),
         };
         match result {
@@ -583,6 +603,15 @@ impl GameState {
     /// R-NM-02 / R-EVT-01: current ceasefire turn.
     pub fn last_turn(&self) -> Option<u32> {
         self.last_turn
+    }
+
+    /// R-TECH-02: boosts offered by the scenario.
+    pub fn tech_boosts(&self) -> &[TechBoost] {
+        &self.tech_boosts
+    }
+
+    pub fn pending_boosts(&self) -> &[PendingBoost] {
+        &self.pending_boosts
     }
 
     pub fn pending_bridges(&self) -> &[PendingBridge] {

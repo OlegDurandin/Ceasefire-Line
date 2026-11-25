@@ -74,6 +74,13 @@ impl TechLevels {
         self
     }
 
+    /// R-TECH-02: one level up.
+    pub fn raise(&mut self, branch: TechBranch) -> Result<u8, RuleError> {
+        let level = self.level(branch)? + 1;
+        self.0.insert(branch, level);
+        self.level(branch)
+    }
+
     pub fn level(&self, branch: TechBranch) -> Result<u8, RuleError> {
         let level = self.0.get(&branch).copied().unwrap_or(1);
         if !(1..=3).contains(&level) {

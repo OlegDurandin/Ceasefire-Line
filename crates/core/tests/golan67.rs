@@ -32,6 +32,7 @@ fn golan67_loads_and_validates() {
     assert_eq!(setup.map.hexes().count(), 20 * 16);
     assert_eq!(validate(&data, &setup), vec![]);
     assert_eq!(setup.events.len(), 3);
+    assert_eq!(setup.tech_boosts.len(), 2);
     // Every message key used by the scenario has a Russian string.
     let ru: std::collections::BTreeMap<String, String> = serde_json::from_str(LOCALE_RU).unwrap();
     for e in &setup.events {
@@ -143,6 +144,21 @@ fn play(seed: u64) -> (GameState, Vec<Event>) {
                             &mut events,
                         );
                     }
+                }
+            }
+        }
+        let boosts: Vec<String> = s
+            .tech_boosts()
+            .iter()
+            .filter(|b| b.side == side)
+            .map(|b| b.id.clone())
+            .collect();
+        for id in boosts {
+            if rng.chance(0.3) {
+                // Buying may be refused (MPP, already bought); that must be atomic.
+                let before = s.clone();
+                if s.apply(Command::BuyTechBoost { id }).is_err() {
+                    assert_eq!(s, before, "refused command changed the state");
                 }
             }
         }

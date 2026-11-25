@@ -190,6 +190,8 @@ pub struct EconomyRules {
     pub purchase_delay_turns: u32,
     /// R-MOVE-05: strategic transfer price as percent of the unit price.
     pub transfer_cost_pct: u32,
+    /// R-TECH-02: boosts raise a branch at most this far above its start.
+    pub boost_max_levels_above_start: u8,
     /// Bought units arrive in an own source with at least this value.
     pub arrival_source_value: u8,
 }

@@ -39,6 +39,8 @@ pub enum Command {
     BuildBridge { unit: UnitId, toward: Hex },
     /// R-MOVE-02, R-COMBAT-04: artillery fires at the bridge on edge `a`–`b`.
     BombardBridge { unit: UnitId, a: Hex, b: Hex },
+    /// R-TECH-02: buy a scenario tech boost.
+    BuyTechBoost { id: String },
     /// R-TURN-01: end of the active side's phase.
     EndPhase,
 }
@@ -284,6 +286,19 @@ pub enum Event {
     /// Localisation key of a message for the players.
     Message {
         key: String,
+    },
+    /// R-TECH-02.
+    TechBoostBought {
+        id: String,
+        side: SideId,
+        cost: u32,
+        ready_turn: u32,
+    },
+    TechAdvanced {
+        side: SideId,
+        branch: crate::tech::TechBranch,
+        level: u8,
+        boost: String,
     },
     PhaseEnded {
         turn: u32,

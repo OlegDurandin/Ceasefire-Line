@@ -49,6 +49,9 @@ impl GameState {
             }
         }
 
+        // R-TECH-02: boosts due this turn.
+        self.finish_boosts(side, &mut events)?;
+
         // R-MOVE-02: bridges started last phase are ready before supply is computed.
         self.finish_bridges(side, &mut events)?;
 

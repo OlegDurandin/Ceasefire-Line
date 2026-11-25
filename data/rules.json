@@ -100,7 +100,8 @@
     ],
     "purchase_delay_turns": 2,
     "arrival_source_value": 10,
-    "transfer_cost_pct": 10
+    "transfer_cost_pct": 10,
+    "boost_max_levels_above_start": 1
   },
   "hq": {
     "attach_radius_km": 50,

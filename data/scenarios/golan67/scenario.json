@@ -82,6 +82,22 @@
     }
   ],
   "scheduled_income": [],
+  "tech_boosts": [
+    {
+      "id": "isr_emergency_atgm",
+      "side": 0,
+      "branch": "antitank",
+      "cost": 40,
+      "turns": 2
+    },
+    {
+      "id": "syr_air_defense",
+      "side": 1,
+      "branch": "air_defense",
+      "cost": 30,
+      "turns": 2
+    }
+  ],
   "units": [
     {
       "class": "tank",
