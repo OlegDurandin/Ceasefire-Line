@@ -56,7 +56,8 @@
   "morale": {
     "loss_per_step": 5,
     "no_supply_loss": 15,
-    "rest_gain": 10
+    "rest_gain": 10,
+    "rest_min_supply": 4
   },
   "retreat": {
     "max_strength": 3,

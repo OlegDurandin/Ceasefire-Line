@@ -69,16 +69,17 @@ impl GameState {
             };
             let s = &rules.supply;
 
-            // Supply inertia: drops at most `max_drop_per_phase`, rises at once.
+            // R-SUP-05: supply inertia, drops at most `max_drop_per_phase`, rises at once.
             unit.supply = hex_level.max(unit.supply.saturating_sub(s.max_drop_per_phase));
 
-            // R-SUP-03 at supply 0; +morale for a phase in supply without combat.
+            // Morale by the new unit supply: 0 → −15 (R-SUP-03); ≥ rest_min_supply
+            // without combat since the last own phase → +10; otherwise unchanged.
             if unit.supply == 0 {
                 unit.zero_supply_phases = unit.zero_supply_phases.saturating_add(1);
                 unit.morale_pct = unit.morale_pct.saturating_sub(rules.morale.no_supply_loss);
             } else {
                 unit.zero_supply_phases = 0;
-                if !unit.fought {
+                if unit.supply >= rules.morale.rest_min_supply && !unit.fought {
                     unit.morale_pct = unit.morale_pct.saturating_add(rules.morale.rest_gain);
                 }
             }

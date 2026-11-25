@@ -102,6 +102,8 @@ pub struct MoraleRules {
     pub loss_per_step: u8,
     pub no_supply_loss: u8,
     pub rest_gain: u8,
+    /// Unit supply needed for `rest_gain` (no combat since the last own phase).
+    pub rest_min_supply: u8,
 }
 
 /// R-COMBAT-06.

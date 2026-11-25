@@ -276,20 +276,17 @@ fn r_unit_02_low_supply_costs_ap() {
     assert_eq!(ap(&s, 1), 8);
 }
 
-/// Supply inertia example from docs/decisions.md: unit with supply 8 gets
-/// encircled; morale 80% (= NM cap), 1 star.
-#[test]
-fn r_sup_03_supply_inertia_example() {
+/// R-SUP-05: an encircled unit (supply 8, 1 star, no combat), first three own phases.
+fn encircled(nm: u8, morale: u8) -> Vec<(u8, u8, u8, u8)> {
     let (map, mut control) = board();
     control.insert(Hex::new(5, 0), A);
     let mut u = unit("infantry", A, Hex::new(5, 0));
-    u.morale_pct = 80;
+    u.morale_pct = morale;
     u.exp_quarters = 4;
     u.supply = Some(8);
     let mut setup = setup(map, control, vec![u]);
-    setup.sides[0].national_morale_pct = 80;
+    setup.sides[0].national_morale_pct = nm;
     let mut s = start(setup);
-
     let mut seen = Vec::new();
     for phase in 1..=4 {
         if phase > 1 {
@@ -299,10 +296,39 @@ fn r_sup_03_supply_inertia_example() {
         let x = s.unit(UnitId(1)).unwrap();
         seen.push((x.supply, x.morale_pct, x.base_readiness_pct, x.strength));
     }
+    seen
+}
+
+#[test]
+fn r_sup_05_supply_inertia_nm_80() {
+    let seen = encircled(80, 80);
     assert_eq!(seen[0], (5, 80, 63, 10));
     assert_eq!(seen[1], (2, 80, 50, 10));
     assert_eq!(seen[2], (0, 65, 34, 10));
     assert_eq!(seen[3].3, 9, "attrition from the second phase at supply 0");
+}
+
+#[test]
+fn r_sup_05_supply_inertia_nm_100() {
+    let seen = encircled(100, 80);
+    assert_eq!(seen[0], (5, 90, 71, 10), "supply 5 ≥ 4, no combat: +10");
+    assert_eq!(seen[1], (2, 90, 57, 10), "supply 1–3: morale unchanged");
+    assert_eq!(seen[2], (0, 75, 39, 10), "supply 0: −15");
+}
+
+#[test]
+fn morale_does_not_grow_after_combat() {
+    let mut s = r_move_04_setup();
+    let before = s.unit(UnitId(2)).unwrap().morale_pct;
+    mv(&mut s, 1, &[(1, 0), (2, 0)]).unwrap();
+    attack(&mut s, 1, 2).unwrap();
+    let after_combat = s.unit(UnitId(2)).unwrap().morale_pct;
+    s.apply(Command::EndPhase).unwrap();
+    // Defender (supply 8 ≥ 4) was attacked since its last phase: no +10.
+    assert_eq!(
+        s.unit(UnitId(2)).unwrap().morale_pct,
+        after_combat.min(before)
+    );
 }
 
 /// Attacker (1) at (0,0), defender (2) with strength 3 at (1,0).
