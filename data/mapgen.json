@@ -1,0 +1,23 @@
+{
+  "_comment": "mapgen: classification of hexes from DEM (step 2) and OSM (step 3). Thresholds are per hex: relief = max - min elevation of the samples, slope = mean slope of the samples. Rules are checked in order; the first match wins.",
+  "earth_radius_km": 6371.0,
+  "samples_per_hex_side": 9,
+  "slope_step_m": 90,
+  "relief_rules": [
+    { "terrain": "mountains", "min_relief_m": 700, "min_slope_deg": 14 },
+    { "terrain": "hills", "min_relief_m": 220, "min_slope_deg": 6 }
+  ],
+  "default_terrain": "plain",
+  "legend": {
+    "plain": "p",
+    "dunes": "d",
+    "hills": "h",
+    "mountains": "m",
+    "marsh": "s",
+    "city": "c",
+    "fortified": "f",
+    "water": "w"
+  },
+  "pass_char": "P",
+  "hillshade": { "px_per_km": 20, "azimuth_deg": 315, "altitude_deg": 45, "z_factor": 1.0 }
+}

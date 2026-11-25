@@ -1,9 +1,10 @@
 // Stage 2: the client plays a scenario on the rules core (WASM), hotseat.
 
-import { Application, Assets, Container, type Texture } from "pixi.js";
+import { Application, Assets, Container, Sprite, type Texture } from "pixi.js";
 
 import { Camera } from "./camera";
 import { hexCenter, offsetToAxial } from "./hex";
+import { hillshadePlacement, type HillshadeMeta } from "./hillshade";
 import { Play } from "./play";
 import { drawMap } from "./render/map";
 import { terrainTextureUrl, type SpritesFile } from "./sprites";
@@ -12,6 +13,8 @@ import init, { Core, Game } from "./wasm/ceasefire_wasm.js";
 
 /** Hex corner radius in world pixels. */
 const HEX_SIZE = 48;
+/** How strongly the relief shading darkens the terrain textures. */
+const HILLSHADE_ALPHA = 0.7;
 const SCENARIO = new URLSearchParams(location.search).get("scenario") ?? "golan67";
 
 const text = (url: string) =>
@@ -80,7 +83,24 @@ async function main() {
   };
 
   const world = new Container();
-  world.addChild(drawMap(view, { terrain: terrainTex, bridge: await object("bridge"), bridgeDestroyed: await object("bridge_destroyed") }, HEX_SIZE));
+  const mapLayer = drawMap(view, { terrain: terrainTex, bridge: await object("bridge"), bridgeDestroyed: await object("bridge_destroyed") }, HEX_SIZE);
+  world.addChild(mapLayer);
+
+  // Relief underlay from mapgen, if the scenario has one: over the textures, under the grid.
+  const shadeMeta = await optionalText(`${base}/hillshade.json`);
+  if (shadeMeta) {
+    const meta = JSON.parse(shadeMeta) as HillshadeMeta;
+    const tex = await load(`${base}/${meta.png}`);
+    if (tex) {
+      const shade = new Sprite(tex);
+      const p = hillshadePlacement(meta, HEX_SIZE);
+      shade.position.set(p.x, p.y);
+      shade.scale.set(p.scale);
+      shade.blendMode = "multiply";
+      shade.alpha = HILLSHADE_ALPHA;
+      mapLayer.addChildAt(shade, 1);
+    }
+  }
   app.stage.addChild(world);
 
   const xs = view.hexes.map((h) => hexCenter(h, HEX_SIZE));

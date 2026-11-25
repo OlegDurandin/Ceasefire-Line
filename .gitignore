@@ -5,3 +5,6 @@
 
 # macOS
 .DS_Store
+
+# Raw DEM / OSM downloads and editor underlays (not in Git)
+/data/raw/

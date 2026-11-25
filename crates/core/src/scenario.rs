@@ -67,6 +67,24 @@ struct MapFile {
     /// R-MOVE-02: destroyed bridges (remains on the canal edge).
     #[serde(default)]
     destroyed_bridges: Vec<[[i32; 2]; 2]>,
+    /// Where a generated map came from (mapgen); not used by the rules.
+    #[serde(default)]
+    #[allow(dead_code)]
+    geo: Option<GeoFile>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+#[allow(dead_code)]
+struct GeoFile {
+    /// West, south, east, north (degrees).
+    bbox: [f64; 4],
+    /// Distance between neighbouring hex centres.
+    hex_km: f64,
+    #[serde(default)]
+    hillshade: Option<String>,
+    #[serde(default)]
+    sources: Vec<String>,
 }
 
 #[derive(Debug, Deserialize)]

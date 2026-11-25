@@ -1,0 +1,15 @@
+[package]
+name = "mapgen"
+description = "DEM (GeoTIFF) + OSM (.osm.pbf) -> Ceasefire Line map.json and hillshade"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+
+[dependencies]
+ceasefire-core.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+# GeoTIFF elevation tiles (SRTM), pure Rust; georeferencing tags are parsed here.
+tiff = "0.11"
+# Hillshade output.
+image = { version = "0.25", default-features = false, features = ["png"] }
