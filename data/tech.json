@@ -11,6 +11,6 @@
     }
   ],
   "side_effects": [
-    { "branch": "ew", "modifier": "sam_hit_penalty", "by_level": [0, 0.05, 0.10] }
+    { "branch": "ew", "modifier": "sam_hit_penalty", "by_level": [0, 0.08, 0.12] }
   ]
 }

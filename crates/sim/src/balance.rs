@@ -21,6 +21,10 @@ const ATGM_1967_MAX_RATIO: f64 = 1.0 / 3.0;
 const ATGM_1973_MIN_RATIO: f64 = 0.5;
 /// Section 17, «Стоимость юнитов»: damage per MPP within ±25% of the mean.
 const COST_SPREAD: f64 = 0.25;
+/// Section 17 + designer decision B: aircraft MPP lost / target MPP destroyed.
+const UMBRELLA_ONE_RANGE: (f64, f64) = (0.8, 1.2);
+const UMBRELLA_ONE_EW_MAX: f64 = 0.8;
+const UMBRELLA_TWO_MIN: f64 = 1.5;
 /// Unit classes with a special role, left out of the cost comparison.
 const SPECIAL_ROLE: [&str; 5] = ["commando", "engineer", "hq", "sam_static", "sam_mobile"];
 const STRENGTH: u8 = 10;
@@ -424,26 +428,51 @@ fn check_umbrellas(data: &GameData) -> Result<Check, String> {
         )
     };
     let (jet_step, target_step) = (step("strike")?, step("infantry")?);
-    let mut body = String::from("Ударная авиация ур. 2 (сила 10, 90%) бьёт пехоту (сила 10, 80%) под зонтиками мобильных ЗРК ур. 2 (сила 8, 90%). Обмен в MPP: потерянные шаги × цена шага.\n\n| зонтиков | РЭБ | потери самолётов, шагов | потери цели, шагов | потеряно MPP | уничтожено MPP | выгоден |\n| --- | --- | --- | --- | --- | --- | --- |\n");
-    let mut pass = true;
+    let mut body = String::from("Ударная авиация ур. 2 (сила 10, 90%) бьёт пехоту (сила 10, 80%) под зонтиками мобильных ЗРК ур. 2 (сила 8, 90%). Обмен в MPP: потерянные шаги × цена шага.\n\n| зонтиков | РЭБ | потери самолётов, шагов | потери цели, шагов | потеряно MPP | уничтожено MPP | потеряно / уничтожено |\n| --- | --- | --- | --- | --- | --- | --- |\n");
+    let mut results = std::collections::BTreeMap::new();
     for sams in [0usize, 1, 2] {
         for ew in [1u8, 2, 3] {
             let (j, t) = strike_exchange(data, sams, ew)?;
             let (lost, killed) = (j * jet_step, t * target_step);
-            let profitable = killed > lost;
-            if sams == 2 && ew == 1 && profitable {
-                pass = false;
-            }
+            results.insert((sams, ew), lost / killed);
             let _ = writeln!(
                 body,
-                "| {sams} | {ew} | {j:.2} | {t:.2} | {lost:.1} | {killed:.1} | {} |",
-                if profitable { "да" } else { "нет" }
+                "| {sams} | {ew} | {j:.2} | {t:.2} | {lost:.1} | {killed:.1} | {:.2} |",
+                lost / killed
             );
         }
     }
-    body.push_str(
-        "\nКритерий раздела 17: под двумя зонтиками без РЭБ (уровень 1) удар невыгоден.\n",
-    );
+    let r = |s: usize, e: u8| results.get(&(s, e)).copied().unwrap_or(f64::NAN);
+    let targets = [
+        (
+            "1 зонтик, без РЭБ",
+            r(1, 1),
+            UMBRELLA_ONE_RANGE.0 <= r(1, 1) && r(1, 1) <= UMBRELLA_ONE_RANGE.1,
+            format!("{:.1}–{:.1}", UMBRELLA_ONE_RANGE.0, UMBRELLA_ONE_RANGE.1),
+        ),
+        (
+            "1 зонтик, РЭБ ур. 2",
+            r(1, 2),
+            r(1, 2) <= UMBRELLA_ONE_EW_MAX,
+            format!("≤ {UMBRELLA_ONE_EW_MAX:.1}"),
+        ),
+        (
+            "2 зонтика, без РЭБ",
+            r(2, 1),
+            r(2, 1) >= UMBRELLA_TWO_MIN,
+            format!("≥ {UMBRELLA_TWO_MIN:.1}"),
+        ),
+    ];
+    body.push_str("\nЦелевые соотношения «потеряно MPP / уничтожено MPP»:\n\n| случай | соотношение | цель | итог |\n| --- | --- | --- | --- |\n");
+    let mut pass = true;
+    for (name, v, ok, goal) in &targets {
+        pass &= *ok;
+        let _ = writeln!(
+            body,
+            "| {name} | {v:.2} | {goal} | {} |",
+            if *ok { "да" } else { "**нет**" }
+        );
+    }
     Ok(Check {
         name: "Зонтики ПВО",
         pass,

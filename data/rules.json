@@ -120,7 +120,7 @@
     "air_strike_destroy_chance": 0.5
   },
   "sam": {
-    "shot_fraction": 0.5,
-    "next_sam_mult": 0.7
+    "shot_fraction": 0.3,
+    "next_sam_mult": 0.8
   }
 }

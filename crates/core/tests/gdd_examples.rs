@@ -169,11 +169,11 @@ fn r_air_03_sam_umbrella_example() {
 
     let one = forecast_barrage(&d.rules, std::slice::from_ref(&sam), &aircraft, 0.0);
     assert_eq!(one.shots.len(), 1);
-    assert_eq!(one.shots[0].params.n, 4);
+    assert_eq!(one.shots[0].params.n, 2, "round(8 × 0.9 × 0.3) = 2");
     assert_close(one.shots[0].params.p, 0.54, EPS, "p SAM");
-    assert_close(one.losses.expected, 2.16, TOL, "E[losses], one SAM");
+    assert_close(one.losses.expected, 1.08, TOL, "E[losses], one SAM");
 
     let two = forecast_barrage(&d.rules, &[sam.clone(), sam], &aircraft, 0.0);
-    assert_close(two.shots[1].params.p, 0.54 * 0.7, EPS, "p second SAM");
-    assert_close(two.losses.expected, 3.67, TOL, "E[losses], two SAMs");
+    assert_close(two.shots[1].params.p, 0.54 * 0.8, EPS, "p second SAM");
+    assert_close(two.losses.expected, 1.94, TOL, "E[losses], two SAMs");
 }
