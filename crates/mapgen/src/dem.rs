@@ -100,13 +100,18 @@ impl Tile {
 }
 
 impl Elevation for Tile {
-    /// Bilinear between the four nearest pixel centres; `None` outside or on voids.
+    /// Bilinear between the four nearest pixel centres; `None` outside the
+    /// tile's pixels or on voids. The half pixel between the outer pixel
+    /// centres and the tile edge takes the edge values, so neighbouring tiles
+    /// meet without a gap (Copernicus tiles do not overlap).
     fn elevation(&self, lon: f64, lat: f64) -> Option<f64> {
         let fx = (lon - self.lon0) / self.dlon;
         let fy = (self.lat0 - lat) / self.dlat;
-        if fx < 0.0 || fy < 0.0 || fx > (self.width - 1) as f64 || fy > (self.height - 1) as f64 {
+        let (wmax, hmax) = ((self.width - 1) as f64, (self.height - 1) as f64);
+        if fx < -0.5 || fy < -0.5 || fx > wmax + 0.5 || fy > hmax + 0.5 {
             return None;
         }
+        let (fx, fy) = (fx.clamp(0.0, wmax), fy.clamp(0.0, hmax));
         let (x0, y0) = (fx.floor() as usize, fy.floor() as usize);
         let (x1, y1) = ((x0 + 1).min(self.width - 1), (y0 + 1).min(self.height - 1));
         let (tx, ty) = (fx - x0 as f64, fy - y0 as f64);
@@ -144,7 +149,10 @@ mod tests {
         let t = Tile::from_grid(2, 2, vec![0.0, 10.0, 20.0, 30.0], 35.0, 33.0, 1.0, 1.0).unwrap();
         assert_eq!(t.elevation(35.0, 33.0), Some(0.0));
         assert_eq!(t.elevation(35.5, 32.5), Some(15.0));
-        assert_eq!(t.elevation(34.9, 33.0), None);
+        assert_eq!(t.elevation(34.4, 33.0), None);
+        // Up to half a pixel beyond the outer centres: edge values (no seam).
+        assert_eq!(t.elevation(36.4, 33.0), Some(10.0));
+        assert_eq!(t.elevation(36.6, 33.0), None);
     }
 
     #[test]

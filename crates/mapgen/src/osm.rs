@@ -185,7 +185,13 @@ pub fn read(
         refs.iter().filter_map(|r| nodes.get(r).copied()).collect()
     };
     let near = |pts: &[LonLat]| pts.iter().any(|&p| inside(p));
-    let segments = |pts: &[LonLat]| pts.windows(2).map(|w| [w[0], w[1]]).collect::<Vec<_>>();
+    // Only between consecutive nodes that are both known: nodes outside the
+    // read margin are missing, and joining across them would draw chords.
+    let segments = |refs: &[i64]| {
+        refs.windows(2)
+            .filter_map(|w| Some([*nodes.get(&w[0])?, *nodes.get(&w[1])?]))
+            .collect::<Vec<_>>()
+    };
     let mut data = OsmData::default();
     for wr in ways.values() {
         let pts = coords(&wr.refs);
@@ -208,7 +214,7 @@ pub fn read(
         if let (true, Some(terrain)) = (closed, area_terrain(cfg, &wr.tags)) {
             data.areas.push(Area {
                 terrain,
-                segments: segments(&pts),
+                segments: segments(&wr.refs),
             });
         }
     }
@@ -217,9 +223,8 @@ pub fn read(
         let mut all = Vec::new();
         for id in members {
             if let Some(wr) = ways.get(id) {
-                let pts = coords(&wr.refs);
-                segs.extend(segments(&pts));
-                all.extend(pts);
+                segs.extend(segments(&wr.refs));
+                all.extend(coords(&wr.refs));
             }
         }
         if segs.is_empty() || !near(&all) {
