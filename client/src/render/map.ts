@@ -1,6 +1,6 @@
 // Map layer (GDD R-UI-02): terrain as world-anchored texture sheets blended
-// softly across type borders, a faint grid, roads through hex centres,
-// rivers/canals and bridges on hex sides.
+// softly across type borders, a faint grid, roads as smooth lines through hex
+// centres, rivers/canals and bridges on hex sides.
 //
 // Terrain blending: the most common type is one opaque sheet under the whole
 // map; every other type is a sheet covering the map drawn over it through a
@@ -24,6 +24,7 @@ import {
 
 import { axialToOffset, hexCenter, hexCorners, offsetToAxial, sharedSide, type Point } from "../hex";
 import type { ScenarioView } from "../view";
+import { chaikin, roadChains } from "./roads";
 
 export interface MapTextures {
   terrain: Map<string, Texture>;
@@ -41,7 +42,8 @@ const BLEND_BLUR = 0.18;
 const MASK_MAX_PX = 2048;
 const GRID_ALPHA = 0.12;
 
-const ROAD = 0x8b7355;
+const ROAD = 0xd8c39a;
+const ROAD_EDGE = 0x3a2e22;
 const WATER = 0x4a7a9a;
 
 const flat = (pts: Point[]) => pts.flatMap((p) => [p.x, p.y]);
@@ -136,12 +138,16 @@ export function drawMap(view: ScenarioView, tex: MapTextures, size: number, rend
 
   const ax = ([col, row]: [number, number]) => offsetToAxial({ col, row });
   const roads = new Graphics();
-  for (const e of view.roads) {
-    const a = hexCenter(ax(e.a), size);
-    const b = hexCenter(ax(e.b), size);
-    roads.moveTo(a.x, a.y).lineTo(b.x, b.y);
-  }
-  roads.stroke({ width: size * 0.09, color: ROAD, cap: "round" });
+  const chains = roadChains(view.roads).map((c) => chaikin(c.map((h) => hexCenter(ax(h), size))));
+  const stroke = (width: number, color: number) => {
+    for (const pts of chains) {
+      roads.moveTo(pts[0]!.x, pts[0]!.y);
+      for (const p of pts.slice(1)) roads.lineTo(p.x, p.y);
+    }
+    roads.stroke({ width, color, cap: "round", join: "round" });
+  };
+  stroke(size * 0.2, ROAD_EDGE);
+  stroke(size * 0.11, ROAD);
 
   const water = new Graphics();
   for (const e of view.canals) {
