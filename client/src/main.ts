@@ -1,6 +1,6 @@
 // Stage 2: the client plays (hotseat) or edits (?mode=edit) a scenario on the rules core (WASM).
 
-import { Application, Assets, Container, Sprite, type Texture } from "pixi.js";
+import { Application, Assets, Container, Graphics, Sprite, type Texture } from "pixi.js";
 
 import { Editor } from "./editor/editor";
 import type { MapDoc, ScenarioDoc } from "./editor/model";
@@ -9,6 +9,7 @@ import { Camera } from "./camera";
 import { hexCenter, offsetToAxial } from "./hex";
 import { hillshadePlacement, type HillshadeMeta } from "./hillshade";
 import { Play } from "./play";
+import { drawControl } from "./render/control";
 import { drawMap } from "./render/map";
 import { drawUnits, expStars, sideColors, type Token } from "./render/units";
 import { pickSprite, terrainTextureUrl, type SpritesFile } from "./sprites";
@@ -129,6 +130,11 @@ async function main() {
     const render = async (v: ScenarioView) => {
       world.removeChildren().forEach((c) => c.destroy({ children: true }));
       world.addChild(buildMap(v));
+      const owners = new Map<string, number>();
+      for (const h of v.hexes) if (h.owner !== null) owners.set(`${h.col},${h.row}`, h.owner);
+      const control = new Graphics();
+      drawControl(control, HEX_SIZE, owners, colors);
+      world.addChild(control);
       const tex = new Map<number, Texture | null>();
       const tokens: Token[] = [];
       for (const u of v.units) {

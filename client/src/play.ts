@@ -6,6 +6,7 @@ import { Assets, Container, Graphics, type Texture } from "pixi.js";
 import type { Camera } from "./camera";
 import type { Forecast, GameStateView, LiveUnit, Reach, Target } from "./game-view";
 import { axialToOffset, pixelToAxial } from "./hex";
+import { drawControl } from "./render/control";
 import { drawOverlays } from "./render/overlays";
 import { drawUnits, expStars, type Token } from "./render/units";
 import { pickSprite, type SpritesFile } from "./sprites";
@@ -28,6 +29,7 @@ export class Play {
   private selection: Selection | null = null;
   private unitsLayer = new Container();
   private overlay = new Graphics();
+  private control = new Graphics();
   private textures = new Map<string, Texture>();
 
   constructor(
@@ -40,6 +42,7 @@ export class Play {
     private colors: number[],
     private size: number,
   ) {
+    world.addChild(this.control);
     world.addChild(this.overlay);
     world.addChild(this.unitsLayer);
     camera.onTap = (x, y) => this.tap(x, y);
@@ -58,6 +61,8 @@ export class Play {
   async refresh() {
     this.state = JSON.parse(this.game.state()) as GameStateView;
     await this.drawUnits();
+    const owners = new Map(this.state.control.map(([[c, r], s]) => [`${c},${r}`, s] as const));
+    drawControl(this.control, this.size, owners, this.colors);
     this.drawTop();
     this.world.tint = this.state.night ? NIGHT_TINT : 0xffffff;
     if (this.selection) {
