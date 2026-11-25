@@ -1,0 +1,21 @@
+{
+  "name": "ceasefire-line-client",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "wasm": "cd ../crates/wasm && wasm-pack build --target web --out-dir ../../client/src/wasm --release",
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "pixi.js": "8.23.0"
+  },
+  "devDependencies": {
+    "@types/node": "22.20.7",
+    "typescript": "7.0.2",
+    "vite": "8.3.8",
+    "vitest": "5.1.2"
+  }
+}

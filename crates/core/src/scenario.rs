@@ -321,7 +321,8 @@ fn parse_events(json: &str) -> Result<Vec<ScenarioEvent>, RuleError> {
         .collect())
 }
 
-fn parse_map(json: &str) -> Result<(HexMap, BTreeMap<Hex, SideId>), RuleError> {
+/// `map.json` → map and initial hex control.
+pub fn load_map(json: &str) -> Result<(HexMap, BTreeMap<Hex, SideId>), RuleError> {
     let file: MapFile = parse(json, "map.json")?;
     if file.terrain.len() != file.height || file.control.len() != file.height {
         return Err(invalid(format!(
@@ -386,7 +387,7 @@ pub fn load_scenario(
     events_json: Option<&str>,
 ) -> Result<ScenarioSetup, RuleError> {
     let file: ScenarioFile = parse(scenario_json, "scenario.json")?;
-    let (map, control) = parse_map(map_json)?;
+    let (map, control) = load_map(map_json)?;
     let hex = offset_to_axial;
     Ok(ScenarioSetup {
         hex_km: Some(file.hex_km),

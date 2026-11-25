@@ -1,0 +1,16 @@
+[package]
+name = "ceasefire-wasm"
+description = "wasm-bindgen bridge from the browser client to the rules core"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+ceasefire-core.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+# Browser bridge; the only crate that depends on it.
+wasm-bindgen = "0.2"

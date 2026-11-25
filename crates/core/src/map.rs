@@ -80,6 +80,16 @@ impl HexMap {
         HexEdge::new(a, b).and_then(|e| self.bridges.get(&e).copied())
     }
 
+    /// Hex sides with a road (for rendering and editing).
+    pub fn roads(&self) -> impl Iterator<Item = HexEdge> + '_ {
+        self.roads.iter().copied()
+    }
+
+    /// Hex sides with a canal or major river.
+    pub fn canals(&self) -> impl Iterator<Item = HexEdge> + '_ {
+        self.canals.iter().copied()
+    }
+
     /// Every bridge on the map with its state (for rendering).
     pub fn bridges(&self) -> impl Iterator<Item = (HexEdge, BridgeState)> + '_ {
         self.bridges.iter().map(|(&e, &s)| (e, s))

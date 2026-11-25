@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+    <title>Ceasefire Line</title>
+    <style>
+      :root { --panel: #1c1a17; --bronze: #b08d57; --text: #e8e1d3; }
+      html, body { margin: 0; height: 100%; background: #12110f; color: var(--text); font: 14px/1.4 system-ui, sans-serif; overflow: hidden; }
+      #app { position: fixed; inset: 0; touch-action: none; }
+      #panel { position: fixed; top: 12px; left: 12px; max-width: min(360px, calc(100vw - 24px)); background: var(--panel);
+               border: 1px solid var(--bronze); border-radius: 6px; padding: 8px 12px; opacity: 0.95; }
+      #panel h1 { font-size: 15px; margin: 0 0 4px; color: var(--bronze); }
+      #panel ul { margin: 4px 0 0; padding-left: 18px; max-height: 30vh; overflow: auto; }
+      #panel .ok { color: #9bc28a; }
+      #panel .bad { color: #e08a7a; }
+    </style>
+  </head>
+  <body>
+    <div id="app"></div>
+    <div id="panel"></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
