@@ -10,6 +10,8 @@ export interface View {
 
 export const MIN_SCALE = 0.25;
 export const MAX_SCALE = 3;
+/** Pointer travel (px) below which a press counts as a tap, not a drag. */
+export const TAP_SLOP = 6;
 
 /** Zoom by `factor` keeping the screen point (px, py) fixed. */
 export function zoomAt(v: View, factor: number, px: number, py: number): View {
@@ -22,6 +24,10 @@ export class Camera {
   private view: View;
   private pointers = new Map<number, { x: number; y: number }>();
   private pinch: number | null = null;
+  private travel = 0;
+  private multi = false;
+  /** Called with screen coordinates when a single pointer taps without dragging. */
+  onTap: ((x: number, y: number) => void) | null = null;
 
   constructor(
     private world: Container,
@@ -50,6 +56,12 @@ export class Camera {
     this.el.setPointerCapture(e.pointerId);
     this.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
     this.pinch = null;
+    if (this.pointers.size === 1) {
+      this.travel = 0;
+      this.multi = false;
+    } else {
+      this.multi = true;
+    }
   };
 
   private move = (e: PointerEvent) => {
@@ -57,6 +69,7 @@ export class Camera {
     if (!prev) return;
     const next = { x: e.clientX, y: e.clientY };
     this.pointers.set(e.pointerId, next);
+    this.travel += Math.hypot(next.x - prev.x, next.y - prev.y);
     const all = [...this.pointers.values()];
     if (all.length === 1) {
       this.view = { ...this.view, x: this.view.x + next.x - prev.x, y: this.view.y + next.y - prev.y };
@@ -72,9 +85,17 @@ export class Camera {
   };
 
   private up = (e: PointerEvent) => {
-    this.pointers.delete(e.pointerId);
+    const had = this.pointers.delete(e.pointerId);
     this.pinch = null;
+    if (had && e.type === "pointerup" && this.pointers.size === 0 && !this.multi && this.travel < TAP_SLOP) {
+      this.onTap?.(e.clientX, e.clientY);
+    }
   };
+
+  /** Screen → world coordinates. */
+  toWorld(x: number, y: number): { x: number; y: number } {
+    return { x: (x - this.view.x) / this.view.scale, y: (y - this.view.y) / this.view.scale };
+  }
 
   private wheel = (e: WheelEvent) => {
     e.preventDefault();

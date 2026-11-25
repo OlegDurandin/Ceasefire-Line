@@ -1,14 +1,14 @@
-// Stage 2 step 1: the client shows a scenario map from the rules core (WASM).
+// Stage 2: the client plays a scenario on the rules core (WASM), hotseat.
 
 import { Application, Assets, Container, type Texture } from "pixi.js";
 
 import { Camera } from "./camera";
-import { hexCenter } from "./hex";
+import { hexCenter, offsetToAxial } from "./hex";
+import { Play } from "./play";
 import { drawMap } from "./render/map";
-import { drawUnits } from "./render/units";
-import { pickSprite, terrainTextureUrl, type SpritesFile } from "./sprites";
+import { terrainTextureUrl, type SpritesFile } from "./sprites";
 import type { ScenarioView } from "./view";
-import init, { Core } from "./wasm/ceasefire_wasm.js";
+import init, { Core, Game } from "./wasm/ceasefire_wasm.js";
 
 /** Hex corner radius in world pixels. */
 const HEX_SIZE = 48;
@@ -19,7 +19,6 @@ const text = (url: string) =>
     if (!r.ok) throw new Error(`${url}: ${r.status}`);
     return r.text();
   });
-const json = async <T>(url: string): Promise<T> => JSON.parse(await text(url)) as T;
 const optionalText = (url: string) => fetch(url).then((r) => (r.ok ? r.text() : undefined));
 
 async function main() {
@@ -29,20 +28,26 @@ async function main() {
     panel.textContent = msg;
   };
   stage("Загрузка данных…");
-  const [rules, terrain, units, tech, sprites, ru] = await Promise.all([
+  const [rules, terrain, units, tech, spritesText, ruText] = await Promise.all([
     text("/data/rules.json"),
     text("/data/terrain.json"),
     text("/data/units.json"),
     text("/data/tech.json"),
-    json<SpritesFile>("/data/sprites.json"),
-    json<Record<string, string>>("/data/locale/ru.json"),
+    text("/data/sprites.json"),
+    text("/data/locale/ru.json"),
   ]);
+  const sprites = JSON.parse(spritesText) as SpritesFile;
+  const ru = JSON.parse(ruText) as Record<string, string>;
   const base = `/data/scenarios/${SCENARIO}`;
   const [scenario, map, events] = await Promise.all([
     text(`${base}/scenario.json`),
     text(`${base}/map.json`),
     optionalText(`${base}/events.json`),
   ]);
+  const sideKeys = (JSON.parse(scenario) as { sides: { id: number; key: string }[] }).sides.reduce<string[]>((acc, s) => {
+    acc[s.id] = s.key;
+    return acc;
+  }, []);
 
   stage("Загрузка ядра…");
   await init();
@@ -53,7 +58,6 @@ async function main() {
   await app.init({ resizeTo: window, background: 0x12110f, antialias: true });
   document.getElementById("app")!.appendChild(app.canvas);
 
-  // Textures: terrain by type, unit sprites by tier, bridge objects (in parallel).
   stage("Загрузка текстур…");
   // Decode on the main thread: worker decoding stalls in some WebViews (and headless Chrome).
   Assets.setPreferences({ preferWorkers: false });
@@ -70,41 +74,49 @@ async function main() {
       if (tex) terrainTex.set(t, tex);
     }),
   );
-  const techOf = new Map(view.sides.map((s) => [s.id, s.tech]));
-  const unitTex = new Map<number, Texture | null>();
-  await Promise.all(
-    view.units.map(async (u) => {
-      const ref = pickSprite(sprites, u.class, u.nation, techOf.get(u.side) ?? {});
-      unitTex.set(u.index, ref ? await load(ref.url) : null);
-    }),
-  );
-  stage("Отрисовка…");
-  const object = (role: string) => {
+  const object = async (role: string) => {
     const id = sprites.map_objects[role];
-    return id ? load(`/assets/objects/${id}.png`).then((t) => t ?? undefined) : Promise.resolve(undefined);
+    return id ? ((await load(`/assets/objects/${id}.png`)) ?? undefined) : undefined;
   };
 
   const world = new Container();
-  world.addChild(
-    drawMap(view, { terrain: terrainTex, bridge: await object("bridge"), bridgeDestroyed: await object("bridge_destroyed") }, HEX_SIZE),
-  );
-  world.addChild(drawUnits(view.units, unitTex, HEX_SIZE));
+  world.addChild(drawMap(view, { terrain: terrainTex, bridge: await object("bridge"), bridgeDestroyed: await object("bridge_destroyed") }, HEX_SIZE));
   app.stage.addChild(world);
 
-  // Start centred on the map.
   const xs = view.hexes.map((h) => hexCenter(h, HEX_SIZE));
   const cx = (Math.min(...xs.map((p) => p.x)) + Math.max(...xs.map((p) => p.x))) / 2;
   const cy = (Math.min(...xs.map((p) => p.y)) + Math.max(...xs.map((p) => p.y))) / 2;
   const scale = 0.6;
-  new Camera(world, app.canvas, { scale, x: window.innerWidth / 2 - cx * scale, y: window.innerHeight / 2 - cy * scale });
+  const camera = new Camera(world, app.canvas, { scale, x: window.innerWidth / 2 - cx * scale, y: window.innerHeight / 2 - cy * scale });
 
-  const issues = view.issues.length
-    ? `<p class="bad">${ru["ui.validation.problems"] ?? "Problems"}: ${view.issues.length}</p><ul>${view.issues.map((i) => `<li>${i}</li>`).join("")}</ul>`
-    : `<p class="ok">${ru["ui.validation.ok"] ?? "OK"}</p>`;
-  panel.innerHTML = `<h1>${ru[`scenario.${SCENARIO}.name`] ?? SCENARIO}</h1>${issues}`;
+  // Scenario validation stays visible only when something is wrong.
+  if (view.issues.length) {
+    panel.innerHTML = `<p class="bad">${ru["ui.validation.problems"] ?? "Problems"}: ${view.issues.length}</p><ul>${view.issues.map((i) => `<li>${i}</li>`).join("")}</ul>`;
+  } else {
+    panel.style.display = "none";
+  }
+
+  stage("Ход…");
+  const game = new Game(core, scenario, map, events);
+  const play = new Play(game, world, camera, sprites, ru, sideKeys, HEX_SIZE);
+  await play.refresh();
+  if (!view.issues.length) panel.style.display = "none";
+
+  // Dev-only hook for end-to-end checks: hex → screen coordinates.
+  if (import.meta.env.DEV) {
+    (window as unknown as { __cl: unknown }).__cl = {
+      screenOf: (col: number, row: number) => {
+        const p = hexCenter(offsetToAxial({ col, row }), HEX_SIZE);
+        const v = camera.current;
+        return { x: v.x + p.x * v.scale, y: v.y + p.y * v.scale };
+      },
+    };
+  }
 }
 
 main().catch((e: unknown) => {
-  document.getElementById("panel")!.textContent = String(e);
+  const panel = document.getElementById("panel")!;
+  panel.style.display = "block";
+  panel.textContent = String(e);
   console.error(e);
 });

@@ -4,21 +4,39 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
     <title>Ceasefire Line</title>
+    <link rel="icon" href="data:," />
     <style>
-      :root { --panel: #1c1a17; --bronze: #b08d57; --text: #e8e1d3; }
+      :root { --panel: #1c1a17; --bronze: #b08d57; --text: #e8e1d3; --muted: #a49a88; --good: #9bc28a; --bad: #e08a7a; }
       html, body { margin: 0; height: 100%; background: #12110f; color: var(--text); font: 14px/1.4 system-ui, sans-serif; overflow: hidden; }
       #app { position: fixed; inset: 0; touch-action: none; }
-      #panel { position: fixed; top: 12px; left: 12px; max-width: min(360px, calc(100vw - 24px)); background: var(--panel);
-               border: 1px solid var(--bronze); border-radius: 6px; padding: 8px 12px; opacity: 0.95; }
-      #panel h1 { font-size: 15px; margin: 0 0 4px; color: var(--bronze); }
+      .panel { position: fixed; background: var(--panel); border: 1px solid var(--bronze); border-radius: 6px; opacity: 0.96; }
+      #top { top: 8px; left: 50%; transform: translateX(-50%); display: flex; gap: 14px; align-items: center; padding: 6px 12px;
+             max-width: calc(100vw - 24px); flex-wrap: wrap; justify-content: center; }
+      #top b { color: var(--bronze); }
+      #top .muted { color: var(--muted); }
+      button { background: #2a2620; color: var(--text); border: 1px solid var(--bronze); border-radius: 4px; padding: 5px 12px; font: inherit; cursor: pointer; }
+      button:hover { background: #3a342a; }
+      #combat { bottom: 10px; left: 50%; transform: translateX(-50%); padding: 8px 14px; min-width: min(420px, calc(100vw - 24px)); display: none; text-align: center; }
+      #combat .big { font-size: 22px; font-weight: 700; letter-spacing: 1px; }
+      #combat .row { display: flex; justify-content: space-between; gap: 18px; }
+      #combat .detail { color: var(--muted); font-size: 12px; }
+      #combat .actions { margin-top: 6px; display: flex; gap: 8px; justify-content: center; }
+      #info { top: 60px; left: 10px; padding: 6px 10px; max-width: min(300px, calc(100vw - 24px)); display: none; font-size: 13px; }
+      #panel { top: 60px; right: 10px; padding: 6px 10px; max-width: min(320px, calc(100vw - 24px)); }
       #panel ul { margin: 4px 0 0; padding-left: 18px; max-height: 30vh; overflow: auto; }
-      #panel .ok { color: #9bc28a; }
-      #panel .bad { color: #e08a7a; }
+      .ok { color: var(--good); } .bad { color: var(--bad); }
+      #modal { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(0,0,0,0.55); }
+      #modal .panel { position: static; padding: 18px 24px; max-width: min(420px, calc(100vw - 32px)); text-align: center; }
+      #modal h2 { margin: 0 0 8px; color: var(--bronze); }
     </style>
   </head>
   <body>
     <div id="app"></div>
-    <div id="panel"></div>
+    <div id="top" class="panel"></div>
+    <div id="info" class="panel"></div>
+    <div id="panel" class="panel"></div>
+    <div id="combat" class="panel"></div>
+    <div id="modal"><div class="panel"></div></div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>
