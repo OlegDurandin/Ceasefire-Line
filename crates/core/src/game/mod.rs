@@ -1,6 +1,7 @@
 //! R-TURN-01: game state. It changes only through [`GameState::apply`].
 
 mod attack;
+mod bridge;
 mod command;
 mod economy;
 mod hq;
@@ -185,6 +186,15 @@ pub struct SourceState {
     pub current: u8,
 }
 
+/// R-MOVE-02: a bridge under construction; ready at the builder side's next phase.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub struct PendingBridge {
+    pub engineer: UnitId,
+    pub side: SideId,
+    pub a: Hex,
+    pub b: Hex,
+}
+
 /// R-COMBAT-06: a vacated hex the attacker may occupy for free.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct PendingAdvance {
@@ -271,6 +281,7 @@ pub struct GameState {
     last_turn: Option<u32>,
     victory: Vec<VictoryThreshold>,
     outcome: Option<Outcome>,
+    pending_bridges: Vec<PendingBridge>,
     pending_advance: Option<PendingAdvance>,
     rng: Pcg32,
 }
@@ -426,6 +437,7 @@ impl GameState {
             last_turn: setup.last_turn,
             victory: setup.victory,
             outcome: None,
+            pending_bridges: Vec::new(),
             pending_advance: None,
             rng: Pcg32::new(setup.seed, 0),
         };
@@ -482,6 +494,8 @@ impl GameState {
             Command::Purchase { class } => self.purchase(&class),
             Command::Transfer { unit, to } => self.transfer(unit, to),
             Command::PinToHq { unit, hq } => self.pin_to_hq(unit, hq),
+            Command::BuildBridge { unit, toward } => self.build_bridge(unit, toward),
+            Command::BombardBridge { unit, a, b } => self.bombard_bridge(unit, a, b),
             Command::EndPhase => self.end_phase(),
         };
         match result {
@@ -553,6 +567,10 @@ impl GameState {
     /// R-NM-02: set once the game has ended.
     pub fn outcome(&self) -> Option<&Outcome> {
         self.outcome.as_ref()
+    }
+
+    pub fn pending_bridges(&self) -> &[PendingBridge] {
+        &self.pending_bridges
     }
 
     pub fn arrivals(&self) -> &[Arrival] {

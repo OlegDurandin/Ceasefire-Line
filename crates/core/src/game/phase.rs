@@ -43,6 +43,9 @@ impl GameState {
             }
         }
 
+        // R-MOVE-02: bridges started last phase are ready before supply is computed.
+        self.finish_bridges(side, &mut events)?;
+
         // R-TURN-01: arrivals, then supply, then income by the new supply.
         self.deliver_arrivals(side, nm, &mut events);
         let supply = self.hex_supply(side)?;

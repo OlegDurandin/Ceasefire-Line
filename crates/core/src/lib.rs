@@ -20,4 +20,4 @@ pub mod supply;
 pub mod tech;
 pub mod unit;
 
-pub use error::{AttackError, EconomyError, MoveError, RuleError, TransferError};
+pub use error::{AttackError, BridgeError, EconomyError, MoveError, RuleError, TransferError};

@@ -62,6 +62,13 @@ impl HexMap {
         Ok(())
     }
 
+    /// R-MOVE-02: a destroyed bridge disappears; engineers rebuild it.
+    pub fn remove_bridge(&mut self, a: Hex, b: Hex) {
+        if let Some(e) = HexEdge::new(a, b) {
+            self.bridges.remove(&e);
+        }
+    }
+
     fn has(set: &BTreeSet<HexEdge>, a: Hex, b: Hex) -> bool {
         HexEdge::new(a, b).is_some_and(|e| set.contains(&e))
     }

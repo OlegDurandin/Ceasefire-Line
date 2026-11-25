@@ -127,6 +127,15 @@ pub struct ExperienceRules {
     pub max: u16,
 }
 
+/// R-MOVE-02: chance that a strike destroys a bridge.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct BridgeRules {
+    pub bombard_destroy_chance: f64,
+    /// For air strikes (R-AIR-02), used once aviation is in.
+    pub air_strike_destroy_chance: f64,
+}
+
 /// R-NM-01, R-NM-02.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -223,6 +232,7 @@ pub struct Rules {
     pub economy: EconomyRules,
     pub hq: HqRules,
     pub national_morale: NationalMoraleRules,
+    pub bridge: BridgeRules,
 }
 
 impl Rules {

@@ -117,5 +117,9 @@
     "steps_per_loss": 10,
     "sudden_death_pct": 20,
     "objective_taken_share_pct": 50
+  },
+  "bridge": {
+    "bombard_destroy_chance": 0.3,
+    "air_strike_destroy_chance": 0.5
   }
 }

@@ -39,6 +39,21 @@ pub enum RuleError {
     IllegalPin { unit: u32, hq: u32 },
     #[error("the game is over")]
     GameOver,
+    #[error("illegal bridge action by unit {unit}: {reason:?}")]
+    IllegalBridge { unit: u32, reason: BridgeError },
+}
+
+/// Why building or bombarding a bridge is rejected (R-MOVE-02).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum BridgeError {
+    NotEngineer,
+    /// Engineers build only in a phase they have not acted in.
+    Acted,
+    NoCanal,
+    AlreadyBridged,
+    /// Needs a friendly ground unit on the far bank.
+    NoFriendlyOnFarBank,
+    NoBridge,
 }
 
 /// Why a strategic transfer is rejected (R-MOVE-05).
@@ -80,6 +95,8 @@ pub enum MoveError {
     ZocStop,
     /// Direct step from one enemy ZOC hex to another.
     ZocToZoc,
+    /// R-MOVE-02: a boat crossing must be the last step.
+    BoatCrossingNotLast,
     NotEnoughAp,
 }
 

@@ -34,6 +34,11 @@ pub enum Command {
     /// R-HQ-01: pin a unit to an HQ (`None` removes the pin); applied at the
     /// start of the next own phase.
     PinToHq { unit: UnitId, hq: Option<UnitId> },
+    /// R-MOVE-02: an engineer on the bank bridges the canal edge towards `toward`
+    /// (also rebuilds a destroyed bridge).
+    BuildBridge { unit: UnitId, toward: Hex },
+    /// R-MOVE-02, R-COMBAT-04: artillery fires at the bridge on edge `a`–`b`.
+    BombardBridge { unit: UnitId, a: Hex, b: Hex },
     /// R-TURN-01: end of the active side's phase.
     EndPhase,
 }
@@ -122,6 +127,8 @@ pub enum Event {
         unit: UnitId,
         path: Vec<Hex>,
         ap_spent_halves: u32,
+        /// R-MOVE-02: the last step crossed a canal by boat.
+        by_boat: bool,
     },
     /// R-MOVE-06.
     HexCaptured {
@@ -222,6 +229,27 @@ pub enum Event {
     Pinned {
         unit: UnitId,
         hq: Option<UnitId>,
+    },
+    /// R-MOVE-02: work started; the bridge is ready next own phase.
+    BridgeStarted {
+        unit: UnitId,
+        a: Hex,
+        b: Hex,
+    },
+    /// R-MOVE-02: start of the builder's phase; `completed` is false if the
+    /// engineer was lost or left the bank.
+    BridgeBuilt {
+        unit: UnitId,
+        a: Hex,
+        b: Hex,
+        completed: bool,
+    },
+    BridgeStrike {
+        unit: UnitId,
+        a: Hex,
+        b: Hex,
+        chance: f64,
+        destroyed: bool,
     },
     PhaseEnded {
         turn: u32,

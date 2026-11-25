@@ -3,6 +3,7 @@
 use std::cmp::Reverse;
 use std::collections::{BTreeMap, BTreeSet, BinaryHeap};
 
+use crate::data::UnitTag;
 use crate::error::{MoveError, RuleError};
 use crate::hex::Hex;
 use crate::movement::{enemy_zoc, entry_cost_halves, Mobility};
@@ -13,6 +14,8 @@ use super::{Event, GameState, Unit, UnitId};
 struct Step {
     cost: u32,
     enters_zoc: bool,
+    /// R-MOVE-02: across a canal without a bridge; costs all remaining AP.
+    boat: bool,
 }
 
 /// Snapshot of what matters for one unit's movement.
@@ -54,8 +57,25 @@ impl<'a> MoveView<'a> {
         if from_zoc && to_zoc {
             return Err(self.illegal(MoveError::ZocToZoc));
         }
+        let map = &self.state.map;
+        if map.has_canal(from, to) && !map.has_bridge(from, to) {
+            // R-MOVE-02: only infantry, by boat; the far hex must be enterable.
+            let class = self.state.class(self.unit)?;
+            let cell = map
+                .cell(to)
+                .ok_or_else(|| self.illegal(MoveError::Impassable))?;
+            let terrain = self.state.data.terrain.get(&cell.terrain)?;
+            if !class.has_tag(UnitTag::BoatCrossing) || (terrain.def.requires_pass && !cell.pass) {
+                return Err(self.illegal(MoveError::Impassable));
+            }
+            return Ok(Step {
+                cost: 0,
+                enters_zoc: to_zoc,
+                boat: true,
+            });
+        }
         let cost = entry_cost_halves(
-            &self.state.map,
+            map,
             &self.state.data.terrain,
             from,
             to,
@@ -72,6 +92,7 @@ impl<'a> MoveView<'a> {
         Ok(Step {
             cost: cost + surcharge,
             enters_zoc: to_zoc,
+            boat: false,
         })
     }
 
@@ -92,8 +113,9 @@ impl GameState {
         Ok(unit)
     }
 
-    /// Validates a path; returns its AP cost and whether it ends in enemy ZOC.
-    fn plan_move(&self, id: UnitId, path: &[Hex]) -> Result<(u32, bool), RuleError> {
+    /// Validates a path; returns its AP cost, whether it ends in enemy ZOC and
+    /// whether its last step is a boat crossing.
+    fn plan_move(&self, id: UnitId, path: &[Hex]) -> Result<(u32, bool, bool), RuleError> {
         let unit = self.movable_unit(id)?;
         let view = MoveView::new(self, unit);
         let Some(&last) = path.last() else {
@@ -102,32 +124,46 @@ impl GameState {
         let mut from = unit.hex;
         let mut total = 0u32;
         let mut in_zoc_stop = false;
+        let mut boat = false;
         for (i, &to) in path.iter().enumerate() {
             if in_zoc_stop {
                 return Err(view.illegal(MoveError::ZocStop));
             }
+            if boat {
+                return Err(view.illegal(MoveError::BoatCrossingNotLast));
+            }
             let step = view.step(from, to, i == 0)?;
             total = total.saturating_add(step.cost);
             in_zoc_stop = step.enters_zoc;
+            boat = step.boat;
             from = to;
         }
         if !view.can_end_at(last) {
             return Err(view.illegal(MoveError::Occupied));
         }
-        if total > unit.ap_halves {
+        // A boat crossing needs at least the minimum AP left, then takes all.
+        let needed = if boat {
+            total.saturating_add(self.ap.min)
+        } else {
+            total
+        };
+        if needed > unit.ap_halves {
             return Err(view.illegal(MoveError::NotEnoughAp));
         }
-        Ok((total, in_zoc_stop))
+        let cost = if boat { unit.ap_halves } else { total };
+        Ok((cost, in_zoc_stop, boat))
     }
 
     /// R-MOVE-01..04, R-MOVE-06.
     pub(super) fn move_unit(&mut self, id: UnitId, path: &[Hex]) -> Result<Vec<Event>, RuleError> {
-        let (cost, ends_in_zoc) = self.plan_move(id, path)?;
+        let (cost, ends_in_zoc, by_boat) = self.plan_move(id, path)?;
         let side = self.get_unit(id)?.side;
+        let boat_penalty = self.data.rules.movement.boat_crossing_readiness_pct;
         let mut events = vec![Event::UnitMoved {
             unit: id,
             path: path.to_vec(),
             ap_spent_halves: cost,
+            by_boat,
         }];
         for &hex in path {
             self.take_hex(hex, side, &mut events);
@@ -146,6 +182,10 @@ impl GameState {
         if ends_in_zoc {
             unit.can_move = false;
         }
+        if by_boat {
+            unit.can_move = false;
+            unit.crossing_penalty_pct = boat_penalty;
+        }
         Ok(events)
     }
 
@@ -160,6 +200,7 @@ impl GameState {
         let start = unit.hex;
         let mut best: BTreeMap<Hex, u32> = BTreeMap::from([(start, 0)]);
         let mut heap = BinaryHeap::from([Reverse((0u32, start))]);
+        let mut boats = BTreeSet::new();
         while let Some(Reverse((cost, hex))) = heap.pop() {
             if best.get(&hex).is_some_and(|&b| cost > b) {
                 continue;
@@ -173,8 +214,18 @@ impl GameState {
                     Err(RuleError::IllegalMove { .. }) => continue,
                     Err(e) => return Err(e),
                 };
+                if next == start {
+                    continue;
+                }
+                if step.boat {
+                    // Terminal: needs minimum AP left, then costs everything.
+                    if cost.saturating_add(self.ap.min) <= unit.ap_halves {
+                        boats.insert(next);
+                    }
+                    continue;
+                }
                 let next_cost = cost.saturating_add(step.cost);
-                if next_cost > unit.ap_halves || next == start {
+                if next_cost > unit.ap_halves {
                     continue;
                 }
                 if best.get(&next).is_none_or(|&b| next_cost < b) {
@@ -182,6 +233,9 @@ impl GameState {
                     heap.push(Reverse((next_cost, next)));
                 }
             }
+        }
+        for hex in boats {
+            best.entry(hex).or_insert(unit.ap_halves);
         }
         for (hex, cost) in best {
             if hex != start && view.can_end_at(hex) {
