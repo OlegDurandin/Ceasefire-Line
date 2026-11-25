@@ -1,6 +1,6 @@
 # Лицензия данных карты
 
-`map.json`, `hillshade.png` и `hillshade.json` в этой папке построены утилитой `mapgen` из открытых данных.
+`map.json`, `hillshade.png`, `hillshade.json`, `tiles.json` и `tiles/` в этой папке построены утилитой `mapgen` из открытых данных.
 
 ## Рельеф: Copernicus DEM GLO-30
 
@@ -14,6 +14,6 @@
 
 ## OpenStreetMap
 
-Дороги, реки, водоёмы, застройка и названия — из OpenStreetMap: © OpenStreetMap contributors, Open Database License (ODbL) 1.0, https://opendatacommons.org/licenses/odbl/. `map.json` — производная база данных и распространяется на тех же условиях (ODbL 1.0) с указанием источника.
+Дороги, реки, водоёмы, леса и сады, застройка и названия — из OpenStreetMap: © OpenStreetMap contributors, Open Database License (ODbL) 1.0, https://opendatacommons.org/licenses/odbl/. `map.json` — производная база данных и распространяется на тех же условиях (ODbL 1.0) с указанием источника.
 
 Это не распространяется на `scenario.json`, `events.json`, код и графику игры.
