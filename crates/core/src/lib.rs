@@ -18,6 +18,7 @@ pub mod scale;
 pub mod scenario;
 pub mod side;
 pub mod supply;
+pub mod tactical;
 pub mod tech;
 pub mod unit;
 

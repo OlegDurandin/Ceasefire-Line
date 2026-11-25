@@ -39,6 +39,12 @@ pub enum RuleError {
     IllegalPin { unit: u32, hq: u32 },
     #[error("the game is over")]
     GameOver,
+    #[error("unit {0} is in a combat waiting for its result")]
+    UnitInCombat(u32),
+    #[error("combats waiting for a result: resolve them before ending the phase")]
+    CombatsPending,
+    #[error("no pending combat {0}")]
+    UnknownCombat(u32),
     #[error("illegal bridge action by unit {unit}: {reason:?}")]
     IllegalBridge { unit: u32, reason: BridgeError },
 }

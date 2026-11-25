@@ -3,6 +3,7 @@
 mod attack;
 mod boosts;
 mod bridge;
+mod combats;
 mod command;
 mod economy;
 mod events;
@@ -18,6 +19,7 @@ use std::sync::Arc;
 use serde::{Deserialize, Serialize};
 
 pub use boosts::{PendingBoost, TechBoost};
+pub use combats::{DeclaredAttack, PendingCombat};
 pub use command::{Command, EndReason, Event, NmReason, Outcome, SetupWarning, VictoryLevel};
 pub use events::{Effect, Predicate, ScenarioEvent};
 
@@ -333,6 +335,8 @@ pub struct GameState {
     bought_boosts: BTreeSet<String>,
     pending_boosts: Vec<PendingBoost>,
     pending_bridges: Vec<PendingBridge>,
+    pending_combats: Vec<PendingCombat>,
+    next_combat_id: u32,
     pending_advance: Option<PendingAdvance>,
     rng: Pcg32,
 }
@@ -468,6 +472,8 @@ impl GameState {
             bought_boosts: BTreeSet::new(),
             pending_boosts: Vec::new(),
             pending_bridges: Vec::new(),
+            pending_combats: Vec::new(),
+            next_combat_id: 1,
             pending_advance: None,
             rng: Pcg32::new(setup.seed, 0),
         };
@@ -513,7 +519,21 @@ impl GameState {
         if self.outcome.is_some() {
             return Err(RuleError::GameOver);
         }
-        let keeps_pending = matches!(command, Command::Attack { .. } | Command::Advance { .. });
+        // Tactical battles: units in a combat waiting for its result are locked,
+        // and the phase cannot end until every such combat is resolved.
+        if let Some(u) = Self::command_units(&command)
+            .into_iter()
+            .find(|&u| self.in_combat(u))
+        {
+            return Err(RuleError::UnitInCombat(u.0));
+        }
+        if matches!(command, Command::EndPhase) && !self.pending_combats.is_empty() {
+            return Err(RuleError::CombatsPending);
+        }
+        let keeps_pending = matches!(
+            command,
+            Command::Attack { .. } | Command::Advance { .. } | Command::ResolveCombat { .. }
+        );
         let backup = self.clone();
         let result = match command {
             Command::Move { unit, path } => self.move_unit(unit, &path),
@@ -527,6 +547,8 @@ impl GameState {
             Command::BuildBridge { unit, toward } => self.build_bridge(unit, toward),
             Command::BombardBridge { unit, a, b } => self.bombard_bridge(unit, a, b),
             Command::BuyTechBoost { id } => self.buy_tech_boost(&id),
+            Command::DeclareAttack { unit, target } => self.declare_attack(unit, target),
+            Command::ResolveCombat { combat, outcome } => self.resolve_combat(combat, outcome),
             Command::EndPhase => self.end_phase(),
         };
         match result {

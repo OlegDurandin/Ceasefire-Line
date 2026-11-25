@@ -48,7 +48,7 @@ impl LossForecast {
 }
 
 /// Smallest k with P(X <= k) >= q.
-fn percentile(dist: &[f64], q: f64) -> u32 {
+pub fn percentile(dist: &[f64], q: f64) -> u32 {
     let mut cumulative = 0.0;
     for (k, &w) in dist.iter().enumerate() {
         cumulative += w;

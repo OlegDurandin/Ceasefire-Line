@@ -122,5 +122,15 @@
   "sam": {
     "shot_fraction": 0.3,
     "next_sam_mult": 0.8
+  },
+  "tactical": {
+    "percentiles": {
+      "attacker_decisive": 0.9,
+      "attacker_victory": 0.7,
+      "draw": 0.5,
+      "attacker_defeat": 0.3,
+      "attacker_rout": 0.1
+    },
+    "snapshot_format": 1
   }
 }

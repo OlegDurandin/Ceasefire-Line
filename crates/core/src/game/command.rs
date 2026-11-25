@@ -41,6 +41,15 @@ pub enum Command {
     BombardBridge { unit: UnitId, a: Hex, b: Hex },
     /// R-TECH-02: buy a scenario tech boost.
     BuyTechBoost { id: String },
+    /// Tactical battles: declare an attack and queue it for a result; the
+    /// snapshot for the tactical level comes in `CombatDeclared`.
+    DeclareAttack { unit: UnitId, target: UnitId },
+    /// Apply a queued combat's result: `outcome` from the tactical level, or
+    /// `None` to calculate automatically.
+    ResolveCombat {
+        combat: u32,
+        outcome: Option<crate::tactical::TacticalOutcome>,
+    },
     /// R-TURN-01: end of the active side's phase.
     EndPhase,
 }
@@ -161,6 +170,14 @@ pub enum Event {
         exchange: Exchange,
         attacker_losses: u8,
         defender_losses: u8,
+        source: crate::tactical::CombatSource,
+    },
+    /// Tactical battles: a combat waits for its result.
+    CombatDeclared {
+        combat: u32,
+        attacker: UnitId,
+        defender: UnitId,
+        snapshot: Box<crate::tactical::TacticalScenario>,
     },
     Bombarded {
         unit: UnitId,

@@ -136,6 +136,15 @@ pub struct BridgeRules {
     pub air_strike_destroy_chance: f64,
 }
 
+/// Tactical battles (GDD «Тактические бои»): result → percentile of the
+/// forecast distribution, and the snapshot format version.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct TacticalRules {
+    pub percentiles: BTreeMap<crate::tactical::TacticalOutcome, f64>,
+    pub snapshot_format: u32,
+}
+
 /// R-NM-01, R-NM-02.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -236,6 +245,7 @@ pub struct Rules {
     pub hq: HqRules,
     pub national_morale: NationalMoraleRules,
     pub bridge: BridgeRules,
+    pub tactical: TacticalRules,
 }
 
 impl Rules {
@@ -280,6 +290,18 @@ impl Rules {
         if bands.windows(2).any(|w| w[0].min_supply <= w[1].min_supply) {
             return Err(RuleError::InvalidData(
                 "economy: reinforce_bands must be sorted by min_supply, descending".into(),
+            ));
+        }
+        let outcomes = crate::tactical::TacticalOutcome::ALL;
+        if outcomes.iter().any(|o| {
+            !self
+                .tactical
+                .percentiles
+                .get(o)
+                .is_some_and(|q| *q > 0.0 && *q < 1.0)
+        }) {
+            return Err(RuleError::InvalidData(
+                "tactical: every outcome needs a percentile in (0, 1)".into(),
             ));
         }
         if self.national_morale.steps_per_loss == 0 {

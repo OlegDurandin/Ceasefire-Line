@@ -3,8 +3,8 @@
 use std::sync::Arc;
 
 use crate::combat::{
-    fire_params, forecast_fire, forecast_ground, resolve_ground, sample_hits, Combatant,
-    ExchangeForecast, FireInput, FireParams, GroundAttack,
+    fire_params, forecast_fire, forecast_ground, sample_hits, Combatant, ExchangeForecast,
+    FireInput, FireParams, GroundAttack,
 };
 use crate::data::{GameData, UnitTag};
 use crate::error::{AttackError, RuleError};
@@ -13,7 +13,9 @@ use crate::movement::{enemy_zoc, entry_cost_halves, Mobility};
 use crate::prob::LossForecast;
 use crate::scale::range_in_hexes;
 
-use super::{Event, GameState, PendingAdvance, Unit, UnitId};
+use super::{DeclaredAttack, Event, GameState, PendingAdvance, Unit, UnitId};
+use crate::prob::{hits_distribution, percentile};
+use crate::tactical::CombatSource;
 
 fn illegal(unit: UnitId, reason: AttackError) -> RuleError {
     RuleError::IllegalAttack {
@@ -95,37 +97,12 @@ impl GameState {
         )
     }
 
-    /// R-COMBAT-02, R-MOVE-04, R-COMBAT-06.
-    pub(super) fn attack(&mut self, id: UnitId, target: UnitId) -> Result<Vec<Event>, RuleError> {
-        let (a, d) = self.check_attack(id, target)?;
-        let data = Arc::clone(&self.data);
-        let rules = &data.rules;
-        let ctx = self.ground_context(&a, &d)?;
-        let att = self.combatant(&data, &a)?;
-        let def = self.combatant(&data, &d)?;
-        let outcome = resolve_ground(&rules.combat, &att, &def, &ctx, &mut self.rng)?;
-        let exploits = att.class.has_tag(UnitTag::Exploitation);
-        // R-COMBAT-06 + R-MOVE-02: across a canal without a bridge only
-        // infantry may occupy, by boat.
-        let by_boat = self.map.has_canal(a.hex, d.hex) && !self.map.has_bridge(a.hex, d.hex);
-        let occupies = if by_boat {
-            att.class.has_tag(UnitTag::BoatCrossing)
-        } else {
-            att.class.has_tag(UnitTag::OccupyHex)
-        };
-        let mut events = vec![Event::CombatResolved {
-            attacker: id,
-            defender: target,
-            exchange: outcome.exchange,
-            attacker_losses: outcome.attacker_losses,
-            defender_losses: outcome.defender_losses,
-        }];
-
-        // Attacker: losses, fatigue, R-MOVE-04 costs.
+    /// R-MOVE-04: 1 AP and a strike; non-mechanised units lose the rest of
+    /// their AP, tank and mech brigades keep moving with ≥ 2 AP left.
+    fn charge_attack(&mut self, id: UnitId, exploits: bool) {
         let attack_ap = self.ap.attack;
         let exploit_min = self.ap.exploit_min;
         if let Some(u) = self.units.get_mut(&id) {
-            let lost = u.lose_steps(outcome.attacker_losses, rules.morale.loss_per_step);
             u.attacks_made += 1;
             u.fought = true;
             u.acted = true;
@@ -137,15 +114,131 @@ impl GameState {
                 u.ap_halves = 0;
                 u.can_move = false;
             }
-            self.charge_losses(a.side, lost, &mut events)?;
         }
-        // Defender: losses, fatigue.
+    }
+
+    /// Tactical battles: fixes the combat (forecast at this moment) and
+    /// charges the attack; the losses come later from `conclude`.
+    pub(super) fn declare(
+        &mut self,
+        id: UnitId,
+        target: UnitId,
+    ) -> Result<DeclaredAttack, RuleError> {
+        let (a, d) = self.check_attack(id, target)?;
+        let data = Arc::clone(&self.data);
+        let ctx = self.ground_context(&a, &d)?;
+        let att = self.combatant(&data, &a)?;
+        let def = self.combatant(&data, &d)?;
+        let forecast = forecast_ground(&data.rules.combat, &att, &def, &ctx)?;
+        // R-COMBAT-06 + R-MOVE-02: across a canal without a bridge only
+        // infantry may occupy, by boat.
+        let by_boat = self.map.has_canal(a.hex, d.hex) && !self.map.has_bridge(a.hex, d.hex);
+        let occupies = if by_boat {
+            att.class.has_tag(UnitTag::BoatCrossing)
+        } else {
+            att.class.has_tag(UnitTag::OccupyHex)
+        };
+        let exploits = att.class.has_tag(UnitTag::Exploitation);
+        let declared = DeclaredAttack {
+            attacker: id,
+            defender: target,
+            forecast,
+            defender_readiness_pct: def.readiness_pct,
+            attacker_strength: a.strength,
+            defender_strength: d.strength,
+            defender_hex: d.hex,
+            occupies,
+            by_boat,
+        };
+        self.charge_attack(id, exploits);
+        Ok(declared)
+    }
+
+    /// R-COMBAT-02, R-MOVE-04, R-COMBAT-06: declare and resolve at once.
+    pub(super) fn attack(&mut self, id: UnitId, target: UnitId) -> Result<Vec<Event>, RuleError> {
+        let declared = self.declare(id, target)?;
+        self.conclude(&declared, CombatSource::Auto)
+    }
+
+    /// Losses for a declared combat: dice (defender first, then attacker) or
+    /// the tactical outcome's percentile — defender losses at q, attacker
+    /// losses at 1 − q of the forecast distributions.
+    fn combat_losses(
+        &mut self,
+        c: &DeclaredAttack,
+        source: CombatSource,
+    ) -> Result<(u8, u8), RuleError> {
+        let x = c.forecast.exchange;
+        match source {
+            CombatSource::Auto => {
+                let d = capped(
+                    sample_hits(&mut self.rng, &x.vs_defender),
+                    c.defender_strength,
+                );
+                let a = capped(
+                    sample_hits(&mut self.rng, &x.vs_attacker),
+                    c.attacker_strength,
+                );
+                Ok((a, d))
+            }
+            CombatSource::Tactical { outcome } => {
+                let q = *self
+                    .data
+                    .rules
+                    .tactical
+                    .percentiles
+                    .get(&outcome)
+                    .ok_or_else(|| {
+                        RuleError::InvalidData(format!("no percentile for {outcome:?}"))
+                    })?;
+                let dist =
+                    |p: &FireParams, cap: u8| hits_distribution(&[(p.n, p.p)], u32::from(cap));
+                let d = percentile(&dist(&x.vs_defender, c.defender_strength), q);
+                let a = percentile(&dist(&x.vs_attacker, c.attacker_strength), 1.0 - q);
+                Ok((
+                    capped(a, c.attacker_strength),
+                    capped(d, c.defender_strength),
+                ))
+            }
+        }
+    }
+
+    /// Applies a declared combat's result: losses, fatigue, retreat or extra
+    /// losses, experience, NM, destroyed units, advance.
+    pub(super) fn conclude(
+        &mut self,
+        c: &DeclaredAttack,
+        source: CombatSource,
+    ) -> Result<Vec<Event>, RuleError> {
+        let data = Arc::clone(&self.data);
+        let rules = &data.rules;
+        let (id, target) = (c.attacker, c.defender);
+        let (attacker_losses, defender_losses) = self.combat_losses(c, source)?;
+        let mut events = vec![Event::CombatResolved {
+            attacker: id,
+            defender: target,
+            exchange: c.forecast.exchange,
+            attacker_losses,
+            defender_losses,
+            source,
+        }];
+        let side_of = |s: &GameState, u: UnitId| s.units.get(&u).map(|u| u.side);
+        let (a_side, d_side) = (side_of(self, id), side_of(self, target));
+
+        if let Some(u) = self.units.get_mut(&id) {
+            let lost = u.lose_steps(attacker_losses, rules.morale.loss_per_step);
+            if let Some(side) = a_side {
+                self.charge_losses(side, lost, &mut events)?;
+            }
+        }
         if let Some(u) = self.units.get_mut(&target) {
-            let lost = u.lose_steps(outcome.defender_losses, rules.morale.loss_per_step);
+            let lost = u.lose_steps(defender_losses, rules.morale.loss_per_step);
             u.attacks_received += 1;
             u.fought = true;
             u.attacked_by.push(id);
-            self.charge_losses(d.side, lost, &mut events)?;
+            if let Some(side) = d_side {
+                self.charge_losses(side, lost, &mut events)?;
+            }
         }
 
         // R-COMBAT-06: retreat or extra losses.
@@ -156,8 +249,8 @@ impl GameState {
             } else {
                 let r = &rules.retreat;
                 let must_retreat = defender.strength <= r.max_strength
-                    || (outcome.defender_losses >= r.heavy_loss_steps
-                        && def.readiness_pct < r.low_readiness_pct);
+                    || (defender_losses >= r.heavy_loss_steps
+                        && c.defender_readiness_pct < r.low_readiness_pct);
                 if must_retreat {
                     match self.retreat_hex(&defender)? {
                         Some(to) => {
@@ -179,7 +272,7 @@ impl GameState {
                             if let Some(u) = self.units.get_mut(&target) {
                                 let lost = u.lose_steps(extra, rules.morale.loss_per_step);
                                 vacated = u.strength == 0;
-                                self.charge_losses(d.side, lost, &mut events)?;
+                                self.charge_losses(defender.side, lost, &mut events)?;
                             }
                             events.push(Event::RetreatBlocked {
                                 unit: target,
@@ -204,11 +297,12 @@ impl GameState {
 
         let attacker_alive = self.units.get(&id).is_some_and(|u| u.strength > 0);
         self.remove_destroyed(&mut events)?;
-        self.pending_advance = (vacated && attacker_alive && occupies).then_some(PendingAdvance {
-            unit: id,
-            hex: d.hex,
-            by_boat,
-        });
+        self.pending_advance =
+            (vacated && attacker_alive && c.occupies).then_some(PendingAdvance {
+                unit: id,
+                hex: c.defender_hex,
+                by_boat: c.by_boat,
+            });
         Ok(events)
     }
 
@@ -391,4 +485,8 @@ impl GameState {
         self.remove_destroyed(&mut events)?;
         Ok(events)
     }
+}
+
+fn capped(hits: u32, strength: u8) -> u8 {
+    u8::try_from(hits).unwrap_or(u8::MAX).min(strength)
 }
