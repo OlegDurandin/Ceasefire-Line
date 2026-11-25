@@ -31,6 +31,24 @@ pub enum RuleError {
     IllegalAttack { unit: u32, reason: AttackError },
     #[error("unit {0} has no pending advance")]
     NoPendingAdvance(u32),
+    #[error("illegal economy action: {0:?}")]
+    IllegalEconomy(EconomyError),
+}
+
+/// Why a reinforcement or purchase is rejected (R-ECO-02, R-ECO-03, R-SUP-03).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum EconomyError {
+    ZeroSteps,
+    /// The unit already moved, attacked or fired this phase.
+    UnitActed,
+    /// Supply below every reinforcement band.
+    NoSupply,
+    /// Over the band's steps per phase.
+    StepLimit,
+    FullStrength,
+    NotEnoughMpp,
+    /// Scenario force limit for this class reached (destroyed units count).
+    PurchaseLimit,
 }
 
 /// Why a move is rejected (R-MOVE-01..04).

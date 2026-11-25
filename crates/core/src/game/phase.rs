@@ -38,7 +38,17 @@ impl GameState {
             }
         }
 
+        // R-TURN-01: arrivals, then supply, then income by the new supply.
+        self.deliver_arrivals(side, nm, &mut events);
         let supply = self.hex_supply(side)?;
+        let income = self.income(side, &supply);
+        let side_state = self.side_state_mut(side)?;
+        side_state.mpp = side_state.mpp.saturating_add(income);
+        events.push(Event::IncomeReceived {
+            side,
+            amount: income,
+            total: side_state.mpp,
+        });
         let zoc = enemy_zoc(&self.occupancy(), side);
         let ids: Vec<UnitId> = self
             .units
@@ -125,6 +135,7 @@ impl GameState {
             unit.moved = false;
             unit.fought = false;
             unit.acted = false;
+            unit.reinforced_steps = 0;
 
             events.push(Event::UnitRefreshed {
                 unit: id,

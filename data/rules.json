@@ -73,5 +73,31 @@
   "bombard": {
     "shot_fraction": 0.5,
     "entrench_loss": 1
+  },
+  "unit": {
+    "max_strength": 10
+  },
+  "economy": {
+    "reinforce_cost_pct": 10,
+    "elite_cost_pct": 120,
+    "reinforce_bands": [
+      {
+        "min_supply": 7,
+        "max_steps": 3,
+        "cost_pct": 100
+      },
+      {
+        "min_supply": 4,
+        "max_steps": 2,
+        "cost_pct": 150
+      },
+      {
+        "min_supply": 1,
+        "max_steps": 1,
+        "cost_pct": 200
+      }
+    ],
+    "purchase_delay_turns": 2,
+    "arrival_source_value": 10
   }
 }

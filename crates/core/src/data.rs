@@ -125,6 +125,42 @@ pub struct ExperienceRules {
     pub max_quarters: u8,
 }
 
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct UnitRules {
+    pub max_strength: u8,
+}
+
+/// R-SUP-03: reinforcement band, chosen by the highest `min_supply` reached.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ReinforceBand {
+    pub min_supply: u8,
+    pub max_steps: u8,
+    pub cost_pct: u32,
+}
+
+/// R-ECO-01..03. Costs are integer percent to keep MPP exact.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct EconomyRules {
+    /// Price of one step as percent of the unit price.
+    pub reinforce_cost_pct: u32,
+    pub elite_cost_pct: u32,
+    /// Sorted by `min_supply` descending (checked on load).
+    pub reinforce_bands: Vec<ReinforceBand>,
+    pub purchase_delay_turns: u32,
+    /// Bought units arrive in an own source with at least this value.
+    pub arrival_source_value: u8,
+}
+
+impl EconomyRules {
+    /// R-SUP-03: band for a unit's supply; `None` at supply below every band.
+    pub fn band(&self, supply: u8) -> Option<&ReinforceBand> {
+        self.reinforce_bands.iter().find(|b| supply >= b.min_supply)
+    }
+}
+
 /// R-COMBAT-04.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -152,6 +188,8 @@ pub struct Rules {
     pub retreat: RetreatRules,
     pub experience: ExperienceRules,
     pub bombard: BombardRules,
+    pub unit: UnitRules,
+    pub economy: EconomyRules,
 }
 
 impl Rules {
@@ -191,6 +229,12 @@ impl Rules {
             m.min_ap,
         ] {
             ap_to_halves(ap)?;
+        }
+        let bands = &self.economy.reinforce_bands;
+        if bands.windows(2).any(|w| w[0].min_supply <= w[1].min_supply) {
+            return Err(RuleError::InvalidData(
+                "economy: reinforce_bands must be sorted by min_supply, descending".into(),
+            ));
         }
         if self.supply.captured_source_divisor == 0 {
             return Err(RuleError::InvalidData(

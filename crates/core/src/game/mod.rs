@@ -2,6 +2,7 @@
 
 mod attack;
 mod command;
+mod economy;
 mod moves;
 mod phase;
 
@@ -58,6 +59,8 @@ pub struct Unit {
     pub fought: bool,
     /// Moved, attacked or fired this phase (no reinforcement, R-TURN-01).
     pub acted: bool,
+    /// Steps added this phase (R-SUP-03 limit per phase).
+    pub reinforced_steps: u8,
     pub hq_rating: Option<u8>,
 }
 
@@ -86,6 +89,41 @@ pub struct SideState {
     pub tech: TechLevels,
     /// R-NM-01: caps unit morale.
     pub national_morale_pct: u8,
+    /// MPP on hand.
+    pub mpp: u32,
+    /// R-ECO-01: scenario base income per phase.
+    pub base_income: u32,
+    /// R-ECO-03: how many units of each class may be bought ("above the schedule").
+    #[serde(default)]
+    pub purchase_limits: BTreeMap<String, u32>,
+    /// Bought so far, destroyed ones included.
+    #[serde(default)]
+    pub purchased: BTreeMap<String, u32>,
+}
+
+/// R-ECO-01: a city's MPP value; income = value × owner's supply there / max.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub struct CityValue {
+    pub hex: Hex,
+    pub value: u32,
+}
+
+/// R-ECO-01: scenario income event (airlift, emergency deliveries), per phase.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ScheduledIncome {
+    pub side: SideId,
+    pub from_turn: u32,
+    /// Inclusive; `None` = until the end.
+    pub until_turn: Option<u32>,
+    pub amount: u32,
+}
+
+/// R-ECO-02: a bought unit on its way.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Arrival {
+    pub side: SideId,
+    pub class: String,
+    pub turn: u32,
 }
 
 /// R-SUP-01: source with base value and current (captured) value.
@@ -133,6 +171,8 @@ pub struct ScenarioSetup {
     pub sources: Vec<SupplySource>,
     /// Unit ids are assigned 1, 2, … in this order.
     pub units: Vec<UnitSetup>,
+    pub cities: Vec<CityValue>,
+    pub scheduled_income: Vec<ScheduledIncome>,
 }
 
 /// AP rules in half-points.
@@ -159,6 +199,10 @@ pub struct GameState {
     active: usize,
     turn: u32,
     units: BTreeMap<UnitId, Unit>,
+    next_unit_id: u32,
+    cities: Vec<CityValue>,
+    scheduled_income: Vec<ScheduledIncome>,
+    arrivals: Vec<Arrival>,
     pending_advance: Option<PendingAdvance>,
     rng: Pcg32,
 }
@@ -255,11 +299,18 @@ impl GameState {
                     moved: false,
                     fought: false,
                     acted: false,
+                    reinforced_steps: 0,
                     hq_rating: u.hq_rating,
                 },
             );
         }
 
+        for c in &setup.cities {
+            if setup.map.cell(c.hex).is_none() {
+                return Err(invalid(format!("city {:?} is off-map", c.hex)));
+            }
+        }
+        let next_unit_id = units.len() as u32 + 1;
         let mut state = Self {
             data,
             hex_km,
@@ -272,6 +323,10 @@ impl GameState {
             active: 0,
             turn: setup.start_turn,
             units,
+            next_unit_id,
+            cities: setup.cities,
+            scheduled_income: setup.scheduled_income,
+            arrivals: Vec::new(),
             pending_advance: None,
             rng: Pcg32::new(setup.seed, 0),
         };
@@ -308,6 +363,8 @@ impl GameState {
             Command::Attack { unit, target } => self.attack(unit, target),
             Command::Bombard { unit, target } => self.bombard(unit, target),
             Command::Advance { unit } => self.advance(unit),
+            Command::Reinforce { unit, steps, elite } => self.reinforce(unit, steps, elite),
+            Command::Purchase { class } => self.purchase(&class),
             Command::EndPhase => self.end_phase(),
         };
         match result {
@@ -372,6 +429,14 @@ impl GameState {
         self.sources.get(&hex).copied()
     }
 
+    pub fn side(&self, side: SideId) -> Option<&SideState> {
+        self.sides.iter().find(|s| s.id == side)
+    }
+
+    pub fn arrivals(&self) -> &[Arrival] {
+        &self.arrivals
+    }
+
     pub fn pending_advance(&self) -> Option<PendingAdvance> {
         self.pending_advance
     }
@@ -409,6 +474,13 @@ impl GameState {
 
     fn class(&self, unit: &Unit) -> Result<&UnitClass, RuleError> {
         self.data.units.get(&unit.class)
+    }
+
+    fn side_state_mut(&mut self, side: SideId) -> Result<&mut SideState, RuleError> {
+        self.sides
+            .iter_mut()
+            .find(|s| s.id == side)
+            .ok_or_else(|| invalid(format!("unknown side {side:?}")))
     }
 
     fn side_state(&self, side: SideId) -> Result<&SideState, RuleError> {

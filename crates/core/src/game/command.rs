@@ -20,6 +20,15 @@ pub enum Command {
     Bombard { unit: UnitId, target: UnitId },
     /// R-COMBAT-06: tank or mech brigade occupies the hex its target vacated.
     Advance { unit: UnitId },
+    /// R-ECO-02, R-SUP-03: add steps to a unit that has not acted this phase.
+    /// `elite` costs more and keeps experience.
+    Reinforce {
+        unit: UnitId,
+        steps: u8,
+        elite: bool,
+    },
+    /// R-ECO-02, R-ECO-03: buy a unit; it arrives after a delay.
+    Purchase { class: String },
     /// R-TURN-01: end of the active side's phase.
     EndPhase,
 }
@@ -92,6 +101,34 @@ pub enum Event {
     Advanced {
         unit: UnitId,
         to: Hex,
+    },
+    /// R-ECO-01.
+    IncomeReceived {
+        side: SideId,
+        amount: u32,
+        total: u32,
+    },
+    Reinforced {
+        unit: UnitId,
+        steps: u8,
+        elite: bool,
+        cost: u32,
+    },
+    Purchased {
+        side: SideId,
+        class: String,
+        cost: u32,
+        arrives_turn: u32,
+    },
+    UnitArrived {
+        unit: UnitId,
+        class: String,
+        hex: Hex,
+    },
+    /// No free source to arrive in; tried again next own phase.
+    ArrivalDelayed {
+        side: SideId,
+        class: String,
     },
     PhaseEnded {
         turn: u32,
