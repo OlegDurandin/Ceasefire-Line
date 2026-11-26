@@ -348,9 +348,9 @@ fn sim_variance_sc_stays_next_to_the_expectation() {
         n: 9,
         a: 5.5,
         d: 5.2,
-        p: 0.318,
+        p: 0.32,
     };
-    // E = 2.862 → 3; draws are 2, 3 or 4.
+    // E = 2.88 → 3; draws are 2, 3 or 4.
     let draws: Vec<u32> = (0..60)
         .map(|_| draw_hits(&mut rng, &p, Some(10), Variance::Sc))
         .collect();
