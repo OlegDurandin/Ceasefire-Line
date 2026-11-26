@@ -8,7 +8,7 @@ use std::sync::Arc;
 use serde::{Deserialize, Serialize};
 
 use crate::air::{air_fire_input, parked_strike_input, strike_input, strike_return_input};
-use crate::combat::{fire_params, forecast_fire, sample_hits, Combatant, FireParams};
+use crate::combat::{fire_params, forecast_fire, Combatant, FireParams};
 use crate::data::{GameData, TargetClass, UnitTag};
 use crate::error::RuleError;
 use crate::hex::Hex;
@@ -476,8 +476,8 @@ impl GameState {
             }
         }
         for d in f.escort_duels.iter().chain(&f.group_duels) {
-            let hit_b = sample_hits(&mut self.rng, &d.a_fire);
-            let hit_a = sample_hits(&mut self.rng, &d.b_fire);
+            let hit_b = self.hits(&d.a_fire, None);
+            let hit_a = self.hits(&d.b_fire, None);
             events.push(Event::AirBattle {
                 a: d.a,
                 b: d.b,
@@ -526,10 +526,10 @@ impl GameState {
                 let target = self.combatant(data, &enemy)?;
                 let hit = fire_params(&data.rules.combat, &strike_input(&striker, &target));
                 let back = fire_params(&data.rules.combat, &strike_return_input(&target, &striker));
-                let losses = u8::try_from(sample_hits(&mut self.rng, &hit))
+                let losses = u8::try_from(self.hits(&hit, Some(enemy.strength)))
                     .unwrap_or(u8::MAX)
                     .min(enemy.strength);
-                let back_hits = sample_hits(&mut self.rng, &back);
+                let back_hits = self.hits(&back, Some(a.strength));
                 events.push(Event::AirStrike {
                     unit: id,
                     target: t,
@@ -556,7 +556,7 @@ impl GameState {
                     &data.rules.combat,
                     &parked_strike_input(&striker, data.rules.air.parked_air_defense),
                 );
-                let mut hits = sample_hits(&mut self.rng, &hit);
+                let mut hits = self.hits(&hit, None);
                 let mut parked: Vec<(u8, UnitId)> = self
                     .air
                     .values()

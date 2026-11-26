@@ -3,8 +3,8 @@
 use std::sync::Arc;
 
 use crate::combat::{
-    fire_params, forecast_fire, forecast_ground, ground_inputs, sample_hits, Combatant,
-    ExchangeForecast, FireInput, FireParams, GroundAttack,
+    fire_params, forecast_fire, forecast_ground, ground_inputs, Combatant, ExchangeForecast,
+    FireInput, FireParams, GroundAttack,
 };
 use crate::data::{GameData, UnitTag};
 use crate::error::{AttackError, RuleError};
@@ -244,11 +244,11 @@ impl GameState {
         match source {
             CombatSource::Auto => {
                 let d = capped(
-                    sample_hits(&mut self.rng, &x.vs_defender),
+                    self.hits(&x.vs_defender, Some(c.defender_strength)),
                     c.defender_strength,
                 );
                 let a = capped(
-                    sample_hits(&mut self.rng, &x.vs_attacker),
+                    self.hits(&x.vs_attacker, Some(c.attacker_strength)),
                     c.attacker_strength,
                 );
                 Ok((a, d))
@@ -537,7 +537,7 @@ impl GameState {
         let data = Arc::clone(&self.data);
         let rules = &data.rules;
         let params = self.bombard_params(&data, &a, &d)?;
-        let losses = u8::try_from(sample_hits(&mut self.rng, &params))
+        let losses = u8::try_from(self.hits(&params, Some(d.strength)))
             .unwrap_or(u8::MAX)
             .min(d.strength);
         if let Some(u) = self.units.get_mut(&id) {

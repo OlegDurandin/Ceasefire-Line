@@ -213,6 +213,35 @@ pub fn forecast_ground(
     })
 }
 
+/// How combat losses are drawn. The game always uses `Binomial` (the
+/// R-COMBAT-03 percentiles and tactical battles rest on it); `Sc` is a
+/// balance experiment for `sim` only (designer task 2026-11-26, П10):
+/// losses = round(E) + uniform {−1, 0, +1}, within [0, cap].
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum Variance {
+    #[default]
+    Binomial,
+    Sc,
+}
+
+/// Draws hits by `variance`; `cap` is the target's strength (`None`: n).
+pub fn draw_hits(rng: &mut Pcg32, params: &FireParams, cap: Option<u8>, variance: Variance) -> u32 {
+    match variance {
+        Variance::Binomial => sample_hits(rng, params),
+        Variance::Sc => {
+            let top = cap.map_or(params.n, |c| u32::from(c).min(params.n));
+            let expected = hits_distribution(&[(params.n, params.p)], top)
+                .iter()
+                .enumerate()
+                .map(|(k, w)| k as f64 * w)
+                .sum::<f64>();
+            let jitter = i64::from(rng.next_u32() % 3) - 1;
+            (round_half_up(expected) + jitter).clamp(0, i64::from(top)) as u32
+        }
+    }
+}
+
 /// Samples hits: `n` Bernoulli trials with probability `p`.
 pub fn sample_hits(rng: &mut Pcg32, params: &FireParams) -> u32 {
     (0..params.n).filter(|_| rng.chance(params.p)).count() as u32

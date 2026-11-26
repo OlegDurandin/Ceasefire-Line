@@ -60,12 +60,30 @@ pub fn parse_options(args: &[String]) -> Result<Options, String> {
 }
 
 pub fn load(dir: &Path) -> Result<GameData, String> {
+    load_patched(dir, &[])
+}
+
+/// `load` with rules values replaced: `("section.key", JSON value)` (A/B runs).
+pub fn load_patched(dir: &Path, sets: &[(String, String)]) -> Result<GameData, String> {
     let read = |name: &str| {
         let path = dir.join(name);
         fs::read_to_string(&path).map_err(|e| format!("{}: {e}", path.display()))
     };
+    let mut rules = read("rules.json")?;
+    if !sets.is_empty() {
+        let mut v: serde_json::Value =
+            serde_json::from_str(&rules).map_err(|e| format!("rules.json: {e}"))?;
+        for (path, value) in sets {
+            let slot = path
+                .split('.')
+                .try_fold(&mut v, |node, key| node.get_mut(key))
+                .ok_or_else(|| format!("--set: no rule `{path}`"))?;
+            *slot = serde_json::from_str(value).map_err(|e| format!("--set {path}: {e}"))?;
+        }
+        rules = v.to_string();
+    }
     let (rules, terrain, units, tech) = (
-        read("rules.json")?,
+        rules,
         read("terrain.json")?,
         read("units.json")?,
         read("tech.json")?,

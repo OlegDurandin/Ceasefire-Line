@@ -12,7 +12,7 @@ fn usage() -> String {
     "usage:\n  sim combat-matrix [--data DIR] [--runs N] [--seed S] [--strength N] [--readiness PCT]\n  \
      sim assets-check [--assets DIR] [--data DIR] [--report FILE] [--fix]\n  \
      sim balance [--data DIR] [--runs N] [--seed S] [--report FILE]\n  \
-     sim ai-vs-ai [--data DIR] [--scenario ID] [--runs N] [--seed S] [--report FILE]\n  \
+     sim ai-vs-ai [--data DIR] [--scenario ID] [--runs N] [--seed S] [--report FILE] [--json FILE]\n    [--players v1,v1] [--variant NAME,..] [--set section.key=JSON] [--variance binomial|sc]\n  \
      sim supply-reach [--data DIR] [--scenario ID] [--side N] [--min S]"
         .to_owned()
 }

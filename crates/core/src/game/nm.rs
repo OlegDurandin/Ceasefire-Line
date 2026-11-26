@@ -108,7 +108,7 @@ impl GameState {
     }
 
     /// R-NM-02: VP = objectives held + NM.
-    fn victory_points(&self) -> Vec<(SideId, i32)> {
+    pub fn victory_points(&self) -> Vec<(SideId, i32)> {
         let mut vp: BTreeMap<SideId, i32> = self
             .sides
             .iter()

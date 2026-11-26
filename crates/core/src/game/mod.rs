@@ -351,6 +351,8 @@ pub struct GameState {
     data: Arc<GameData>,
     /// `rules.variants` with the scenario's overrides.
     variants: Variants,
+    /// Loss draws: binomial in the game; `sim` may switch it (П10).
+    variance: crate::combat::Variance,
     hex_km: f64,
     supply_params: SupplyParams,
     ap: ApParams,
@@ -548,6 +550,7 @@ impl GameState {
         // Ids follow the scenario's unit list, aircraft included.
         let next_unit_id = setup.units.len() as u32 + 1;
         let mut state = Self {
+            variance: crate::combat::Variance::default(),
             variants,
             air,
             offmap_bases: setup.offmap_bases.clone(),
@@ -692,6 +695,17 @@ impl GameState {
 
     pub fn data(&self) -> &GameData {
         &self.data
+    }
+
+    /// Balance experiment only (`sim --variance`, П10): how losses are drawn.
+    /// The game, the client and saved games never call it.
+    pub fn set_variance(&mut self, variance: crate::combat::Variance) {
+        self.variance = variance;
+    }
+
+    /// Hits of one fire by the current variance; `cap`: the target's strength.
+    pub(super) fn hits(&mut self, params: &crate::combat::FireParams, cap: Option<u8>) -> u32 {
+        crate::combat::draw_hits(&mut self.rng, params, cap, self.variance)
     }
 
     /// Rule variants in force (SC alignment, `rules.variants` + scenario).

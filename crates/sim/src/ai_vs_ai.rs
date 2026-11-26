@@ -11,12 +11,13 @@ use std::sync::Arc;
 use std::time::Instant;
 
 use ceasefire_ai::{greedy_next, play_phase, AiHints, AiParams, AiV1};
+use ceasefire_core::combat::Variance;
 use ceasefire_core::data::GameData;
-use ceasefire_core::game::{Event, GameState, NmReason, VictoryLevel};
+use ceasefire_core::game::{Event, GameState, NmReason, UnitId, VictoryLevel};
 use ceasefire_core::scenario::load_scenario;
 use ceasefire_core::side::SideId;
 
-use crate::combat_matrix::load;
+use crate::combat_matrix::load_patched;
 
 /// Section 17 (designer decision 2026-11-26): each side 45–55% with a draw
 /// counted as half a win, draws at most 35%.
@@ -32,10 +33,18 @@ pub struct Options {
     runs: u32,
     seed: u64,
     report: Option<PathBuf>,
+    /// Summary metrics as JSON (for A/B tables).
+    json: Option<PathBuf>,
     /// Player of each side, by side id: `greedy` or `v1`.
     players: Vec<Player>,
     /// Print a phase-by-phase trace of the game with this seed (stderr).
     trace: Option<u64>,
+    /// Rule variants switched on over the scenario (`--variant a,b`).
+    variants: BTreeMap<String, bool>,
+    /// Rules values replaced (`--set section.key=value`).
+    sets: Vec<(String, String)>,
+    /// П10: loss draws (`binomial` | `sc`), sim only.
+    variance: Variance,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -69,6 +78,8 @@ struct Shared {
     hints: AiHints,
     players: Vec<Player>,
     trace: Option<u64>,
+    variants: BTreeMap<String, bool>,
+    variance: Variance,
 }
 
 pub fn parse_options(args: &[String]) -> Result<Options, String> {
@@ -78,8 +89,12 @@ pub fn parse_options(args: &[String]) -> Result<Options, String> {
         runs: 500,
         seed: 1,
         report: None,
+        json: None,
         players: vec![Player::Greedy, Player::Greedy],
         trace: None,
+        variants: BTreeMap::new(),
+        sets: Vec::new(),
+        variance: Variance::Binomial,
     };
     let mut it = args.iter();
     while let Some(flag) = it.next() {
@@ -92,7 +107,26 @@ pub fn parse_options(args: &[String]) -> Result<Options, String> {
             "--runs" => o.runs = value.parse().map_err(|e| format!("--runs: {e}"))?,
             "--seed" => o.seed = value.parse().map_err(|e| format!("--seed: {e}"))?,
             "--report" => o.report = Some(PathBuf::from(value)),
+            "--json" => o.json = Some(PathBuf::from(value)),
             "--trace" => o.trace = Some(value.parse().map_err(|e| format!("--trace: {e}"))?),
+            "--variant" => {
+                for v in value.split(',').filter(|v| !v.is_empty()) {
+                    o.variants.insert(v.to_owned(), true);
+                }
+            }
+            "--set" => {
+                let (k, v) = value
+                    .split_once('=')
+                    .ok_or_else(|| format!("--set {value}: expected section.key=value"))?;
+                o.sets.push((k.to_owned(), v.to_owned()));
+            }
+            "--variance" => {
+                o.variance = match value.as_str() {
+                    "binomial" => Variance::Binomial,
+                    "sc" => Variance::Sc,
+                    _ => return Err(format!("--variance {value}: binomial | sc")),
+                }
+            }
             "--players" => {
                 o.players = value
                     .split(',')
@@ -123,6 +157,44 @@ struct Game {
     destroyed: u32,
     destroyed_encircled: u32,
     fired: Vec<String>,
+    /// Steps lost by ground units out of supply (side's hex supply 0 at the
+    /// start of the phase) and by units in supply.
+    steps_encircled: u32,
+    steps_frontal: u32,
+    /// Attacks whose forecast favours the attacker (E[defender] > E[attacker]).
+    favourable_attacks: u32,
+    /// First turn from which the VP leader never changes (None: tie at the end).
+    turning_point: Option<u32>,
+}
+
+/// Strength and «encircled» of every ground unit at the last look.
+type Snapshot = BTreeMap<UnitId, (u8, bool)>;
+
+/// Steps lost since `prev`, split into encircled and in-supply.
+fn charge_steps(s: &GameState, prev: &Snapshot, g: &mut Game) {
+    for (id, (strength, encircled)) in prev {
+        let now = s.unit(*id).map_or(0, |u| u.strength);
+        let lost = u32::from(strength.saturating_sub(now));
+        if *encircled {
+            g.steps_encircled += lost;
+        } else {
+            g.steps_frontal += lost;
+        }
+    }
+}
+
+/// Every ground unit with «encircled» = its side's hex supply is 0 (R-NM-01).
+fn snapshot(s: &GameState) -> Snapshot {
+    let mut supply = BTreeMap::new();
+    s.units()
+        .map(|u| {
+            let map = supply
+                .entry(u.side)
+                .or_insert_with(|| s.hex_supply(u.side).ok());
+            let encircled = map.as_ref().is_none_or(|m| m.get(u.hex) == 0);
+            (u.id, (u.strength, encircled))
+        })
+        .collect()
 }
 
 fn play_one(sh: &Shared, seed: u64) -> Result<Game, String> {
@@ -130,8 +202,13 @@ fn play_one(sh: &Shared, seed: u64) -> Result<Game, String> {
     let mut setup =
         load_scenario(&texts.0, &texts.1, texts.2.as_deref()).map_err(|e| e.to_string())?;
     setup.seed = seed;
+    for (k, v) in &sh.variants {
+        setup.variants.insert(k.clone(), *v);
+    }
     let (mut s, _) = GameState::new(Arc::clone(&sh.data), setup).map_err(|e| e.to_string())?;
+    s.set_variance(sh.variance);
     let mut g = Game::default();
+    let mut leaders: Vec<(u32, Option<SideId>)> = Vec::new();
     let mut v1 = AiV1::new(sh.params.clone(), sh.hints.clone(), seed);
     while s.outcome().is_none() && g.phases < MAX_PHASES {
         let player = sh
@@ -139,15 +216,62 @@ fn play_one(sh: &Shared, seed: u64) -> Result<Game, String> {
             .get(usize::from(s.active_side().0))
             .copied()
             .unwrap_or(Player::Greedy);
+        // Encirclement is taken at the start of the phase; strengths after every command.
+        let start = snapshot(&s);
+        let encircled: BTreeMap<UnitId, bool> = start.iter().map(|(k, v)| (*k, v.1)).collect();
+        let mut prev = start;
+        let mut look = |st: &GameState, g: &mut Game| {
+            charge_steps(st, &prev, g);
+            prev = st
+                .units()
+                .map(|u| {
+                    (
+                        u.id,
+                        (u.strength, encircled.get(&u.id).copied().unwrap_or(false)),
+                    )
+                })
+                .collect();
+        };
+        let mut steps = Game::default();
         let r = match player {
-            Player::Greedy => play_phase(&mut s, greedy_next, MAX_COMMANDS),
+            Player::Greedy => play_phase(
+                &mut s,
+                |st| {
+                    look(st, &mut steps);
+                    greedy_next(st)
+                },
+                MAX_COMMANDS,
+            ),
             Player::V1 => {
                 let max = v1.max_commands();
-                play_phase(&mut s, |st| v1.next(st), max)
+                play_phase(
+                    &mut s,
+                    |st| {
+                        look(st, &mut steps);
+                        v1.next(st)
+                    },
+                    max,
+                )
             }
         }
         .map_err(|e| e.to_string())?;
+        // The closing EndPhase: losses up to the next side's phase start (attrition).
+        look(&s, &mut steps);
+        g.steps_encircled += steps.steps_encircled;
+        g.steps_frontal += steps.steps_frontal;
         g.phases += 1;
+        if s.active_side() == SideId(0) || s.outcome().is_some() {
+            let vp = s.victory_points();
+            let best = vp.iter().map(|v| v.1).max().unwrap_or(0);
+            let top: Vec<SideId> = vp.iter().filter(|v| v.1 == best).map(|v| v.0).collect();
+            // The turn just finished (the next one has begun unless the game is over).
+            let done = if s.outcome().is_some() {
+                s.turn()
+            } else {
+                s.turn() - 1
+            };
+            leaders.push((done, (top.len() == 1).then(|| top[0])));
+        }
         if sh.trace == Some(seed) {
             let holders: Vec<String> = s
                 .objectives()
@@ -210,7 +334,13 @@ fn play_one(sh: &Shared, seed: u64) -> Result<Game, String> {
         g.refused += r.refused;
         for e in &r.events {
             match e {
-                Event::CombatResolved { .. } => g.attacks += 1,
+                Event::CombatResolved { exchange, .. } => {
+                    g.attacks += 1;
+                    let e = |f: &ceasefire_core::combat::FireParams| f64::from(f.n) * f.p;
+                    if e(&exchange.vs_defender) > e(&exchange.vs_attacker) {
+                        g.favourable_attacks += 1;
+                    }
+                }
                 Event::Bombarded { .. } => g.bombardments += 1,
                 Event::Retreated { .. } => g.retreats += 1,
                 Event::Advanced { .. } => g.advances += 1,
@@ -228,6 +358,15 @@ fn play_one(sh: &Shared, seed: u64) -> Result<Game, String> {
         }
     }
     let o = s.outcome().ok_or("the game did not end")?;
+    // Turning point: the first turn-end look after the last change of leader.
+    let final_leader = leaders.last().and_then(|l| l.1);
+    g.turning_point = final_leader.and_then(|w| {
+        let k = leaders
+            .iter()
+            .rposition(|l| l.1 != Some(w))
+            .map_or(0, |k| k + 1);
+        leaders.get(k).map(|l| l.0)
+    });
     g.winner = o.winner;
     g.level = Some(o.level);
     g.vp = o.vp.clone();
@@ -242,7 +381,7 @@ fn play_one(sh: &Shared, seed: u64) -> Result<Game, String> {
 }
 
 pub fn run(o: &Options) -> Result<(), String> {
-    let data = Arc::new(load(&o.data)?);
+    let data = Arc::new(load_patched(&o.data, &o.sets)?);
     let dir = o.data.join("scenarios").join(&o.scenario);
     let read = |n: &str| {
         fs::read_to_string(dir.join(n)).map_err(|e| format!("{}: {e}", dir.join(n).display()))
@@ -262,6 +401,8 @@ pub fn run(o: &Options) -> Result<(), String> {
         hints: AiHints::from_scenario_json(&texts.0)?,
         players: o.players.clone(),
         trace: o.trace,
+        variants: o.variants.clone(),
+        variance: o.variance,
     });
     let started = Instant::now();
     let threads = std::thread::available_parallelism()
@@ -303,6 +444,10 @@ pub fn run(o: &Options) -> Result<(), String> {
         })
         .collect();
     let report = render(o, &games, elapsed, &keys);
+    if let Some(path) = &o.json {
+        let summary = summary(o, &games);
+        fs::write(path, summary.to_string()).map_err(|e| format!("{}: {e}", path.display()))?;
+    }
     match &o.report {
         Some(path) => {
             fs::write(path, &report).map_err(|e| format!("{}: {e}", path.display()))?;
@@ -407,6 +552,24 @@ fn render(o: &Options, games: &[Game], elapsed: f64, keys: &BTreeMap<u8, String>
     for (k, v) in rows {
         let _ = writeln!(out, "| {k} | {v:.2} |");
     }
+    let m = metrics(games);
+    let _ = writeln!(
+        out,
+        "\n## Метрики SC-выравнивания\n\n| метрика | значение |\n| --- | --- |\n\
+         | шагов потеряно в окружении / вне окружения | {:.1} / {:.1} (доля в окружении {:.1}%) |\n\
+         | атак при перевесе (E[потери защитника] > E[потери атакующего]) | {:.1}% |\n\
+         | потерь шагов за ход (обе стороны) | {:.2} |\n\
+         | ход перелома (лидер по победным очкам дальше не меняется) | {} |",
+        m.steps_encircled,
+        m.steps_frontal,
+        m.encircled_share * 100.0,
+        m.favourable_share * 100.0,
+        m.losses_per_turn,
+        m.turning_point.map_or("—".to_owned(), |t| format!(
+            "{t:.2} (в {:.0}% партий)",
+            m.turning_share * 100.0
+        ))
+    );
     // Victory point margin of the first side over the second (for the thresholds).
     if sides.len() == 2 {
         let (s0, s1) = (sides[0], sides[1]);
@@ -452,4 +615,81 @@ fn render(o: &Options, games: &[Game], elapsed: f64, keys: &BTreeMap<u8, String>
         let _ = writeln!(out, "| {id} | {k} ({:.0}%) |", f64::from(k) / n * 100.0);
     }
     out
+}
+
+/// The SC-alignment metrics over a series of games.
+struct Metrics {
+    steps_encircled: f64,
+    steps_frontal: f64,
+    encircled_share: f64,
+    favourable_share: f64,
+    losses_per_turn: f64,
+    turning_point: Option<f64>,
+    turning_share: f64,
+}
+
+fn metrics(games: &[Game]) -> Metrics {
+    let n = games.len().max(1) as f64;
+    let sum = |f: &dyn Fn(&Game) -> f64| games.iter().map(f).sum::<f64>();
+    let enc = sum(&|g| f64::from(g.steps_encircled));
+    let front = sum(&|g| f64::from(g.steps_frontal));
+    let attacks = sum(&|g| f64::from(g.attacks));
+    let turning: Vec<f64> = games
+        .iter()
+        .filter_map(|g| g.turning_point.map(f64::from))
+        .collect();
+    Metrics {
+        steps_encircled: enc / n,
+        steps_frontal: front / n,
+        encircled_share: enc / (enc + front).max(1.0),
+        favourable_share: sum(&|g| f64::from(g.favourable_attacks)) / attacks.max(1.0),
+        losses_per_turn: sum(&|g| {
+            f64::from(g.steps_lost.iter().map(|x| x.1).sum::<u32>()) / f64::from(g.turn.max(1))
+        }) / n,
+        turning_point: (!turning.is_empty())
+            .then(|| turning.iter().sum::<f64>() / turning.len() as f64),
+        turning_share: turning.len() as f64 / n,
+    }
+}
+
+/// Summary for A/B tables: outcome shares and the metrics.
+fn summary(o: &Options, games: &[Game]) -> serde_json::Value {
+    let n = games.len().max(1) as f64;
+    let m = metrics(games);
+    let sides: Vec<SideId> = games
+        .first()
+        .map(|g| g.vp.iter().map(|(s, _)| *s).collect())
+        .unwrap_or_default();
+    let draws = games.iter().filter(|g| g.winner.is_none()).count() as f64 / n;
+    let share = |side: SideId| games.iter().filter(|g| g.winner == Some(side)).count() as f64 / n;
+    let decisive = |side: SideId| {
+        games
+            .iter()
+            .filter(|g| g.winner == Some(side) && g.level == Some(VictoryLevel::Decisive))
+            .count() as f64
+            / n
+    };
+    serde_json::json!({
+        "scenario": o.scenario,
+        "runs": games.len(),
+        "seed": o.seed,
+        "variants": o.variants,
+        "sets": o.sets,
+        "variance": format!("{:?}", o.variance),
+        "wins": sides.iter().map(|s| share(*s)).collect::<Vec<_>>(),
+        "decisive": sides.iter().map(|s| decisive(*s)).collect::<Vec<_>>(),
+        "draws": draws,
+        "last_turn": games.iter().map(|g| f64::from(g.turn)).sum::<f64>() / n,
+        "attacks": games.iter().map(|g| f64::from(g.attacks)).sum::<f64>() / n,
+        "destroyed": games.iter().map(|g| f64::from(g.destroyed)).sum::<f64>() / n,
+        "destroyed_encircled": games.iter().map(|g| f64::from(g.destroyed_encircled)).sum::<f64>() / n,
+        "steps_encircled": m.steps_encircled,
+        "steps_frontal": m.steps_frontal,
+        "encircled_share": m.encircled_share,
+        "favourable_share": m.favourable_share,
+        "losses_per_turn": m.losses_per_turn,
+        "turning_point": m.turning_point,
+        "turning_share": m.turning_share,
+        "refused": games.iter().map(|g| f64::from(g.refused)).sum::<f64>() / n,
+    })
 }

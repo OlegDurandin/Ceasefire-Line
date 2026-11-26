@@ -337,3 +337,30 @@ fn r_nm_01_unit_loss_by_price() {
         (2, 3)
     );
 }
+
+/// П10 (sim only): `sc` variance draws round(E) + {−1, 0, +1} within [0, cap].
+#[test]
+fn sim_variance_sc_stays_next_to_the_expectation() {
+    use ceasefire_core::combat::{draw_hits, FireParams, Variance};
+    use ceasefire_core::rng::Pcg32;
+    let mut rng = Pcg32::new(7, 0);
+    let p = FireParams {
+        n: 9,
+        a: 5.5,
+        d: 5.2,
+        p: 0.318,
+    };
+    // E = 2.862 → 3; draws are 2, 3 or 4.
+    let draws: Vec<u32> = (0..60)
+        .map(|_| draw_hits(&mut rng, &p, Some(10), Variance::Sc))
+        .collect();
+    assert!(draws.iter().all(|d| (2..=4).contains(d)), "{draws:?}");
+    assert!([2, 3, 4].iter().all(|k| draws.contains(k)));
+    // Capped at the target's strength.
+    assert!((0..30).all(|_| draw_hits(&mut rng, &p, Some(2), Variance::Sc) <= 2));
+    assert_eq!(
+        Variance::default(),
+        Variance::Binomial,
+        "the game draws binomially"
+    );
+}
