@@ -10,7 +10,13 @@
     <style>
       :root { --panel: #1c1a17; --bronze: #b08d57; --text: #e8e1d3; --muted: #a49a88; --good: #9bc28a; --bad: #e08a7a; }
       html, body { margin: 0; height: 100%; background: #12110f; color: var(--text); font: 14px/1.4 system-ui, sans-serif; overflow: hidden; }
-      #app { position: fixed; inset: 0; touch-action: none; }
+      /* Under the map: dark cloth (a fine weave) with a vignette, instead of black. */
+      #app { position: fixed; inset: 0; touch-action: none;
+             background:
+               radial-gradient(ellipse at 50% 45%, rgba(0,0,0,0) 35%, rgba(0,0,0,0.72) 100%),
+               repeating-linear-gradient(45deg, rgba(255,240,210,0.035) 0 1px, transparent 1px 4px),
+               repeating-linear-gradient(-45deg, rgba(0,0,0,0.18) 0 1px, transparent 1px 4px),
+               linear-gradient(#2b2620, #1d1a16); }
       .panel { position: fixed; background: var(--panel); border: 1px solid var(--bronze); border-radius: 6px; opacity: 0.96; }
       button { background: #2a2620; color: var(--text); border: 1px solid var(--bronze); border-radius: 4px; padding: 5px 12px; font: inherit; cursor: pointer; }
       button:hover { background: #3a342a; }

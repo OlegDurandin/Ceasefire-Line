@@ -101,7 +101,8 @@ async function main() {
   const view = JSON.parse(core.scenarioView(scenario, map, events)) as ScenarioView;
 
   const app = new Application();
-  await app.init({ resizeTo: window, background: 0x12110f, antialias: true });
+  // Transparent: the page's dark cloth with a vignette shows around the map (index.html).
+  await app.init({ resizeTo: window, backgroundAlpha: 0, antialias: true });
   document.getElementById("app")!.appendChild(app.canvas);
 
   stage("Загрузка текстур…");
@@ -313,6 +314,22 @@ async function main() {
       play.onCamera();
     };
     await play.refresh();
+    // The camera: the whole map in the area the HUD leaves free, panning limited to the map.
+    const insets = () => {
+      const r = (sel: string) => document.querySelector(sel)?.getBoundingClientRect();
+      const tabs = r(".tb-tabs");
+      const tools = r(".tb-tools");
+      const row = r("#hud-row");
+      return {
+        top: Math.ceil(Math.max(tabs?.bottom ?? 0, r(".tb-left")?.bottom ?? 0)) + 4,
+        right: tools ? Math.ceil(window.innerWidth - tools.left) + 4 : 0,
+        bottom: row ? Math.ceil(window.innerHeight - row.top) + 4 : 0,
+        left: 0,
+      };
+    };
+    camera.setBounds(mapRect, insets());
+    camera.fit();
+    window.addEventListener("resize", () => camera.setBounds(mapRect, insets()));
     if (!view.issues.length) panel.style.display = "none";
   }
 

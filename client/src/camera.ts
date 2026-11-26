@@ -20,7 +20,50 @@ export function zoomAt(v: View, factor: number, px: number, py: number): View {
   return { scale, x: px - (px - v.x) * k, y: py - (py - v.y) * k };
 }
 
+export interface Box {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+/** Screen area left free by the HUD, px from each edge. */
+export interface Insets {
+  top: number;
+  right: number;
+  bottom: number;
+  left: number;
+}
+
+/** The free screen area: the screen minus the HUD. */
+export function freeArea(width: number, height: number, i: Insets): Box {
+  return { x: i.left, y: i.top, w: Math.max(1, width - i.left - i.right), h: Math.max(1, height - i.top - i.bottom) };
+}
+
+/** The whole map (world `map`) fitted into the free area and centred. */
+export function fitView(map: Box, area: Box): View {
+  const scale = Math.min(MAX_SCALE, Math.max(MIN_SCALE, Math.min(area.w / map.w, area.h / map.h)));
+  return { scale, x: area.x + (area.w - map.w * scale) / 2 - map.x * scale, y: area.y + (area.h - map.h * scale) / 2 - map.y * scale };
+}
+
+/**
+ * Pan limits: a map bigger than the free area may not leave a gap at its
+ * edges; a smaller one stays inside the area. Either way it never goes off
+ * screen.
+ */
+export function clampView(v: View, map: Box, area: Box): View {
+  const axis = (pos: number, start: number, size: number, aStart: number, aSize: number) => {
+    const a = aStart + aSize - (start + size) * v.scale; // map's far edge on the area's far edge
+    const b = aStart - start * v.scale; // map's near edge on the area's near edge
+    return Math.min(Math.max(a, b), Math.max(Math.min(a, b), pos));
+  };
+  return { scale: v.scale, x: axis(v.x, map.x, map.w, area.x, area.w), y: axis(v.y, map.y, map.h, area.y, area.h) };
+}
+
 export class Camera {
+  /** The map's world box and the HUD insets; panning is limited to them. */
+  private bounds: Box | null = null;
+  private insets: Insets = { top: 0, right: 0, bottom: 0, left: 0 };
   private view: View;
   private pointers = new Map<number, { x: number; y: number }>();
   private pinch: number | null = null;
@@ -45,13 +88,33 @@ export class Camera {
     el.addEventListener("pointerup", this.up);
     el.addEventListener("pointercancel", this.up);
     el.addEventListener("wheel", this.wheel, { passive: false });
+    window.addEventListener("resize", () => this.apply());
   }
 
   get current(): View {
     return this.view;
   }
 
+  private area(): Box {
+    return freeArea(window.innerWidth, window.innerHeight, this.insets);
+  }
+
+  /** Limits panning to the map and remembers the HUD's insets. */
+  setBounds(map: Box, insets: Insets) {
+    this.bounds = map;
+    this.insets = insets;
+    this.apply();
+  }
+
+  /** The whole map in the free area, centred. */
+  fit() {
+    if (!this.bounds) return;
+    this.view = fitView(this.bounds, this.area());
+    this.apply();
+  }
+
   private apply() {
+    if (this.bounds) this.view = clampView(this.view, this.bounds, this.area());
     this.world.position.set(this.view.x, this.view.y);
     this.world.scale.set(this.view.scale);
     this.onChange?.(this.view);
