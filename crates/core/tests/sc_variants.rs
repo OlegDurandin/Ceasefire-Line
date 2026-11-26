@@ -168,3 +168,54 @@ fn r_combat_05_attack_on_a_unit_without_supply() {
     );
     assert_eq!(hit.vs_attacker.p, off.vs_attacker.p);
 }
+
+/// Road (0,0)..(6,0) on the board, all side A's.
+fn road_board(units: Vec<UnitSetup>, variant: Option<&str>) -> GameState {
+    let (mut map, mut control) = board();
+    for q in 0..6 {
+        map.add_road(Hex::new(q, 0), Hex::new(q + 1, 0)).unwrap();
+    }
+    for q in 0..=6 {
+        control.insert(Hex::new(q, 0), A);
+    }
+    let mut sc = setup(map, control, units);
+    sc.sides[0].mpp = 100;
+    start(match variant {
+        Some(v) => with(v, sc),
+        None => sc,
+    })
+}
+
+/// П5: after a strategic transfer morale −15 (not below 0); it recovers by
+/// R-SUP-05 (+10 in the next own phase with supply ≥ 4 and no combat).
+#[test]
+fn r_move_05_transfer_costs_morale() {
+    let after = |variant: Option<&str>| {
+        let mut s = road_board(vec![unit("infantry", A, Hex::new(0, 0))], variant);
+        let before = s.unit(UnitId(1)).unwrap().morale_pct;
+        s.apply(Command::Transfer {
+            unit: UnitId(1),
+            to: Hex::new(6, 0),
+        })
+        .unwrap();
+        let moved = s.unit(UnitId(1)).unwrap().morale_pct;
+        s.apply(Command::EndPhase).unwrap();
+        s.apply(Command::EndPhase).unwrap();
+        (before, moved, s.unit(UnitId(1)).unwrap().morale_pct)
+    };
+    let (b, m, next) = after(Some("transfer_morale"));
+    assert_eq!(m, b - 15);
+    assert_eq!(next, m + 10, "recovers by R-SUP-05");
+    let (b, m, _) = after(None);
+    assert_eq!(m, b, "off: no change");
+    // Not below 0.
+    let mut low = unit("infantry", A, Hex::new(0, 0));
+    low.morale_pct = 4; // 14 after the phase-start rest
+    let mut s = road_board(vec![low], Some("transfer_morale"));
+    s.apply(Command::Transfer {
+        unit: UnitId(1),
+        to: Hex::new(6, 0),
+    })
+    .unwrap();
+    assert_eq!(s.unit(UnitId(1)).unwrap().morale_pct, 0);
+}

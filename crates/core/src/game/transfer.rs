@@ -85,10 +85,17 @@ impl GameState {
             return Err(refuse(id, TransferError::NotEnoughMpp));
         }
         state.mpp -= cost;
+        let morale_loss = if self.variants.transfer_morale {
+            self.data.rules.movement.transfer_morale_loss
+        } else {
+            0
+        };
         let unit = self
             .units
             .get_mut(&id)
             .ok_or(RuleError::UnknownUnit(id.0))?;
+        // R-MOVE-05 variant: the transfer costs morale (recovers by R-SUP-05).
+        unit.morale_pct = unit.morale_pct.saturating_sub(morale_loss);
         unit.hex = to;
         unit.ap_halves = 0;
         unit.strikes_left = 0;
