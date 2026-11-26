@@ -256,6 +256,62 @@ struct GameView<'a> {
     neutral: Vec<[i32; 2]>,
     /// R-NM-01: objectives and who holds them.
     objectives: Vec<ObjectiveView>,
+    /// R-AIR-01: aircraft, airfields and off-map bases.
+    air: Vec<AirView>,
+    airfields: Vec<[i32; 2]>,
+    offmap_bases: Vec<OffMapBaseView>,
+}
+
+/// An aircraft's base: a hex (offset) or an off-map base id.
+#[derive(Serialize)]
+#[serde(tag = "kind", rename_all = "snake_case")]
+enum BaseView {
+    Hex { hex: [i32; 2] },
+    OffMap { id: String },
+}
+
+fn base_view(b: &ceasefire_core::game::AirBase) -> BaseView {
+    match b {
+        ceasefire_core::game::AirBase::Hex { hex } => BaseView::Hex {
+            hex: axial_to_offset(*hex),
+        },
+        ceasefire_core::game::AirBase::OffMap { id } => BaseView::OffMap { id: id.clone() },
+    }
+}
+
+#[derive(Serialize)]
+struct AirView {
+    id: u32,
+    class: String,
+    side: u8,
+    base: BaseView,
+    strength: u8,
+    readiness_pct: u8,
+    exp: u16,
+    fatigue_pct: u8,
+    sorties: u32,
+    rebased: bool,
+    nation: Option<String>,
+    name: Option<String>,
+    /// Radius of action in hexes (R-SCALE-01).
+    radius_hexes: u32,
+}
+
+#[derive(Serialize)]
+struct OffMapBaseView {
+    id: String,
+    side: u8,
+    edge: ceasefire_core::game::MapEdge,
+    distance_km: f64,
+}
+
+/// R-AIR-02: what an aircraft can strike now.
+#[derive(Serialize)]
+#[serde(tag = "kind", rename_all = "snake_case")]
+enum AirTarget {
+    Unit { target: u32 },
+    Airfield { hex: [i32; 2] },
+    Bridge { a: [i32; 2], b: [i32; 2] },
 }
 
 #[derive(Serialize)]
@@ -537,8 +593,157 @@ impl Game {
                     owner: s.controller(o.hex).map(|c| c.0),
                 })
                 .collect(),
+            air: s
+                .air_units()
+                .map(|a| AirView {
+                    id: a.id.0,
+                    class: a.class.clone(),
+                    side: a.side.0,
+                    base: base_view(&a.base),
+                    strength: a.strength,
+                    readiness_pct: a.readiness_pct(s.data()),
+                    exp: a.exp,
+                    fatigue_pct: a.fatigue_pct,
+                    sorties: a.sorties,
+                    rebased: a.rebased,
+                    nation: a.nation.clone(),
+                    name: a.name.clone(),
+                    radius_hexes: s
+                        .data()
+                        .units
+                        .get(&a.class)
+                        .ok()
+                        .and_then(|c| c.radius_km)
+                        .map_or(0, |km| {
+                            ceasefire_core::scale::range_in_hexes(km, s.hex_km())
+                        }),
+                })
+                .collect(),
+            airfields: s.map().airfields().map(axial_to_offset).collect(),
+            offmap_bases: s
+                .offmap_bases()
+                .iter()
+                .map(|b| OffMapBaseView {
+                    id: b.id.clone(),
+                    side: b.side.0,
+                    edge: b.edge,
+                    distance_km: b.distance_km,
+                })
+                .collect(),
         };
         to_json(&view)
+    }
+
+    /// R-AIR-02: units, airfields and bridges the aircraft can strike now
+    /// (checked by the core's dry run).
+    #[wasm_bindgen(js_name = airTargets)]
+    pub fn air_targets(&self, unit: u32) -> Result<String, JsError> {
+        let s = &self.state;
+        let id = UnitId(unit);
+        let mut out = Vec::new();
+        if s.air_unit(id).is_none() {
+            return to_json(&out);
+        }
+        for e in s.units() {
+            if s.forecast_air_strike(id, e.id).is_ok() {
+                out.push(AirTarget::Unit { target: e.id.0 });
+            }
+        }
+        let mut fields: Vec<Hex> = s
+            .air_units()
+            .filter_map(|a| match a.base {
+                ceasefire_core::game::AirBase::Hex { hex } => Some(hex),
+                _ => None,
+            })
+            .collect();
+        fields.sort();
+        fields.dedup();
+        for h in fields {
+            if s.forecast_airfield_strike(id, h).is_ok() {
+                out.push(AirTarget::Airfield {
+                    hex: axial_to_offset(h),
+                });
+            }
+        }
+        for (e, _) in s.map().bridges() {
+            let (a, b) = e.hexes();
+            if self
+                .refusal(Command::AirStrikeBridge { unit: id, a, b })
+                .is_none()
+            {
+                out.push(AirTarget::Bridge {
+                    a: axial_to_offset(a),
+                    b: axial_to_offset(b),
+                });
+            }
+        }
+        to_json(&out)
+    }
+
+    /// R-AIR-02 forecast: `target` is `{"kind":"unit","target":id}` or `{"kind":"airfield","hex":[c,r]}`.
+    #[wasm_bindgen(js_name = forecastAir)]
+    pub fn forecast_air(&self, unit: u32, target: &str) -> Result<String, JsError> {
+        let v: serde_json::Value =
+            serde_json::from_str(target).map_err(|e| JsError::new(&e.to_string()))?;
+        let id = UnitId(unit);
+        let f = match v.get("kind").and_then(|k| k.as_str()) {
+            Some("unit") => {
+                let t = v
+                    .get("target")
+                    .and_then(|t| t.as_u64())
+                    .ok_or_else(|| JsError::new("target"))?;
+                self.state
+                    .forecast_air_strike(id, UnitId(t as u32))
+                    .map_err(js)?
+            }
+            Some("airfield") => {
+                let hex: [i32; 2] =
+                    serde_json::from_value(v.get("hex").cloned().unwrap_or_default())
+                        .map_err(|e| JsError::new(&e.to_string()))?;
+                self.state
+                    .forecast_airfield_strike(id, offset_to_axial(hex))
+                    .map_err(js)?
+            }
+            _ => return Err(JsError::new("kind: unit | airfield")),
+        };
+        to_json(&f)
+    }
+
+    /// R-AIR-01: where the aircraft may rebase (own bases, off-map ones included).
+    #[wasm_bindgen(js_name = rebaseTargets)]
+    pub fn rebase_targets(&self, unit: u32) -> Result<String, JsError> {
+        let s = &self.state;
+        let id = UnitId(unit);
+        let Some(a) = s.air_unit(id) else {
+            return to_json(&Vec::<BaseView>::new());
+        };
+        let mut out = Vec::new();
+        for h in s.map().hexes() {
+            let base = ceasefire_core::game::AirBase::Hex { hex: h };
+            if s.is_air_base(a.side, h)
+                && self
+                    .refusal(Command::Rebase {
+                        unit: id,
+                        base: base.clone(),
+                    })
+                    .is_none()
+            {
+                out.push(base_view(&base));
+            }
+        }
+        for b in s.offmap_bases().iter().filter(|b| b.side == a.side) {
+            let base = ceasefire_core::game::AirBase::OffMap { id: b.id.clone() };
+            if self
+                .refusal(Command::Rebase {
+                    unit: id,
+                    base: base.clone(),
+                })
+                .is_none()
+            {
+                out.push(base_view(&base));
+            }
+        }
+        to_json(&out)
     }
 
     /// Hexes the unit can end a move in (R-MOVE-01..03).
