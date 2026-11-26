@@ -199,7 +199,11 @@ export class AttackWindow {
     const grid = [
       pair(this.t("ui.col.strength"), String(u.strength), fill(this.t("ui.strength_tip"), { n: u.strength })),
       pair(this.t("ui.col.strikes"), String(u.strikes_left), this.t("ui.strikes_tip")),
-      pair(this.t("ui.col.supply"), String(u.supply), supplyTip(u.supply, r, this.ru)),
+      pair(
+        this.t("ui.col.supply"),
+        u.desertion_risk ? `${u.supply} ⚠` : String(u.supply),
+        u.desertion_risk ? `${supplyTip(u.supply, r, this.ru)}\n${this.t("ui.desertion_risk")}` : supplyTip(u.supply, r, this.ru),
+      ),
       pair(this.t("ui.col.readiness"), `${u.readiness_pct}%`, readinessTip(u, r, this.ru)),
       pair("AP", ap, apTip),
       pair(this.t("ui.col.morale"), `${u.morale_pct}%`, this.t("ui.morale_tip")),

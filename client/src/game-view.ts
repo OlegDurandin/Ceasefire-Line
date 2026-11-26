@@ -36,6 +36,8 @@ export interface LiveUnit {
   terrain: string;
   /** Supply of the unit's side in its hex now; 0 = encircled. */
   hex_supply: number;
+  /** R-SUP-03 variant `pocket_desertion`: may lose a step at its next phase start. */
+  desertion_risk?: boolean;
   /** R-AIR-03 umbrella radius in hexes, for SAM units. */
   sam_radius_hexes: number | null;
 }

@@ -235,6 +235,8 @@ struct LiveUnitView {
     terrain: String,
     /// R-SUP-02 now in the unit's hex for its side; 0 = encircled (R-NM-01).
     hex_supply: u8,
+    /// R-SUP-03 variant `pocket_desertion`: «под угрозой распада».
+    desertion_risk: bool,
     /// R-AIR-03 umbrella radius in hexes (after technology), for SAM units.
     sam_radius_hexes: Option<f64>,
 }
@@ -554,6 +556,7 @@ impl Game {
                             .map(|c| c.terrain.clone())
                             .unwrap_or_default(),
                         hex_supply: supply.get(&u.side).map_or(0, |m| m.get(u.hex)),
+                        desertion_risk: s.desertion_risk(u.id),
                         sam_radius_hexes: s
                             .data()
                             .units

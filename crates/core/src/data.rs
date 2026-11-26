@@ -118,6 +118,14 @@ pub struct SupplyRules {
     /// R-SUP-03: attrition starts at this many consecutive phases at supply 0.
     pub attrition_after_phases: u8,
     pub attrition_steps: u8,
+    /// R-SUP-03 variant `pocket_desertion`: a unit at supply 0 with at least
+    /// `desertion_min_enemies` adjacent enemy ground units of strength and
+    /// supply at least these loses `desertion_steps` with `desertion_chance`.
+    pub desertion_min_enemies: u8,
+    pub desertion_enemy_min_strength: u8,
+    pub desertion_enemy_min_supply: u8,
+    pub desertion_chance: f64,
+    pub desertion_steps: u8,
     /// R-SUP-01: captured source works at value / divisor (floor).
     pub captured_source_divisor: u8,
     pub captured_recovery_per_turn: u8,
@@ -307,6 +315,8 @@ pub struct Variants {
     pub hq_strength_scaling: bool,
     /// R-COMBAT-06, R-MOVE-01: cities and fortified areas hold.
     pub fortified_hold: bool,
+    /// R-SUP-03: units in a pocket under pressure desert.
+    pub pocket_desertion: bool,
 }
 
 impl Variants {

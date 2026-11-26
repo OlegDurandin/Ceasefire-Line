@@ -11,7 +11,7 @@ use ceasefire_core::hex::Hex;
 use common::scenario::{board, start, unit, A, B};
 
 /// Every boolean variant, so each test states its own rules.
-const VARIANTS: [&str; 10] = [
+const VARIANTS: [&str; 11] = [
     "attack_strips_entrenchment",
     "prepared_attack",
     "unsupplied_target",
@@ -22,6 +22,7 @@ const VARIANTS: [&str; 10] = [
     "nm_by_cost",
     "hq_strength_scaling",
     "fortified_hold",
+    "pocket_desertion",
 ];
 
 /// The common test scenario with every variant switched off.
@@ -592,4 +593,43 @@ fn r_combat_06_strongholds_hold() {
     };
     assert_eq!(entered(true), 2, "floor(4 / 2)");
     assert_eq!(entered(false), 0, "off: moved, no growth");
+}
+
+/// R-SUP-03 `pocket_desertion`: at the start of its phase a unit at supply 0
+/// with ≥ 2 adjacent enemies (strength ≥ 5, supply ≥ 4) loses 1 step with
+/// 50% (seeded); with one enemy, or without the variant, never.
+#[test]
+fn r_sup_03_desertion_in_a_pocket() {
+    // A's infantry cut off at (5, 0) in B's territory; B's units around it.
+    let game = |seed: u64, enemies: usize, variant: bool| {
+        let (map, control) = board();
+        let mut cut = unit("infantry", A, Hex::new(5, 0));
+        cut.supply = Some(0);
+        let mut units = vec![cut];
+        for h in [Hex::new(6, 0), Hex::new(4, 0)].into_iter().take(enemies) {
+            units.push(unit("infantry", B, h));
+        }
+        let mut sc = setup(map, control, units);
+        sc.seed = seed;
+        start(if variant {
+            with("pocket_desertion", sc)
+        } else {
+            sc
+        })
+    };
+    let lost = |s: &GameState| 10 - s.unit(UnitId(1)).unwrap().strength;
+    let hits: Vec<u8> = (1..=20).map(|seed| lost(&game(seed, 2, true))).collect();
+    assert!(hits.iter().all(|&l| l <= 1), "{hits:?}");
+    let n = hits.iter().filter(|&&l| l == 1).count();
+    assert!((4..=16).contains(&n), "about half of 20 seeds: {n}");
+    assert!(
+        (1..=20).all(|seed| lost(&game(seed, 1, true)) == 0),
+        "one enemy: no pressure"
+    );
+    assert!((1..=20).all(|seed| lost(&game(seed, 2, false)) == 0), "off");
+    assert!(
+        game(1, 2, true).desertion_risk(UnitId(1)),
+        "«под угрозой распада»"
+    );
+    assert!(!game(1, 1, true).desertion_risk(UnitId(1)));
 }

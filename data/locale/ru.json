@@ -126,6 +126,8 @@
   "log.destroyed": "{unit} уничтожен(а)",
   "log.advanced": "{unit} занимает {hex}",
   "log.attrition": "{unit}: истощение −{steps}",
+  "log.deserted": "{unit}: распад в окружении −{steps}",
+  "ui.desertion_risk": "Под угрозой распада: снабжение 0 и рядом не меньше двух сильных юнитов противника — в начале своей фазы может потерять шаг (R-SUP-03)",
   "log.reinforced": "{unit}: пополнение +{steps} за {cost} MPP",
   "log.reinforced_elite": "{unit}: элитное пополнение +{steps} за {cost} MPP",
   "log.purchased": "{side}: куплено — {class} за {cost} MPP, прибудет на ходу {turn}",

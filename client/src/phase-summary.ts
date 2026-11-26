@@ -69,6 +69,7 @@ export class PhaseLog {
           lose(e.b, e.b_losses);
           break;
         case "attrition":
+        case "deserted":
           lose(e.unit, e.steps);
           break;
         case "retreat_blocked":

@@ -159,6 +159,11 @@ pub enum Event {
         unit: UnitId,
         steps: u8,
     },
+    /// R-SUP-03 variant `pocket_desertion`: steps lost to desertion in a pocket.
+    Deserted {
+        unit: UnitId,
+        steps: u8,
+    },
     UnitMoved {
         unit: UnitId,
         path: Vec<Hex>,

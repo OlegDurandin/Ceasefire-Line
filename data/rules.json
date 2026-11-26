@@ -41,6 +41,11 @@
     "max_drop_per_phase": 3,
     "attrition_after_phases": 2,
     "attrition_steps": 1,
+    "desertion_min_enemies": 2,
+    "desertion_enemy_min_strength": 5,
+    "desertion_enemy_min_supply": 4,
+    "desertion_chance": 0.5,
+    "desertion_steps": 1,
     "captured_source_divisor": 2,
     "captured_recovery_per_turn": 1
   },
@@ -167,6 +172,7 @@
     "reinforce_locks": false,
     "nm_by_cost": true,
     "hq_strength_scaling": false,
-    "fortified_hold": false
+    "fortified_hold": false,
+    "pocket_desertion": false
   }
 }

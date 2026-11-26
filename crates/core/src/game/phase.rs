@@ -86,6 +86,15 @@ impl GameState {
             .collect();
 
         let mut attrition = Vec::new();
+        // R-SUP-03 variant: enemies pressing on each own unit (before anyone changes).
+        let pressing: std::collections::BTreeMap<UnitId, u8> = if self.variants.pocket_desertion {
+            ids.iter()
+                .filter_map(|id| self.units.get(id))
+                .map(|u| (u.id, self.pressing_enemies(u)))
+                .collect()
+        } else {
+            std::collections::BTreeMap::new()
+        };
         for id in ids {
             let Some(unit) = self.units.get(&id) else {
                 continue;
@@ -125,6 +134,20 @@ impl GameState {
                 }
             }
             unit.morale_pct = unit.morale_pct.min(nm).min(100);
+            // R-SUP-03 variant `pocket_desertion`, before attrition.
+            if unit.supply == 0
+                && pressing
+                    .get(&id)
+                    .is_some_and(|&n| n >= s.desertion_min_enemies)
+                && self.rng.chance(s.desertion_chance)
+            {
+                let lost = unit.lose_steps(s.desertion_steps, rules.morale.loss_per_step);
+                attrition.push(lost);
+                events.push(Event::Deserted {
+                    unit: id,
+                    steps: lost,
+                });
+            }
             if unit.zero_supply_phases >= s.attrition_after_phases {
                 let lost = unit.lose_steps(s.attrition_steps, rules.morale.loss_per_step);
                 attrition.push(lost);
@@ -219,6 +242,33 @@ impl GameState {
         }
         events.extend(self.start_phase()?);
         Ok(events)
+    }
+
+    /// R-SUP-03 variant `pocket_desertion`: adjacent enemy ground units with
+    /// strength and unit supply at least the thresholds.
+    pub(super) fn pressing_enemies(&self, unit: &super::Unit) -> u8 {
+        let s = &self.data.rules.supply;
+        let n = self
+            .units
+            .values()
+            .filter(|e| e.side != unit.side && e.hex.is_adjacent(unit.hex))
+            .filter(|e| {
+                e.strength >= s.desertion_enemy_min_strength
+                    && e.supply >= s.desertion_enemy_min_supply
+            })
+            .count();
+        u8::try_from(n).unwrap_or(u8::MAX)
+    }
+
+    /// R-SUP-03 variant `pocket_desertion`: the unit (supply 0, enough enemies
+    /// adjacent) may lose a step at the start of its next phase — the UI's
+    /// «под угрозой распада».
+    pub fn desertion_risk(&self, id: UnitId) -> bool {
+        self.variants.pocket_desertion
+            && self.units.get(&id).is_some_and(|u| {
+                u.supply == 0
+                    && self.pressing_enemies(u) >= self.data.rules.supply.desertion_min_enemies
+            })
     }
 
     pub(super) fn map_terrain(&self, hex: crate::hex::Hex) -> Result<String, RuleError> {
