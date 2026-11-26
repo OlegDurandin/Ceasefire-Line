@@ -202,7 +202,27 @@ async function main() {
       panel.style.display = "none";
     }
     stage("Ход…");
-    const game = new Game(core, scenario, map, events);
+    // R-UI-05 / stage 3: a saved command log is replayed (deterministic core).
+    const saveKey = `cl.save.${SCENARIO}`;
+    let saved: string | null = null;
+    try {
+      saved = localStorage.getItem(saveKey);
+    } catch {
+      saved = null;
+    }
+    let game = new Game(core, scenario, map, events);
+    if (saved && saved !== "[]") {
+      try {
+        const resumed = Game.replay(core, scenario, map, events, saved);
+        const st = JSON.parse(resumed.state()) as { turn: number; active_side: number; outcome: unknown };
+        const side = ru[`side.${sideKeys[st.active_side] ?? ""}`] ?? String(st.active_side);
+        if (!st.outcome && (await askContinue(ru, st.turn, side))) game = resumed;
+      } catch (e) {
+        console.warn("[client] save does not replay:", e);
+        panel.style.display = "block";
+        panel.textContent = ru["ui.saved_broken"] ?? "save ignored";
+      }
+    }
     devGame = game;
     const play = new Play(game, world, camera, sprites, ru, sideKeys, colors, HEX_SIZE, { terrain: terrainTex, bridge, bridgeDestroyed }, {
       rules: JSON.parse(rules) as Rules,
@@ -214,6 +234,7 @@ async function main() {
       suddenDeathPct: (JSON.parse(rules) as { national_morale: { sudden_death_pct: number } }).national_morale.sudden_death_pct,
       style: unitStyle,
       minis,
+      saveKey,
     });
     await play.refresh();
     if (!view.issues.length) panel.style.display = "none";
@@ -230,6 +251,23 @@ async function main() {
       },
     };
   }
+}
+
+/** «Continue the saved game?» in the modal; resolves with the choice. */
+function askContinue(ru: Record<string, string>, turn: number, side: string): Promise<boolean> {
+  const modal = document.getElementById("modal")!;
+  const box = modal.querySelector(".panel")!;
+  box.innerHTML = `<p>${(ru["ui.saved_game"] ?? "").replace("{turn}", String(turn)).replace("{side}", side)}</p>
+    <button id="resume">${ru["ui.continue"] ?? "Continue"}</button> <button id="fresh">${ru["ui.new_game"] ?? "New game"}</button>`;
+  modal.style.display = "flex";
+  return new Promise((resolve) => {
+    const done = (v: boolean) => {
+      modal.style.display = "none";
+      resolve(v);
+    };
+    document.getElementById("resume")!.onclick = () => done(true);
+    document.getElementById("fresh")!.onclick = () => done(false);
+  });
 }
 
 main().catch((e: unknown) => {

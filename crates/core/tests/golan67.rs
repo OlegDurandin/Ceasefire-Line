@@ -118,14 +118,16 @@ fn validation_reports_event_boost_and_water_problems() {
 
 /// Plays until the game ends, choosing only commands the core's own queries
 /// call legal; any rule error is a bug.
-fn play(seed: u64) -> (GameState, Vec<Event>) {
+fn play_logged(seed: u64) -> (GameState, Vec<Event>, Vec<Command>) {
     let (data, setup) = load();
     let (mut s, mut events) = GameState::new(data, setup).unwrap();
     let mut rng = Pcg32::new(seed, 99);
+    let log = std::cell::RefCell::new(Vec::new());
     let apply = |s: &mut GameState, c: Command, events: &mut Vec<Event>| {
         let out = s
             .apply(c.clone())
             .unwrap_or_else(|e| panic!("{c:?} rejected: {e}"));
+        log.borrow_mut().push(c);
         events.extend(out);
     };
     while s.outcome().is_none() {
@@ -202,14 +204,34 @@ fn play(seed: u64) -> (GameState, Vec<Event>) {
             if rng.chance(0.3) {
                 // Buying may be refused (MPP, already bought); that must be atomic.
                 let before = s.clone();
-                if s.apply(Command::BuyTechBoost { id }).is_err() {
-                    assert_eq!(s, before, "refused command changed the state");
+                let c = Command::BuyTechBoost { id };
+                match s.apply(c.clone()) {
+                    Ok(_) => log.borrow_mut().push(c),
+                    Err(_) => assert_eq!(s, before, "refused command changed the state"),
                 }
             }
         }
         apply(&mut s, Command::EndPhase, &mut events);
     }
+    (s, events, log.into_inner())
+}
+
+fn play(seed: u64) -> (GameState, Vec<Event>) {
+    let (s, events, _) = play_logged(seed);
     (s, events)
+}
+
+/// Saves (stage 3): the command log of a game replays it exactly.
+#[test]
+fn golan67_command_log_replays_the_game() {
+    let (end, _, log) = play_logged(7);
+    assert!(!log.is_empty());
+    let (data, setup) = load();
+    let (mut s, _) = GameState::new(data, setup).unwrap();
+    for c in log {
+        s.apply(c).unwrap();
+    }
+    assert_eq!(s, end, "same scenario, seed and commands → same game");
 }
 
 #[test]

@@ -95,6 +95,12 @@ export class Camera {
     }
   };
 
+  /** Puts a world point in the middle of the screen (R-UI-05: next unit). */
+  centerOn(x: number, y: number) {
+    this.view = { ...this.view, x: window.innerWidth / 2 - x * this.view.scale, y: window.innerHeight / 2 - y * this.view.scale };
+    this.apply();
+  }
+
   /** Screen → world coordinates. */
   toWorld(x: number, y: number): { x: number; y: number } {
     return { x: (x - this.view.x) / this.view.scale, y: (y - this.view.y) / this.view.scale };

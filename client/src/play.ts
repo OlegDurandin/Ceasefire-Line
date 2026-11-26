@@ -7,7 +7,7 @@ import { Assets, Container, Graphics, type Texture } from "pixi.js";
 
 import type { Camera } from "./camera";
 import type { BridgeTarget, EconomyView, Forecast, GameStateView, LiveUnit, Reach, Target, TransferTargets } from "./game-view";
-import { axialToOffset, offsetToAxial, pixelToAxial } from "./hex";
+import { axialToOffset, hexCenter, offsetToAxial, pixelToAxial } from "./hex";
 import { attrText, fireLines, num, readinessTip, supplyTip, turnDate, type FireInput, type Rules } from "./explain";
 import { fill, formatEvent, type UnitRef } from "./log";
 import { drawControl } from "./render/control";
@@ -40,6 +40,8 @@ export interface PlayContext {
   suddenDeathPct: number;
   /** R-UI-03: unit pictures — miniatures (default) or medallions. */
   style: UnitStyle;
+  /** Key of the autosave in localStorage. */
+  saveKey: string;
   minis: MiniIndex;
 }
 
@@ -86,12 +88,7 @@ export class Play {
     world.addChild(this.overlay);
     world.addChild(this.unitsLayer);
     camera.onTap = (x, y) => this.tap(x, y);
-    // R-UI-03: switch miniatures ↔ medallions.
-    window.addEventListener("keydown", (e) => {
-      if (e.key.toLowerCase() !== "u" || e.target instanceof HTMLInputElement) return;
-      this.ctx.style = this.ctx.style === "miniature" ? "medallion" : "miniature";
-      void this.drawUnits();
-    });
+    window.addEventListener("keydown", (e) => this.key(e));
   }
 
   private t(key: string, fallback = key): string {
@@ -173,7 +170,9 @@ export class Play {
       <span class="tabs">${(["supply", "zoc", "hq"] as const)
         .map((l) => `<button data-layer="${l}" class="${this.layers.has(l) ? "on" : ""}">${this.t(`ui.layer.${l}`)}</button>`)
         .join("")}</span>
-      <button id="end-phase">${this.t("ui.end_phase")}</button>`;
+      <button id="undo" title="${attrText(this.t("ui.undo_tip"))}"${this.game.canUndo() ? "" : " disabled"}>↶</button>
+      <button id="end-phase" title="Enter">${this.t("ui.end_phase")}</button>`;
+    document.getElementById("undo")!.onclick = () => void this.undo();
     for (const b of top.querySelectorAll<HTMLButtonElement>("[data-layer]")) {
       b.onclick = () => {
         const l = b.dataset.layer as "supply" | "zoc" | "hq";
@@ -183,7 +182,7 @@ export class Play {
         this.drawLayers();
       };
     }
-    document.getElementById("end-phase")!.onclick = () => this.run(() => this.game.endPhase(), true);
+    document.getElementById("end-phase")!.onclick = () => this.endPhase();
     for (const b of top.querySelectorAll<HTMLButtonElement>("[data-panel]")) {
       b.onclick = () => {
         const p = b.dataset.panel!;
@@ -531,6 +530,76 @@ export class Play {
     }
   }
 
+  /** R-UI-05 keys: N next unit, Enter end of phase, Ctrl/Cmd+Z undo, U unit pictures. */
+  private key(e: KeyboardEvent) {
+    if (e.target instanceof HTMLInputElement || e.target instanceof HTMLSelectElement || this.state?.outcome) return;
+    const k = e.key.toLowerCase();
+    if (k === "n" || k === "т") this.nextUnit();
+    else if (e.key === "Enter") this.endPhase();
+    else if (k === "z" && (e.ctrlKey || e.metaKey)) void this.undo();
+    else if (k === "u" || k === "г") {
+      // R-UI-03: miniatures ↔ medallions.
+      this.ctx.style = this.ctx.style === "miniature" ? "medallion" : "miniature";
+      void this.drawUnits();
+    } else return;
+    e.preventDefault();
+  }
+
+  /** Own units that can still move or strike (the same test as the dimming). */
+  private ready(): LiveUnit[] {
+    return this.state.units.filter(
+      (u) => u.side === this.state.active_side && ((u.can_move && u.ap_halves > 0) || (u.strikes_left > 0 && u.ap_halves > 0)),
+    );
+  }
+
+  /** R-UI-05: N — the next unit that has not acted, in id order, cycling. */
+  private nextUnit() {
+    const ready = this.ready();
+    if (!ready.length) return;
+    const cur = this.selection?.unit.id ?? -1;
+    const next = ready.find((u) => u.id > cur) ?? ready[0]!;
+    this.select(next);
+    const c = hexCenter(offsetToAxial({ col: next.col, row: next.row }), this.size);
+    this.camera.centerOn(c.x, c.y);
+  }
+
+  /** R-UI-05: warn before ending the phase with strikes left on units that have a target. */
+  private endPhase() {
+    const unused = this.state.units.filter(
+      (u) => u.side === this.state.active_side && u.strikes_left > 0 && (JSON.parse(this.game.targets(u.id)) as Target[]).length > 0,
+    );
+    if (!unused.length) {
+      void this.run(() => this.game.endPhase(), true);
+      return;
+    }
+    const box = document.getElementById("combat")!;
+    box.innerHTML = `<div>${fill(this.t("ui.unused_strikes"), { n: unused.length })}</div>
+      <div class="detail">${unused.map((u) => this.unitLabel(u)).join(" · ")}</div>
+      <div class="actions"><button id="end-anyway">${this.t("ui.end_phase")}</button><button id="end-back">${this.t("ui.back")}</button></div>`;
+    box.style.display = "block";
+    document.getElementById("end-anyway")!.onclick = () => void this.run(() => this.game.endPhase(), true);
+    document.getElementById("end-back")!.onclick = () => this.showAdvanceOrHide();
+  }
+
+  /** R-UI-05: take back the last command (until a combat or the end of a phase). */
+  private async undo() {
+    if (!this.game.undoLast()) return;
+    this.log.push(this.t("ui.undone"));
+    this.save();
+    await this.refresh();
+    if (!this.selection) this.showAdvanceOrHide();
+  }
+
+  /** Autosave: the command log replays the game (deterministic core). */
+  private save() {
+    try {
+      if (this.state?.outcome) localStorage.removeItem(this.ctx.saveKey);
+      else localStorage.setItem(this.ctx.saveKey, this.game.commands());
+    } catch {
+      // Storage may be unavailable (private mode); the game goes on without saves.
+    }
+  }
+
   /** Runs a core command; on success refreshes the view and returns its events. */
   private async run(command: () => string, endPhase = false): Promise<unknown[]> {
     try {
@@ -538,6 +607,7 @@ export class Play {
       this.record(events);
       if (endPhase) this.deselect();
       await this.refresh();
+      this.save();
       if (!this.selection) this.showAdvanceOrHide();
       return events;
     } catch (e) {
@@ -587,6 +657,7 @@ export class Play {
       <p>${o.vp.map(([id, vp]) => `${this.sideName(id)}: ${vp}`).join(" · ")} ${this.t("ui.vp")}</p>
       <button id="again">${this.t("ui.new_game")}</button>`;
     modal.style.display = "flex";
+    this.save();
     document.getElementById("again")!.onclick = () => location.reload();
   }
 }

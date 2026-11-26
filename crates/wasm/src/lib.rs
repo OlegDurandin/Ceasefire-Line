@@ -311,9 +311,28 @@ struct Target {
 }
 
 /// A running game (hotseat): the client calls commands and re-reads `state()`.
+/// Every accepted command goes to a log: with the deterministic core the log
+/// replays the game exactly (saves). R-UI-05 undo keeps the states before
+/// the last undoable commands; combat, bombardment and the end of a phase
+/// (dice, or the turn passing) clear it.
 #[wasm_bindgen]
 pub struct Game {
     state: GameState,
+    log: Vec<Command>,
+    undo: Vec<(GameState, usize)>,
+}
+
+/// R-UI-05: commands with no dice and no handover can be taken back.
+fn undoable(c: &Command) -> bool {
+    !matches!(
+        c,
+        Command::Attack { .. }
+            | Command::Bombard { .. }
+            | Command::BombardBridge { .. }
+            | Command::DeclareAttack { .. }
+            | Command::ResolveCombat { .. }
+            | Command::EndPhase
+    )
 }
 
 #[wasm_bindgen]
@@ -327,7 +346,53 @@ impl Game {
     ) -> Result<Game, JsError> {
         let setup = load_scenario(scenario, map, events.as_deref()).map_err(js)?;
         let (state, _) = GameState::new(Arc::clone(&core.data), setup).map_err(js)?;
-        Ok(Game { state })
+        Ok(Game {
+            state,
+            log: Vec::new(),
+            undo: Vec::new(),
+        })
+    }
+
+    /// Replays a saved command log (`commands()` JSON) on the scenario.
+    pub fn replay(
+        core: &Core,
+        scenario: &str,
+        map: &str,
+        events: Option<String>,
+        commands: &str,
+    ) -> Result<Game, JsError> {
+        let mut g = Game::new(core, scenario, map, events)?;
+        let list: Vec<Command> =
+            serde_json::from_str(commands).map_err(|e| JsError::new(&e.to_string()))?;
+        for c in list {
+            g.run(c)?;
+        }
+        g.undo.clear();
+        Ok(g)
+    }
+
+    /// The accepted commands so far, as JSON (for saves).
+    pub fn commands(&self) -> Result<String, JsError> {
+        to_json(&self.log)
+    }
+
+    /// R-UI-05: whether the last command can be taken back.
+    #[wasm_bindgen(js_name = canUndo)]
+    pub fn can_undo(&self) -> bool {
+        !self.undo.is_empty()
+    }
+
+    /// R-UI-05: takes back the last undoable command; false if none.
+    #[wasm_bindgen(js_name = undoLast)]
+    pub fn undo_last(&mut self) -> bool {
+        match self.undo.pop() {
+            Some((state, len)) => {
+                self.state = state;
+                self.log.truncate(len);
+                true
+            }
+            None => false,
+        }
     }
 
     /// Turn, sides, units and outcome as JSON (offset coordinates).
@@ -702,7 +767,13 @@ impl Game {
     }
 
     fn run(&mut self, command: Command) -> Result<String, JsError> {
-        let events = self.state.apply(command).map_err(js)?;
+        let before = undoable(&command).then(|| (self.state.clone(), self.log.len()));
+        let events = self.state.apply(command.clone()).map_err(js)?;
+        self.log.push(command);
+        match before {
+            Some(b) => self.undo.push(b),
+            None => self.undo.clear(),
+        }
         to_json(&events)
     }
 }
