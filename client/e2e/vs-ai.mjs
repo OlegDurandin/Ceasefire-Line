@@ -38,6 +38,15 @@ for (let guard = 0; guard < 40; guard++) {
     await page.waitForFunction((h) => { const st = JSON.parse(window.__cl.game.state()); return st.outcome || st.active_side === h; }, { timeout: 60000, polling: 200 }, HUMAN);
     stats.aiPhases++;
     await wait(300);
+    // R-UI-04: back to the player, the «Итоги фазы противника» window opens; close it.
+    const summary = await page.evaluate(() => {
+      const close = document.getElementById("m-close");
+      const open = document.getElementById("modal")?.style.display === "flex" && !!close;
+      if (open) close.click();
+      return open;
+    });
+    stats.summaries = (stats.summaries ?? 0) + (summary ? 1 : 0);
+    await wait(150);
     continue;
   }
   for (const id of s.units.filter((u) => u.side === HUMAN).map((u) => u.id)) {
@@ -65,7 +74,7 @@ const saved = await page.evaluate(() => JSON.parse(localStorage.getItem("cl.save
 console.log("outcome:", JSON.stringify(s.outcome), "turn", s.turn, JSON.stringify(stats), "AI commands:", aiActs);
 console.log("errors:", JSON.stringify(errs));
 await browser.close();
-if (!s.outcome || errs.length || aiActs === 0 || !stats.blocked || stats.aiPhases === 0) {
+if (!s.outcome || errs.length || aiActs === 0 || !stats.blocked || stats.aiPhases === 0 || !stats.summaries) {
   console.error("FAILED:", JSON.stringify({ outcome: !!s.outcome, aiActs, blocked: stats.blocked, errors: errs.length, saved }));
   process.exit(1);
 }

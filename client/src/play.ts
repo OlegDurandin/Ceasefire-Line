@@ -17,6 +17,8 @@ import { drawControl } from "./render/control";
 import { drawHqLinks, drawObjectives, drawSupply, drawTrail, drawUmbrellas, drawZoc } from "./render/layers";
 import { AI_SPEEDS, aiTiming, storeSetting, type AiSpeed } from "./settings";
 import { focusOf, trailOf, type TrailMark } from "./trail";
+import { PhaseLog } from "./phase-summary";
+import { phaseSummaryHtml } from "./ui/phase-summary";
 import { AttackWindow, type AirCardData, type CardData, type Explained } from "./ui/attack-window";
 import { ACTIONS, actionBarHtml, type ActionId, type ActionState } from "./ui/action-bar";
 import { hexCardHtml, type HexFacts, type TerrainInfo } from "./ui/hex-info";
@@ -134,6 +136,8 @@ export class Play {
   /** R-UI-05 «следы хода»: marks of the phase going on and of the previous one. */
   private trailNow: TrailMark[] = [];
   private trailLast: TrailMark[] = [];
+  /** R-UI-04 «Итоги фазы противника»: summaries of finished phases. */
+  private phases = new PhaseLog();
   private aw: AttackWindow;
   /** The target the pointer is over (preview without aiming). */
   private hovered: number | null = null;
@@ -280,6 +284,32 @@ export class Play {
       this.aiRunning = false;
     }
     if (this.aiTurn() && !this.state.outcome) void this.playAi();
+    // Back to the player: what the AI's phase did.
+    else if (!this.state.outcome && this.phases.lastOpponent(this.state.active_side)) this.showSummary();
+  }
+
+  /** R-UI-04 «Итоги фазы противника» (key L); hexes take the camera there. */
+  private showSummary() {
+    const s = this.phases.lastOpponent(this.state.active_side);
+    if (!s) {
+      this.modal(`<h2>${this.t("ui.summary.title")}</h2><p class="muted">${this.t("ui.summary.none")}</p>`);
+      return;
+    }
+    const unit = (id: number) => {
+      const u = this.known.get(id);
+      return u ? `${this.t(`unit.${u.class}`, u.class)} (${this.sideName(u.side)})` : `#${id}`;
+    };
+    this.modal(phaseSummaryHtml(s, this.state.active_side, { side: (id) => this.sideName(id), unit }, this.ru));
+    for (const b of document.querySelectorAll<HTMLButtonElement>("#modal [data-cell]")) {
+      b.onclick = () => {
+        const [col, row] = b.dataset.cell!.split(",").map(Number) as [number, number];
+        document.getElementById("modal")!.style.display = "none";
+        const p = hexCenter(offsetToAxial({ col, row }), this.size);
+        this.camera.centerOn(p.x, p.y);
+        this.picked = { col, row };
+        this.showWindow();
+      };
+    }
   }
 
   /** R-UI-05: the AI's combat result in the attack window for `ms`. */
@@ -1065,6 +1095,7 @@ export class Play {
     else if (k === "z" && (e.ctrlKey || e.metaKey)) void this.undo();
     else if (k === "u" || k === "г") this.setStyle(this.ctx.style === "miniature" ? "medallion" : "miniature");
     else if (k === "i" || k === "ш") this.toggleInfo();
+    else if (k === "l" || k === "д") this.showSummary();
     else if (e.key === "Escape") {
       if (!this.selection) return;
       this.deselect();
@@ -1404,7 +1435,7 @@ export class Play {
   }
 
   private help() {
-    const keys = ["n", "enter", "undo", "i", "u", "esc"].map((k) => `<li>${this.t(`ui.help.${k}`)}</li>`).join("");
+    const keys = ["n", "enter", "undo", "i", "l", "u", "esc"].map((k) => `<li>${this.t(`ui.help.${k}`)}</li>`).join("");
     this.modal(`<h2>${this.t("ui.help")}</h2><b>${this.t("ui.help.keys")}</b><ul class="help">${keys}</ul><p class="help">${this.t("ui.help.mouse")}</p>`);
   }
 
@@ -1459,6 +1490,7 @@ export class Play {
     try {
       const colBefore = new Map(this.state.units.map((u) => [u.id, u.col] as const));
       const posBefore = this.state.units.map((u) => ({ id: u.id, side: u.side, col: u.col, row: u.row }));
+      const sides = new Map<number, number>([...this.state.units, ...(this.state.air ?? [])].map((u) => [u.id, u.side] as const));
       const sideOf = new Map(this.state.units.map((u) => [u.id, u.side] as const));
       const events = JSON.parse(command()) as unknown[];
       this.facingUndo.push(new Map(this.facing));
@@ -1471,6 +1503,7 @@ export class Play {
       );
       this.record(events);
       this.trace(events as ({ type: string } & Record<string, unknown>)[], posBefore);
+      this.phases.add(events as ({ type: string } & Record<string, unknown>)[], (id) => sides.get(id) ?? this.known.get(id)?.side);
       if (endPhase) {
         this.picked = null;
         this.deselect();
