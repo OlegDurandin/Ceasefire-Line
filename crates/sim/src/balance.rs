@@ -25,8 +25,6 @@ const COST_SPREAD: f64 = 0.25;
 const UMBRELLA_ONE_RANGE: (f64, f64) = (0.8, 1.2);
 const UMBRELLA_ONE_EW_MAX: f64 = 0.8;
 const UMBRELLA_TWO_MIN: f64 = 1.5;
-/// Unit classes with a special role, left out of the cost comparison.
-const SPECIAL_ROLE: [&str; 5] = ["commando", "engineer", "hq", "sam_static", "sam_mobile"];
 const STRENGTH: u8 = 10;
 const READINESS: u8 = 80;
 
@@ -227,116 +225,392 @@ fn exchange_per_phase(
     Ok((inflicted, received))
 }
 
-/// «Стоимость юнитов»: net exchange (inflicted − received) per MPP by class,
-/// within ±25% of the mean over the compared classes.
-fn check_cost(data: &GameData) -> Result<Check, String> {
-    let compared: Vec<&UnitClass> = data
-        .units
-        .iter()
-        .filter(|u| {
-            u.target_class.is_ground() && u.strikes > 0 && !SPECIAL_ROLE.contains(&u.id.as_str())
-        })
-        .collect();
-    let defenders: Vec<&UnitClass> = data
-        .units
-        .iter()
-        .filter(|u| u.target_class.is_ground())
-        .collect();
-    let mut body = String::from("Чистый размен за фазу: ожидаемые потери противника минус свои, по всем ударам фазы (второй удар — с усталостью обеих сторон; артиллерия — обстрелом без ответа), в среднем по всем наземным целям, местностям и окопам 0/2/4, делённый на цену.\n\n| тех. | класс | цена | нанесено | получено | размен | размен / 100 MPP | отклонение |\n| --- | --- | --- | --- | --- | --- | --- | --- |\n");
-    let mut pass = true;
-    let mut defense_rows: Vec<(u8, String, f64)> = Vec::new();
-    for level in [1u8, 2] {
-        let tech = tech_at(level);
-        let mut rows = Vec::new();
-        for att_class in &compared {
-            let (mut inf, mut rec, mut n) = (0.0, 0.0, 0u32);
-            for def_class in &defenders {
-                for terrain in data.terrain.iter().filter(|t| !t.def.impassable) {
-                    let mut levels: Vec<u8> = [0u8, 2, 4]
-                        .iter()
-                        .map(|&e| e.min(terrain.def.max_entrench))
-                        .collect();
-                    levels.dedup();
-                    for entrench in levels {
-                        let att = unit(data, &att_class.id, &tech, STRENGTH, READINESS, 0, 0)?;
-                        let def =
-                            unit(data, &def_class.id, &tech, STRENGTH, READINESS, 0, entrench)?;
-                        let ctx = GroundAttack {
-                            terrain_mult: terrain.def.defense_mult,
-                            night: false,
-                            across_canal: false,
-                        };
-                        let (i, r) = exchange_per_phase(data, &att, &def, &ctx)?;
-                        inf += i;
-                        rec += r;
-                        n += 1;
-                    }
-                }
-            }
-            let n = f64::from(n.max(1));
-            let (inf, rec) = (inf / n, rec / n);
-            // For reference: the same class defending against every compared attacker.
-            let (mut d_inf, mut d_rec, mut dn) = (0.0, 0.0, 0u32);
-            for other in &compared {
-                for terrain in data.terrain.iter().filter(|t| !t.def.impassable) {
-                    let mut levels: Vec<u8> = [0u8, 2, 4]
-                        .iter()
-                        .map(|&e| e.min(terrain.def.max_entrench))
-                        .collect();
-                    levels.dedup();
-                    for entrench in levels {
-                        let att = unit(data, &other.id, &tech, STRENGTH, READINESS, 0, 0)?;
-                        let def =
-                            unit(data, &att_class.id, &tech, STRENGTH, READINESS, 0, entrench)?;
-                        let ctx = GroundAttack {
-                            terrain_mult: terrain.def.defense_mult,
-                            night: false,
-                            across_canal: false,
-                        };
-                        let (i, r) = exchange_per_phase(data, &att, &def, &ctx)?;
-                        d_inf += r;
-                        d_rec += i;
-                        dn += 1;
-                    }
-                }
-            }
-            let defense = (d_inf - d_rec) / f64::from(dn.max(1)) / f64::from(att_class.cost_mpp);
-            defense_rows.push((level, att_class.id.clone(), defense));
-            rows.push((
-                att_class.id.clone(),
-                att_class.cost_mpp,
-                inf,
-                rec,
-                (inf - rec) / f64::from(att_class.cost_mpp),
-            ));
+/// Reference classes for the combat value (decision A, R-ECO-02 prices).
+const REFERENCE: [&str; 3] = ["infantry", "mech", "tank"];
+/// Classes whose prices are searched, with the price grid (min, max, step).
+const PRICED: [(&str, u32, u32); 4] = [
+    ("infantry", 50, 70),
+    ("mech", 70, 90),
+    ("tank", 100, 140),
+    ("artillery", 50, 70),
+];
+const PRICE_STEP: usize = 5;
+
+/// Entrenchment after one own turn without moving (R-SUP-03: class growth,
+/// capped by the terrain).
+fn one_turn_entrench(class: &UnitClass, max: u8) -> u8 {
+    u8::try_from(class.entrench_per_turn)
+        .unwrap_or(u8::MAX)
+        .min(max)
+}
+
+/// Combat value of a class (decision A): mean over passable terrains of
+/// (a) the net exchange of its attacks on each reference defender and
+/// (b) its net exchange when each reference attacker attacks it; both per
+/// phase (all strikes, fatigue on the second), entrenchment of one turn.
+fn combat_value(data: &GameData, id: &str, level: u8) -> Result<(f64, f64), String> {
+    let tech = tech_at(level);
+    let class = data.units.get(id).map_err(|e| e.to_string())?;
+    let (mut att_sum, mut def_sum, mut n) = (0.0, 0.0, 0u32);
+    for terrain in data.terrain.iter().filter(|t| !t.def.impassable) {
+        let ctx = GroundAttack {
+            terrain_mult: terrain.def.defense_mult,
+            night: false,
+            across_canal: false,
+        };
+        for r in REFERENCE {
+            let rc = data.units.get(r).map_err(|e| e.to_string())?;
+            // (a) the class attacks a dug-in reference defender.
+            let att = unit(data, id, &tech, STRENGTH, READINESS, 0, 0)?;
+            let def = unit(
+                data,
+                r,
+                &tech,
+                STRENGTH,
+                READINESS,
+                0,
+                one_turn_entrench(rc, terrain.def.max_entrench),
+            )?;
+            let (i, rec) = exchange_per_phase(data, &att, &def, &ctx)?;
+            att_sum += i - rec;
+            // (b) a reference attacker attacks the dug-in class.
+            let att = unit(data, r, &tech, STRENGTH, READINESS, 0, 0)?;
+            let def = unit(
+                data,
+                id,
+                &tech,
+                STRENGTH,
+                READINESS,
+                0,
+                one_turn_entrench(class, terrain.def.max_entrench),
+            )?;
+            let (i, rec) = exchange_per_phase(data, &att, &def, &ctx)?;
+            def_sum += rec - i;
+            n += 1;
         }
-        let mean = rows.iter().map(|r| r.4).sum::<f64>() / rows.len().max(1) as f64;
-        for (id, cost, inf, rec, v) in &rows {
-            let dev = v / mean - 1.0;
-            let ok = dev.abs() <= COST_SPREAD;
+    }
+    let n = f64::from(n.max(1));
+    Ok((att_sum / n, def_sum / n))
+}
+
+/// Steps exchanged between a class and each reference class, summed over
+/// passable terrains: `[attack_inflicted, attack_received, defence_inflicted,
+/// defence_received]` per reference, same setting as [`combat_value`].
+fn exchange_steps(data: &GameData, id: &str, level: u8) -> Result<Vec<[f64; 4]>, String> {
+    let tech = tech_at(level);
+    let class = data.units.get(id).map_err(|e| e.to_string())?;
+    let mut out = vec![[0.0; 4]; REFERENCE.len()];
+    for terrain in data.terrain.iter().filter(|t| !t.def.impassable) {
+        let ctx = GroundAttack {
+            terrain_mult: terrain.def.defense_mult,
+            night: false,
+            across_canal: false,
+        };
+        for (k, r) in REFERENCE.iter().enumerate() {
+            let rc = data.units.get(r).map_err(|e| e.to_string())?;
+            let att = unit(data, id, &tech, STRENGTH, READINESS, 0, 0)?;
+            let def = unit(
+                data,
+                r,
+                &tech,
+                STRENGTH,
+                READINESS,
+                0,
+                one_turn_entrench(rc, terrain.def.max_entrench),
+            )?;
+            let (i, rec) = exchange_per_phase(data, &att, &def, &ctx)?;
+            out[k][0] += i;
+            out[k][1] += rec;
+            let att = unit(data, r, &tech, STRENGTH, READINESS, 0, 0)?;
+            let def = unit(
+                data,
+                id,
+                &tech,
+                STRENGTH,
+                READINESS,
+                0,
+                one_turn_entrench(class, terrain.def.max_entrench),
+            )?;
+            let (i, rec) = exchange_per_phase(data, &att, &def, &ctx)?;
+            out[k][2] += rec;
+            out[k][3] += i;
+        }
+    }
+    Ok(out)
+}
+
+/// MPP exchange ratio: enemy MPP destroyed / own MPP lost (a step is 1/10 of
+/// the price), attack and defence together. `prices[k]` is the price of
+/// `PRICED[k]`; reference prices are looked up there.
+fn mpp_ratio(steps: &[[f64; 4]], own_price: u32, prices: &[u32]) -> f64 {
+    let price_of = |id: &str| {
+        PRICED
+            .iter()
+            .position(|p| p.0 == id)
+            .map_or(0.0, |k| f64::from(prices[k]))
+    };
+    let (mut destroyed, mut lost) = (0.0, 0.0);
+    for (k, r) in REFERENCE.iter().enumerate() {
+        destroyed += (steps[k][0] + steps[k][2]) * price_of(r) / 10.0;
+        lost += (steps[k][1] + steps[k][3]) * f64::from(own_price) / 10.0;
+    }
+    if lost > 0.0 {
+        destroyed / lost
+    } else {
+        f64::INFINITY
+    }
+}
+
+/// For discussion (not the criterion): the MPP exchange ratio is positive by
+/// construction, so «±25% of the mean» is meaningful and prices matter.
+fn ratio_variant(data: &GameData, ids: &[&str], current: &[u32]) -> Result<String, String> {
+    let mut steps = Vec::new();
+    for level in [1u8, 2] {
+        steps.push(
+            ids.iter()
+                .map(|id| exchange_steps(data, id, level))
+                .collect::<Result<Vec<_>, _>>()?,
+        );
+    }
+    let devs = |prices: &[u32]| -> Vec<Vec<f64>> {
+        steps
+            .iter()
+            .map(|lvl| {
+                let r: Vec<f64> = lvl
+                    .iter()
+                    .zip(prices)
+                    .map(|(s, p)| mpp_ratio(s, *p, prices))
+                    .collect();
+                let mean = r.iter().sum::<f64>() / r.len() as f64;
+                r.iter().map(|v| v / mean - 1.0).collect()
+            })
+            .collect()
+    };
+    let worst = |d: &[Vec<f64>]| d.iter().flatten().fold(0.0f64, |m, v| m.max(v.abs()));
+    let grids: Vec<Vec<u32>> = PRICED
+        .iter()
+        .map(|(_, lo, hi)| (*lo..=*hi).step_by(PRICE_STEP).collect())
+        .collect();
+    let mut best_ok: Option<(u32, Vec<u32>)> = None;
+    let mut best_any: Option<(f64, Vec<u32>)> = None;
+    let mut idx = vec![0usize; grids.len()];
+    loop {
+        let prices: Vec<u32> = idx.iter().zip(&grids).map(|(i, g)| g[*i]).collect();
+        let w = worst(&devs(&prices));
+        let distance: u32 = prices
+            .iter()
+            .zip(current)
+            .map(|(p, c)| p.abs_diff(*c))
+            .sum();
+        if w <= COST_SPREAD && best_ok.as_ref().is_none_or(|(d, _)| distance < *d) {
+            best_ok = Some((distance, prices.clone()));
+        }
+        if best_any.as_ref().is_none_or(|(b, _)| w < *b) {
+            best_any = Some((w, prices.clone()));
+        }
+        let mut k = 0;
+        while k < idx.len() {
+            idx[k] += 1;
+            if idx[k] < grids[k].len() {
+                break;
+            }
+            idx[k] = 0;
+            k += 1;
+        }
+        if k == idx.len() {
+            break;
+        }
+    }
+    let mut s = String::from("\n### Для обсуждения: отношение «уничтожено MPP противника / потеряно своих MPP»\n\nНе критерий. Шаг силы стоит 10% цены; атака и оборона против тех же эталонных классов и при тех же условиях суммируются. Отношение всегда положительно, поэтому «±25% от среднего» имеет смысл, а цена влияет и на числитель (цены эталонов), и на знаменатель (своя цена).\n\n");
+    let mut table = |title: String, prices: &[u32]| {
+        let d = devs(prices);
+        let _ = writeln!(s, "{title}\n\n| тех. | класс | цена | отношение | отклонение |\n| --- | --- | --- | --- | --- |");
+        for (li, level) in [1u8, 2].iter().enumerate() {
+            for (k, id) in ids.iter().enumerate() {
+                let r = mpp_ratio(&steps[li][k], prices[k], prices);
+                let _ = writeln!(
+                    s,
+                    "| {level} | {id} | {} | {r:.2} | {:+.0}%{} |",
+                    prices[k],
+                    d[li][k] * 100.0,
+                    if d[li][k].abs() <= COST_SPREAD {
+                        ""
+                    } else {
+                        " ✗"
+                    }
+                );
+            }
+        }
+        s.push('\n');
+    };
+    table("Текущие цены:".into(), current);
+    match (best_ok, best_any) {
+        (Some((dist, p)), _) => table(
+            format!("Ближайший к текущим проходящий набор (сумма |Δ| = {dist} MPP):"),
+            &p,
+        ),
+        (None, Some((w, p))) => table(
+            format!(
+                "Ни один набор не проходит; лучший по наибольшему отклонению ({:.0}%):",
+                w * 100.0
+            ),
+            &p,
+        ),
+        (None, None) => {}
+    }
+    Ok(s)
+}
+
+/// Deviation of each class's value per MPP from the mean over the priced
+/// classes, at one tech level.
+fn deviations(values: &[f64], prices: &[u32]) -> Vec<f64> {
+    let per: Vec<f64> = values
+        .iter()
+        .zip(prices)
+        .map(|(v, p)| v / f64::from(*p))
+        .collect();
+    let mean = per.iter().sum::<f64>() / per.len() as f64;
+    per.iter().map(|v| v / mean - 1.0).collect()
+}
+
+/// «Стоимость юнитов» (decision A): combat value per MPP within ±25% of the
+/// mean, tech 1 and 2 separately; otherwise a search over the price grid.
+fn check_cost(data: &GameData) -> Result<Check, String> {
+    let ids: Vec<&str> = PRICED.iter().map(|p| p.0).collect();
+    let current: Vec<u32> = ids
+        .iter()
+        .map(|id| {
+            data.units
+                .get(id)
+                .map(|c| c.cost_mpp)
+                .map_err(|e| e.to_string())
+        })
+        .collect::<Result<_, _>>()?;
+    // values[level][class] = (attack, defence, combat value)
+    let mut values = Vec::new();
+    for level in [1u8, 2] {
+        let mut row = Vec::new();
+        for id in &ids {
+            let (a, d) = combat_value(data, id, level)?;
+            row.push((a, d, (a + d) / 2.0));
+        }
+        values.push(row);
+    }
+    let mut body = String::from(
+        "Боевая ценность за MPP (решение A): среднее (а) чистого размена в атаке против эталонных защитников (пехота, мех. бригада, танки) и (б) чистого размена в обороне, когда класс атакуют те же эталонные классы. Размен — ожидаемые потери противника минус свои за все удары фазы (второй удар с усталостью обеих сторон; артиллерия в атаке — обстрелом без ответа). Окопы обороняющегося — за один ход без движения (`entrench_per_turn`: пехота 2, остальные 1, не больше максимума местности). Среднее по проходимой местности. Сравниваются пехота, мех. бригада, танки, артиллерия; тех. 1 и 2 отдельно.\n\n| тех. | класс | цена | атака (а) | оборона (б) | ценность | на 100 MPP | отклонение |\n| --- | --- | --- | --- | --- | --- | --- | --- |\n",
+    );
+    let value = |level: usize| -> Vec<f64> { values[level].iter().map(|v| v.2).collect() };
+    let mut pass = true;
+    for (li, level) in [1u8, 2].iter().enumerate() {
+        let dev = deviations(&value(li), &current);
+        for (k, id) in ids.iter().enumerate() {
+            let (a, d, v) = values[li][k];
+            let ok = dev[k].abs() <= COST_SPREAD;
             pass &= ok;
-            let mark = if ok { "" } else { " ✗" };
             let _ = writeln!(
                 body,
-                "| {level} | {id} | {cost} | {inf:.2} | {rec:.2} | {:.2} | {:.2} | {:+.0}%{mark} |",
-                inf - rec,
-                v * 100.0,
-                dev * 100.0
+                "| {level} | {id} | {} | {a:.2} | {d:.2} | {v:.2} | {:.2} | {:+.0}%{} |",
+                current[k],
+                v / f64::from(current[k]) * 100.0,
+                dev[k] * 100.0,
+                if ok { "" } else { " ✗" }
             );
         }
     }
-    let _ = writeln!(
-        body,
-        "\nДопуск ±{:.0}%. Не сравниваются (особая роль): {}.",
-        COST_SPREAD * 100.0,
-        SPECIAL_ROLE.join(", ")
-    );
-    body.push_str("\nДля справки (в критерий не входит) — размен того же класса в обороне против всех сравниваемых атакующих, на 100 MPP:\n\n| тех. | класс | оборона / 100 MPP |\n| --- | --- | --- |\n");
-    for (level, id, v) in &defense_rows {
-        let _ = writeln!(body, "| {level} | {id} | {:.2} |", v * 100.0);
+    let _ = writeln!(body, "\nДопуск ±{:.0}%.", COST_SPREAD * 100.0);
+    if !pass {
+        // Price grid: every set, the worst deviation over both tech levels.
+        let grids: Vec<Vec<u32>> = PRICED
+            .iter()
+            .map(|(_, lo, hi)| (*lo..=*hi).step_by(PRICE_STEP).collect())
+            .collect();
+        let mut best_ok: Option<(u32, Vec<u32>)> = None;
+        let mut best_any: Option<(f64, Vec<u32>)> = None;
+        let mut sets = 0;
+        let mut idx = vec![0usize; grids.len()];
+        loop {
+            let prices: Vec<u32> = idx.iter().zip(&grids).map(|(i, g)| g[*i]).collect();
+            sets += 1;
+            let worst = (0..2)
+                .flat_map(|l| deviations(&value(l), &prices))
+                .fold(0.0f64, |m, d| m.max(d.abs()));
+            let distance: u32 = prices
+                .iter()
+                .zip(&current)
+                .map(|(p, c)| p.abs_diff(*c))
+                .sum();
+            if worst <= COST_SPREAD && best_ok.as_ref().is_none_or(|(d, _)| distance < *d) {
+                best_ok = Some((distance, prices.clone()));
+            }
+            if best_any.as_ref().is_none_or(|(w, _)| worst < *w) {
+                best_any = Some((worst, prices.clone()));
+            }
+            // Next combination (odometer).
+            let mut k = 0;
+            while k < idx.len() {
+                idx[k] += 1;
+                if idx[k] < grids[k].len() {
+                    break;
+                }
+                idx[k] = 0;
+                k += 1;
+            }
+            if k == idx.len() {
+                break;
+            }
+        }
+        let grid_desc: Vec<String> = PRICED
+            .iter()
+            .map(|(id, lo, hi)| format!("{id} {lo}–{hi}"))
+            .collect();
+        let _ = writeln!(
+            body,
+            "\nТекущие цены не проходят. Перебор цен с шагом {PRICE_STEP} ({}): {sets} наборов.\n",
+            grid_desc.join(", ")
+        );
+        let (title, prices) = match (&best_ok, &best_any) {
+            (Some((d, p)), _) => (
+                format!("Проходят; ближайший к текущим набор (сумма |Δ| = {d} MPP)"),
+                p.clone(),
+            ),
+            (None, Some((w, p))) => (
+                format!(
+                    "Ни один набор не проходит. Лучший по наибольшему отклонению ({:.0}%)",
+                    w * 100.0
+                ),
+                p.clone(),
+            ),
+            (None, None) => ("Нет наборов".into(), current.clone()),
+        };
+        let _ = writeln!(body, "{title}:\n\n| тех. | класс | цена сейчас → предложено | на 100 MPP | отклонение |\n| --- | --- | --- | --- | --- |");
+        for (li, level) in [1u8, 2].iter().enumerate() {
+            let dev = deviations(&value(li), &prices);
+            for (k, id) in ids.iter().enumerate() {
+                let _ = writeln!(
+                    body,
+                    "| {level} | {id} | {} → {} | {:.2} | {:+.0}%{} |",
+                    current[k],
+                    prices[k],
+                    values[li][k].2 / f64::from(prices[k]) * 100.0,
+                    dev[k] * 100.0,
+                    if dev[k].abs() <= COST_SPREAD {
+                        ""
+                    } else {
+                        " ✗"
+                    }
+                );
+            }
+        }
+    }
+    if !pass {
+        let _ = writeln!(
+            body,
+            "\nПочему не проходит ни один набор: чистый размен у классов близок к нулю и разного знака (пехота и артиллерия — в минусе, танки — в плюсе), среднее по классам около нуля; цена делит ценность, но не меняет её знак, поэтому отклонения от среднего остаются сотнями процентов при любых ценах."
+        );
+        body.push_str(&ratio_variant(data, &ids, &current)?);
     }
     Ok(Check {
-        name: "Размен за MPP",
+        name: "Боевая ценность за MPP",
         pass,
         body,
     })
