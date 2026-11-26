@@ -846,8 +846,17 @@ impl GameState {
     /// R-SUP-02 best supply paths of `side` (cost and predecessor per hex),
     /// from the same sources as [`Self::hex_supply`], without HQ effects.
     pub fn supply_tree(&self, side: SideId) -> Result<SupplyTree, RuleError> {
-        let occupancy = self.occupancy();
-        let sources = self.supply_sources(side, &self.control, &occupancy)?;
+        self.supply_tree_if(side, &[])
+    }
+
+    /// [`Self::supply_tree`] with hypothetical held hexes, as in [`Self::hex_supply_if`].
+    pub fn supply_tree_if(
+        &self,
+        side: SideId,
+        held: &[(Hex, SideId)],
+    ) -> Result<SupplyTree, RuleError> {
+        let (control, occupancy) = self.with_held(held);
+        let sources = self.supply_sources(side, &control, &occupancy)?;
         supply_tree(
             &SupplyInput {
                 map: &self.map,
@@ -856,7 +865,7 @@ impl GameState {
                 side,
                 sources: &sources,
                 occupancy: &occupancy,
-                control: &self.control,
+                control: &control,
                 hqs: &[],
             },
             &sources,

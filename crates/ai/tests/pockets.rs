@@ -4,7 +4,7 @@
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
-use ceasefire_ai::pockets::chokepoints;
+use ceasefire_ai::pockets::{best_pocket, chokepoints};
 use ceasefire_ai::AiParams;
 use ceasefire_core::data::{GameData, GameDataJson};
 use ceasefire_core::game::{GameState, ScenarioSetup, SideState, UnitSetup};
@@ -123,6 +123,75 @@ fn salient() -> GameState {
         variants: BTreeMap::new(),
     };
     GameState::new(data(), setup).unwrap().0
+}
+
+/// B's salient: column q = 3 (plain, B's units at r −1..1), fed from two
+/// sources by two corridors far apart: north (4,−3)–(6,−3), south (4,3)–(6,3).
+/// The rest of q ≥ 4 is mountains.
+fn two_corridors() -> GameState {
+    let mut map = HexMap::default();
+    let mut control = BTreeMap::new();
+    for q in 0..=6 {
+        for r in -3..=3 {
+            let open = q <= 3 || ((r == -3 || r == 3) && q >= 4);
+            map.insert(
+                Hex::new(q, r),
+                HexCell::new(if open { "plain" } else { "mountains" }),
+            );
+            control.insert(Hex::new(q, r), if q <= 2 { A } else { B });
+        }
+    }
+    let src = |q, r| SupplySource {
+        hex: Hex::new(q, r),
+        value: 10,
+    };
+    let setup = ScenarioSetup {
+        hex_km: None,
+        supply_decay_ap: None,
+        seed: 1,
+        start_turn: 1,
+        sides: vec![side(A), side(B)],
+        map,
+        control,
+        sources: vec![src(0, 0), src(6, -3), src(6, 3)],
+        units: vec![
+            unit("tank", A, Hex::new(2, 0)),
+            unit("infantry", B, Hex::new(3, -1)),
+            unit("infantry", B, Hex::new(3, 0)),
+            unit("tank", B, Hex::new(3, 1)),
+        ],
+        cities: vec![],
+        scheduled_income: vec![],
+        objectives: vec![],
+        key_hexes: vec![],
+        last_turn: None,
+        victory: vec![],
+        events: vec![],
+        tech_boosts: vec![],
+        neutral: vec![],
+        offmap_bases: vec![],
+        variants: BTreeMap::new(),
+    };
+    GameState::new(data(), setup).unwrap().0
+}
+
+/// Item 2: two parallel supply paths — the AI picks a pair of chokepoints
+/// (pincers), not one.
+#[test]
+fn r_ai_01_two_paths_need_pincers() {
+    let s = two_corridors();
+    let w = AiParams::from_json(AI).unwrap().pockets;
+    let c = chokepoints(&s, B, w.candidates).unwrap();
+    let best = c
+        .iter()
+        .map(|(h, _)| best_pocket(&s, A, B, *h, &w).unwrap())
+        .max_by(|a, b| a.value.total_cmp(&b.value))
+        .unwrap();
+    assert_eq!(best.hexes.len(), 2, "{best:?}");
+    assert_eq!(best.cut.len(), 3, "the whole salient is cut: {best:?}");
+    // One chokepoint alone cuts nothing.
+    let single = ceasefire_ai::pockets::pocket_value(&s, A, B, &best.hexes[..1], &w).unwrap();
+    assert_eq!(single.0, 0.0, "{single:?}");
 }
 
 /// Test 1a: a salient fed by one road — the road hex is in the top three.

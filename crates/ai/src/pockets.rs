@@ -28,8 +28,12 @@ struct Dependency {
     cost: u32,
 }
 
-fn dependency(s: &GameState, enemy: SideId) -> Result<BTreeMap<Hex, Dependency>, RuleError> {
-    let tree = s.supply_tree(enemy)?;
+fn dependency(
+    s: &GameState,
+    enemy: SideId,
+    held: &[(Hex, SideId)],
+) -> Result<BTreeMap<Hex, Dependency>, RuleError> {
+    let tree = s.supply_tree_if(enemy, held)?;
     let mut d: BTreeMap<Hex, Dependency> = BTreeMap::new();
     let mut units: Vec<_> = s.units().filter(|u| u.side == enemy).collect();
     units.sort_by_key(|u| u.id);
@@ -57,7 +61,7 @@ fn dependency(s: &GameState, enemy: SideId) -> Result<BTreeMap<Hex, Dependency>,
 /// D(h) for the units of `enemy`: how much of it depends on each hex of
 /// its supply paths (units' own hexes excluded).
 pub fn supply_dependency(s: &GameState, enemy: SideId) -> Result<BTreeMap<Hex, f64>, RuleError> {
-    Ok(dependency(s, enemy)?
+    Ok(dependency(s, enemy, &[])?
         .into_iter()
         .map(|(h, d)| (h, d.weight))
         .collect())
@@ -68,9 +72,20 @@ pub fn supply_dependency(s: &GameState, enemy: SideId) -> Result<BTreeMap<Hex, f
 /// the one farthest along the path — nearest the units it cuts off. Largest
 /// first; ties by hex order (deterministic).
 pub fn chokepoints(s: &GameState, enemy: SideId, k: usize) -> Result<Vec<(Hex, f64)>, RuleError> {
-    let occupied: std::collections::BTreeSet<Hex> = s.units().map(|u| u.hex).collect();
+    chokepoints_if(s, enemy, &[], k)
+}
+
+/// [`chokepoints`] with hypothetical held hexes (the trial recount).
+pub fn chokepoints_if(
+    s: &GameState,
+    enemy: SideId,
+    held: &[(Hex, SideId)],
+    k: usize,
+) -> Result<Vec<(Hex, f64)>, RuleError> {
+    let mut occupied: std::collections::BTreeSet<Hex> = s.units().map(|u| u.hex).collect();
+    occupied.extend(held.iter().map(|h| h.0));
     let mut by_units: BTreeMap<Vec<u32>, (Hex, f64, u32)> = BTreeMap::new();
-    for (h, d) in dependency(s, enemy)? {
+    for (h, d) in dependency(s, enemy, held)? {
         if d.weight <= 0.0 || occupied.contains(&h) {
             continue;
         }
@@ -83,4 +98,83 @@ pub fn chokepoints(s: &GameState, enemy: SideId, k: usize) -> Result<Vec<(Hex, f
     c.sort_by(|a, b| b.1.total_cmp(&a.1).then(a.0.cmp(&b.0)));
     c.truncate(k);
     Ok(c)
+}
+
+/// A pocket the side can close: its chokepoints (1–2, pincers), its value
+/// V and the enemy units it cuts off (projected unit supply ≤ the cut band).
+#[derive(Debug, Clone, PartialEq)]
+pub struct Pocket {
+    pub hexes: Vec<Hex>,
+    pub value: f64,
+    pub cut: Vec<ceasefire_core::game::UnitId>,
+}
+
+/// V for `held` hexes: we hold them with a unit each; the enemy's supply is
+/// recounted and each unit's supply projected `lookahead_phases` ahead with
+/// the R-SUP-05 inertia. Σ strength × price / 10 over units at ≤ the cut
+/// band, × `zero_supply_mult` for those at 0.
+pub fn pocket_value(
+    s: &GameState,
+    us: SideId,
+    enemy: SideId,
+    held: &[Hex],
+    w: &crate::params::PocketWeights,
+) -> Result<(f64, Vec<ceasefire_core::game::UnitId>), RuleError> {
+    let trial: Vec<(Hex, SideId)> = held.iter().map(|&h| (h, us)).collect();
+    let map = s.hex_supply_if(enemy, &trial)?;
+    let drop = s.data().rules.supply.max_drop_per_phase;
+    let mut value = 0.0;
+    let mut cut = Vec::new();
+    let mut units: Vec<_> = s.units().filter(|u| u.side == enemy).collect();
+    units.sort_by_key(|u| u.id);
+    for u in units {
+        let ahead = u
+            .supply
+            .saturating_sub(drop.saturating_mul(w.lookahead_phases));
+        let projected = map.get(u.hex).max(ahead);
+        if projected <= w.cut_supply_max {
+            let mut v = unit_weight(s, &u.class, u.strength);
+            if projected == 0 {
+                v *= w.zero_supply_mult;
+            }
+            value += v;
+            cut.push(u.id);
+        }
+    }
+    Ok((value, cut))
+}
+
+/// The best pocket through chokepoint `c`: alone, or — if paths remain —
+/// with a second chokepoint on the remaining paths (greedy, at most
+/// `max_pincers` hexes in all).
+pub fn best_pocket(
+    s: &GameState,
+    us: SideId,
+    enemy: SideId,
+    c: Hex,
+    w: &crate::params::PocketWeights,
+) -> Result<Pocket, RuleError> {
+    let (value, cut) = pocket_value(s, us, enemy, &[c], w)?;
+    let mut best = Pocket {
+        hexes: vec![c],
+        value,
+        cut,
+    };
+    while best.hexes.len() < w.max_pincers.max(1) {
+        let held: Vec<(Hex, SideId)> = best.hexes.iter().map(|&h| (h, us)).collect();
+        let mut improved: Option<Pocket> = None;
+        for (c2, _) in chokepoints_if(s, enemy, &held, w.candidates)? {
+            let mut hexes = best.hexes.clone();
+            hexes.push(c2);
+            let (value, cut) = pocket_value(s, us, enemy, &hexes, w)?;
+            if value > improved.as_ref().map_or(best.value, |p| p.value) + 1e-9 {
+                improved = Some(Pocket { hexes, value, cut });
+            }
+        }
+        match improved {
+            Some(p) => best = p,
+            None => break,
+        }
+    }
+    Ok(best)
 }
