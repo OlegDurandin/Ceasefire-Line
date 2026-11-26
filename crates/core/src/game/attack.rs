@@ -25,7 +25,11 @@ fn illegal(unit: UnitId, reason: AttackError) -> RuleError {
 }
 
 impl GameState {
-    fn combatant<'d>(&self, data: &'d GameData, unit: &Unit) -> Result<Combatant<'d>, RuleError> {
+    pub(super) fn combatant<'d>(
+        &self,
+        data: &'d GameData,
+        unit: &Unit,
+    ) -> Result<Combatant<'d>, RuleError> {
         let class = data.units.get(&unit.class)?;
         let tech = &self.side_state(unit.side)?.tech;
         Ok(Combatant {

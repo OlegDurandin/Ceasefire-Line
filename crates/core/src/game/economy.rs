@@ -195,6 +195,7 @@ impl GameState {
                 formation: None,
                 nation: None,
                 name: None,
+                offmap_base: None,
             };
             self.units.insert(id, Unit::from_setup(id, &setup, hex));
             events.push(Event::UnitArrived {

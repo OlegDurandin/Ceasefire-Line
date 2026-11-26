@@ -50,6 +50,14 @@ pub enum Command {
         combat: u32,
         outcome: Option<crate::tactical::TacticalOutcome>,
     },
+    /// R-AIR-02: an aircraft strikes a ground unit (escort and interception automatic).
+    AirStrike { unit: UnitId, target: UnitId },
+    /// R-AIR-02: a strike on enemy aircraft parked at an airfield hex.
+    AirStrikeAirfield { unit: UnitId, hex: Hex },
+    /// R-AIR-02: a strike on the bridge on edge `a`–`b`.
+    AirStrikeBridge { unit: UnitId, a: Hex, b: Hex },
+    /// R-AIR-01: move to another own base; takes the whole phase.
+    Rebase { unit: UnitId, base: super::AirBase },
     /// R-TURN-01: end of the active side's phase.
     EndPhase,
 }
@@ -313,6 +321,36 @@ pub enum Event {
     UnitsEntrenchmentChanged {
         side: SideId,
         change: i32,
+    },
+    /// R-AIR-02: air battle of a sortie, both fire at once.
+    AirBattle {
+        a: UnitId,
+        b: UnitId,
+        a_losses: u8,
+        b_losses: u8,
+    },
+    /// R-AIR-02: strike on a ground unit and its return fire.
+    AirStrike {
+        unit: UnitId,
+        target: UnitId,
+        params: FireParams,
+        losses: u8,
+        return_params: FireParams,
+        return_losses: u8,
+    },
+    /// R-AIR-02: strike on aircraft at an airfield (losses follow as aircraft events).
+    AirfieldStrike {
+        unit: UnitId,
+        hex: Hex,
+        params: FireParams,
+    },
+    AircraftDestroyed {
+        unit: UnitId,
+    },
+    /// R-AIR-01: rebased by order, or forced when the base fell.
+    Rebased {
+        unit: UnitId,
+        base: super::AirBase,
     },
     /// R-EVT-01: readiness of a side's ground units down `pct` points until their next phase.
     UnitsReadinessPenalty {

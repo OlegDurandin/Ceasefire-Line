@@ -243,6 +243,7 @@ mod tests {
             events: vec![],
             tech_boosts: vec![],
             neutral: vec![],
+            offmap_bases: vec![],
         };
         GameState::new(Arc::new(data), setup).unwrap().0
     }

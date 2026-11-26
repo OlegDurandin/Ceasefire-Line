@@ -40,6 +40,8 @@ pub struct HexMap {
     /// R-MOVE-06: neutral closed territory of the scenario (no ground units,
     /// no supply); set by `GameState::new` from `ScenarioSetup::neutral`.
     closed: BTreeSet<Hex>,
+    /// R-AIR-01: airfields (aircraft may be based there, as in a city).
+    airfields: BTreeSet<Hex>,
 }
 
 fn edge(a: Hex, b: Hex) -> Result<HexEdge, RuleError> {
@@ -142,5 +144,18 @@ impl HexMap {
     /// Only a built bridge carries traffic and supply.
     pub fn has_bridge(&self, a: Hex, b: Hex) -> bool {
         self.bridge_state(a, b) == Some(BridgeState::Built)
+    }
+
+    /// R-AIR-01.
+    pub fn add_airfield(&mut self, hex: Hex) {
+        self.airfields.insert(hex);
+    }
+
+    pub fn is_airfield(&self, hex: Hex) -> bool {
+        self.airfields.contains(&hex)
+    }
+
+    pub fn airfields(&self) -> impl Iterator<Item = Hex> + '_ {
+        self.airfields.iter().copied()
     }
 }

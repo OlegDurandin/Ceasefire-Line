@@ -58,7 +58,11 @@ impl GameState {
             | Command::Transfer { unit, .. }
             | Command::PinToHq { unit, .. }
             | Command::BuildBridge { unit, .. }
-            | Command::BombardBridge { unit, .. } => vec![*unit],
+            | Command::BombardBridge { unit, .. }
+            | Command::AirStrikeAirfield { unit, .. }
+            | Command::AirStrikeBridge { unit, .. }
+            | Command::Rebase { unit, .. } => vec![*unit],
+            Command::AirStrike { unit, target } => vec![*unit, *target],
             Command::Attack { unit, target }
             | Command::Bombard { unit, target }
             | Command::DeclareAttack { unit, target } => {

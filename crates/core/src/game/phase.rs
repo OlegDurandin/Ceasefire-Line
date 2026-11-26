@@ -26,6 +26,8 @@ impl GameState {
 
         // R-TURN-01 step 1 starts with events (R-EVT-01).
         self.run_events(&mut events)?;
+        // R-AIR-01: sorties, rest and lost bases of the aircraft.
+        self.refresh_air(&mut events)?;
         if self.outcome.is_some() {
             return Ok(events);
         }

@@ -1,6 +1,7 @@
 //! R-TURN-01: game state. It changes only through [`GameState::apply`].
 
 mod attack;
+mod aviation;
 mod boosts;
 mod bridge;
 mod combats;
@@ -18,6 +19,7 @@ use std::sync::Arc;
 
 use serde::{Deserialize, Serialize};
 
+pub use aviation::{AirBase, AirDuel, AirError, AirStrikeForecast, AirUnit, MapEdge, OffMapBase};
 pub use boosts::{PendingBoost, TechBoost};
 pub use combats::{DeclaredAttack, PendingCombat};
 pub use command::{Command, EndReason, Event, NmReason, Outcome, SetupWarning, VictoryLevel};
@@ -282,6 +284,8 @@ pub struct UnitSetup {
     pub nation: Option<String>,
     /// R-UI-04: the formation's name (a locale key).
     pub name: Option<String>,
+    /// R-AIR-01: aircraft based off the map (id of an `OffMapBase`).
+    pub offmap_base: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -315,6 +319,8 @@ pub struct ScenarioSetup {
     /// R-MOVE-06: neutral closed territory (by country): ground units do not
     /// enter, supply does not pass; air is not restricted.
     pub neutral: Vec<NeutralZone>,
+    /// R-AIR-01: bases off the map.
+    pub offmap_bases: Vec<OffMapBase>,
 }
 
 /// R-MOVE-06: a neutral country's hexes in a scenario.
@@ -348,6 +354,9 @@ pub struct GameState {
     active: usize,
     turn: u32,
     units: BTreeMap<UnitId, Unit>,
+    /// R-AIR-01: aircraft, apart from ground units.
+    air: BTreeMap<UnitId, AirUnit>,
+    offmap_bases: Vec<OffMapBase>,
     next_unit_id: u32,
     cities: Vec<CityValue>,
     scheduled_income: Vec<ScheduledIncome>,
@@ -417,13 +426,62 @@ impl GameState {
         }
 
         let mut units = BTreeMap::new();
+        let mut air = BTreeMap::new();
         let mut taken = BTreeSet::new();
         let mut supply_overrides = Vec::new();
         for (i, u) in setup.units.iter().enumerate() {
             let class = data.units.get(&u.class)?;
+            if class.target_class == crate::data::TargetClass::Air {
+                // R-AIR-01: aircraft live apart, on a base.
+                let base = match &u.offmap_base {
+                    Some(b)
+                        if setup
+                            .offmap_bases
+                            .iter()
+                            .any(|x| &x.id == b && x.side == u.side) =>
+                    {
+                        AirBase::OffMap { id: b.clone() }
+                    }
+                    Some(b) => {
+                        return Err(invalid(format!(
+                            "unit {i}: unknown off-map base `{b}` of its side"
+                        )))
+                    }
+                    None => {
+                        let own = setup.control.get(&u.hex) == Some(&u.side);
+                        let base = setup.map.is_airfield(u.hex)
+                            || setup.cities.iter().any(|c| c.hex == u.hex);
+                        if !own || !base {
+                            return Err(invalid(format!("unit {i}: aircraft need an own city or airfield, or an off-map base")));
+                        }
+                        AirBase::Hex { hex: u.hex }
+                    }
+                };
+                let id = UnitId(i as u32 + 1);
+                air.insert(
+                    id,
+                    AirUnit {
+                        id,
+                        class: u.class.clone(),
+                        side: u.side,
+                        base,
+                        strength: u.strength,
+                        morale_pct: u.morale_pct.min(100),
+                        exp: u.exp,
+                        nation: u.nation.clone(),
+                        name: u.name.clone(),
+                        fatigue_pct: 0,
+                        sorties: 0,
+                        flew: false,
+                        rebased: false,
+                        intercepted: false,
+                    },
+                );
+                continue;
+            }
             if !class.target_class.is_ground() {
                 return Err(RuleError::Unsupported(format!(
-                    "`{}`: aircraft and ships in GameState (R-TURN-03)",
+                    "`{}`: ships in GameState (R-TURN-03)",
                     u.class
                 )));
             }
@@ -473,8 +531,11 @@ impl GameState {
                 return Err(invalid(format!("tech boost `{}`: unknown side", b.id)));
             }
         }
-        let next_unit_id = units.len() as u32 + 1;
+        // Ids follow the scenario's unit list, aircraft included.
+        let next_unit_id = setup.units.len() as u32 + 1;
         let mut state = Self {
+            air,
+            offmap_bases: setup.offmap_bases.clone(),
             data,
             hex_km,
             supply_params,
@@ -589,6 +650,10 @@ impl GameState {
             Command::PinToHq { unit, hq } => self.pin_to_hq(unit, hq),
             Command::BuildBridge { unit, toward } => self.build_bridge(unit, toward),
             Command::BombardBridge { unit, a, b } => self.bombard_bridge(unit, a, b),
+            Command::AirStrike { unit, target } => self.air_strike(unit, target),
+            Command::AirStrikeAirfield { unit, hex } => self.airfield_strike(unit, hex),
+            Command::AirStrikeBridge { unit, a, b } => self.air_bridge_strike(unit, a, b),
+            Command::Rebase { unit, base } => self.rebase(unit, base),
             Command::BuyTechBoost { id } => self.buy_tech_boost(&id),
             Command::DeclareAttack { unit, target } => self.declare_attack(unit, target),
             Command::ResolveCombat { combat, outcome } => self.resolve_combat(combat, outcome),

@@ -47,6 +47,11 @@ pub enum RuleError {
     UnknownCombat(u32),
     #[error("illegal bridge action by unit {unit}: {reason:?}")]
     IllegalBridge { unit: u32, reason: BridgeError },
+    #[error("illegal air action by unit {unit}: {reason:?}")]
+    IllegalAir {
+        unit: u32,
+        reason: crate::game::AirError,
+    },
 }
 
 /// Why building or bombarding a bridge is rejected (R-MOVE-02).

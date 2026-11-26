@@ -63,6 +63,9 @@ struct MapFile {
     /// R-MOVE-01: dirt roads, polylines of hexes like `roads`.
     #[serde(default)]
     tracks: Vec<Vec<[i32; 2]>>,
+    /// R-AIR-01: airfield hexes.
+    #[serde(default)]
+    airfields: Vec<[i32; 2]>,
     #[serde(default)]
     canals: Vec<[[i32; 2]; 2]>,
     #[serde(default)]
@@ -186,6 +189,9 @@ struct UnitFile {
     /// R-UI-04: the formation's name, a locale key (`formation.*`).
     #[serde(default)]
     name: Option<String>,
+    /// R-AIR-01: aircraft based off the map (an `offmap_bases` id); `hex` is ignored then.
+    #[serde(default)]
+    offmap_base: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -272,7 +278,19 @@ struct ScenarioFile {
     #[serde(default)]
     #[allow(dead_code)]
     ai: Option<serde_json::Value>,
+    /// R-AIR-01: bases off the map.
+    #[serde(default)]
+    offmap_bases: Vec<OffMapBaseFile>,
     units: Vec<UnitFile>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct OffMapBaseFile {
+    id: String,
+    side: u8,
+    edge: crate::game::MapEdge,
+    distance_km: f64,
 }
 
 #[derive(Debug, Deserialize)]
@@ -310,6 +328,7 @@ fn unit_setup(u: UnitFile) -> UnitSetup {
         formation: u.formation,
         nation: u.nation,
         name: u.name,
+        offmap_base: u.offmap_base,
     }
 }
 
@@ -493,6 +512,12 @@ pub fn load_map(json: &str) -> Result<(HexMap, BTreeMap<Hex, SideId>), RuleError
     for [a, b] in &file.canals {
         map.add_canal(offset_to_axial(*a), offset_to_axial(*b))?;
     }
+    for h in &file.airfields {
+        if map.cell(offset_to_axial(*h)).is_none() {
+            return Err(invalid(format!("airfield {h:?} is off the map")));
+        }
+        map.add_airfield(offset_to_axial(*h));
+    }
     for [a, b] in &file.bridges {
         map.add_bridge(offset_to_axial(*a), offset_to_axial(*b))?;
     }
@@ -606,6 +631,16 @@ pub fn load_scenario(
                 branch: b.branch,
                 cost: b.cost,
                 turns: b.turns,
+            })
+            .collect(),
+        offmap_bases: file
+            .offmap_bases
+            .into_iter()
+            .map(|b| crate::game::OffMapBase {
+                id: b.id,
+                side: SideId(b.side),
+                edge: b.edge,
+                distance_km: b.distance_km,
             })
             .collect(),
         neutral: file
@@ -738,6 +773,11 @@ pub fn validate(data: &GameData, setup: &ScenarioSetup) -> Vec<ScenarioIssue> {
             });
             continue;
         };
+        // R-AIR-01: aircraft sit on bases (several per base, or off the map)
+        // and need no HQ; `GameState::new` checks their base.
+        if class.target_class == TargetClass::Air {
+            continue;
+        }
         let layer = match class.target_class {
             TargetClass::Air => "air",
             TargetClass::Naval => "naval",

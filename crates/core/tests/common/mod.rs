@@ -83,6 +83,7 @@ pub mod scenario {
             formation: None,
             nation: None,
             name: None,
+            offmap_base: None,
         }
     }
 
@@ -113,6 +114,7 @@ pub mod scenario {
             events: vec![],
             tech_boosts: vec![],
             neutral: vec![],
+            offmap_bases: vec![],
         }
     }
 
