@@ -97,6 +97,8 @@ pub enum EconomyError {
     BoostAlreadyBought,
     /// The branch would go more than one level above its scenario start.
     BoostCap,
+    /// R-ECO-02 variant `reinforce_locks`: no elite steps next to an enemy unit.
+    EliteNearEnemy,
 }
 
 /// Why a move is rejected (R-MOVE-01..04).

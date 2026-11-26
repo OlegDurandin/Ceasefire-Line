@@ -249,3 +249,68 @@ fn r_unit_02_zero_supply_costs_two_ap() {
     assert_eq!(ap(false), [(3, 8), (0, 8), (0, 4)]);
     assert_eq!(ap(true), [(3, 8), (0, 6), (0, 2)]);
 }
+
+/// П8: a unit that moved or attacked is not reinforced (before), a reinforced
+/// one neither moves nor attacks (after); no elite steps next to the enemy.
+#[test]
+fn r_eco_02_reinforcement_locks_the_unit() {
+    use ceasefire_core::{EconomyError, RuleError};
+    let game = |variant: bool| {
+        let (map, control) = board();
+        let mut weak = unit("infantry", A, Hex::new(2, 0));
+        weak.strength = 6;
+        let mut far = unit("infantry", A, Hex::new(0, 2));
+        far.strength = 6;
+        let units = vec![unit("infantry", B, Hex::new(3, 0)), weak, far];
+        let mut sc = setup(map, control, units);
+        sc.sides[0].mpp = 200;
+        start(if variant {
+            with("reinforce_locks", sc)
+        } else {
+            sc
+        })
+    };
+    let reinforce = |s: &mut GameState, id: u32, elite: bool| {
+        s.apply(Command::Reinforce {
+            unit: UnitId(id),
+            steps: 1,
+            elite,
+        })
+    };
+    let attack = |s: &mut GameState| {
+        s.apply(Command::Attack {
+            unit: UnitId(2),
+            target: UnitId(1),
+        })
+    };
+    // Off: elite next to the enemy, then the attack.
+    let mut s = game(false);
+    reinforce(&mut s, 2, true).unwrap();
+    assert!(attack(&mut s).is_ok());
+    // On: no elite next to the enemy, a green step locks the unit.
+    let mut s = game(true);
+    assert_eq!(
+        reinforce(&mut s, 2, true),
+        Err(RuleError::IllegalEconomy(EconomyError::EliteNearEnemy))
+    );
+    reinforce(&mut s, 2, false).unwrap();
+    assert!(attack(&mut s).is_err(), "reinforced: no attack");
+    reinforce(&mut s, 3, true).unwrap(); // elite away from the enemy
+    assert!(s
+        .apply(Command::Move {
+            unit: UnitId(3),
+            path: vec![Hex::new(1, 2)],
+        })
+        .is_err());
+    // Before: after a move no reinforcement (already R-ECO-02).
+    let mut s = game(true);
+    s.apply(Command::Move {
+        unit: UnitId(3),
+        path: vec![Hex::new(1, 2)],
+    })
+    .unwrap();
+    assert_eq!(
+        reinforce(&mut s, 3, false),
+        Err(RuleError::IllegalEconomy(EconomyError::UnitActed))
+    );
+}

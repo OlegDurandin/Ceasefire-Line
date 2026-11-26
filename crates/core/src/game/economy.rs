@@ -44,6 +44,16 @@ impl GameState {
     /// Bought units carry no formation or nation tag yet.
     pub fn reinforce_cost(&self, id: UnitId, steps: u8, elite: bool) -> Result<u32, RuleError> {
         let unit = self.get_unit(id)?;
+        // R-ECO-02 variant: no elite steps next to an enemy unit.
+        if elite
+            && self.variants.reinforce_locks
+            && self
+                .units
+                .values()
+                .any(|e| e.side != unit.side && e.hex.is_adjacent(unit.hex))
+        {
+            return Err(refuse(EconomyError::EliteNearEnemy));
+        }
         self.check_reinforce(unit, steps).map(|(_, cost_pct)| {
             let e = &self.data.rules.economy;
             let class_cost = self.class(unit).map_or(0, |c| c.cost_mpp);
@@ -107,6 +117,12 @@ impl GameState {
         }
         unit.strength = new as u8;
         unit.reinforced_steps += steps;
+        // R-ECO-02 variant: a reinforced unit neither moves nor attacks this phase.
+        if self.variants.reinforce_locks {
+            unit.ap_halves = 0;
+            unit.strikes_left = 0;
+            unit.can_move = false;
+        }
         Ok(vec![Event::Reinforced {
             unit: id,
             steps,

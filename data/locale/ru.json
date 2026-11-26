@@ -275,6 +275,7 @@
   "refusal.economy.NotYourBoost": "Ускорение другой стороны",
   "refusal.economy.BoostAlreadyBought": "Ускорение уже куплено",
   "refusal.economy.BoostCap": "Ветвь уже на уровень выше стартового",
+  "refusal.economy.EliteNearEnemy": "Элитное пополнение недоступно рядом с противником",
   "refusal.transfer.Acted": "Юнит уже действовал в этой фазе",
   "refusal.transfer.StartsInZoc": "Юнит в ZOC противника",
   "refusal.transfer.NoRoute": "Нет пути по дорогам через свои гексы",
