@@ -36,6 +36,12 @@ export interface Explained {
 
 const MAX_STARS = 3;
 
+/** Losses as shown: «−2», «−0,7»; zero without the minus («0»). */
+export function lossText(x: number, digits = 1): string {
+  const t = num(x, digits);
+  return /^0([,.]0*)?$/.test(t) ? "0" : `−${t}`;
+}
+
 export class AttackWindow {
   private resultTimer: number | undefined;
 
@@ -75,9 +81,9 @@ export class AttackWindow {
     const center = `<div class="aw-center">
       <div class="aw-kicker">${this.t("ui.result")}</div>
       <div class="aw-pair">
-        <div class="aw-col"><div class="aw-big">−${attackerLoss}</div><div class="aw-cap">${this.t("ui.attacker_l")}</div></div>
+        <div class="aw-col"><div class="aw-big">${lossText(attackerLoss, 0)}</div><div class="aw-cap">${this.t("ui.attacker_l")}</div></div>
         <div class="aw-div" aria-hidden="true"></div>
-        <div class="aw-col"><div class="aw-big">−${defenderLoss}</div><div class="aw-cap">${this.t("ui.defender_l")}</div></div>
+        <div class="aw-col"><div class="aw-big">${lossText(defenderLoss, 0)}</div><div class="aw-cap">${this.t("ui.defender_l")}</div></div>
       </div></div>`;
     this.el.innerHTML = `<div class="aw">${att ? this.card(att, "left") : "<div></div>"}${center}${def ? this.card(def, "right") : "<div></div>"}</div>`;
     this.el.style.display = "block";
@@ -149,7 +155,7 @@ export class AttackWindow {
   private center(att: CardData, def: CardData, f: Forecast, ex: Explained, arrowDeg: number, actions: string): string {
     const tip = (s: string) => `class="tip" title="${attrText(s)}"`;
     const range = (l: { low: number; high: number }) => `${l.low}–${l.high}`;
-    const big = (x: number) => `−${num(x, 1)}`;
+    const big = (x: number) => lossText(x);
     // An arrow (the mock's colours) turned to the attack's direction on the map.
     const arrow = `<svg class="aw-arrow" width="34" height="34" viewBox="0 0 34 34" style="transform: rotate(${Math.round(arrowDeg)}deg)" role="img" aria-label="${attrText(this.t("ui.attack_dir"))}"><path d="M3 13 H19 V6 L31 17 L19 28 V21 H3 Z" fill="#c4401e" stroke="#f0b8a8" stroke-width="1.5" stroke-linejoin="round"></path></svg>`;
     let aLoss: string;
@@ -165,7 +171,7 @@ export class AttackWindow {
         this.fireLine(`${this.t("ui.reply_of")} ${def.fireName}`, ex.inputs[1]!, x.exchange.vs_attacker, att.terrainName);
     } else {
       const d = f.defender_losses;
-      aLoss = `<div class="aw-big">−0</div><div class="aw-cap">${this.t("ui.attacker_l")} · 0–0</div>`;
+      aLoss = `<div class="aw-big">0</div><div class="aw-cap">${this.t("ui.attacker_l")} · 0–0</div>`;
       dLoss = `<div class="aw-big" ${tip(this.t("ui.expected_tip"))}>${big(d.expected)}</div><div class="aw-cap" ${tip(this.t("ui.range_tip"))}>${this.t("ui.defender_l")} · ${range(d)}</div>`;
       lines = this.fireLine(`${this.t("ui.bombardment")} ${att.fireName}`, ex.inputs[0]!, ex.params[0]!, def.terrainName);
     }

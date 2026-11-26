@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 import { fireLines, num, readinessTip, turnDate, type Rules } from "./explain";
+import { lossText } from "./ui/attack-window";
 
 const ru = JSON.parse(readFileSync(new URL("../../data/locale/ru.json", import.meta.url), "utf8")) as Record<string, string>;
 const rules = JSON.parse(readFileSync(new URL("../../data/rules.json", import.meta.url), "utf8")) as Rules;
@@ -48,5 +49,15 @@ describe("explanations (R-UI-04)", () => {
     expect(tip).toContain("на начало фазы: 80%");
     expect(tip).toContain("усталость: −5 п. п.");
     expect(tip).toContain("сейчас: 75%");
+  });
+});
+
+describe("losses in the attack window (R-UI-04)", () => {
+  it("zero has no minus", () => {
+    expect(lossText(0, 0)).toBe("0");
+    expect(lossText(0)).toBe("0");
+    expect(lossText(0.04)).toBe("0");
+    expect(lossText(2, 0)).toBe("−2");
+    expect(lossText(0.7)).toBe("−0,7");
   });
 });
