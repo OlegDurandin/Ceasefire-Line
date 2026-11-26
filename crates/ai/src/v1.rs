@@ -57,6 +57,9 @@ impl AiV1 {
         if let Some(c) = self.economy(&b) {
             return c;
         }
+        if let Some(c) = self.air(&b) {
+            return c;
+        }
         if let Some(c) = self.strike(&b) {
             return c;
         }
@@ -348,6 +351,98 @@ impl AiV1 {
         let (_, id, to) = best?;
         let path = b.s.path_to(id, to).ok().flatten()?;
         Some(Command::Move { unit: id, path })
+    }
+}
+
+impl AiV1 {
+    /// R-AIR-02: the sortie with the best expected exchange in MPP, before any
+    /// ground action (R-AI-01: «сначала артиллерия и авиация»).
+    fn air(&self, b: &Board) -> Option<Command> {
+        if b.s.is_night() {
+            return None;
+        }
+        let cost = |class: &str| {
+            b.s.data()
+                .units
+                .get(class)
+                .map_or(10.0, |c| f64::from(c.cost_mpp) / 10.0)
+        };
+        let expected = |p: &ceasefire_core::combat::FireParams, cap: u8| {
+            (f64::from(p.n) * p.p).min(f64::from(cap))
+        };
+        let mut planes: Vec<&ceasefire_core::game::AirUnit> =
+            b.s.air_units()
+                .filter(|a| a.side == b.side && a.sorties == 0 && !a.rebased)
+                .collect();
+        planes.sort_by_key(|a| a.id);
+        let mut fields: Vec<Hex> =
+            b.s.air_units()
+                .filter(|a| a.side != b.side)
+                .filter_map(|a| match a.base {
+                    ceasefire_core::game::AirBase::Hex { hex } => Some(hex),
+                    _ => None,
+                })
+                .collect();
+        fields.sort();
+        fields.dedup();
+        let mut best: Option<(f64, Command)> = None;
+        for a in planes {
+            let own = cost(&a.class);
+            let own_loss = |f: &ceasefire_core::game::AirStrikeForecast| {
+                let group: f64 = f
+                    .group_duels
+                    .iter()
+                    .map(|d| expected(&d.a_fire, a.strength))
+                    .sum();
+                let back = f
+                    .return_fire
+                    .as_ref()
+                    .map_or(0.0, |r| expected(r, a.strength));
+                (group + back).min(f64::from(a.strength)) * own
+            };
+            for e in &b.enemy {
+                let Ok(f) = b.s.forecast_air_strike(a.id, e.id) else {
+                    continue;
+                };
+                let mut score = f.strike_losses.expected * step_value(b.s, e) - own_loss(&f);
+                if b.objectives.contains_key(&e.hex) {
+                    score += self.params.attack.objective_bonus * own;
+                }
+                if best.as_ref().is_none_or(|(s, _)| score > *s) && score > 0.0 {
+                    best = Some((
+                        score,
+                        Command::AirStrike {
+                            unit: a.id,
+                            target: e.id,
+                        },
+                    ));
+                }
+            }
+            for h in &fields {
+                let Ok(f) = b.s.forecast_airfield_strike(a.id, *h) else {
+                    continue;
+                };
+                let parked = b
+                    .s
+                    .air_units()
+                    .filter(|p| {
+                        p.side != b.side && p.base == ceasefire_core::game::AirBase::Hex { hex: *h }
+                    })
+                    .map(|p| cost(&p.class))
+                    .fold(0.0, f64::max);
+                let score = f.strike_losses.expected * parked - own_loss(&f);
+                if best.as_ref().is_none_or(|(s, _)| score > *s) && score > 0.0 {
+                    best = Some((
+                        score,
+                        Command::AirStrikeAirfield {
+                            unit: a.id,
+                            hex: *h,
+                        },
+                    ));
+                }
+            }
+        }
+        best.map(|(_, c)| c)
     }
 }
 

@@ -91,3 +91,64 @@ fn v1_beats_the_baseline_in_a_mirrored_series() {
     let share = score / (2 * games) as f64;
     assert!(share >= 0.60, "v1 scored {share:.2} against the baseline");
 }
+
+/// Stage 4, step 4d: with aircraft added to «Голаны-67», AI v1 flies strikes
+/// (before ground attacks) and every command stays legal.
+#[test]
+fn v1_flies_air_strikes() {
+    use ceasefire_core::game::{MapEdge, OffMapBase, UnitSetup};
+    use ceasefire_core::scenario::offset_to_axial;
+    let d = data();
+    let mut setup = load_scenario(SCENARIO, MAP, Some(EVENTS)).unwrap();
+    let base = offset_to_axial([1, 10]);
+    setup.map.add_airfield(base);
+    setup.offmap_bases = vec![OffMapBase {
+        id: "syr".into(),
+        side: SideId(1),
+        edge: MapEdge::East,
+        distance_km: 30.0,
+    }];
+    let plane = |class: &str, side: u8, offmap: Option<&str>| UnitSetup {
+        class: class.into(),
+        side: SideId(side),
+        hex: base,
+        strength: 10,
+        morale_pct: 85,
+        exp: 0,
+        entrenchment: 0,
+        supply: None,
+        hq_rating: None,
+        formation: None,
+        nation: None,
+        name: None,
+        offmap_base: offmap.map(Into::into),
+    };
+    setup.units.push(plane("strike", 0, None));
+    setup.units.push(plane("fighter", 1, Some("syr")));
+    let (mut s, _) = GameState::new(Arc::clone(&d), setup).unwrap();
+    let mut ai = AiV1::new(
+        AiParams::from_json(AI).unwrap(),
+        AiHints::from_scenario_json(SCENARIO).unwrap(),
+    );
+    let (mut strikes, mut refused) = (0, 0);
+    for _ in 0..40 {
+        if s.outcome().is_some() {
+            break;
+        }
+        let max = ai.max_commands();
+        let r = play_phase(&mut s, |st| ai.next(st), max).unwrap();
+        refused += r.refused;
+        strikes += r
+            .commands
+            .iter()
+            .filter(|c| {
+                matches!(
+                    c,
+                    Command::AirStrike { .. } | Command::AirStrikeAirfield { .. }
+                )
+            })
+            .count();
+    }
+    assert_eq!(refused, 0);
+    assert!(strikes > 0, "the AI used its aircraft");
+}
