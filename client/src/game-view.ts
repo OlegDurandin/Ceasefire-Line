@@ -30,6 +30,8 @@ export interface LiveUnit {
   attacks_received: number;
   crossing_penalty_pct: number;
   terrain: string;
+  /** Supply of the unit's side in its hex now; 0 = encircled. */
+  hex_supply: number;
 }
 
 export interface Outcome {
@@ -52,6 +54,7 @@ export interface GameStateView {
   bridges: { a: [number, number]; b: [number, number]; state: "built" | "destroyed" }[];
   /** R-MOVE-06: neutral closed territory. */
   neutral: [number, number][];
+  objectives: { hex: [number, number]; vp: number; nm_value: number; owner: number | null }[];
 }
 
 /** Game.economy(): what the active side can buy (R-ECO-02, R-ECO-03, R-TECH-02). */

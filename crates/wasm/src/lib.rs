@@ -227,6 +227,8 @@ struct LiveUnitView {
     attacks_received: u32,
     crossing_penalty_pct: u8,
     terrain: String,
+    /// R-SUP-02 now in the unit's hex for its side; 0 = encircled (R-NM-01).
+    hex_supply: u8,
 }
 
 #[derive(Serialize)]
@@ -244,6 +246,16 @@ struct GameView<'a> {
     bridges: Vec<BridgeView>,
     /// R-MOVE-06: neutral closed territory, offset hexes.
     neutral: Vec<[i32; 2]>,
+    /// R-NM-01: objectives and who holds them.
+    objectives: Vec<ObjectiveView>,
+}
+
+#[derive(Serialize)]
+struct ObjectiveView {
+    hex: [i32; 2],
+    vp: i32,
+    nm_value: u8,
+    owner: Option<u8>,
 }
 
 #[derive(Serialize)]
@@ -321,6 +333,15 @@ impl Game {
     /// Turn, sides, units and outcome as JSON (offset coordinates).
     pub fn state(&self) -> Result<String, JsError> {
         let s = &self.state;
+        let mut supply = BTreeMap::new();
+        for side in [
+            ceasefire_core::side::SideId(0),
+            ceasefire_core::side::SideId(1),
+        ] {
+            if s.side(side).is_some() {
+                supply.insert(side, s.hex_supply(side).map_err(js)?);
+            }
+        }
         let rules = &s.data().rules.readiness;
         let sides = [
             ceasefire_core::side::SideId(0),
@@ -376,6 +397,7 @@ impl Game {
                             .cell(u.hex)
                             .map(|c| c.terrain.clone())
                             .unwrap_or_default(),
+                        hex_supply: supply.get(&u.side).map_or(0, |m| m.get(u.hex)),
                     }
                 })
                 .collect(),
@@ -397,6 +419,16 @@ impl Game {
                 })
                 .collect(),
             neutral: s.map().closed().map(axial_to_offset).collect(),
+            objectives: s
+                .objectives()
+                .iter()
+                .map(|o| ObjectiveView {
+                    hex: axial_to_offset(o.hex),
+                    vp: o.vp,
+                    nm_value: o.nm_value,
+                    owner: s.controller(o.hex).map(|c| c.0),
+                })
+                .collect(),
         };
         to_json(&view)
     }
@@ -452,6 +484,34 @@ impl Game {
                 to_json(&serde_json::json!({ "kind": "bombard", "defender_losses": f }))
             }
         }
+    }
+
+    /// R-UI-02 supply layer: `[col, row, value]` for hexes with supply > 0.
+    #[wasm_bindgen(js_name = supplyMap)]
+    pub fn supply_map(&self, side: u8) -> Result<String, JsError> {
+        let m = self
+            .state
+            .hex_supply(ceasefire_core::side::SideId(side))
+            .map_err(js)?;
+        let cells: Vec<[i32; 3]> = m
+            .iter()
+            .map(|(h, v)| {
+                let [c, r] = axial_to_offset(h);
+                [c, r, i32::from(v)]
+            })
+            .collect();
+        to_json(&cells)
+    }
+
+    /// R-UI-02 ZOC layer: hexes in the ZOC of `side`'s enemies.
+    pub fn zoc(&self, side: u8) -> Result<String, JsError> {
+        let hexes: Vec<[i32; 2]> = self
+            .state
+            .zoc_against(ceasefire_core::side::SideId(side))
+            .into_iter()
+            .map(axial_to_offset)
+            .collect();
+        to_json(&hexes)
     }
 
     /// R-UI-04: the formula inputs of an attack (`[to defender, to attacker]`)

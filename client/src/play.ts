@@ -11,6 +11,7 @@ import { axialToOffset, offsetToAxial, pixelToAxial } from "./hex";
 import { attrText, fireLines, num, readinessTip, supplyTip, turnDate, type FireInput, type Rules } from "./explain";
 import { fill, formatEvent, type UnitRef } from "./log";
 import { drawControl } from "./render/control";
+import { drawHqLinks, drawObjectives, drawSupply, drawZoc } from "./render/layers";
 import { drawBridges, setGridActive, type MapTextures } from "./render/map";
 import { drawOverlays } from "./render/overlays";
 import { drawUnits, expStars, type Token } from "./render/units";
@@ -63,6 +64,9 @@ export class Play {
   private panel: Panel = null;
   /** R-MOVE-05: transfer mode for the selected unit. */
   private transfer: TransferTargets | null = null;
+  /** R-UI-02 map layers the player switched on. */
+  private layers = new Set<"supply" | "zoc" | "hq">();
+  private layerBox = new Container();
 
   constructor(
     private game: Game,
@@ -78,6 +82,7 @@ export class Play {
   ) {
     world.addChild(this.bridges);
     world.addChild(this.control);
+    world.addChild(this.layerBox);
     world.addChild(this.overlay);
     world.addChild(this.unitsLayer);
     camera.onTap = (x, y) => this.tap(x, y);
@@ -107,6 +112,7 @@ export class Play {
     await this.drawUnits();
     const owners = new Map(this.state.control.map(([[c, r], s]) => [`${c},${r}`, s] as const));
     drawControl(this.control, this.size, owners, this.colors, this.state.neutral);
+    this.drawLayers();
     this.drawTop();
     this.world.tint = this.state.night ? NIGHT_TINT : 0xffffff;
     if (this.selection) {
@@ -137,6 +143,8 @@ export class Play {
         label: u.hq_rating !== null ? `★${u.hq_rating}` : String(u.strength),
         stars: expStars(u.exp),
         dim: mine && spent,
+        lowSupply: u.supply <= this.ctx.rules.supply.low_supply_max,
+        encircled: u.hex_supply === 0,
         style: ref?.style ?? "medallion",
         anchor: ref?.anchor ?? [0.5, 0.5],
       });
@@ -162,7 +170,19 @@ export class Play {
       <span class="tabs">${(["map", "purchases", "tech", "reports"] as const)
         .map((p) => `<button data-panel="${p}" class="${(this.panel ?? "map") === p ? "on" : ""}">${this.t(`ui.${p}`)}</button>`)
         .join("")}</span>
+      <span class="tabs">${(["supply", "zoc", "hq"] as const)
+        .map((l) => `<button data-layer="${l}" class="${this.layers.has(l) ? "on" : ""}">${this.t(`ui.layer.${l}`)}</button>`)
+        .join("")}</span>
       <button id="end-phase">${this.t("ui.end_phase")}</button>`;
+    for (const b of top.querySelectorAll<HTMLButtonElement>("[data-layer]")) {
+      b.onclick = () => {
+        const l = b.dataset.layer as "supply" | "zoc" | "hq";
+        if (this.layers.has(l)) this.layers.delete(l);
+        else this.layers.add(l);
+        this.drawTop();
+        this.drawLayers();
+      };
+    }
     document.getElementById("end-phase")!.onclick = () => this.run(() => this.game.endPhase(), true);
     for (const b of top.querySelectorAll<HTMLButtonElement>("[data-panel]")) {
       b.onclick = () => {
@@ -172,6 +192,18 @@ export class Play {
         this.drawPanel();
       };
     }
+  }
+
+  /** R-UI-02: supply heat map and enemy ZOC of the active side, HQ links, objectives. */
+  private drawLayers() {
+    this.layerBox.removeChildren().forEach((c) => c.destroy({ children: true }));
+    const side = this.state.active_side;
+    if (this.layers.has("supply")) {
+      this.layerBox.addChild(drawSupply(this.size, JSON.parse(this.game.supplyMap(side)) as [number, number, number][]));
+    }
+    if (this.layers.has("zoc")) this.layerBox.addChild(drawZoc(this.size, JSON.parse(this.game.zoc(side)) as [number, number][]));
+    if (this.layers.has("hq")) this.layerBox.addChild(drawHqLinks(this.size, this.state.units, this.colors));
+    this.layerBox.addChild(drawObjectives(this.size, this.state.objectives, this.colors));
   }
 
   /** R-UI-04 panels: purchases, technologies, reports. */

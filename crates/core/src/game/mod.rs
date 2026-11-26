@@ -744,6 +744,16 @@ impl GameState {
         Ok(unit)
     }
 
+    /// R-MOVE-03: hexes in the ZOC of `side`'s enemies (for the map layer).
+    pub fn zoc_against(&self, side: SideId) -> BTreeSet<Hex> {
+        crate::movement::enemy_zoc(&self.map, &self.occupancy(), side)
+    }
+
+    /// R-NM-01: objective hexes of the scenario.
+    pub fn objectives(&self) -> &[Objective] {
+        &self.objectives
+    }
+
     /// Ground units for ZOC and supply (R-MOVE-03: no ZOC at strength below the threshold).
     fn occupancy(&self) -> Occupancy {
         let min = self.data.rules.movement.zoc_min_strength;

@@ -4,6 +4,7 @@
 import { Graphics } from "pixi.js";
 
 import { hexCenter, hexCorners, offsetToAxial, type Point } from "../hex";
+import { reachBorder } from "./layers";
 
 const REACH = 0x4caf50;
 const TARGET = 0xf08c2c;
@@ -28,6 +29,8 @@ export function drawOverlays(
   for (const h of reach) {
     g.poly(flat(hexCorners(center(h.col, h.row, size), size * 0.94))).fill({ color: REACH, alpha: 0.28 });
   }
+  // R-UI-02: the border of the movement range.
+  if (reach.length) reachBorder(g, size, selected ? [...reach, selected] : reach, REACH);
   for (const h of targets) {
     const c = center(h.col, h.row, size);
     g.poly(flat(hexCorners(c, size * 0.94))).fill({ color: TARGET, alpha: 0.12 }).stroke({ width: 3, color: TARGET });

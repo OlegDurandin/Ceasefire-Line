@@ -25,6 +25,9 @@ export interface Token {
   style: "miniature" | "medallion";
   /** Contact point of the picture (share of its size). */
   anchor: [number, number];
+  /** R-UI-03: supply ≤ 3 (R-SUP-03) and encircled (no supply in the hex, R-NM-01). */
+  lowSupply?: boolean;
+  encircled?: boolean;
 }
 
 /** Ring colour when a scenario gives none for the side. */
@@ -81,6 +84,34 @@ function plate(token: Container, label: string, y: number, size: number, color: 
   );
   token.addChild(text);
   return y - h / 2;
+}
+
+/** R-UI-03 status icons left of the strength plate: supply ≤ 3, encircled. */
+function statusIcons(token: Container, u: Token, y: number, size: number) {
+  const icons: Graphics[] = [];
+  if (u.encircled) {
+    const r = size * 0.15;
+    icons.push(
+      new Graphics()
+        .circle(0, 0, r)
+        .fill(0x1c1a17)
+        .arc(0, 0, r * 0.62, Math.PI * 0.35, Math.PI * 2.15)
+        .stroke({ width: size * 0.06, color: 0xe0453a }),
+    );
+  } else if (u.lowSupply) {
+    const r = size * 0.15;
+    icons.push(
+      new Graphics()
+        .circle(0, 0, r)
+        .fill(0x1c1a17)
+        .roundRect(-r * 0.45, -r * 0.55, r * 0.9, r * 1.1, r * 0.2)
+        .fill(0xd9a23a),
+    );
+  }
+  icons.forEach((g, k) => {
+    g.position.set(-size * (0.5 + 0.34 * k), y);
+    token.addChild(g);
+  });
 }
 
 function stars(token: Container, n: number, top: number, size: number) {
@@ -141,6 +172,7 @@ function drawMiniature(u: Token, tex: Texture | null, size: number, color: numbe
   }
   const top = plate(body, u.label, ry + h * 0.6, size, color);
   stars(body, u.stars, top, size);
+  statusIcons(body, u, ry + h * 0.6, size);
   // R-UI-03: lift on hover.
   body.eventMode = "static";
   body.cursor = "pointer";
@@ -176,6 +208,7 @@ function drawMedallion(u: Token, tex: Texture | null, size: number, color: numbe
   token.addChild(new Graphics().circle(0, 0, radius).stroke({ width: ring, color }));
   const top = plate(token, u.label, radius * 0.98, size, color);
   stars(token, u.stars, top, size);
+  statusIcons(token, u, radius * 0.98, size);
   return token;
 }
 

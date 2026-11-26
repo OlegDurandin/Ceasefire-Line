@@ -83,6 +83,11 @@ impl SupplyMap {
     pub fn get(&self, hex: Hex) -> u8 {
         self.0.get(&hex).copied().unwrap_or(0)
     }
+
+    /// Hexes with supply above 0, in hex order.
+    pub fn iter(&self) -> impl Iterator<Item = (Hex, u8)> + '_ {
+        self.0.iter().map(|(h, v)| (*h, *v))
+    }
 }
 
 /// R-SUP-02: `Supply = max over sources (Source − floor(path AP / decay)) + HQ bonus`.
