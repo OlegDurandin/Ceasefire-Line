@@ -232,6 +232,8 @@ struct LiveUnitView {
     terrain: String,
     /// R-SUP-02 now in the unit's hex for its side; 0 = encircled (R-NM-01).
     hex_supply: u8,
+    /// R-AIR-03 umbrella radius in hexes (after technology), for SAM units.
+    sam_radius_hexes: Option<f64>,
 }
 
 #[derive(Serialize)]
@@ -459,6 +461,15 @@ impl Game {
                             .map(|c| c.terrain.clone())
                             .unwrap_or_default(),
                         hex_supply: supply.get(&u.side).map_or(0, |m| m.get(u.hex)),
+                        sam_radius_hexes: s
+                            .data()
+                            .units
+                            .get(&u.class)
+                            .ok()
+                            .zip(s.side(u.side))
+                            .and_then(|(c, side)| s.data().tech.unit_stats(c, &side.tech).ok())
+                            .and_then(|st| st.sam_radius_km)
+                            .map(|km| km / s.hex_km()),
                     }
                 })
                 .collect(),
@@ -579,11 +590,20 @@ impl Game {
     /// or a bombardment, from the same code as the resolution.
     pub fn explain(&self, unit: u32, target: u32) -> Result<String, JsError> {
         let (u, t) = (UnitId(unit), UnitId(target));
+        let rules = &self.state.data().rules.combat;
+        let params =
+            |i: &ceasefire_core::combat::FireInput| ceasefire_core::combat::fire_params(rules, i);
         match self.state.explain_attack(u, t) {
-            Ok(inputs) => to_json(&serde_json::json!({ "kind": "attack", "inputs": inputs })),
+            Ok(inputs) => to_json(&serde_json::json!({
+                "kind": "attack",
+                "inputs": inputs,
+                "params": inputs.iter().map(params).collect::<Vec<_>>(),
+            })),
             Err(_) => {
                 let input = self.state.explain_bombard(u, t).map_err(js)?;
-                to_json(&serde_json::json!({ "kind": "bombard", "inputs": [input] }))
+                to_json(
+                    &serde_json::json!({ "kind": "bombard", "inputs": [input], "params": [params(&input)] }),
+                )
             }
         }
     }

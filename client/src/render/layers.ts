@@ -1,5 +1,5 @@
 // Map layers (GDD R-UI-02): supply heat map 0–10, enemy ZOC, HQ subordination
-// lines, scenario objectives; the border of the movement range.
+// lines, AA umbrellas, scenario objectives; the border of the movement range.
 
 import { Container, Graphics, Text } from "pixi.js";
 
@@ -107,4 +107,22 @@ export function reachBorder(g: Graphics, size: number, reach: { col: number; row
     }
   }
   g.stroke({ width: size * 0.06, color, cap: "round" });
+}
+
+/** R-AIR-03: SAM umbrellas — a circle of each SAM unit's radius (after technology). */
+export function drawUmbrellas(
+  size: number,
+  units: { col: number; row: number; side: number; sam_radius_hexes: number | null }[],
+  colors: number[],
+): Graphics {
+  const g = new Graphics();
+  // Neighbouring hex centres are √3·size apart.
+  const perHex = Math.sqrt(3) * size;
+  for (const u of units) {
+    if (!u.sam_radius_hexes) continue;
+    const c = center(u.col, u.row, size);
+    const color = colors[u.side] ?? 0xb08d57;
+    g.circle(c.x, c.y, u.sam_radius_hexes * perHex).fill({ color, alpha: 0.1 }).stroke({ width: size * 0.06, color, alpha: 0.9 });
+  }
+  return g;
 }

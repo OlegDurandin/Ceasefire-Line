@@ -30,6 +30,8 @@ export class Camera {
   onTap: ((x: number, y: number) => void) | null = null;
   /** Called after every pan or zoom. */
   onChange: ((v: View) => void) | null = null;
+  /** Called with screen coordinates when the pointer moves with no button down. */
+  onHover: ((x: number, y: number) => void) | null = null;
 
   constructor(
     private world: Container,
@@ -69,7 +71,10 @@ export class Camera {
 
   private move = (e: PointerEvent) => {
     const prev = this.pointers.get(e.pointerId);
-    if (!prev) return;
+    if (!prev) {
+      if (!this.pointers.size) this.onHover?.(e.clientX, e.clientY);
+      return;
+    }
     const next = { x: e.clientX, y: e.clientY };
     this.pointers.set(e.pointerId, next);
     this.travel += Math.hypot(next.x - prev.x, next.y - prev.y);

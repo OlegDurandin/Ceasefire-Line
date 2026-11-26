@@ -8,11 +8,12 @@ import { Assets, Container, Graphics, type Texture } from "pixi.js";
 import type { Camera } from "./camera";
 import type { BridgeTarget, EconomyView, Forecast, GameStateView, LiveUnit, Reach, Target, TransferTargets } from "./game-view";
 import { axialToOffset, hexCenter, offsetToAxial, pixelToAxial } from "./hex";
-import { attrText, fireLines, num, readinessTip, supplyTip, turnDate, type FireInput, type Rules } from "./explain";
+import { attrText, turnDate, type Rules } from "./explain";
 import { applyFacing, type Facing } from "./facing";
 import { fill, formatEvent, type UnitRef } from "./log";
 import { drawControl } from "./render/control";
-import { drawHqLinks, drawObjectives, drawSupply, drawZoc } from "./render/layers";
+import { drawHqLinks, drawObjectives, drawSupply, drawUmbrellas, drawZoc } from "./render/layers";
+import { AttackWindow, type CardData, type Explained } from "./ui/attack-window";
 import { drawBridges, setGridActive, type MapTextures } from "./render/map";
 import { drawOverlays } from "./render/overlays";
 import { drawUnits, expStars, type Token } from "./render/units";
@@ -30,6 +31,7 @@ interface Selection {
 }
 
 type Panel = "purchases" | "tech" | "reports" | null;
+type Layer = "supply" | "zoc" | "hq" | "umbrella" | "objectives";
 
 /** Data the panels explain numbers with (R-UI-04). */
 export interface PlayContext {
@@ -50,6 +52,8 @@ export interface PlayContext {
 
 const NIGHT_TINT = 0x8796c4;
 const LOG_LIMIT = 300;
+/** R-UI-04: how long the actual losses stay in the attack window. */
+const RESULT_MS = 1100;
 const TOAST_MS = 7000;
 /** Command JSON for the core: hexes are axial. */
 const hex = ([col, row]: [number, number]) => offsetToAxial({ col, row });
@@ -72,7 +76,10 @@ export class Play {
   /** R-UI-03: where each unit faces after its last move or attack. */
   private facing = new Map<number, Facing>();
   /** R-UI-02 map layers the player switched on. */
-  private layers = new Set<"supply" | "zoc" | "hq">();
+  private layers = new Set<Layer>(["objectives"]);
+  private aw: AttackWindow;
+  /** The target the pointer is over (preview without aiming). */
+  private hovered: number | null = null;
   private layerBox = new Container();
 
   constructor(
@@ -94,6 +101,8 @@ export class Play {
     world.addChild(this.unitsLayer);
     camera.onTap = (x, y) => this.tap(x, y);
     window.addEventListener("keydown", (e) => this.key(e));
+    this.aw = new AttackWindow(document.getElementById("attack")!, ru, ctx.rules);
+    camera.onHover = (x, y) => this.hover(x, y);
   }
 
   private t(key: string, fallback = key): string {
@@ -173,24 +182,9 @@ export class Play {
       <span class="tabs">${(["map", "purchases", "tech", "reports"] as const)
         .map((p) => `<button data-panel="${p}" class="${(this.panel ?? "map") === p ? "on" : ""}">${this.t(`ui.${p}`)}</button>`)
         .join("")}</span>
-      <span class="tabs">${(["supply", "zoc", "hq"] as const)
-        .map((l) => `<button data-layer="${l}" class="${this.layers.has(l) ? "on" : ""}">${this.t(`ui.layer.${l}`)}</button>`)
-        .join("")}</span>
-      <button id="undo" title="${attrText(this.t("ui.undo_tip"))}"${this.game.canUndo() ? "" : " disabled"}>${this.t("ui.undo")}</button>
-      <button id="to-menu" title="${attrText(this.t("ui.menu_tip"))}">${this.t("ui.menu")}</button>
-      <button id="end-phase" title="Enter">${this.t("ui.end_phase")}</button>`;
-    document.getElementById("undo")!.onclick = () => void this.undo();
+      <button id="to-menu" title="${attrText(this.t("ui.menu_tip"))}">${this.t("ui.menu")}</button>`;
     document.getElementById("to-menu")!.onclick = () => this.menu();
-    for (const b of top.querySelectorAll<HTMLButtonElement>("[data-layer]")) {
-      b.onclick = () => {
-        const l = b.dataset.layer as "supply" | "zoc" | "hq";
-        if (this.layers.has(l)) this.layers.delete(l);
-        else this.layers.add(l);
-        this.drawTop();
-        this.drawLayers();
-      };
-    }
-    document.getElementById("end-phase")!.onclick = () => this.endPhase();
+    this.drawToolbar();
     for (const b of top.querySelectorAll<HTMLButtonElement>("[data-panel]")) {
       b.onclick = () => {
         const p = b.dataset.panel!;
@@ -201,7 +195,31 @@ export class Play {
     }
   }
 
-  /** R-UI-02: supply heat map and enemy ZOC of the active side, HQ links, objectives. */
+  /** R-UI-04: the strip of icons above the attack window — layers, next unit, undo, end of phase. */
+  private drawToolbar() {
+    const bar = document.getElementById("toolbar")!;
+    const layer = (l: Layer, icon: string) =>
+      `<button data-layer="${l}" class="icon${this.layers.has(l) ? " on" : ""}" title="${attrText(this.t(`ui.layer.${l}`))}">${icon}</button>`;
+    bar.innerHTML = `<span class="group">${(["supply", "zoc", "hq", "umbrella", "objectives"] as const).map((l) => layer(l, this.t(`ui.layer_short.${l}`))).join("")}</span>
+      <span class="group"><button id="next-unit" class="icon" title="${attrText(this.t("ui.next_unit"))}">N</button>
+      <button id="undo" title="${attrText(this.t("ui.undo_tip"))}"${this.game.canUndo() ? "" : " disabled"}>↶ ${this.t("ui.undo")}</button>
+      <button id="end-phase" title="Enter">${this.t("ui.end_phase")} ⏎</button></span>`;
+    bar.style.display = this.state.outcome ? "none" : "flex";
+    for (const b of bar.querySelectorAll<HTMLButtonElement>("[data-layer]")) {
+      b.onclick = () => {
+        const l = b.dataset.layer as Layer;
+        if (this.layers.has(l)) this.layers.delete(l);
+        else this.layers.add(l);
+        this.drawToolbar();
+        this.drawLayers();
+      };
+    }
+    document.getElementById("next-unit")!.onclick = () => this.nextUnit();
+    document.getElementById("undo")!.onclick = () => void this.undo();
+    document.getElementById("end-phase")!.onclick = () => this.endPhase();
+  }
+
+  /** R-UI-02: supply heat map and enemy ZOC of the active side, HQ links, AA umbrellas, objectives. */
   private drawLayers() {
     this.layerBox.removeChildren().forEach((c) => c.destroy({ children: true }));
     const side = this.state.active_side;
@@ -210,7 +228,8 @@ export class Play {
     }
     if (this.layers.has("zoc")) this.layerBox.addChild(drawZoc(this.size, JSON.parse(this.game.zoc(side)) as [number, number][]));
     if (this.layers.has("hq")) this.layerBox.addChild(drawHqLinks(this.size, this.state.units, this.colors));
-    this.layerBox.addChild(drawObjectives(this.size, this.state.objectives, this.colors));
+    if (this.layers.has("umbrella")) this.layerBox.addChild(drawUmbrellas(this.size, this.state.units, this.colors));
+    if (this.layers.has("objectives")) this.layerBox.addChild(drawObjectives(this.size, this.state.objectives, this.colors));
   }
 
   /** R-UI-04 panels: purchases, technologies, reports. */
@@ -316,15 +335,21 @@ export class Play {
     const aimed = keepAim && targets.some((t) => t.target === keepAim.target) ? keepAim : null;
     if (this.selection?.unit.id !== unit.id) this.transfer = null;
     this.selection = { unit, reach, targets, aimed };
+    this.hovered = null;
     this.redrawOverlay();
     this.showInfo(unit);
     if (aimed) this.aim(aimed);
-    else this.showAdvanceOrHide();
+    else {
+      this.aw.showUnit(this.card(unit));
+      this.showAdvanceOrHide();
+    }
   }
 
   private deselect() {
     this.selection = null;
     this.transfer = null;
+    this.hovered = null;
+    this.aw.hide();
     this.redrawOverlay();
     document.getElementById("info")!.style.display = "none";
     this.showAdvanceOrHide();
@@ -340,29 +365,72 @@ export class Play {
     setGridActive(this.world, !!sel);
   }
 
+  /** Orders of the selected unit (top left); its numbers are in the attack window's card. */
   private showInfo(u: LiveUnit) {
     const info = document.getElementById("info")!;
-    info.style.display = "block";
-    const r = this.ctx.rules;
-    const tips = {
-      readiness: attrText(readinessTip(u, r, this.ru)),
-      supply: attrText(supplyTip(u.supply, r, this.ru)),
-      ap: attrText(
-        fill(this.t("ui.ap_tip"), { night: r.movement.night_ap_penalty, low: r.supply.low_supply_max, supply: r.movement.low_supply_ap_penalty }),
-      ),
-      entrench: attrText(
-        fill(this.t("ui.entrench_tip"), {
-          terrain: this.t(`terrain.${u.terrain}`, u.terrain),
-          max: this.ctx.maxEntrench.get(u.terrain) ?? "—",
-          min: r.supply.entrench_min_supply,
-        }),
-      ),
-    };
-    info.innerHTML = `<b>${this.t(`unit.${u.class}`, u.class)}</b> · ${this.sideName(u.side)} · <span class="muted">${this.t(`terrain.${u.terrain}`, u.terrain)}</span><br>
-      ${this.t("ui.strength")} ${u.strength} · <span class="tip" title="${tips.readiness}">${this.t("ui.readiness")} ${u.readiness_pct}%</span> · ${this.t("ui.morale")} ${u.morale_pct}%<br>
-      <span class="tip" title="${tips.ap}">AP ${u.ap_halves / 2}</span> · ${this.t("ui.strikes")} ${u.strikes_left} · <span class="tip" title="${tips.supply}">${this.t("ui.supply")} ${u.supply}</span> · <span class="tip" title="${tips.entrench}">${this.t("ui.entrench")} ${u.entrenchment}</span>
-      ${this.actions(u)}`;
+    const actions = this.actions(u);
+    info.style.display = actions.includes("<button") || actions.includes("<select") ? "block" : "none";
+    info.innerHTML = `<b class="caps">${this.t("ui.orders")}</b> · ${this.t(`unit.${u.class}`, u.class)}${actions}`;
     this.bindActions(info, u);
+  }
+
+  /** R-UI-04 card data of a unit for the attack window. */
+  private card(u: LiveUnit): CardData {
+    const tech = this.state.sides.find((x) => x.id === u.side)?.tech ?? {};
+    const base = pickSprite(this.sprites, u.class, u.nation, tech);
+    const ref = base ? styledSprite(base, this.ctx.style, this.sprites, this.ctx.minis) : null;
+    const nation = u.nation ? this.t(`nation.${u.nation}`, "") : "";
+    return {
+      unit: u,
+      title: `${this.t(`unit.${u.class}`, u.class)} (${nation || this.sideName(u.side)})`,
+      portrait: ref?.url ?? null,
+      mirrored: (this.facing.get(u.id) ?? this.ctx.sideFacing[u.side] ?? "left") === "right",
+      stars: expStars(u.exp),
+      maxEntrench: this.ctx.maxEntrench.get(u.terrain) ?? null,
+      terrainName: this.t(`terrain.${u.terrain}`, u.terrain),
+    };
+  }
+
+  /** Direction of an attack on the screen, degrees clockwise from east. */
+  private attackDeg(a: LiveUnit, d: LiveUnit): number {
+    const pa = hexCenter(offsetToAxial({ col: a.col, row: a.row }), 1);
+    const pd = hexCenter(offsetToAxial({ col: d.col, row: d.row }), 1);
+    return (Math.atan2(pd.y - pa.y, pd.x - pa.x) * 180) / Math.PI;
+  }
+
+  /** Forecast for a target: hover (preview) or aim (with the buttons). */
+  private showForecast(target: Target, aimed: boolean) {
+    const sel = this.selection;
+    const defender = this.state.units.find((u) => u.id === target.target);
+    if (!sel || !defender) return;
+    const f = JSON.parse(this.game.forecast(sel.unit.id, target.target)) as Forecast;
+    const ex = JSON.parse(this.game.explain(sel.unit.id, target.target)) as Explained;
+    const actions = aimed
+      ? `<button id="strike">${this.t(target.kind === "attack" ? "ui.attack" : "ui.bombard")}</button> <button id="cancel">${this.t("ui.cancel")}</button>`
+      : "";
+    this.aw.showTarget(this.card(sel.unit), this.card(defender), f, ex, this.attackDeg(sel.unit, defender), actions);
+    if (aimed) {
+      document.getElementById("strike")!.onclick = () => this.selection && this.strike(this.selection.unit, target);
+      document.getElementById("cancel")!.onclick = () => {
+        if (!this.selection) return;
+        this.selection.aimed = null;
+        this.aw.showUnit(this.card(this.selection.unit));
+      };
+    }
+  }
+
+  /** R-UI-04: the pointer over a target shows its forecast without aiming. */
+  private hover(x: number, y: number) {
+    const sel = this.selection;
+    if (!sel || sel.aimed || this.state.outcome) return;
+    const { col, row } = axialToOffset(pixelToAxial(this.camera.toWorld(x, y), this.size));
+    const there = this.unitAt(col, row);
+    const target = there ? sel.targets.find((t) => t.target === there.id) : undefined;
+    const id = target?.target ?? null;
+    if (id === this.hovered) return;
+    this.hovered = id;
+    if (target) this.showForecast(target, false);
+    else this.aw.showUnit(this.card(sel.unit));
   }
 
   /** Unit name with its hex, for HQ lists. */
@@ -450,78 +518,38 @@ export class Play {
   private aim(target: Target) {
     if (!this.selection) return;
     this.selection.aimed = target;
-    const attacker = this.selection.unit;
-    const defender = this.state.units.find((u) => u.id === target.target);
-    const f = JSON.parse(this.game.forecast(attacker.id, target.target)) as Forecast;
-    const ex = JSON.parse(this.game.explain(attacker.id, target.target)) as { kind: string; inputs: FireInput[] };
-    const box = document.getElementById("combat")!;
-    const range = (l: { low: number; high: number }) => `${l.low}–${l.high}`;
-    const card = (u: LiveUnit | undefined) =>
-      u
-        ? `<div class="card"><b>${this.t(`unit.${u.class}`, u.class)}</b><br><span class="muted">${this.sideName(u.side)} · ${this.t(`terrain.${u.terrain}`, u.terrain)}</span><br>
-          ${this.t("ui.strength")} ${u.strength} · ${u.readiness_pct}%${u.entrenchment ? ` · ${this.t("ui.entrench")} ${u.entrenchment}` : ""}</div>`
-        : "<div class=\"card\"></div>";
-    let center: string;
-    const details: string[] = [];
-    if (f.kind === "attack") {
-      const x = f.forecast;
-      const a = x.attacker_losses;
-      const d = x.defender_losses;
-      center = `<div class="big">−${num(a.expected, 1)} | −${num(d.expected, 1)}</div>
-        <div class="row detail"><span>${range(a)}</span><span>${range(d)}</span></div>
-        <div class="detail">p ${num(x.exchange.vs_defender.p, 2)} · n ${x.exchange.vs_defender.n} | ${this.t("ui.return_fire")}: p ${num(x.exchange.vs_attacker.p, 2)} · n ${x.exchange.vs_attacker.n}</div>`;
-      details.push(`<b>${this.t("ui.attacker")} → ${this.t("ui.defender")}</b>`, ...fireLines(ex.inputs[0]!, x.exchange.vs_defender, this.ctx.rules, this.ru));
-      details.push(`<b>${this.t("ui.return_fire")}</b>`, ...fireLines(ex.inputs[1]!, x.exchange.vs_attacker, this.ctx.rules, this.ru));
-    } else {
-      const d = f.defender_losses;
-      center = `<div>${this.t("ui.bombardment")}</div><div class="big">−0 | −${num(d.expected, 1)}</div><div class="detail">${range(d)}</div>`;
-    }
-    box.innerHTML = `<div class="duel">${card(attacker)}<div class="center">${center}</div>${card(defender)}</div>
-      ${details.length ? `<div class="formula" style="display:none">${details.map((l) => `<div>${l}</div>`).join("")}</div>` : ""}
-      <div class="actions"><button id="strike">${this.t(target.kind === "attack" ? "ui.attack" : "ui.bombard")}</button>
-      ${details.length ? `<button id="details">${this.t("ui.details")}</button>` : ""}
-      <button id="cancel">${this.t("ui.cancel")}</button></div>`;
-    box.style.display = "block";
-    const toggle = document.getElementById("details");
-    if (toggle) {
-      toggle.onclick = () => {
-        const fbox = box.querySelector<HTMLElement>(".formula")!;
-        const open = fbox.style.display === "none";
-        fbox.style.display = open ? "block" : "none";
-        toggle.textContent = this.t(open ? "ui.hide_details" : "ui.details");
-      };
-    }
-    document.getElementById("strike")!.onclick = () => this.selection && this.strike(this.selection.unit, target);
-    document.getElementById("cancel")!.onclick = () => {
-      if (this.selection) this.selection.aimed = null;
-      this.showAdvanceOrHide();
-    };
+    this.showForecast(target, true);
   }
 
   private strike(unit: LiveUnit, target: Target) {
+    const before = this.card(unit);
+    const defBefore = this.state.units.find((u) => u.id === target.target);
+    const defCard = defBefore ? this.card(defBefore) : null;
     void this.run(() => (target.kind === "attack" ? this.game.attack(unit.id, target.target) : this.game.bombard(unit.id, target.target))).then(
       (events) => {
         if (this.selection) this.selection.aimed = null;
-        this.showResult(events);
+        this.showResult(events, before, defCard);
       },
     );
   }
 
-  /** Last combat result and, if the attacker may occupy the hex, the button for it. */
-  private showResult(events: unknown[]) {
-    const box = document.getElementById("combat")!;
+  /** R-UI-04: the actual losses in the window's centre for ~1 s, then the unit card again. */
+  private showResult(events: unknown[], att: CardData, def: CardData | null) {
     const combat = events.find((e) => (e as { type: string }).type === "combat_resolved") as
       | { attacker_losses: number; defender_losses: number }
       | undefined;
     const bombard = events.find((e) => (e as { type: string }).type === "bombarded") as { losses: number } | undefined;
-    const text = combat
-      ? `${this.t("ui.result")}: −${combat.attacker_losses} | −${combat.defender_losses}`
-      : bombard
-        ? `${this.t("ui.result")}: −0 | −${bombard.losses}`
-        : "";
-    box.innerHTML = `<div class="big">${text}</div><div class="actions" id="after"></div>`;
-    box.style.display = text ? "block" : "none";
-    this.showAdvanceOrHide(true);
+    if (!combat && !bombard) return;
+    // Cards after the combat (a destroyed unit keeps its last card).
+    const now = (c: CardData | null) => {
+      const u = c && this.state.units.find((x) => x.id === c.unit.id);
+      return u ? this.card(u) : c;
+    };
+    this.aw.showResult(now(att), now(def), combat?.attacker_losses ?? 0, combat?.defender_losses ?? bombard!.losses, RESULT_MS, () => {
+      if (this.selection) this.aw.showUnit(this.card(this.selection.unit));
+      else this.aw.hide();
+    });
+    this.showAdvanceOrHide();
   }
 
   private showAdvanceOrHide(keepResult = false) {

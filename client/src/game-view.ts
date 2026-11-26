@@ -32,6 +32,8 @@ export interface LiveUnit {
   terrain: string;
   /** Supply of the unit's side in its hex now; 0 = encircled. */
   hex_supply: number;
+  /** R-AIR-03 umbrella radius in hexes, for SAM units. */
+  sam_radius_hexes: number | null;
 }
 
 export interface Outcome {
