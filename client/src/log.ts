@@ -57,6 +57,8 @@ export function formatEvent(e: Ev, ctx: LogContext): string | null {
       return line("log.advanced", { unit: unit(e.unit), hex: hexLabel(e.to) });
     case "attrition":
       return line("log.attrition", { unit: unit(e.unit), steps: n(e.steps) });
+    case "source_besieged":
+      return line("log.source_besieged", { hex: hexLabel(e.hex), value: n(e.value) });
     case "deserted":
       return line("log.deserted", { unit: unit(e.unit), steps: n(e.steps) });
     case "reinforced":

@@ -129,6 +129,15 @@ pub struct SupplyRules {
     /// R-SUP-01: captured source works at value / divisor (floor).
     pub captured_source_divisor: u8,
     pub captured_recovery_per_turn: u8,
+    /// R-SUP-01 variant `source_isolation`: a source below `max` with no path
+    /// through own hexes to an own source of `max` gives at most this.
+    pub isolated_source_cap: u8,
+    /// Siege: a source below `max` loses `siege_loss_per_phase` at the start of
+    /// its owner's phase with at least `siege_min_enemies` adjacent enemy
+    /// ground units of strength ≥ `siege_enemy_min_strength`.
+    pub siege_min_enemies: u8,
+    pub siege_enemy_min_strength: u8,
+    pub siege_loss_per_phase: u8,
 }
 
 /// R-MOVE-03, R-MOVE-04, R-UNIT-02. AP values may be multiples of 0.5.
@@ -317,6 +326,8 @@ pub struct Variants {
     pub fortified_hold: bool,
     /// R-SUP-03: units in a pocket under pressure desert.
     pub pocket_desertion: bool,
+    /// R-SUP-01: cut-off sources give little, besieged ones dwindle.
+    pub source_isolation: bool,
 }
 
 impl Variants {

@@ -145,6 +145,11 @@ pub enum Event {
         hex: Hex,
         value: u8,
     },
+    /// R-SUP-01 variant `source_isolation`: a besieged source loses value.
+    SourceBesieged {
+        hex: Hex,
+        value: u8,
+    },
     /// Start-of-phase recalculation (R-SUP-02, R-SUP-03, R-UNIT-01, R-UNIT-02).
     UnitRefreshed {
         unit: UnitId,

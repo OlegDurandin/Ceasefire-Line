@@ -37,8 +37,48 @@ impl GameState {
             u.attacked_by.clear();
         }
 
-        // R-SUP-01: captured sources recover +1 per turn for their owner.
+        // R-SUP-01 variant `source_isolation`: besieged sources (below max) lose value.
+        let besieged: std::collections::BTreeSet<crate::hex::Hex> =
+            if self.variants.source_isolation {
+                let s = &rules.supply;
+                self.sources
+                    .iter()
+                    .filter(|(h, src)| self.control.get(h) == Some(&side) && src.base < s.max)
+                    .filter(|(h, _)| {
+                        self.units
+                            .values()
+                            .filter(|u| u.side != side && u.hex.is_adjacent(**h))
+                            .filter(|u| u.strength >= s.siege_enemy_min_strength)
+                            .filter(|u| {
+                                self.data
+                                    .units
+                                    .get(&u.class)
+                                    .is_ok_and(|c| c.target_class.is_ground())
+                            })
+                            .count()
+                            >= usize::from(s.siege_min_enemies)
+                    })
+                    .map(|(h, _)| *h)
+                    .collect()
+            } else {
+                std::collections::BTreeSet::new()
+            };
         for (&hex, src) in self.sources.iter_mut() {
+            if besieged.contains(&hex) {
+                src.current = src
+                    .current
+                    .saturating_sub(rules.supply.siege_loss_per_phase);
+                events.push(Event::SourceBesieged {
+                    hex,
+                    value: src.current,
+                });
+            }
+        }
+        // R-SUP-01: captured (and besieged, once free) sources recover +1 per turn for their owner.
+        for (&hex, src) in self.sources.iter_mut() {
+            if besieged.contains(&hex) {
+                continue;
+            }
             if self.control.get(&hex) == Some(&side) && src.current < src.base {
                 src.current = src
                     .current

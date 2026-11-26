@@ -11,7 +11,7 @@ use ceasefire_core::hex::Hex;
 use common::scenario::{board, start, unit, A, B};
 
 /// Every boolean variant, so each test states its own rules.
-const VARIANTS: [&str; 11] = [
+const VARIANTS: [&str; 12] = [
     "attack_strips_entrenchment",
     "prepared_attack",
     "unsupplied_target",
@@ -23,6 +23,7 @@ const VARIANTS: [&str; 11] = [
     "hq_strength_scaling",
     "fortified_hold",
     "pocket_desertion",
+    "source_isolation",
 ];
 
 /// The common test scenario with every variant switched off.
@@ -632,4 +633,64 @@ fn r_sup_03_desertion_in_a_pocket() {
         "«под угрозой распада»"
     );
     assert!(!game(1, 1, true).desertion_risk(UnitId(1)));
+}
+
+/// R-SUP-01 `source_isolation`: a source below 10 with no path through own
+/// hexes to a source of 10 gives at most 3; a besieged source (≥ 2 adjacent
+/// enemy ground units of strength ≥ 5) loses 1 per owner's phase.
+#[test]
+fn r_sup_01_isolated_and_besieged_sources() {
+    use ceasefire_core::supply::SupplySource;
+    let isolated = |variant: bool| {
+        let (map, mut control) = board();
+        control.insert(Hex::new(5, 2), A); // an own island in B's territory
+        let mut sc = setup(map, control, vec![]);
+        sc.sources.push(SupplySource {
+            hex: Hex::new(5, 2),
+            value: 8,
+        });
+        sc.sources.push(SupplySource {
+            hex: Hex::new(2, 2),
+            value: 8,
+        });
+        let s = start(if variant {
+            with("source_isolation", sc)
+        } else {
+            sc
+        });
+        let m = s.hex_supply(A).unwrap();
+        (m.get(Hex::new(5, 2)), m.get(Hex::new(2, 2)))
+    };
+    assert_eq!(isolated(true).0, 3, "cut off from the source of 10");
+    assert!(isolated(true).1 >= 8, "linked through own hexes");
+    assert_eq!(isolated(false).0, 8, "off: full value");
+
+    let besieged = |variant: bool| {
+        let (map, control) = board();
+        let units = vec![
+            unit("infantry", B, Hex::new(3, 2)),
+            unit("infantry", B, Hex::new(3, 1)),
+        ];
+        let mut sc = setup(map, control, units);
+        sc.sources.push(SupplySource {
+            hex: Hex::new(2, 2),
+            value: 8,
+        });
+        let mut s = start(if variant {
+            with("source_isolation", sc)
+        } else {
+            sc
+        });
+        let first = s.source(Hex::new(2, 2)).map(|v| v.current);
+        s.apply(Command::EndPhase).unwrap();
+        s.apply(Command::EndPhase).unwrap();
+        let second = s.source(Hex::new(2, 2)).map(|v| v.current);
+        (first, second)
+    };
+    assert_eq!(
+        besieged(true),
+        (Some(7), Some(6)),
+        "−1 at each owner's phase"
+    );
+    assert_eq!(besieged(false), (Some(8), Some(8)));
 }

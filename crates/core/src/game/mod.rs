@@ -805,13 +805,37 @@ impl GameState {
 
     /// R-SUP-02 / R-SUP-04: current hex supply map of `side`.
     pub fn hex_supply(&self, side: SideId) -> Result<SupplyMap, RuleError> {
+        let max = self.supply_params.max;
+        // R-SUP-01 variant `source_isolation`: own hexes linked to an own source of max.
+        let linked = self.variants.source_isolation.then(|| {
+            let start: Vec<Hex> = self
+                .sources
+                .iter()
+                .filter(|(h, s)| self.control.get(h) == Some(&side) && s.base >= max)
+                .map(|(h, _)| *h)
+                .collect();
+            let mut seen: BTreeSet<Hex> = start.iter().copied().collect();
+            let mut queue: std::collections::VecDeque<Hex> = start.into_iter().collect();
+            while let Some(h) = queue.pop_front() {
+                for n in h.neighbors() {
+                    if self.control.get(&n) == Some(&side) && seen.insert(n) {
+                        queue.push_back(n);
+                    }
+                }
+            }
+            seen
+        });
+        let cap = self.data.rules.supply.isolated_source_cap;
         let sources: Vec<SupplySource> = self
             .sources
             .iter()
             .filter(|(h, _)| self.control.get(h) == Some(&side))
             .map(|(&hex, s)| SupplySource {
                 hex,
-                value: s.current,
+                value: match &linked {
+                    Some(l) if s.base < max && !l.contains(&hex) => s.current.min(cap),
+                    _ => s.current,
+                },
             })
             .collect();
         let hqs: Vec<HqPosition> = self
