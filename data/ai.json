@@ -1,0 +1,33 @@
+{
+  "_comment": "R-AI-01: weights of the computer opponent (stage 4, AI v1). Scores are in MPP; distances in hexes. Tuned by sim ai-vs-ai (GDD section 17).",
+  "default_aggressiveness": 0.5,
+  "max_commands_per_phase": 400,
+  "attack": {
+    "min_score_defensive": 0.6,
+    "min_score_aggressive": -0.4,
+    "retreat_bonus": 1.5,
+    "objective_bonus": 2.0,
+    "focus_bonus": 0.5
+  },
+  "advance": {
+    "max_adjacent_enemies": 1
+  },
+  "move": {
+    "goal_weight": 1.0,
+    "terrain_weight": 3.0,
+    "entrench_weight": 0.6,
+    "threat_weight": 0.08,
+    "support_weight": 0.03,
+    "objective_bonus": 4.0,
+    "contact_bonus": 0.6,
+    "enemy_hex_bonus": 0.4,
+    "min_gain": 0.3,
+    "influence_radius": 4,
+    "defend_radius": 3,
+    "attack_from_aggressiveness": 0.35
+  },
+  "economy": {
+    "reinforce_at_or_below": 8,
+    "boost_mpp_reserve": 20
+  }
+}

@@ -7,7 +7,11 @@
 //! budgets are counted in operations, never in time.
 
 pub mod greedy;
+pub mod params;
 pub mod runner;
+pub mod v1;
 
 pub use greedy::greedy_next;
+pub use params::{AiHints, AiParams};
 pub use runner::{play_phase, PhaseReport};
+pub use v1::AiV1;

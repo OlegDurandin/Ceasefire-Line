@@ -267,6 +267,11 @@ struct ScenarioFile {
     #[serde(default)]
     #[allow(dead_code)]
     start_date: Option<String>,
+    /// R-AI-01: hints for the computer opponent (priorities, aggressiveness);
+    /// read by the AI crate, the rules ignore them.
+    #[serde(default)]
+    #[allow(dead_code)]
+    ai: Option<serde_json::Value>,
     units: Vec<UnitFile>,
 }
 

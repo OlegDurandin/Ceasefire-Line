@@ -10,7 +10,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Instant;
 
-use ceasefire_ai::{greedy_next, play_phase};
+use ceasefire_ai::{greedy_next, play_phase, AiHints, AiParams, AiV1};
 use ceasefire_core::data::GameData;
 use ceasefire_core::game::{Event, GameState, NmReason, VictoryLevel};
 use ceasefire_core::scenario::load_scenario;
@@ -32,6 +32,40 @@ pub struct Options {
     runs: u32,
     seed: u64,
     report: Option<PathBuf>,
+    /// Player of each side, by side id: `greedy` or `v1`.
+    players: Vec<Player>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Player {
+    Greedy,
+    V1,
+}
+
+impl Player {
+    fn parse(s: &str) -> Result<Self, String> {
+        match s {
+            "greedy" => Ok(Self::Greedy),
+            "v1" => Ok(Self::V1),
+            _ => Err(format!("unknown player `{s}` (greedy | v1)")),
+        }
+    }
+
+    fn label(self) -> &'static str {
+        match self {
+            Self::Greedy => "«жадина»",
+            Self::V1 => "ИИ v1",
+        }
+    }
+}
+
+/// What every game shares: data, scenario texts, the AI's weights and hints.
+struct Shared {
+    data: Arc<GameData>,
+    texts: (String, String, Option<String>),
+    params: AiParams,
+    hints: AiHints,
+    players: Vec<Player>,
 }
 
 pub fn parse_options(args: &[String]) -> Result<Options, String> {
@@ -41,6 +75,7 @@ pub fn parse_options(args: &[String]) -> Result<Options, String> {
         runs: 500,
         seed: 1,
         report: None,
+        players: vec![Player::Greedy, Player::Greedy],
     };
     let mut it = args.iter();
     while let Some(flag) = it.next() {
@@ -53,6 +88,12 @@ pub fn parse_options(args: &[String]) -> Result<Options, String> {
             "--runs" => o.runs = value.parse().map_err(|e| format!("--runs: {e}"))?,
             "--seed" => o.seed = value.parse().map_err(|e| format!("--seed: {e}"))?,
             "--report" => o.report = Some(PathBuf::from(value)),
+            "--players" => {
+                o.players = value
+                    .split(',')
+                    .map(Player::parse)
+                    .collect::<Result<_, _>>()?
+            }
             _ => return Err(format!("unknown option {flag}")),
         }
     }
@@ -79,18 +120,28 @@ struct Game {
     fired: Vec<String>,
 }
 
-fn play_one(
-    data: &Arc<GameData>,
-    texts: &(String, String, Option<String>),
-    seed: u64,
-) -> Result<Game, String> {
+fn play_one(sh: &Shared, seed: u64) -> Result<Game, String> {
+    let texts = &sh.texts;
     let mut setup =
         load_scenario(&texts.0, &texts.1, texts.2.as_deref()).map_err(|e| e.to_string())?;
     setup.seed = seed;
-    let (mut s, _) = GameState::new(Arc::clone(data), setup).map_err(|e| e.to_string())?;
+    let (mut s, _) = GameState::new(Arc::clone(&sh.data), setup).map_err(|e| e.to_string())?;
     let mut g = Game::default();
+    let mut v1 = AiV1::new(sh.params.clone(), sh.hints.clone());
     while s.outcome().is_none() && g.phases < MAX_PHASES {
-        let r = play_phase(&mut s, greedy_next, MAX_COMMANDS).map_err(|e| e.to_string())?;
+        let player = sh
+            .players
+            .get(usize::from(s.active_side().0))
+            .copied()
+            .unwrap_or(Player::Greedy);
+        let r = match player {
+            Player::Greedy => play_phase(&mut s, greedy_next, MAX_COMMANDS),
+            Player::V1 => {
+                let max = v1.max_commands();
+                play_phase(&mut s, |st| v1.next(st), max)
+            }
+        }
+        .map_err(|e| e.to_string())?;
         g.phases += 1;
         g.commands += r.commands.len() as u32;
         g.refused += r.refused;
@@ -138,6 +189,15 @@ pub fn run(o: &Options) -> Result<(), String> {
         read("map.json")?,
         read("events.json").ok(),
     ));
+    let shared = Arc::new(Shared {
+        data: Arc::clone(&data),
+        texts: (*texts).clone(),
+        params: AiParams::from_json(
+            &fs::read_to_string(o.data.join("ai.json")).map_err(|e| format!("ai.json: {e}"))?,
+        )?,
+        hints: AiHints::from_scenario_json(&texts.0)?,
+        players: o.players.clone(),
+    });
     let started = Instant::now();
     let threads = std::thread::available_parallelism()
         .map_or(4, |n| n.get())
@@ -149,13 +209,13 @@ pub fn run(o: &Options) -> Result<(), String> {
             .collect();
         let mut start = 0u64;
         for chunk in chunks {
-            let (data, texts) = (Arc::clone(&data), Arc::clone(&texts));
+            let shared = Arc::clone(&shared);
             let first = start;
             start += chunk.len() as u64;
             let base = o.seed;
             scope.spawn(move || {
                 for (k, slot) in chunk.iter_mut().enumerate() {
-                    *slot = Some(play_one(&data, &texts, base + first + k as u64));
+                    *slot = Some(play_one(&shared, base + first + k as u64));
                 }
             });
         }
@@ -200,10 +260,16 @@ fn render(o: &Options, games: &[Game], elapsed: f64, keys: &BTreeMap<u8, String>
     let _ = writeln!(out, "# ИИ против ИИ: «{}»\n", o.scenario);
     let _ = writeln!(
         out,
-        "Сгенерирован `sim ai-vs-ai`: {} партий, сиды {}–{}, игрок — базовый («жадина», этап 4, шаг 1) за обе стороны. Время {:.1} с ({:.2} мс на фазу в среднем).\n",
+        "Сгенерирован `sim ai-vs-ai`: {} партий, сиды {}–{}; игроки по сторонам: {}. Время {:.1} с ({:.2} мс на фазу в среднем).\n",
         games.len(),
         o.seed,
         o.seed + games.len() as u64 - 1,
+        o.players
+            .iter()
+            .enumerate()
+            .map(|(i, p)| format!("{} — {}", name(&SideId(i as u8)), p.label()))
+            .collect::<Vec<_>>()
+            .join(", "),
         elapsed,
         elapsed * 1000.0 / games.iter().map(|g| g.phases).sum::<u32>().max(1) as f64
     );
