@@ -34,6 +34,9 @@ pub struct Options {
     report: Option<PathBuf>,
     /// Player of each side, by side id: `greedy` or `v1`.
     players: Vec<Player>,
+    /// ± spread of each side's aggressiveness per game (seeded), so AI-vs-AI
+    /// games sample different plans, not only different dice.
+    jitter: f64,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -66,6 +69,8 @@ struct Shared {
     params: AiParams,
     hints: AiHints,
     players: Vec<Player>,
+    jitter: f64,
+    default_aggressiveness: f64,
 }
 
 pub fn parse_options(args: &[String]) -> Result<Options, String> {
@@ -76,6 +81,7 @@ pub fn parse_options(args: &[String]) -> Result<Options, String> {
         seed: 1,
         report: None,
         players: vec![Player::Greedy, Player::Greedy],
+        jitter: 0.0,
     };
     let mut it = args.iter();
     while let Some(flag) = it.next() {
@@ -88,6 +94,7 @@ pub fn parse_options(args: &[String]) -> Result<Options, String> {
             "--runs" => o.runs = value.parse().map_err(|e| format!("--runs: {e}"))?,
             "--seed" => o.seed = value.parse().map_err(|e| format!("--seed: {e}"))?,
             "--report" => o.report = Some(PathBuf::from(value)),
+            "--jitter" => o.jitter = value.parse().map_err(|e| format!("--jitter: {e}"))?,
             "--players" => {
                 o.players = value
                     .split(',')
@@ -127,7 +134,25 @@ fn play_one(sh: &Shared, seed: u64) -> Result<Game, String> {
     setup.seed = seed;
     let (mut s, _) = GameState::new(Arc::clone(&sh.data), setup).map_err(|e| e.to_string())?;
     let mut g = Game::default();
-    let mut v1 = AiV1::new(sh.params.clone(), sh.hints.clone());
+    let mut hints = sh.hints.clone();
+    if sh.jitter > 0.0 {
+        // SplitMix64 of the game's seed: a fixed, platform-independent spread.
+        let mut x = seed ^ 0x9e37_79b9_7f4a_7c15;
+        let mut next = || {
+            x = x.wrapping_add(0x9e37_79b9_7f4a_7c15);
+            let mut z = x;
+            z = (z ^ (z >> 30)).wrapping_mul(0xbf58_476d_1ce4_e5b9);
+            z = (z ^ (z >> 27)).wrapping_mul(0x94d0_49bb_1331_11eb);
+            ((z ^ (z >> 31)) >> 11) as f64 / (1u64 << 53) as f64
+        };
+        for i in 0..sh.players.len() {
+            let side = SideId(i as u8);
+            let h = hints.sides.entry(side).or_default();
+            let base = h.aggressiveness.unwrap_or(sh.default_aggressiveness);
+            h.aggressiveness = Some((base + (next() * 2.0 - 1.0) * sh.jitter).clamp(0.0, 1.0));
+        }
+    }
+    let mut v1 = AiV1::new(sh.params.clone(), hints);
     while s.outcome().is_none() && g.phases < MAX_PHASES {
         let player = sh
             .players
@@ -189,14 +214,18 @@ pub fn run(o: &Options) -> Result<(), String> {
         read("map.json")?,
         read("events.json").ok(),
     ));
+    let params = AiParams::from_json(
+        &fs::read_to_string(o.data.join("ai.json")).map_err(|e| format!("ai.json: {e}"))?,
+    )?;
+    let default_aggressiveness = params.default_aggressiveness;
     let shared = Arc::new(Shared {
         data: Arc::clone(&data),
         texts: (*texts).clone(),
-        params: AiParams::from_json(
-            &fs::read_to_string(o.data.join("ai.json")).map_err(|e| format!("ai.json: {e}"))?,
-        )?,
+        params,
         hints: AiHints::from_scenario_json(&texts.0)?,
         players: o.players.clone(),
+        jitter: o.jitter,
+        default_aggressiveness,
     });
     let started = Instant::now();
     let threads = std::thread::available_parallelism()
@@ -341,6 +370,40 @@ fn render(o: &Options, games: &[Game], elapsed: f64, keys: &BTreeMap<u8, String>
     ];
     for (k, v) in rows {
         let _ = writeln!(out, "| {k} | {v:.2} |");
+    }
+    // Victory point margin of the first side over the second (for the thresholds).
+    if sides.len() == 2 {
+        let (s0, s1) = (sides[0], sides[1]);
+        let mut margins: Vec<i32> = games
+            .iter()
+            .map(|g| {
+                let v = |s: SideId| g.vp.iter().find(|(x, _)| *x == s).map_or(0, |v| v.1);
+                v(s0) - v(s1)
+            })
+            .collect();
+        margins.sort();
+        let q = |p: f64| margins[((margins.len() - 1) as f64 * p).round() as usize];
+        let _ = writeln!(
+            out,
+            "\n## Перевес победных очков ({} − {})\n\n10% {} · 25% {} · медиана {} · 75% {} · 90% {}\n",
+            name(&s0),
+            name(&s1),
+            q(0.1),
+            q(0.25),
+            q(0.5),
+            q(0.75),
+            q(0.9)
+        );
+        let mut counts: BTreeMap<i32, u32> = BTreeMap::new();
+        for m in &margins {
+            *counts.entry(*m).or_insert(0) += 1;
+        }
+        let _ = writeln!(out, "| перевес | партий | накоплено |\n| --- | --- | --- |");
+        let mut acc = 0;
+        for (m, k) in counts {
+            acc += k;
+            let _ = writeln!(out, "| {m} | {k} | {:.1}% |", f64::from(acc) / n * 100.0);
+        }
     }
     let mut fired: BTreeMap<&str, u32> = BTreeMap::new();
     for g in games {
