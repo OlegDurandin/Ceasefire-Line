@@ -132,7 +132,14 @@ function terrainLayer(view: ScenarioView, tex: MapTextures, size: number, render
 
 /** `baked`: terrain, water and roads come from the baked tiles (mapgen bake);
  * only the grid and bridges (their state changes in play) are drawn here. */
-export function drawMap(view: ScenarioView, tex: MapTextures, size: number, renderer: Renderer, baked = false): Container {
+export function drawMap(
+  view: ScenarioView,
+  tex: MapTextures,
+  size: number,
+  renderer: Renderer,
+  baked = false,
+  bridges = true,
+): Container {
   const root = new Container();
   if (!baked) root.addChild(terrainLayer(view, tex, size, renderer));
 
@@ -165,7 +172,15 @@ export function drawMap(view: ScenarioView, tex: MapTextures, size: number, rend
   water.stroke({ width: size * 0.14, color: WATER, cap: "round" });
   if (!baked) root.addChild(water, roads);
 
-  for (const b of view.bridges) {
+  if (bridges) root.addChild(drawBridges(view.bridges, tex, size));
+  return root;
+}
+
+/** Bridge sprites on hex sides; in play they are redrawn from the live state. */
+export function drawBridges(list: ScenarioView["bridges"], tex: MapTextures, size: number): Container {
+  const layer = new Container();
+  const ax = ([col, row]: [number, number]) => offsetToAxial({ col, row });
+  for (const b of list) {
     const t = b.state === "built" ? tex.bridge : tex.bridgeDestroyed;
     if (!t) continue;
     const [p, q] = sharedSide(ax(b.a), ax(b.b), size);
@@ -178,9 +193,9 @@ export function drawMap(view: ScenarioView, tex: MapTextures, size: number, rend
     s.rotation = Math.atan2(cb.y - ca.y, cb.x - ca.x);
     s.width = size * 1.2;
     s.height = size * 1.2;
-    root.addChild(s);
+    layer.addChild(s);
   }
-  return root;
+  return layer;
 }
 
 /** R-UI-02: the grid shows up while a unit is selected. */

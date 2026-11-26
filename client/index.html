@@ -28,6 +28,17 @@
       #modal { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(0,0,0,0.55); }
       #modal .panel { position: static; padding: 18px 24px; max-width: min(420px, calc(100vw - 32px)); text-align: center; }
       #modal h2 { margin: 0 0 8px; color: var(--bronze); }
+      button:disabled { opacity: 0.45; cursor: default; }
+      button.on { background: #4a3f2c; }
+      #top .tabs { display: flex; gap: 4px; }
+      #info .actions > div { margin-top: 6px; }
+      #info select, #panel select { background: #2a2620; color: var(--text); border: 1px solid var(--bronze); border-radius: 4px; }
+      #panel { max-height: calc(100vh - 140px); overflow: auto; }
+      #panel table { border-collapse: collapse; margin: 4px 0; }
+      #panel td { padding: 3px 6px; vertical-align: middle; }
+      #panel ul.log { max-height: 60vh; font-size: 12px; }
+      .muted { color: var(--muted); }
+      #toast { top: 64px; left: 50%; transform: translateX(-50%); padding: 8px 14px; max-width: min(520px, calc(100vw - 24px)); display: none; text-align: center; }
     </style>
   </head>
   <body>

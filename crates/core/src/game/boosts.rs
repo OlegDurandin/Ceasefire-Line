@@ -32,6 +32,11 @@ fn refuse(reason: EconomyError) -> RuleError {
 }
 
 impl GameState {
+    /// R-TECH-02: whether a boost has been bought (each once per scenario).
+    pub fn boost_bought(&self, id: &str) -> bool {
+        self.bought_boosts.contains(id)
+    }
+
     /// R-TECH-02: once per scenario, by its own side, for MPP; the branch may
     /// end at most one level above its scenario start (pending boosts count).
     pub(super) fn buy_tech_boost(&mut self, id: &str) -> Result<Vec<Event>, RuleError> {

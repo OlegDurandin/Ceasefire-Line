@@ -18,6 +18,11 @@ export interface LiveUnit {
   acted: boolean;
   hq_rating: number | null;
   nation: string | null;
+  formation: string | null;
+  /** R-HQ-01: HQ the unit is attached to (set at the start of its phase). */
+  attached_hq: number | null;
+  /** R-HQ-01: manual pin, applied from the next own phase. */
+  pinned_hq: number | null;
 }
 
 export interface Outcome {
@@ -37,6 +42,30 @@ export interface GameStateView {
   control: [[number, number], number][];
   pending_advance: [number, [number, number]] | null;
   outcome: Outcome | null;
+  bridges: { a: [number, number]; b: [number, number]; state: "built" | "destroyed" }[];
+}
+
+/** Game.economy(): what the active side can buy (R-ECO-02, R-ECO-03, R-TECH-02). */
+export interface EconomyView {
+  side: number;
+  mpp: number;
+  base_income: number;
+  purchasable: { class: string; cost: number; left: number; refused: string | null }[];
+  arrivals: [string, number][];
+  boosts: { id: string; branch: string; cost: number; turns: number; ready_turn: number | null; bought: boolean; refused: string | null }[];
+}
+
+/** Game.bridgeTargets() (R-MOVE-02). */
+export interface BridgeTarget {
+  kind: "bombard" | "build";
+  a: [number, number];
+  b: [number, number];
+}
+
+/** Game.transferTargets() (R-MOVE-05). */
+export interface TransferTargets {
+  cost: number | null;
+  hexes: [number, number][];
 }
 
 export interface Reach {

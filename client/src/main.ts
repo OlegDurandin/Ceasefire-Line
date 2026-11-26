@@ -109,7 +109,8 @@ async function main() {
 
   /** Map layer from a core view; relief shading over the textures, under the grid. */
   const buildMap = (v: ScenarioView) => {
-    const layer = drawMap(v, { terrain: terrainTex, bridge, bridgeDestroyed }, HEX_SIZE, app.renderer, !!baked);
+    // In play, bridges are a live layer of Play (their state changes).
+    const layer = drawMap(v, { terrain: terrainTex, bridge, bridgeDestroyed }, HEX_SIZE, app.renderer, !!baked, EDIT);
     if (baked) {
       // Clipped to the hexes: the map is where the rules are.
       const clip = new Graphics();
@@ -145,6 +146,7 @@ async function main() {
     camera.onChange = (v) => void baked.show(level(v.scale));
   }
 
+  let devGame: Game | null = null;
   if (EDIT) {
     // Units drawn from the scenario document, sprites by tier as in play.
     const unitTextures = new Map<string, Texture | null>();
@@ -191,7 +193,8 @@ async function main() {
     }
     stage("Ход…");
     const game = new Game(core, scenario, map, events);
-    const play = new Play(game, world, camera, sprites, ru, sideKeys, colors, HEX_SIZE);
+    devGame = game;
+    const play = new Play(game, world, camera, sprites, ru, sideKeys, colors, HEX_SIZE, { terrain: terrainTex, bridge, bridgeDestroyed });
     await play.refresh();
     if (!view.issues.length) panel.style.display = "none";
   }
@@ -199,6 +202,7 @@ async function main() {
   // Dev-only hook for end-to-end checks: hex → screen coordinates.
   if (import.meta.env.DEV) {
     (window as unknown as { __cl: unknown }).__cl = {
+      game: devGame,
       screenOf: (col: number, row: number) => {
         const p = hexCenter(offsetToAxial({ col, row }), HEX_SIZE);
         const v = camera.current;

@@ -208,6 +208,11 @@ struct LiveUnitView {
     acted: bool,
     hq_rating: Option<u8>,
     nation: Option<String>,
+    formation: Option<String>,
+    /// R-HQ-01: HQ the unit is attached to (set at the start of its phase).
+    attached_hq: Option<u32>,
+    /// R-HQ-01: manual pin, applied from the next own phase.
+    pinned_hq: Option<u32>,
 }
 
 #[derive(Serialize)]
@@ -221,6 +226,47 @@ struct GameView<'a> {
     control: Vec<([i32; 2], u8)>,
     pending_advance: Option<(u32, [i32; 2])>,
     outcome: Option<&'a Outcome>,
+    /// R-MOVE-02: bridge states change in play.
+    bridges: Vec<BridgeView>,
+}
+
+#[derive(Serialize)]
+struct Purchasable {
+    class: String,
+    cost: u32,
+    /// Still allowed above the schedule (R-ECO-03).
+    left: u32,
+    /// Why it cannot be bought now, if so.
+    refused: Option<String>,
+}
+
+#[derive(Serialize)]
+struct BoostView {
+    id: String,
+    branch: ceasefire_core::tech::TechBranch,
+    cost: u32,
+    turns: u32,
+    /// Turn the level-up comes, once bought.
+    ready_turn: Option<u32>,
+    bought: bool,
+    refused: Option<String>,
+}
+
+#[derive(Serialize)]
+struct EconomyView {
+    side: u8,
+    mpp: u32,
+    base_income: u32,
+    purchasable: Vec<Purchasable>,
+    arrivals: Vec<(String, u32)>,
+    boosts: Vec<BoostView>,
+}
+
+#[derive(Serialize)]
+struct BridgeTarget {
+    kind: &'static str,
+    a: [i32; 2],
+    b: [i32; 2],
 }
 
 #[derive(Serialize)]
@@ -301,6 +347,9 @@ impl Game {
                         acted: u.acted,
                         hq_rating: u.hq_rating,
                         nation: u.nation.clone(),
+                        formation: u.formation.clone(),
+                        attached_hq: u.attached_hq.map(|h| h.0),
+                        pinned_hq: u.pinned_hq.map(|h| h.0),
                     }
                 })
                 .collect(),
@@ -313,6 +362,14 @@ impl Game {
                 .pending_advance()
                 .map(|p| (p.unit.0, axial_to_offset(p.hex))),
             outcome: s.outcome(),
+            bridges: s
+                .map()
+                .bridges()
+                .map(|(e, state)| {
+                    let EdgeView { a, b } = edge(e);
+                    BridgeView { a, b, state }
+                })
+                .collect(),
         };
         to_json(&view)
     }
@@ -406,6 +463,142 @@ impl Game {
     #[wasm_bindgen(js_name = endPhase)]
     pub fn end_phase(&mut self) -> Result<String, JsError> {
         self.run(Command::EndPhase)
+    }
+
+    /// Any command as JSON (`Command`, hexes axial `{q, r}`); returns the events.
+    pub fn apply(&mut self, command: &str) -> Result<String, JsError> {
+        let c: Command = serde_json::from_str(command).map_err(|e| JsError::new(&e.to_string()))?;
+        self.run(c)
+    }
+
+    /// Dry run on a copy: `undefined` if the command would be accepted,
+    /// otherwise the rule error. The UI enables actions with this, so it
+    /// never disagrees with the rules.
+    pub fn check(&self, command: &str) -> Result<Option<String>, JsError> {
+        let c: Command = serde_json::from_str(command).map_err(|e| JsError::new(&e.to_string()))?;
+        Ok(self.refusal(c))
+    }
+
+    fn refusal(&self, c: Command) -> Option<String> {
+        self.state.clone().apply(c).err().map(|e| e.to_string())
+    }
+
+    /// R-ECO-02: MPP for `steps` steps of reinforcement.
+    #[wasm_bindgen(js_name = reinforceCost)]
+    pub fn reinforce_cost(&self, unit: u32, steps: u8, elite: bool) -> Result<u32, JsError> {
+        self.state
+            .reinforce_cost(UnitId(unit), steps, elite)
+            .map_err(js)
+    }
+
+    /// R-MOVE-05: hexes the unit can be transferred to now, with the cost.
+    #[wasm_bindgen(js_name = transferTargets)]
+    pub fn transfer_targets(&self, unit: u32) -> Result<String, JsError> {
+        let s = &self.state;
+        let id = UnitId(unit);
+        let Ok(cost) = s.transfer_cost(id) else {
+            return to_json(&serde_json::json!({ "cost": null, "hexes": [] }));
+        };
+        let hexes: Vec<[i32; 2]> = s
+            .map()
+            .hexes()
+            .filter(|&h| s.unit_at(h).is_none() && s.transfer_route(id, h).is_ok())
+            .map(axial_to_offset)
+            .collect();
+        to_json(&serde_json::json!({ "cost": cost, "hexes": hexes }))
+    }
+
+    /// R-ECO-02, R-ECO-03, R-TECH-02 for the active side: what can be bought.
+    pub fn economy(&self) -> Result<String, JsError> {
+        let s = &self.state;
+        let side_id = s.active_side();
+        let side = s
+            .side(side_id)
+            .ok_or_else(|| JsError::new("no active side"))?;
+        let purchasable = side
+            .purchase_limits
+            .iter()
+            .map(|(class, limit)| {
+                let cost = s.data().units.get(class).map(|c| c.cost_mpp).unwrap_or(0);
+                Purchasable {
+                    class: class.clone(),
+                    cost,
+                    left: limit.saturating_sub(side.purchased.get(class).copied().unwrap_or(0)),
+                    refused: self.refusal(Command::Purchase {
+                        class: class.clone(),
+                    }),
+                }
+            })
+            .collect();
+        let arrivals = s
+            .arrivals()
+            .iter()
+            .filter(|a| a.side == side_id)
+            .map(|a| (a.class.clone(), a.turn))
+            .collect();
+        let boosts = s
+            .tech_boosts()
+            .iter()
+            .filter(|b| b.side == side_id)
+            .map(|b| {
+                let pending = s.pending_boosts().iter().find(|p| p.id == b.id);
+                let refused = self.refusal(Command::BuyTechBoost { id: b.id.clone() });
+                BoostView {
+                    id: b.id.clone(),
+                    branch: b.branch,
+                    cost: b.cost,
+                    turns: b.turns,
+                    ready_turn: pending.map(|p| p.ready_turn),
+                    bought: s.boost_bought(&b.id),
+                    refused,
+                }
+            })
+            .collect();
+        to_json(&EconomyView {
+            side: side_id.0,
+            mpp: side.mpp,
+            base_income: side.base_income,
+            purchasable,
+            arrivals,
+            boosts,
+        })
+    }
+
+    /// R-MOVE-02: bridges the unit can fire at, and canal sides it can bridge.
+    #[wasm_bindgen(js_name = bridgeTargets)]
+    pub fn bridge_targets(&self, unit: u32) -> Result<String, JsError> {
+        let s = &self.state;
+        let id = UnitId(unit);
+        let Some(u) = s.unit(id) else {
+            return to_json(&Vec::<BridgeTarget>::new());
+        };
+        let mut out = Vec::new();
+        for (e, _) in s.map().bridges() {
+            let (a, b) = e.hexes();
+            if self
+                .refusal(Command::BombardBridge { unit: id, a, b })
+                .is_none()
+            {
+                out.push(BridgeTarget {
+                    kind: "bombard",
+                    a: axial_to_offset(a),
+                    b: axial_to_offset(b),
+                });
+            }
+        }
+        for toward in u.hex.neighbors() {
+            if self
+                .refusal(Command::BuildBridge { unit: id, toward })
+                .is_none()
+            {
+                out.push(BridgeTarget {
+                    kind: "build",
+                    a: axial_to_offset(u.hex),
+                    b: axial_to_offset(toward),
+                });
+            }
+        }
+        to_json(&out)
     }
 
     fn run(&mut self, command: Command) -> Result<String, JsError> {

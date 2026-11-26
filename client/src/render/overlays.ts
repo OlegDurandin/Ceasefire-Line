@@ -1,5 +1,5 @@
 // R-UI-02: reachable hexes in green, attack targets with orange hatching,
-// the selected unit's hex outlined.
+// the selected unit's hex outlined; R-MOVE-05 transfer targets in blue.
 
 import { Graphics } from "pixi.js";
 
@@ -8,6 +8,7 @@ import { hexCenter, hexCorners, offsetToAxial, type Point } from "../hex";
 const REACH = 0x4caf50;
 const TARGET = 0xf08c2c;
 const SELECT = 0xf2e3b3;
+const TRANSFER = 0x4a90d9;
 
 const flat = (pts: Point[]) => pts.flatMap((p) => [p.x, p.y]);
 const center = (col: number, row: number, size: number) => hexCenter(offsetToAxial({ col, row }), size);
@@ -18,8 +19,12 @@ export function drawOverlays(
   reach: { col: number; row: number }[],
   targets: { col: number; row: number }[],
   selected: { col: number; row: number } | null,
+  transfer: { col: number; row: number }[] = [],
 ) {
   g.clear();
+  for (const h of transfer) {
+    g.poly(flat(hexCorners(center(h.col, h.row, size), size * 0.94))).fill({ color: TRANSFER, alpha: 0.3 }).stroke({ width: 2, color: TRANSFER });
+  }
   for (const h of reach) {
     g.poly(flat(hexCorners(center(h.col, h.row, size), size * 0.94))).fill({ color: REACH, alpha: 0.28 });
   }
