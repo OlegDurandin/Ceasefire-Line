@@ -323,9 +323,18 @@ impl GameState {
                 vacated = true;
             } else {
                 let r = &rules.retreat;
-                let must_retreat = defender.strength <= r.max_strength
-                    || (defender_losses >= r.heavy_loss_steps
-                        && c.defender_readiness_pct < r.low_readiness_pct);
+                // R-COMBAT-06 variant `fortified_hold`: a city or fortified
+                // area is held — no retreat and no «nowhere to go» losses.
+                let holds = self.variants.fortified_hold
+                    && data
+                        .terrain
+                        .get(&self.map_terrain(defender.hex)?)?
+                        .def
+                        .stronghold;
+                let must_retreat = !holds
+                    && (defender.strength <= r.max_strength
+                        || (defender_losses >= r.heavy_loss_steps
+                            && c.defender_readiness_pct < r.low_readiness_pct));
                 if must_retreat {
                     match self.retreat_hex(&defender)? {
                         Some(to) => {

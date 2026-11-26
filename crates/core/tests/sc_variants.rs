@@ -11,7 +11,7 @@ use ceasefire_core::hex::Hex;
 use common::scenario::{board, start, unit, A, B};
 
 /// Every boolean variant, so each test states its own rules.
-const VARIANTS: [&str; 9] = [
+const VARIANTS: [&str; 10] = [
     "attack_strips_entrenchment",
     "prepared_attack",
     "unsupplied_target",
@@ -21,6 +21,7 @@ const VARIANTS: [&str; 9] = [
     "reinforce_locks",
     "nm_by_cost",
     "hq_strength_scaling",
+    "fortified_hold",
 ];
 
 /// The common test scenario with every variant switched off.
@@ -523,4 +524,72 @@ fn r_hq_02_hq_bonus_scales_with_strength() {
     assert_eq!(supply(&game(5, true)), (base + 2).min(10));
     assert_eq!(supply(&game(4, true)), base, "weak HQ: no supply bonus");
     assert_eq!(supply(&game(4, false)), (base + 2).min(10));
+}
+
+/// R-COMBAT-06 / R-MOVE-01 `fortified_hold`: a defender in a city does not
+/// retreat and takes no «nowhere to go» losses; a unit that entered an own
+/// city gets floor(max / 2) entrenchment at the start of its next phase.
+#[test]
+fn r_combat_06_strongholds_hold() {
+    use ceasefire_core::game::Event;
+    use ceasefire_core::map::HexCell;
+    let fight = |variant: bool| {
+        let (mut map, control) = board();
+        map.insert(Hex::new(3, 0), HexCell::new("city"));
+        let mut weak = unit("infantry", B, Hex::new(3, 0));
+        weak.strength = 3;
+        weak.entrenchment = 2; // a weak attack: the defender survives at strength ≤ 3
+        let sc = setup(
+            map,
+            control,
+            vec![weak, unit("infantry", A, Hex::new(2, 0))],
+        );
+        let mut s = start(if variant {
+            with("fortified_hold", sc)
+        } else {
+            sc
+        });
+        s.apply(Command::Attack {
+            unit: UnitId(2),
+            target: UnitId(1),
+        })
+        .unwrap()
+    };
+    let moved_or_hit = |ev: &[Event]| {
+        ev.iter()
+            .any(|e| matches!(e, Event::Retreated { .. } | Event::RetreatBlocked { .. }))
+    };
+    assert!(
+        moved_or_hit(&fight(false)),
+        "strength ≤ 3: retreat or extra losses"
+    );
+    let held = fight(true);
+    assert!(!moved_or_hit(&held), "a city holds: {held:?}");
+    assert!(
+        !held
+            .iter()
+            .any(|e| matches!(e, Event::UnitDestroyed { .. })),
+        "survives this combat (seed 42)"
+    );
+
+    let entered = |variant: bool| {
+        let (mut map, control) = board();
+        map.insert(Hex::new(2, 0), HexCell::new("city")); // max entrenchment 4
+        let sc = setup(map, control, vec![unit("tank", A, Hex::new(1, 0))]);
+        let mut s = start(if variant {
+            with("fortified_hold", sc)
+        } else {
+            sc
+        });
+        s.apply(Command::Move {
+            unit: UnitId(1),
+            path: vec![Hex::new(2, 0)],
+        })
+        .unwrap();
+        s.apply(Command::EndPhase).unwrap();
+        s.apply(Command::EndPhase).unwrap();
+        s.unit(UnitId(1)).unwrap().entrenchment
+    };
+    assert_eq!(entered(true), 2, "floor(4 / 2)");
+    assert_eq!(entered(false), 0, "off: moved, no growth");
 }

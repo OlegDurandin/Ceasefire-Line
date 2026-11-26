@@ -305,6 +305,8 @@ pub struct Variants {
     pub nm_by_cost: bool,
     /// R-HQ-02: HQ bonuses scale with the HQ's strength.
     pub hq_strength_scaling: bool,
+    /// R-COMBAT-06, R-MOVE-01: cities and fortified areas hold.
+    pub fortified_hold: bool,
 }
 
 impl Variants {
@@ -460,6 +462,9 @@ pub struct TerrainDef {
     /// R-MOVE-01: lakes — no ground movement or supply, nobody controls them.
     #[serde(default)]
     pub impassable: bool,
+    /// City or fortified area: R-COMBAT-06 / R-MOVE-01 variant `fortified_hold`.
+    #[serde(default)]
+    pub stronghold: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

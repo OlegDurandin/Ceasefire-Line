@@ -91,11 +91,12 @@ impl GameState {
                 continue;
             };
             let class = data.units.get(&unit.class)?;
-            let max_entrench = data
-                .terrain
-                .get(&self.map_terrain(unit.hex)?)?
-                .def
-                .max_entrench;
+            let terrain_def = &data.terrain.get(&self.map_terrain(unit.hex)?)?.def;
+            let max_entrench = terrain_def.max_entrench;
+            // R-MOVE-01 variant `fortified_hold`: entered an own city or fortified area.
+            let stronghold = self.variants.fortified_hold
+                && terrain_def.stronghold
+                && self.control.get(&unit.hex) == Some(&side);
             let class_ap = ap_to_halves(
                 class
                     .ap
@@ -133,10 +134,15 @@ impl GameState {
                 });
             }
 
-            // Entrenchment grows without movement and with supply above the low band.
-            if !unit.moved && unit.supply >= s.entrench_min_supply {
-                let gain = u8::try_from(class.entrench_per_turn).unwrap_or(u8::MAX);
-                unit.entrenchment = unit.entrenchment.saturating_add(gain).min(max_entrench);
+            // Entrenchment grows without movement and with supply above the low band;
+            // a unit that entered an own stronghold gets half its maximum at once.
+            if unit.supply >= s.entrench_min_supply {
+                if !unit.moved {
+                    let gain = u8::try_from(class.entrench_per_turn).unwrap_or(u8::MAX);
+                    unit.entrenchment = unit.entrenchment.saturating_add(gain).min(max_entrench);
+                } else if stronghold {
+                    unit.entrenchment = unit.entrenchment.max(max_entrench / 2);
+                }
             }
             unit.entrenchment = unit.entrenchment.min(max_entrench);
 

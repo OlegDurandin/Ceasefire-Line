@@ -166,6 +166,7 @@
     "zero_supply_ap": true,
     "reinforce_locks": false,
     "nm_by_cost": true,
-    "hq_strength_scaling": false
+    "hq_strength_scaling": false,
+    "fortified_hold": false
   }
 }
