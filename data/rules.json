@@ -27,6 +27,7 @@
     "max": 10,
     "decay_ap": 2,
     "bridge_penalty": 2,
+    "ferry_penalty": 3,
     "hq_bonus_radius_km": 20,
     "hq_min_supply": 5,
     "hq_bonus": 1,

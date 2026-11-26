@@ -15,8 +15,18 @@ fn sinai67_map_loads_and_validates() {
     assert_eq!(setup.hex_km, Some(10.0));
     assert_eq!(setup.map.hexes().count(), 29 * 19);
     assert_eq!(validate(&data, &setup), vec![]);
-    // 1967: ferries, no bridges over the canal.
-    assert_eq!(setup.map.bridges().count(), 0);
+    // 1967 (designer decision 2026-11-26): ferries at Ismailia and Suez
+    // (supply only) and the El Ferdan railway bridge, built on 5 June.
+    use ceasefire_core::map::BridgeState;
+    let states: Vec<BridgeState> = setup.map.bridges().map(|(_, s)| s).collect();
+    assert_eq!(
+        states.iter().filter(|s| **s == BridgeState::Ferry).count(),
+        2
+    );
+    assert_eq!(
+        states.iter().filter(|s| **s == BridgeState::Built).count(),
+        1
+    );
     assert!(setup.map.airfields().count() >= 9);
 }
 

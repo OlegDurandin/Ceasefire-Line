@@ -305,6 +305,11 @@ pub enum Event {
         chance: f64,
         destroyed: bool,
     },
+    /// R-EVT-01 effect `destroy_bridge`: a bridge or ferry blown up.
+    BridgeBlown {
+        a: Hex,
+        b: Hex,
+    },
     /// R-EVT-01.
     ScenarioEventFired {
         id: String,

@@ -114,7 +114,7 @@ impl GameState {
         if unit.ap_halves < self.ap.attack {
             return Err(attack(AttackError::NoAp));
         }
-        if !self.map.has_bridge(a, b) {
+        if !self.map.has_crossing(a, b) {
             return Err(refuse(id, BridgeError::NoBridge));
         }
         let dist = unit.hex.distance(a).min(unit.hex.distance(b));

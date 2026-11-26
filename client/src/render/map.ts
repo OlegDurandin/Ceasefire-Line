@@ -187,9 +187,23 @@ export function drawBridges(list: ScenarioView["bridges"], tex: MapTextures, siz
   const layer = new Container();
   const ax = ([col, row]: [number, number]) => offsetToAxial({ col, row });
   for (const b of list) {
+    const [p, q] = sharedSide(ax(b.a), ax(b.b), size);
+    // R-MOVE-02: a ferry (supply only) is a dashed line across the side.
+    if (b.state === "ferry" || b.state === "ferry_destroyed") {
+      const ca = hexCenter(ax(b.a), size);
+      const cb = hexCenter(ax(b.b), size);
+      const m = { x: (p.x + q.x) / 2, y: (p.y + q.y) / 2 };
+      const k = 0.32;
+      const from = { x: m.x + (ca.x - m.x) * k, y: m.y + (ca.y - m.y) * k };
+      const to = { x: m.x + (cb.x - m.x) * k, y: m.y + (cb.y - m.y) * k };
+      const g = new Graphics();
+      dashPolyline(g, [from, to], size * 0.09, size * 0.07);
+      g.stroke({ width: size * 0.07, color: b.state === "ferry" ? 0xe8d9b0 : 0x6a5a48, alpha: b.state === "ferry" ? 0.95 : 0.6, cap: "round" });
+      layer.addChild(g);
+      continue;
+    }
     const t = b.state === "built" ? tex.bridge : tex.bridgeDestroyed;
     if (!t) continue;
-    const [p, q] = sharedSide(ax(b.a), ax(b.b), size);
     const s = new Sprite(t);
     s.anchor.set(0.5);
     s.position.set((p.x + q.x) / 2, (p.y + q.y) / 2);

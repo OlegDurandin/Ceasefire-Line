@@ -56,6 +56,36 @@
           "key": "event.sinai67.withdrawal_order"
         }
       ]
+    },
+    {
+      "id": "egy_ferdan_demolition",
+      "_comment": "R-MOVE-02, R-EVT-01: Egyptian engineers blow the El Ferdan bridge when an Israeli ground unit is within 20 km of its east end (assumption: exact date unknown).",
+      "trigger": {
+        "kind": "unit_near",
+        "side": 0,
+        "hex": [
+          1,
+          10
+        ],
+        "km": 20
+      },
+      "effects": [
+        {
+          "kind": "destroy_bridge",
+          "a": [
+            0,
+            10
+          ],
+          "b": [
+            1,
+            10
+          ]
+        },
+        {
+          "kind": "message",
+          "key": "event.ferdan_demolished"
+        }
+      ]
     }
   ]
 }

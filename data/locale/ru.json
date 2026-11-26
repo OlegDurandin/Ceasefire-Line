@@ -127,6 +127,8 @@
   "log.advanced": "{unit} занимает {hex}",
   "log.attrition": "{unit}: истощение −{steps}",
   "log.deserted": "{unit}: распад в окружении −{steps}",
+  "event.ferdan_demolished": "Мост у Эль-Фердана взорван",
+  "log.bridge_blown": "Взорван мост {a}–{b}",
   "log.source_besieged": "Источник снабжения {hex} в осаде: {value}",
   "ui.desertion_risk": "Под угрозой распада: снабжение 0 и рядом не меньше двух сильных юнитов противника — в начале своей фазы может потерять шаг (R-SUP-03)",
   "log.reinforced": "{unit}: пополнение +{steps} за {cost} MPP",

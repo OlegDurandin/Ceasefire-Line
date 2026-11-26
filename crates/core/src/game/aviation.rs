@@ -272,7 +272,7 @@ impl GameState {
                 if !class.has_tag(UnitTag::StrikeInfrastructure) {
                     return Err(refuse(id, AirError::NotInfrastructureStriker));
                 }
-                if !self.map.has_bridge(x, y) {
+                if !self.map.has_crossing(x, y) {
                     return Err(refuse(id, AirError::NoBridge));
                 }
                 x

@@ -202,14 +202,15 @@ fn r_ai_01_salient_fed_by_one_road() {
     let s = salient();
     let c = chokepoints(&s, B, k()).unwrap();
     let top3: Vec<Hex> = c.iter().take(3).map(|x| x.0).collect();
-    assert!(top3.contains(&Hex::new(4, 0)), "{c:?}");
+    // One trunk gives one candidate: one of the road hexes (the narrowest).
+    assert!(
+        top3.contains(&Hex::new(4, 0)) || top3.contains(&Hex::new(5, 0)),
+        "{c:?}"
+    );
 }
 
-/// Test 1b: «Синай-67» at the start, Israel's view — the Mitla or Giddi
-/// pass, or Bir Gifgafa (its hex or a neighbour: the hex itself holds an
-/// Egyptian HQ), is among the K candidates. With no canal crossings in the
-/// 1967 data all Egyptian supply on the Sinai comes from Kantara (1,7), so
-/// the passes carry none (docs/decisions.md).
+/// Test 1b: «Синай-67» at the start, Israel's view — the Mitla and/or Giddi
+/// pass is among the K candidates (supply from Suez comes by the ferry).
 #[test]
 fn r_ai_01_sinai_passes_are_chokepoints() {
     let setup = load_scenario(
@@ -220,13 +221,9 @@ fn r_ai_01_sinai_passes_are_chokepoints() {
     .unwrap();
     let (s, _) = GameState::new(data(), setup).unwrap();
     let c = chokepoints(&s, B, k()).unwrap();
-    let gifgafa = offset_to_axial([10, 13]);
     let passes = [offset_to_axial([8, 17]), offset_to_axial([8, 15])];
-    let hit = c
-        .iter()
-        .any(|(h, _)| passes.contains(h) || h.distance(gifgafa) <= 1);
     let found: Vec<[i32; 2]> = c.iter().map(|x| axial_to_offset(x.0)).collect();
-    assert!(hit, "{found:?}");
+    assert!(c.iter().any(|(h, _)| passes.contains(h)), "{found:?}");
 }
 
 /// Item 3: «Охват» — with pocket operations on, the pincers become an

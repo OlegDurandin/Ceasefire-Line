@@ -16,7 +16,7 @@ export interface EdgeView {
 }
 
 export interface BridgeView extends EdgeView {
-  state: "built" | "destroyed";
+  state: "built" | "destroyed" | "ferry" | "ferry_destroyed";
 }
 
 export interface UnitView {

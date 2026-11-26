@@ -27,6 +27,9 @@ impl HexCell {
 pub enum BridgeState {
     Built,
     Destroyed,
+    /// R-MOVE-02: a ferry carries supply only (R-SUP-02), no movement or ZOC.
+    Ferry,
+    FerryDestroyed,
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
@@ -82,9 +85,21 @@ impl HexMap {
         Ok(())
     }
 
-    /// R-MOVE-02: the bridge is destroyed; its remains stay until rebuilt.
+    /// R-MOVE-02: a ferry across a canal edge (supply only).
+    pub fn add_ferry(&mut self, a: Hex, b: Hex) -> Result<(), RuleError> {
+        self.bridges.insert(edge(a, b)?, BridgeState::Ferry);
+        Ok(())
+    }
+
+    /// R-MOVE-02: the bridge (or ferry) is destroyed; its remains stay until rebuilt.
     pub fn destroy_bridge(&mut self, a: Hex, b: Hex) -> Result<(), RuleError> {
-        self.bridges.insert(edge(a, b)?, BridgeState::Destroyed);
+        let e = edge(a, b)?;
+        let state = if self.bridges.get(&e) == Some(&BridgeState::Ferry) {
+            BridgeState::FerryDestroyed
+        } else {
+            BridgeState::Destroyed
+        };
+        self.bridges.insert(e, state);
         Ok(())
     }
 
@@ -144,6 +159,16 @@ impl HexMap {
     /// Only a built bridge carries traffic and supply.
     pub fn has_bridge(&self, a: Hex, b: Hex) -> bool {
         self.bridge_state(a, b) == Some(BridgeState::Built)
+    }
+
+    /// R-MOVE-02: a working ferry (supply only).
+    pub fn has_ferry(&self, a: Hex, b: Hex) -> bool {
+        self.bridge_state(a, b) == Some(BridgeState::Ferry)
+    }
+
+    /// A built bridge or a working ferry: what strikes can destroy.
+    pub fn has_crossing(&self, a: Hex, b: Hex) -> bool {
+        self.has_bridge(a, b) || self.has_ferry(a, b)
     }
 
     /// R-AIR-01.

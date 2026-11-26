@@ -26,6 +26,8 @@ struct Dependency {
     weight: f64,
     units: Vec<u32>,
     cost: u32,
+    /// A supply source (no predecessor on the path).
+    source: bool,
 }
 
 fn dependency(
@@ -50,6 +52,7 @@ fn dependency(
                 weight: 0.0,
                 units: Vec::new(),
                 cost: tree.cost[&h],
+                source: tree.pred.get(&h).is_some_and(Option::is_none),
             });
             e.weight += w;
             e.units.push(u.id.0);
@@ -68,9 +71,9 @@ pub fn supply_dependency(s: &GameState, enemy: SideId) -> Result<BTreeMap<Hex, f
 }
 
 /// The `k` chokepoints: free hexes (no unit) with the largest D(h). Hexes
-/// that cut the very same units (one trunk of the tree) give one candidate,
-/// the one farthest along the path — nearest the units it cuts off. Largest
-/// first; ties by hex order (deterministic).
+/// that cut the very same units (one trunk of the tree) give one candidate:
+/// the narrowest — most impassable neighbours (a pass among mountains) —
+/// then the farthest along the path. Largest D first; ties by hex order.
 pub fn chokepoints(s: &GameState, enemy: SideId, k: usize) -> Result<Vec<(Hex, f64)>, RuleError> {
     chokepoints_if(s, enemy, &[], k)
 }
@@ -84,17 +87,34 @@ pub fn chokepoints_if(
 ) -> Result<Vec<(Hex, f64)>, RuleError> {
     let mut occupied: std::collections::BTreeSet<Hex> = s.units().map(|u| u.hex).collect();
     occupied.extend(held.iter().map(|h| h.0));
-    let mut by_units: BTreeMap<Vec<u32>, (Hex, f64, u32)> = BTreeMap::new();
+    // Narrowness: neighbours whose terrain cannot be entered (mountains
+    // without a pass, water); the map's edge and canal sides do not count.
+    let narrowness = |h: Hex| -> usize {
+        h.neighbors()
+            .into_iter()
+            .filter_map(|n| s.map().cell(n))
+            .filter(|c| {
+                s.data()
+                    .terrain
+                    .get(&c.terrain)
+                    .is_ok_and(|t| t.def.impassable || (t.def.requires_pass && !c.pass))
+            })
+            .count()
+    };
+    // Per trunk: (hex, D, blocked neighbours, path cost).
+    let mut by_units: BTreeMap<Vec<u32>, (Hex, f64, usize, u32)> = BTreeMap::new();
     for (h, d) in dependency(s, enemy, held)? {
-        if d.weight <= 0.0 || occupied.contains(&h) {
+        // Sources are not chokepoints: they lie in the enemy's rear.
+        if d.weight <= 0.0 || occupied.contains(&h) || d.source {
             continue;
         }
-        let e = by_units.entry(d.units).or_insert((h, d.weight, d.cost));
-        if d.cost > e.2 {
-            *e = (h, d.weight, d.cost);
+        let n = narrowness(h);
+        let e = by_units.entry(d.units).or_insert((h, d.weight, n, d.cost));
+        if n > e.2 || (n == e.2 && d.cost > e.3) {
+            *e = (h, d.weight, n, d.cost);
         }
     }
-    let mut c: Vec<(Hex, f64)> = by_units.into_values().map(|(h, w, _)| (h, w)).collect();
+    let mut c: Vec<(Hex, f64)> = by_units.into_values().map(|(h, w, _, _)| (h, w)).collect();
     c.sort_by(|a, b| b.1.total_cmp(&a.1).then(a.0.cmp(&b.0)));
     c.truncate(k);
     Ok(c)

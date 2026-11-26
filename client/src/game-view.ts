@@ -59,7 +59,7 @@ export interface GameStateView {
   control: [[number, number], number][];
   pending_advance: [number, [number, number]] | null;
   outcome: Outcome | null;
-  bridges: { a: [number, number]; b: [number, number]; state: "built" | "destroyed" }[];
+  bridges: { a: [number, number]; b: [number, number]; state: "built" | "destroyed" | "ferry" | "ferry_destroyed" }[];
   /** R-MOVE-06: neutral closed territory. */
   neutral: [number, number][];
   objectives: { hex: [number, number]; vp: number; nm_value: number; owner: number | null }[];

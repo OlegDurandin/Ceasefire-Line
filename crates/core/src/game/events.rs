@@ -21,6 +21,8 @@ pub enum Predicate {
     NmAtMost { side: SideId, pct: u8 },
     /// Steps lost by `side` so far.
     LossesAtLeast { side: SideId, steps: u32 },
+    /// A ground unit of `side` within `km` (whole km) of `hex` (R-SCALE-01: km → hexes).
+    UnitNear { side: SideId, hex: Hex, km: u32 },
     /// Any of the predicates holds.
     AnyOf { of: Vec<Predicate> },
     /// All of the predicates hold.
@@ -69,6 +71,11 @@ pub enum Effect {
         side: SideId,
         pct: u8,
     },
+    /// R-MOVE-02: a bridge (or ferry) on the side `a`|`b` is blown up.
+    DestroyBridge {
+        a: Hex,
+        b: Hex,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -91,6 +98,12 @@ impl GameState {
                 .is_some_and(|s| s.national_morale_pct <= *pct),
             Predicate::LossesAtLeast { side, steps } => {
                 self.side(*side).is_some_and(|s| s.steps_lost >= *steps)
+            }
+            Predicate::UnitNear { side, hex, km } => {
+                let r = crate::scale::range_in_hexes(f64::from(*km), self.hex_km);
+                self.units
+                    .values()
+                    .any(|u| u.side == *side && u.hex.distance(*hex) <= r)
             }
             Predicate::AnyOf { of } => of.iter().any(|p| self.holds(p)),
             Predicate::AllOf { of } => of.iter().all(|p| self.holds(p)),
@@ -199,6 +212,12 @@ impl GameState {
                     side: *side,
                     pct: *pct,
                 });
+            }
+            Effect::DestroyBridge { a, b } => {
+                if self.map.has_crossing(*a, *b) {
+                    self.map.destroy_bridge(*a, *b)?;
+                    events.push(Event::BridgeBlown { a: *a, b: *b });
+                }
             }
         }
         Ok(())

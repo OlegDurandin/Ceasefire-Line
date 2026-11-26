@@ -34,7 +34,7 @@
   "pockets": {
     "_comment": "R-AI-01 «поиск котлов» (step 7): chokepoint candidates K, pincers, lookahead phases, supply bands.",
     "enabled": false,
-    "candidates": 8,
+    "candidates": 10,
     "max_pincers": 2,
     "lookahead_phases": 2,
     "cut_supply_max": 3,

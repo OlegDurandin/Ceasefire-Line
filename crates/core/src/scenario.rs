@@ -73,6 +73,14 @@ struct MapFile {
     /// R-MOVE-02: destroyed bridges (remains on the canal edge).
     #[serde(default)]
     destroyed_bridges: Vec<[[i32; 2]; 2]>,
+    /// R-MOVE-02: ferries — supply across the canal only.
+    #[serde(default)]
+    ferries: Vec<[[i32; 2]; 2]>,
+    /// Sources of bridges and ferries (map, date) or `"assumption": true`;
+    /// the rules ignore them.
+    #[serde(default)]
+    #[allow(dead_code)]
+    crossing_sources: Option<serde_json::Value>,
     /// Where a generated map came from (mapgen); not used by the rules.
     #[serde(default)]
     #[allow(dead_code)]
@@ -365,6 +373,7 @@ enum PredicateFile {
     HexControl { hex: [i32; 2], side: u8 },
     NmAtMost { side: u8, pct: u8 },
     LossesAtLeast { side: u8, steps: u32 },
+    UnitNear { side: u8, hex: [i32; 2], km: u32 },
     AnyOf { of: Vec<PredicateFile> },
     AllOf { of: Vec<PredicateFile> },
 }
@@ -384,6 +393,11 @@ impl From<PredicateFile> for Predicate {
             PredicateFile::LossesAtLeast { side, steps } => Predicate::LossesAtLeast {
                 side: SideId(side),
                 steps,
+            },
+            PredicateFile::UnitNear { side, hex, km } => Predicate::UnitNear {
+                side: SideId(side),
+                hex: offset_to_axial(hex),
+                km,
             },
             PredicateFile::AnyOf { of } => Predicate::AnyOf {
                 of: of.into_iter().map(Into::into).collect(),
@@ -407,6 +421,7 @@ enum EffectFile {
     UnitsMorale { side: u8, change: i32 },
     UnitsEntrenchment { side: u8, change: i32 },
     UnitsReadinessPenalty { side: u8, pct: u8 },
+    DestroyBridge { a: [i32; 2], b: [i32; 2] },
 }
 
 impl From<EffectFile> for Effect {
@@ -437,6 +452,10 @@ impl From<EffectFile> for Effect {
             EffectFile::UnitsReadinessPenalty { side, pct } => Effect::UnitsReadinessPenalty {
                 side: SideId(side),
                 pct,
+            },
+            EffectFile::DestroyBridge { a, b } => Effect::DestroyBridge {
+                a: offset_to_axial(a),
+                b: offset_to_axial(b),
             },
         }
     }
@@ -549,6 +568,9 @@ pub fn load_map(json: &str) -> Result<(HexMap, BTreeMap<Hex, SideId>), RuleError
     }
     for [a, b] in &file.destroyed_bridges {
         map.destroy_bridge(offset_to_axial(*a), offset_to_axial(*b))?;
+    }
+    for [a, b] in &file.ferries {
+        map.add_ferry(offset_to_axial(*a), offset_to_axial(*b))?;
     }
     Ok((map, control))
 }
@@ -960,6 +982,10 @@ fn validate_events(
                 }
                 Predicate::NmAtMost { side, .. } | Predicate::LossesAtLeast { side, .. } => {
                     side_refs.push(*side)
+                }
+                Predicate::UnitNear { side, hex, .. } => {
+                    side_refs.push(*side);
+                    hexes.push(*hex);
                 }
                 Predicate::Turn { .. } => {}
                 Predicate::AnyOf { of } | Predicate::AllOf { of } => stack.extend(of),

@@ -164,7 +164,18 @@
       3
     ]
   ],
-  "bridges": [],
+  "bridges": [
+    [
+      [
+        0,
+        10
+      ],
+      [
+        1,
+        10
+      ]
+    ]
+  ],
   "canals": [
     [
       [
@@ -7604,5 +7615,96 @@
       ]
     ]
   ],
-  "width": 29
+  "width": 29,
+  "ferries": [
+    [
+      [
+        0,
+        11
+      ],
+      [
+        1,
+        11
+      ]
+    ],
+    [
+      [
+        3,
+        17
+      ],
+      [
+        4,
+        17
+      ]
+    ]
+  ],
+  "crossing_sources": [
+    {
+      "kind": "bridge",
+      "name": "El Ferdan railway bridge",
+      "sides": [
+        [
+          [
+            0,
+            10
+          ],
+          [
+            1,
+            10
+          ]
+        ]
+      ],
+      "source": {
+        "refs": [
+          "Encyclopaedia Britannica: El-Ferdan Bridge",
+          "Structurae: El Ferdan Railway Bridge (1963)"
+        ],
+        "note": "swing bridge opened 1963, destroyed by Egyptian engineers in 1967; ~30.66 N 32.33 E"
+      },
+      "state_on": "1967-06-05",
+      "assumption": true,
+      "assumption_note": "exact date of the demolition unknown; scenario event blows it when an Israeli ground unit is within 20 km of the east end"
+    },
+    {
+      "kind": "ferry",
+      "name": "Ismailia ferry",
+      "sides": [
+        [
+          [
+            0,
+            11
+          ],
+          [
+            1,
+            11
+          ]
+        ]
+      ],
+      "assumption": true,
+      "assumption_note": "canal ferries at Ismailia in June 1967 (designer decision 2026-11-26); exact crossing points to be checked against sources"
+    },
+    {
+      "kind": "ferry",
+      "name": "Suez — Port Tawfiq ferry",
+      "sides": [
+        [
+          [
+            3,
+            17
+          ],
+          [
+            4,
+            17
+          ]
+        ]
+      ],
+      "assumption": true,
+      "assumption_note": "ferry at Suez / Port Tawfiq in June 1967 (designer decision 2026-11-26); to be checked against sources"
+    },
+    {
+      "kind": "none",
+      "name": "Kantara",
+      "note": "no Egyptian supply source on the west bank at Kantara in the scenario: no ferry needed (the source (1,7) is on the east bank)"
+    }
+  ]
 }

@@ -97,6 +97,8 @@ pub struct SupplyRules {
     pub max: u8,
     pub decay_ap: f64,
     pub bridge_penalty: u8,
+    /// R-MOVE-02 / R-SUP-02: supply across a canal by ferry (no movement).
+    pub ferry_penalty: u8,
     pub hq_bonus_radius_km: f64,
     pub hq_min_supply: u8,
     pub hq_bonus: u8,

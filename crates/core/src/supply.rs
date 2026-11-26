@@ -18,6 +18,8 @@ pub struct SupplyParams {
     /// `supplyDecayAP` in half-AP: supply drops by 1 per this much path cost.
     pub decay_halves: u32,
     pub bridge_penalty: u8,
+    /// R-MOVE-02: supply across a canal by ferry.
+    pub ferry_penalty: u8,
     pub hq_radius: u32,
     pub hq_min_supply: u8,
     pub hq_bonus: u8,
@@ -48,6 +50,7 @@ impl SupplyParams {
             max: rules.max,
             decay_halves,
             bridge_penalty: rules.bridge_penalty,
+            ferry_penalty: rules.ferry_penalty,
             hq_radius: range_in_hexes(rules.hq_bonus_radius_km, hex_km),
             hq_min_supply: rules.hq_min_supply,
             hq_bonus: rules.hq_bonus,
@@ -224,19 +227,30 @@ pub fn supply_tree(
             if enemy_at(next) || !own(next) || !inside(next) {
                 continue;
             }
-            let Some(step) = entry_cost_halves(
-                input.map,
-                input.terrain,
-                hex,
-                next,
-                Mobility::Tracked,
-                zoc.contains(&next),
-            )?
-            else {
+            // R-MOVE-02: a ferry carries supply over the canal (terrain cost of
+            // the far bank, −ferry_penalty), never movement.
+            let ferry = input.map.has_canal(hex, next)
+                && !input.map.has_bridge(hex, next)
+                && input.map.has_ferry(hex, next);
+            let step = if ferry {
+                ferry_entry_halves(input.map, input.terrain, next)?
+            } else {
+                entry_cost_halves(
+                    input.map,
+                    input.terrain,
+                    hex,
+                    next,
+                    Mobility::Tracked,
+                    zoc.contains(&next),
+                )?
+            };
+            let Some(step) = step else {
                 continue;
             };
             let bridge = if input.map.has_bridge(hex, next) {
                 u32::from(p.bridge_penalty) * p.decay_halves
+            } else if ferry {
+                u32::from(p.ferry_penalty) * p.decay_halves
             } else {
                 0
             };
@@ -249,6 +263,25 @@ pub fn supply_tree(
         }
     }
     Ok(tree)
+}
+
+/// Entering `to` over a ferry: its terrain cost (tracked), if passable.
+fn ferry_entry_halves(
+    map: &HexMap,
+    terrain: &TerrainCatalog,
+    to: Hex,
+) -> Result<Option<u32>, RuleError> {
+    let Some(cell) = map.cell(to) else {
+        return Ok(None);
+    };
+    if map.is_closed(to) {
+        return Ok(None);
+    }
+    let t = terrain.get(&cell.terrain)?;
+    if t.def.impassable || (t.def.requires_pass && !cell.pass) {
+        return Ok(None);
+    }
+    Ok(Some(t.ap_halves))
 }
 
 /// Supply levels from `sources` (levels ≤ 0 dropped).
