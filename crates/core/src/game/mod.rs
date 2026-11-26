@@ -25,7 +25,7 @@ pub use combats::{DeclaredAttack, PendingCombat};
 pub use command::{Command, EndReason, Event, NmReason, Outcome, SetupWarning, VictoryLevel};
 pub use events::{Effect, Predicate, ScenarioEvent};
 
-use crate::data::{ap_to_halves, GameData, ReadinessRules, UnitClass};
+use crate::data::{ap_to_halves, GameData, ReadinessRules, UnitClass, Variants};
 use crate::error::RuleError;
 use crate::hex::Hex;
 use crate::map::HexMap;
@@ -321,6 +321,8 @@ pub struct ScenarioSetup {
     pub neutral: Vec<NeutralZone>,
     /// R-AIR-01: bases off the map.
     pub offmap_bases: Vec<OffMapBase>,
+    /// Rule variants switched on or off for this scenario (over `rules.variants`).
+    pub variants: BTreeMap<String, bool>,
 }
 
 /// R-MOVE-06: a neutral country's hexes in a scenario.
@@ -344,6 +346,8 @@ struct ApParams {
 #[derive(Debug, Clone, PartialEq)]
 pub struct GameState {
     data: Arc<GameData>,
+    /// `rules.variants` with the scenario's overrides.
+    variants: Variants,
     hex_km: f64,
     supply_params: SupplyParams,
     ap: ApParams,
@@ -533,7 +537,9 @@ impl GameState {
         }
         // Ids follow the scenario's unit list, aircraft included.
         let next_unit_id = setup.units.len() as u32 + 1;
+        let variants = data.rules.variants.with_overrides(&setup.variants)?;
         let mut state = Self {
+            variants,
             air,
             offmap_bases: setup.offmap_bases.clone(),
             data,
@@ -677,6 +683,21 @@ impl GameState {
 
     pub fn data(&self) -> &GameData {
         &self.data
+    }
+
+    /// Rule variants in force (SC alignment, `rules.variants` + scenario).
+    pub fn variants(&self) -> Variants {
+        self.variants
+    }
+
+    /// R-COMBAT-02 variant `attack_strips_entrenchment`: levels a ground
+    /// attack or an air strike strips from its target (0 when off).
+    pub fn attack_entrench_loss(&self) -> u8 {
+        if self.variants.attack_strips_entrenchment {
+            self.data.rules.combat.attack_entrench_loss
+        } else {
+            0
+        }
     }
 
     pub fn turn(&self) -> u32 {

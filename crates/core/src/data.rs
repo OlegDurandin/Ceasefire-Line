@@ -38,6 +38,9 @@ pub struct CombatRules {
     pub canal_defense_mult: f64,
     pub forecast_low_percentile: f64,
     pub forecast_high_percentile: f64,
+    /// R-COMBAT-02 variant `attack_strips_entrenchment`: levels a ground
+    /// attack or an air strike strips from the target after the combat.
+    pub attack_entrench_loss: u8,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -250,6 +253,50 @@ pub struct ScaleRules {
     pub default_hex_km: f64,
 }
 
+/// SC alignment of the core loop (designer task 2026-11-26): rule variants,
+/// each off until its A/B run decides. The numbers live in their sections.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[serde(deny_unknown_fields, default)]
+pub struct Variants {
+    /// R-COMBAT-02: every ground attack and air strike strips entrenchment.
+    pub attack_strips_entrenchment: bool,
+    /// R-COMBAT-07: prepared attack.
+    pub prepared_attack: bool,
+    /// R-COMBAT-05: attacks on a unit without supply hit harder.
+    pub unsupplied_target: bool,
+    /// R-SUP-06: HQ as a supply node (replaces the R-SUP-02 HQ bonus).
+    pub hq_supply_node: bool,
+    /// R-MOVE-05: strategic transfer costs morale.
+    pub transfer_morale: bool,
+    /// R-UNIT-02: supply 0 costs more AP than supply 1–3.
+    pub zero_supply_ap: bool,
+    /// R-ECO-02: a reinforced unit does not act; no elite steps next to the enemy.
+    pub reinforce_locks: bool,
+    /// R-NM-01: NM for a destroyed unit by its price.
+    pub nm_by_cost: bool,
+}
+
+impl Variants {
+    /// Applies `name → on` overrides (scenario `variants`, sim `--variant`).
+    pub fn with_overrides(self, overrides: &BTreeMap<String, bool>) -> Result<Self, RuleError> {
+        if overrides.is_empty() {
+            return Ok(self);
+        }
+        let mut v = serde_json::to_value(self).map_err(|e| RuleError::Parse(e.to_string()))?;
+        for (k, on) in overrides {
+            match v.get_mut(k) {
+                Some(slot) => *slot = serde_json::Value::Bool(*on),
+                None => {
+                    return Err(RuleError::InvalidData(format!(
+                        "unknown rule variant `{k}`"
+                    )))
+                }
+            }
+        }
+        serde_json::from_value(v).map_err(|e| RuleError::Parse(e.to_string()))
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Rules {
@@ -271,6 +318,7 @@ pub struct Rules {
     pub national_morale: NationalMoraleRules,
     pub bridge: BridgeRules,
     pub tactical: TacticalRules,
+    pub variants: Variants,
 }
 
 impl Rules {

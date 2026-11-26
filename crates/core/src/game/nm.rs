@@ -244,6 +244,7 @@ mod tests {
             tech_boosts: vec![],
             neutral: vec![],
             offmap_bases: vec![],
+            variants: BTreeMap::new(),
         };
         GameState::new(Arc::new(data), setup).unwrap().0
     }

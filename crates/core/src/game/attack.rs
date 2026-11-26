@@ -257,8 +257,11 @@ impl GameState {
                 self.charge_losses(side, lost, &mut events)?;
             }
         }
+        let strip = self.attack_entrench_loss();
         if let Some(u) = self.units.get_mut(&target) {
             let lost = u.lose_steps(defender_losses, rules.morale.loss_per_step);
+            // R-COMBAT-02 variant: the attack strips entrenchment after the combat.
+            u.entrenchment = u.entrenchment.saturating_sub(strip);
             u.attacks_received += 1;
             u.fought = true;
             u.attacked_by.push(id);

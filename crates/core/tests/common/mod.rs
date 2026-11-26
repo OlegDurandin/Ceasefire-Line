@@ -115,6 +115,7 @@ pub mod scenario {
             tech_boosts: vec![],
             neutral: vec![],
             offmap_bases: vec![],
+            variants: BTreeMap::new(),
         }
     }
 

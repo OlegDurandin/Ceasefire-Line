@@ -304,6 +304,9 @@ struct ScenarioFile {
     /// `historical` | `free`); units carry `when` conditions on them.
     #[serde(default)]
     options: BTreeMap<String, String>,
+    /// Rule variants on or off for this scenario (names of `rules.variants`).
+    #[serde(default)]
+    variants: BTreeMap<String, bool>,
     units: Vec<UnitFile>,
 }
 
@@ -662,6 +665,7 @@ pub fn load_scenario(
                 turns: b.turns,
             })
             .collect(),
+        variants: file.variants.clone(),
         offmap_bases: file
             .offmap_bases
             .into_iter()
