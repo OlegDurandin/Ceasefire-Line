@@ -1,0 +1,12 @@
+[package]
+name = "ceasefire-ai"
+description = "Ceasefire Line computer opponent (R-AI-01, R-AI-02); depends only on the rules core"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+
+[lib]
+name = "ceasefire_ai"
+
+[dependencies]
+ceasefire-core.workspace = true
