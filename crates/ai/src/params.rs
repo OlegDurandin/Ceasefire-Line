@@ -48,6 +48,9 @@ pub struct MoveWeights {
 pub struct PocketWeights {
     #[serde(default, rename = "_comment")]
     _comment: Option<String>,
+    /// Pocket operations on (stage 4 step 7, off until tuned: the AI keeps
+    /// its step 6 behaviour; the dependency map still guides tanks).
+    pub enabled: bool,
     /// K: chokepoint candidates per phase.
     pub candidates: usize,
     /// At most this many chokepoints in one pocket (pincers).
@@ -58,6 +61,23 @@ pub struct PocketWeights {
     pub cut_supply_max: u8,
     /// × for units whose supply drops to 0.
     pub zero_supply_mult: f64,
+    /// At most this many pocket operations per phase.
+    pub max_operations: usize,
+    /// A pocket worth less than this V is not an operation.
+    pub min_value: f64,
+    /// Reachability of a chokepoint: this phase / within two phases.
+    pub reach_now: f64,
+    pub reach_two_phases: f64,
+    /// × enemy threat at the chokepoint, subtracted from the utility.
+    pub loss_weight: f64,
+    /// «Сковывание»: infantry and artillery within this many hexes of a cut unit keep contact.
+    pub pin_radius: u32,
+    /// Tanks and mechs: hex score + this × D(h) / max D.
+    pub dependency_weight: f64,
+    /// «Добивание»: attack bonus (attacker's MPP per step) on targets at supply 0.
+    pub finish_bonus: f64,
+    /// No move may end where own supply in a phase drops below this, except on a chokepoint.
+    pub min_own_supply: u8,
 }
 
 #[derive(Debug, Clone, Deserialize)]

@@ -16,17 +16,43 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
+use ceasefire_core::data::UnitTag;
 use ceasefire_core::game::{Command, GameState, Unit, UnitId};
 use ceasefire_core::hex::Hex;
 use ceasefire_core::side::SideId;
+use ceasefire_core::supply::SupplyMap;
 
 use crate::params::{AiHints, AiParams};
+use crate::pockets::{best_pocket, chokepoints, pocket_value, supply_dependency, Pocket};
 
 pub struct AiV1 {
     params: AiParams,
     hints: AiHints,
     /// The game's seed: the per-game spread of the weights comes from it.
     seed: u64,
+    /// R-AI-01 operational level, once per phase: pockets and roles.
+    plan: Option<Plan>,
+}
+
+/// R-AI-01 «поиск котлов»: the phase's pocket operations and unit roles.
+#[derive(Debug, Clone, Default)]
+pub struct Plan {
+    /// (turn, side) the plan was made for.
+    key: (u32, u8),
+    /// Pockets chosen as operations, most valuable first.
+    pub pockets: Vec<Pocket>,
+    /// «Охват»: tank and mech brigades sent to a chokepoint.
+    pub envelop: BTreeMap<UnitId, Hex>,
+    /// «Горловина»: units standing on a chokepoint hold it.
+    pub hold: BTreeSet<UnitId>,
+    /// «Сковывание»: infantry and artillery keep contact with a cut unit.
+    pub pin: BTreeMap<UnitId, Hex>,
+    /// D(h) of the enemy, normalised to 0..1.
+    pub dependency: BTreeMap<Hex, f64>,
+    /// Chokepoint hexes of the operations.
+    pub chokes: BTreeSet<Hex>,
+    /// Own hex supply now (for the «no stranding» rule).
+    own_supply: SupplyMap,
 }
 
 /// SplitMix64 → [0, 1): a fixed, platform-independent spread from the seed.
@@ -57,7 +83,175 @@ impl AiV1 {
             params,
             hints,
             seed,
+            plan: None,
         }
+    }
+
+    /// The phase's plan (made on the first command of the phase).
+    pub fn plan_for(&mut self, s: &GameState) -> &Plan {
+        let key = (s.turn(), s.active_side().0);
+        if self.plan.as_ref().is_none_or(|p| p.key != key) {
+            self.plan = Some(self.make_plan(s, key));
+        }
+        self.plan.as_ref().expect("just made")
+    }
+
+    /// R-AI-01 «поиск котлов»: pockets worth an operation, then roles.
+    fn make_plan(&self, s: &GameState, key: (u32, u8)) -> Plan {
+        let w = &self.params.pockets;
+        let us = s.active_side();
+        let mut plan = Plan {
+            key,
+            own_supply: s.hex_supply(us).unwrap_or_default(),
+            ..Plan::default()
+        };
+        let Some(enemy) = s.units().map(|u| u.side).find(|x| *x != us) else {
+            return plan;
+        };
+        let dep = supply_dependency(s, enemy).unwrap_or_default();
+        let top = dep.values().copied().fold(0.0, f64::max);
+        if top > 0.0 {
+            plan.dependency = dep.into_iter().map(|(h, v)| (h, v / top)).collect();
+        }
+        if !w.enabled {
+            return plan;
+        }
+        // Pockets through each candidate; the same hexes count once.
+        let mut pockets: Vec<Pocket> = Vec::new();
+        for (c, _) in chokepoints(s, enemy, w.candidates).unwrap_or_default() {
+            // The chokepoint alone and its best pincers: the pair may be out of reach.
+            let single = pocket_value(s, us, enemy, &[c], w).map(|(value, cut)| Pocket {
+                hexes: vec![c],
+                value,
+                cut,
+            });
+            for p in [single, best_pocket(s, us, enemy, c, w)]
+                .into_iter()
+                .flatten()
+            {
+                let mut hexes = p.hexes.clone();
+                hexes.sort();
+                if p.value >= w.min_value
+                    && !pockets.iter().any(|q| {
+                        let mut h = q.hexes.clone();
+                        h.sort();
+                        h == hexes
+                    })
+                {
+                    pockets.push(p);
+                }
+            }
+        }
+        pockets.sort_by(|a, b| b.value.total_cmp(&a.value).then(a.hexes.cmp(&b.hexes)));
+        // Roles. Threat at a hex: enemy power around it.
+        let threat = |h: Hex| -> f64 {
+            s.units()
+                .filter(|e| e.side != us && e.hex.distance(h) <= 2)
+                .map(|e| f64::from(e.strength) / f64::from(1 + e.hex.distance(h)))
+                .sum()
+        };
+        let mut own: Vec<&Unit> = s.units().filter(|u| u.side == us).collect();
+        own.sort_by_key(|u| u.id);
+        let is_mobile = |u: &Unit| {
+            s.data()
+                .units
+                .get(&u.class)
+                .is_ok_and(|c| c.has_tag(UnitTag::Exploitation))
+        };
+        let reach_of = |u: &Unit, c: Hex| -> f64 {
+            if s.reachable(u.id).is_ok_and(|r| r.contains_key(&c)) {
+                return w.reach_now;
+            }
+            let ap = s
+                .data()
+                .units
+                .get(&u.class)
+                .ok()
+                .and_then(|cl| cl.ap)
+                .unwrap_or(0.0);
+            if f64::from(u.hex.distance(c)) <= 2.0 * ap {
+                w.reach_two_phases
+            } else {
+                0.0
+            }
+        };
+        // «Охват»: an operation only if every chokepoint gets a unit that can
+        // get there (or already holds it); utility V × Π reach − losses.
+        let mut busy: BTreeSet<UnitId> = BTreeSet::new();
+        let mut chosen: Vec<(f64, Pocket, Vec<(Hex, Option<UnitId>)>)> = Vec::new();
+        for p in pockets {
+            let mut taken = busy.clone();
+            let mut roles: Vec<(Hex, Option<UnitId>)> = Vec::new();
+            let mut reach = 1.0;
+            let mut losses = 0.0;
+            for &c in &p.hexes {
+                if let Some(u) = own.iter().find(|u| u.hex == c) {
+                    taken.insert(u.id);
+                    roles.push((c, None));
+                    continue;
+                }
+                let best = own
+                    .iter()
+                    .filter(|u| is_mobile(u) && !taken.contains(&u.id))
+                    .map(|u| (reach_of(u, c), u.id))
+                    .filter(|(r, _)| *r > 0.0)
+                    .max_by(|a, b| a.0.total_cmp(&b.0).then(b.1.cmp(&a.1)));
+                let Some((r, id)) = best else {
+                    reach = 0.0;
+                    break;
+                };
+                taken.insert(id);
+                reach *= r;
+                losses += w.loss_weight * threat(c);
+                roles.push((c, Some(id)));
+            }
+            let utility = p.value * reach - losses;
+            if reach > 0.0 && utility > 0.0 {
+                busy = taken;
+                chosen.push((utility, p, roles));
+                if chosen.len() >= w.max_operations {
+                    break;
+                }
+            }
+        }
+        chosen.sort_by(|a, b| b.0.total_cmp(&a.0));
+        let mut pockets = Vec::new();
+        for (_, p, roles) in chosen {
+            for (c, unit) in roles {
+                plan.chokes.insert(c);
+                match unit {
+                    Some(id) => {
+                        plan.envelop.insert(id, c);
+                    }
+                    None => {
+                        if let Some(u) = own.iter().find(|u| u.hex == c) {
+                            plan.hold.insert(u.id);
+                        }
+                    }
+                }
+            }
+            pockets.push(p);
+        }
+        // «Сковывание»: infantry and artillery near the units being cut off.
+        let cut: Vec<Hex> = pockets
+            .iter()
+            .flat_map(|p| p.cut.iter())
+            .filter_map(|id| s.unit(*id).map(|u| u.hex))
+            .collect();
+        for u in own
+            .iter()
+            .filter(|u| !is_mobile(u) && u.hq_rating.is_none() && !busy.contains(&u.id))
+        {
+            if let Some(h) = cut
+                .iter()
+                .filter(|h| h.distance(u.hex) <= w.pin_radius)
+                .min_by_key(|h| (h.distance(u.hex), **h))
+            {
+                plan.pin.insert(u.id, *h);
+            }
+        }
+        plan.pockets = pockets;
+        plan
     }
 
     pub fn max_commands(&self) -> u32 {
@@ -66,6 +260,7 @@ impl AiV1 {
 
     /// The next command for the active side.
     pub fn next(&mut self, s: &GameState) -> Command {
+        self.plan_for(s);
         let b = self.board(s);
         if let Some(c) = self.advance(&b) {
             return c;
@@ -210,6 +405,11 @@ impl AiV1 {
                     w.focus_bonus * own_step
                 } else {
                     0.0
+                } + if e.supply == 0 {
+                    // «Добивание»: cut-off units first (R-COMBAT-05 ×1,5 makes it pay).
+                    self.params.pockets.finish_bonus * own_step
+                } else {
+                    0.0
                 };
                 // Rank 0: bombardment (no return fire) before attacks (rank 1).
                 let (rank, score, cmd) = if let Ok(f) = b.s.forecast_attack(u.id, e.id) {
@@ -320,6 +520,20 @@ impl AiV1 {
             };
             goals.insert(u.id, goal);
         }
+        // R-AI-01 «поиск котлов»: operations override the default goals, but
+        // not the defenders of threatened own objectives.
+        if let Some(plan) = &self.plan {
+            for (id, h) in plan.envelop.iter().chain(plan.pin.iter()) {
+                if !taken.contains(id) {
+                    goals.insert(*id, *h);
+                }
+            }
+            for id in &plan.hold {
+                if let Some(u) = b.s.unit(*id) {
+                    goals.insert(*id, u.hex);
+                }
+            }
+        }
         goals
     }
 
@@ -348,15 +562,35 @@ impl AiV1 {
             .iter()
             .filter(|e| e.hex.distance(h) == 1 && e.strength < u.strength)
             .count();
-        score + m.contact_bonus * contact as f64 * self.aggressiveness(b.side)
+        score += m.contact_bonus * contact as f64 * self.aggressiveness(b.side);
+        // R-AI-01: tanks and mechs value hexes the enemy's supply depends on.
+        let mobile =
+            b.s.data()
+                .units
+                .get(&u.class)
+                .is_ok_and(|c| c.has_tag(UnitTag::Exploitation));
+        if mobile {
+            if let Some(plan) = &self.plan {
+                score += self.params.pockets.dependency_weight
+                    * plan.dependency.get(&h).copied().unwrap_or(0.0);
+            }
+        }
+        score
     }
 
     /// The single move with the largest gain over staying put.
     fn best_move(&self, b: &Board) -> Option<Command> {
         let goals = self.goals(b);
         let mut best: Option<(f64, UnitId, Hex)> = None;
+        let plan = self.plan.as_ref();
+        let drop = b.s.data().rules.supply.max_drop_per_phase;
+        let min_supply = self.params.pockets.min_own_supply;
         for u in &b.own {
             if u.moved || !u.can_move || u.ap_halves == 0 {
+                continue;
+            }
+            // «Горловина»: a unit on a chokepoint stays and digs in.
+            if plan.is_some_and(|p| p.hold.contains(&u.id)) {
                 continue;
             }
             let Some(goal) = goals.get(&u.id).copied() else {
@@ -367,6 +601,13 @@ impl AiV1 {
             };
             let stay = self.hex_score(b, u, u.hex, goal);
             for h in reach.keys() {
+                // No stranding: own supply a phase later below the floor, unless a chokepoint.
+                if let Some(p) = plan {
+                    let ahead = p.own_supply.get(*h).max(u.supply.saturating_sub(drop));
+                    if ahead < min_supply && !p.chokes.contains(h) {
+                        continue;
+                    }
+                }
                 let gain = self.hex_score(b, u, *h, goal) - stay;
                 if gain < self.params.moves.min_gain {
                     continue;

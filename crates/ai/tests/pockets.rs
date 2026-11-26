@@ -156,6 +156,7 @@ fn two_corridors() -> GameState {
         sources: vec![src(0, 0), src(6, -3), src(6, 3)],
         units: vec![
             unit("tank", A, Hex::new(2, 0)),
+            unit("tank", A, Hex::new(1, 3)), // no ZOC on B's hexes
             unit("infantry", B, Hex::new(3, -1)),
             unit("infantry", B, Hex::new(3, 0)),
             unit("tank", B, Hex::new(3, 1)),
@@ -189,6 +190,7 @@ fn r_ai_01_two_paths_need_pincers() {
         .unwrap();
     assert_eq!(best.hexes.len(), 2, "{best:?}");
     assert_eq!(best.cut.len(), 3, "the whole salient is cut: {best:?}");
+    let _ = best_pocket;
     // One chokepoint alone cuts nothing.
     let single = ceasefire_ai::pockets::pocket_value(&s, A, B, &best.hexes[..1], &w).unwrap();
     assert_eq!(single.0, 0.0, "{single:?}");
@@ -225,4 +227,22 @@ fn r_ai_01_sinai_passes_are_chokepoints() {
         .any(|(h, _)| passes.contains(h) || h.distance(gifgafa) <= 1);
     let found: Vec<[i32; 2]> = c.iter().map(|x| axial_to_offset(x.0)).collect();
     assert!(hit, "{found:?}");
+}
+
+/// Item 3: «Охват» — with pocket operations on, the pincers become an
+/// operation and each chokepoint gets one of A's two tanks.
+#[test]
+fn r_ai_01_envelopment_assigns_tanks_to_both_chokepoints() {
+    let s = two_corridors();
+    let mut params = AiParams::from_json(AI).unwrap();
+    params.pockets.enabled = true;
+    let mut ai = ceasefire_ai::AiV1::new(params, ceasefire_ai::AiHints::default(), 1);
+    let plan = ai.plan_for(&s).clone();
+    let op = plan.pockets.first().expect("an operation");
+    assert_eq!(op.hexes.len(), 2, "{plan:?}");
+    let mut targets: Vec<Hex> = plan.envelop.values().copied().collect();
+    targets.sort();
+    let mut hexes = op.hexes.clone();
+    hexes.sort();
+    assert_eq!(targets, hexes, "one tank per chokepoint");
 }
