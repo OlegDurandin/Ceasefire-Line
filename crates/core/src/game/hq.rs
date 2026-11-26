@@ -118,13 +118,20 @@ impl GameState {
         match unit
             .attached_hq
             .and_then(|id| self.units.get(&id))
-            .and_then(|hq| hq.hq_rating)
+            .and_then(|hq| hq.hq_rating.map(|r| (r, hq.strength)))
         {
-            Some(rating) => i32::from(
-                rating
-                    .saturating_sub(h.rating_base)
-                    .saturating_mul(h.bonus_per_rating_pct),
-            ),
+            Some((rating, strength)) => {
+                let full = u32::from(rating.saturating_sub(h.rating_base))
+                    * u32::from(h.bonus_per_rating_pct);
+                // R-HQ-02 variant: × strength / 10, rounded half up to whole points.
+                let pct = if self.variants.hq_strength_scaling {
+                    let num = u64::from(full) * u64::from(strength);
+                    super::economy::div_half_up(num, u64::from(h.strength_divisor)) as u32
+                } else {
+                    full
+                };
+                i32::try_from(pct).unwrap_or(i32::MAX)
+            }
             None => -i32::from(h.unattached_readiness_pct),
         }
     }

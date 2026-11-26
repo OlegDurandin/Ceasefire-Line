@@ -115,7 +115,9 @@
     "fast_exp_rating": 8,
     "fast_exp_pct": 125,
     "unattached_readiness_pct": 10,
-    "destroyed_nm_loss": 3
+    "destroyed_nm_loss": 3,
+    "strength_divisor": 10,
+    "supply_bonus_min_strength": 5
   },
   "national_morale": {
     "unit_destroyed": 2,
@@ -163,6 +165,7 @@
     "transfer_morale": false,
     "zero_supply_ap": true,
     "reinforce_locks": false,
-    "nm_by_cost": true
+    "nm_by_cost": true,
+    "hq_strength_scaling": false
   }
 }

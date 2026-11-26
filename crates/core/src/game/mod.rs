@@ -405,6 +405,9 @@ impl GameState {
         let mut supply_params =
             SupplyParams::for_scale(&data.rules.supply, hex_km, setup.supply_decay_ap)?;
         supply_params.hq_node = variants.hq_supply_node;
+        supply_params.hq_bonus_min_strength = variants
+            .hq_strength_scaling
+            .then_some(data.rules.hq.supply_bonus_min_strength);
         let m = &data.rules.movement;
         let ap = ApParams {
             zero_supply_penalty: ap_to_halves(if variants.zero_supply_ap {

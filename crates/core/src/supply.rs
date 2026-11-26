@@ -29,6 +29,8 @@ pub struct SupplyParams {
     pub hq_node_bonus: u8,
     pub hq_node_max: u8,
     pub hq_node_strength_divisor: u8,
+    /// R-HQ-02 variant `hq_strength_scaling`: the HQ bonus needs this strength.
+    pub hq_bonus_min_strength: Option<u8>,
 }
 
 impl SupplyParams {
@@ -56,6 +58,7 @@ impl SupplyParams {
             hq_node_bonus: rules.hq_node_bonus,
             hq_node_max: rules.hq_node_max,
             hq_node_strength_divisor: rules.hq_node_strength_divisor,
+            hq_bonus_min_strength: None,
         })
     }
 }
@@ -237,6 +240,9 @@ fn apply_hq_bonus(
     let mut bonus: BTreeMap<Hex, u8> = BTreeMap::new();
     for hq in hqs {
         if base.get(&hq.hex).copied().unwrap_or(0) < p.hq_min_supply {
+            continue;
+        }
+        if p.hq_bonus_min_strength.is_some_and(|m| hq.strength < m) {
             continue;
         }
         let b = if hq.rating >= p.hq_high_rating {

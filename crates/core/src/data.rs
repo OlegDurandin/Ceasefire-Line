@@ -221,6 +221,11 @@ pub struct HqRules {
     pub fast_exp_pct: u16,
     pub unattached_readiness_pct: u8,
     pub destroyed_nm_loss: u8,
+    /// R-HQ-02 variant `hq_strength_scaling`: the readiness bonus is
+    /// × HQ strength / `strength_divisor` (rounded half up), and the R-SUP-02
+    /// supply bonus needs HQ strength ≥ `supply_bonus_min_strength`.
+    pub strength_divisor: u8,
+    pub supply_bonus_min_strength: u8,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -298,6 +303,8 @@ pub struct Variants {
     pub reinforce_locks: bool,
     /// R-NM-01: NM for a destroyed unit by its price.
     pub nm_by_cost: bool,
+    /// R-HQ-02: HQ bonuses scale with the HQ's strength.
+    pub hq_strength_scaling: bool,
 }
 
 impl Variants {
@@ -410,6 +417,11 @@ impl Rules {
         if self.national_morale.steps_per_loss == 0 {
             return Err(RuleError::InvalidData(
                 "national_morale: steps_per_loss must be > 0".into(),
+            ));
+        }
+        if self.hq.strength_divisor == 0 {
+            return Err(RuleError::InvalidData(
+                "hq: strength_divisor must be > 0".into(),
             ));
         }
         if self.supply.hq_node_strength_divisor == 0 {

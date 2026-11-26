@@ -11,7 +11,7 @@ use ceasefire_core::hex::Hex;
 use common::scenario::{board, start, unit, A, B};
 
 /// Every boolean variant, so each test states its own rules.
-const VARIANTS: [&str; 8] = [
+const VARIANTS: [&str; 9] = [
     "attack_strips_entrenchment",
     "prepared_attack",
     "unsupplied_target",
@@ -20,6 +20,7 @@ const VARIANTS: [&str; 8] = [
     "zero_supply_ap",
     "reinforce_locks",
     "nm_by_cost",
+    "hq_strength_scaling",
 ];
 
 /// The common test scenario with every variant switched off.
@@ -484,4 +485,42 @@ fn r_combat_07_bonus_per_strike_until_the_unit_moves() {
         .is_adjacent(s.unit(TANKS).unwrap().hex));
     let (b2, _) = attack(&mut s, 2);
     assert_eq!(b2, 0, "advance counts as movement");
+}
+
+/// R-HQ-02 `hq_strength_scaling`: readiness bonus (rating − 5) × 3 × strength
+/// / 10, rounded half up; the supply bonus only at HQ strength ≥ 5.
+#[test]
+fn r_hq_02_hq_bonus_scales_with_strength() {
+    let game = |hq_strength: u8, variant: bool| {
+        let (map, control) = board();
+        let mut hq = common::scenario::hq(A, Hex::new(1, 0), 8);
+        hq.strength = hq_strength;
+        let units = vec![unit("infantry", A, Hex::new(1, 1)), hq];
+        let sc = setup(map, control, units);
+        start(if variant {
+            with("hq_strength_scaling", sc)
+        } else {
+            sc
+        })
+    };
+    let bonus = |s: &GameState| s.unit(UnitId(1)).unwrap().readiness_basis.hq_pct;
+    // Rating 8: full bonus 9 points.
+    assert_eq!(bonus(&game(10, true)), 9);
+    assert_eq!(bonus(&game(5, true)), 5, "9 × 5 / 10 = 4.5 → 5");
+    assert_eq!(bonus(&game(3, true)), 3, "2.7 → 3");
+    assert_eq!(bonus(&game(3, false)), 9, "off: full bonus");
+    // Supply bonus: +2 (rating ≥ 8) at strength 5, none at 4 with the variant.
+    let supply = |s: &GameState| s.hex_supply(A).unwrap().get(Hex::new(2, 0));
+    let plain = {
+        let (map, control) = board();
+        start(setup(
+            map,
+            control,
+            vec![unit("infantry", A, Hex::new(1, 1))],
+        ))
+    };
+    let base = supply(&plain);
+    assert_eq!(supply(&game(5, true)), (base + 2).min(10));
+    assert_eq!(supply(&game(4, true)), base, "weak HQ: no supply bonus");
+    assert_eq!(supply(&game(4, false)), (base + 2).min(10));
 }
