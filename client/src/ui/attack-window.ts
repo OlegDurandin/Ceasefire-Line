@@ -5,7 +5,7 @@
 // card; after a combat the centre shows the actual losses for a moment.
 // Every number has a tooltip with its formula (the core's own inputs).
 
-import { attrText, fireLines, num, readinessTip, supplyTip, type FireInput, type FireParams, type Rules } from "../explain";
+import { attrText, fireLines, num, readinessTip, supplyTip, type AttackModifiers, type FireInput, type FireParams, type Rules } from "../explain";
 import type { AirForecast, FireParamsView, Forecast, LiveUnit } from "../game-view";
 import { fill } from "../log";
 
@@ -53,6 +53,8 @@ export interface Explained {
   kind: string;
   inputs: FireInput[];
   params: FireParams[];
+  /** Attacks only: rule variants in this attack. */
+  modifiers?: AttackModifiers;
 }
 
 const MAX_STARS = 3;
@@ -215,12 +217,14 @@ export class AttackWindow {
   }
 
   /** The biggest factor of A or D besides the base value: «(окопы 2: +30%)». */
-  private modifier(i: FireInput, which: "a" | "d", terrainName: string): string {
+  private modifier(i: FireInput, which: "a" | "d", terrainName: string, mods?: AttackModifiers): string {
     const c = this.rules.combat;
+    const unsupplied = mods?.unsupplied_target_mult ?? 1;
     const cand: [number, string][] =
       which === "a"
         ? [
-            [i.attack_mult, this.t("ui.night_mult")],
+            [i.attack_mult / unsupplied, this.t("ui.night_mult")],
+            [unsupplied, this.t("ui.unsupplied_target").toLowerCase()],
             [1 + c.exp_attack_bonus * i.shooter_exp, `${this.t("ui.exp")} ${i.shooter_exp}`],
           ]
         : [
@@ -236,9 +240,20 @@ export class AttackWindow {
   }
 
   /** «Огонь танков: A 5,5 против D 5,2 (окопы 2: +30%) → p 0,32». */
-  private fireLine(head: string, i: FireInput, p: FireParams, terrainName: string): string {
-    const full = fireLines(i, p, this.rules, this.ru).join("\n");
-    return `<span class="tip" title="${attrText(full)}">${head}: A ${num(p.a, 1)}${this.modifier(i, "a", terrainName)} ${this.t("ui.versus")} D ${num(p.d, 1)}${this.modifier(i, "d", terrainName)} → p ${num(p.p, 2)}</span>`;
+  private fireLine(head: string, i: FireInput, p: FireParams, terrainName: string, mods?: AttackModifiers): string {
+    const full = fireLines(i, p, this.rules, this.ru, mods).join("\n");
+    return `<span class="tip" title="${attrText(full)}">${head}: A ${num(p.a, 1)}${this.modifier(i, "a", terrainName, mods)} ${this.t("ui.versus")} D ${num(p.d, 1)}${this.modifier(i, "d", terrainName)} → p ${num(p.p, 2)}</span>`;
+  }
+
+  /** SC-alignment variants of this attack, one line each (R-COMBAT-07, -05, -02). */
+  private variantLines(m: AttackModifiers | undefined): string {
+    if (!m) return "";
+    const line = (text: string, tip: string) => `<br><span class="tip aw-variant" title="${attrText(tip)}">${text}</span>`;
+    let out = "";
+    if (m.prepared_pct) out += line(`${this.t("ui.prepared_attack")}: ${this.t("ui.readiness")} +${m.prepared_pct} ${this.t("ui.pp")}`, fill(this.t("ui.prepared_attack_tip"), { pct: m.prepared_pct }));
+    if (m.unsupplied_target_mult !== 1) out += line(`${this.t("ui.unsupplied_target")}: A × ${num(m.unsupplied_target_mult)}`, fill(this.t("ui.unsupplied_target_tip"), { mult: num(m.unsupplied_target_mult) }));
+    if (m.entrench_strip) out += line(`${this.t("ui.strips_entrench")}: −${m.entrench_strip}`, this.t("ui.strips_entrench_tip"));
+    return out;
   }
 
   private center(att: CardData, def: CardData, f: Forecast, ex: Explained, arrowDeg: number, actions: string): string {
@@ -255,9 +270,10 @@ export class AttackWindow {
       aLoss = `<div class="aw-big" ${tip(this.t("ui.expected_tip"))}>${big(x.attacker_losses.expected)}</div><div class="aw-cap" ${tip(this.t("ui.range_tip"))}>${this.t("ui.attacker_l")} · ${range(x.attacker_losses)}</div>`;
       dLoss = `<div class="aw-big" ${tip(this.t("ui.expected_tip"))}>${big(x.defender_losses.expected)}</div><div class="aw-cap" ${tip(this.t("ui.range_tip"))}>${this.t("ui.defender_l")} · ${range(x.defender_losses)}</div>`;
       lines =
-        this.fireLine(`${this.t("ui.fire_of")} ${att.fireName}`, ex.inputs[0]!, x.exchange.vs_defender, def.terrainName) +
+        this.fireLine(`${this.t("ui.fire_of")} ${att.fireName}`, ex.inputs[0]!, x.exchange.vs_defender, def.terrainName, ex.modifiers) +
         "<br>" +
-        this.fireLine(`${this.t("ui.reply_of")} ${def.fireName}`, ex.inputs[1]!, x.exchange.vs_attacker, att.terrainName);
+        this.fireLine(`${this.t("ui.reply_of")} ${def.fireName}`, ex.inputs[1]!, x.exchange.vs_attacker, att.terrainName) +
+        this.variantLines(ex.modifiers);
     } else {
       const d = f.defender_losses;
       aLoss = `<div class="aw-big">0</div><div class="aw-cap">${this.t("ui.attacker_l")} · 0–0</div>`;

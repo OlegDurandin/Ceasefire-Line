@@ -36,6 +36,16 @@ export interface FireInput {
   p_shift: number;
 }
 
+/** Game.explain(): what the rule variants add to an attack (SC alignment). */
+export interface AttackModifiers {
+  /** R-COMBAT-07: readiness points of a prepared attack (0: none). */
+  prepared_pct: number;
+  /** R-COMBAT-05: × A against a target without supply (1: none). */
+  unsupplied_target_mult: number;
+  /** R-COMBAT-02: entrenchment levels the attack strips. */
+  entrench_strip: number;
+}
+
 export interface FireParams {
   n: number;
   a: number;
@@ -63,14 +73,18 @@ export function turnDate(startDate: string | undefined, startTurn: number, turn:
  * The four lines of one fire: n, A, D, p with every factor, ending in the
  * core's own values (`params`).
  */
-export function fireLines(i: FireInput, params: FireParams, rules: Rules, ru: Locale): string[] {
+export function fireLines(i: FireInput, params: FireParams, rules: Rules, ru: Locale, mods?: AttackModifiers): string[] {
   const t = (k: string) => ru[k] ?? k;
   const c = rules.combat;
   const frac = i.shot_fraction !== 1 ? ` × ${num(i.shot_fraction)}` : "";
-  const n = `n = ${t("ui.strength")} ${i.strength} × ${t("ui.readiness")} ${i.readiness_pct}%${frac} = ${params.n}`;
+  const prepared = mods?.prepared_pct ? ` (${t("ui.incl")} +${mods.prepared_pct} ${t("ui.pp")} ${t("ui.prepared_attack").toLowerCase()})` : "";
+  const n = `n = ${t("ui.strength")} ${i.strength} × ${t("ui.readiness")} ${i.readiness_pct}%${prepared}${frac} = ${params.n}`;
   const aParts = [`${t("ui.attack_value")} ${num(i.attack, 1)}`];
   if (i.shooter_exp) aParts.push(`(1 + ${num(c.exp_attack_bonus)} × ${t("ui.exp")} ${i.shooter_exp})`);
-  if (i.attack_mult !== 1) aParts.push(`${num(i.attack_mult)} ${t("ui.night_mult")}`);
+  const unsupplied = mods?.unsupplied_target_mult ?? 1;
+  const night = i.attack_mult / unsupplied;
+  if (Math.abs(night - 1) > 1e-9) aParts.push(`${num(night)} ${t("ui.night_mult")}`);
+  if (unsupplied !== 1) aParts.push(`${num(unsupplied)} ${t("ui.unsupplied_target").toLowerCase()}`);
   const a = `A = ${aParts.join(" × ")} = ${num(params.a)}`;
   const dParts = [`${t("ui.defense_value")} ${num(i.defense, 1)}`];
   if (i.terrain_mult !== 1) dParts.push(`${num(i.terrain_mult)} ${t("ui.terrain_mult")}`);

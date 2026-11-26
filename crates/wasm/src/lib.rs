@@ -840,6 +840,8 @@ impl Game {
                 "kind": "attack",
                 "inputs": inputs,
                 "params": inputs.iter().map(params).collect::<Vec<_>>(),
+                // R-COMBAT-07, R-COMBAT-05, R-COMBAT-02 variants (SC alignment).
+                "modifiers": self.state.attack_modifiers(u, t).map_err(js)?,
             })),
             Err(_) => {
                 let input = self.state.explain_bombard(u, t).map_err(js)?;
