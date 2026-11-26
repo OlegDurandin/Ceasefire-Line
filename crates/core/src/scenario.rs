@@ -71,6 +71,19 @@ struct MapFile {
     #[serde(default)]
     #[allow(dead_code)]
     geo: Option<GeoFile>,
+    /// R-UI-01: historical road layer with sources (mapgen `roads`); the rules
+    /// use `roads`, which mapgen derives from it when `roads_from` says so.
+    #[serde(default)]
+    #[allow(dead_code)]
+    historical_roads: Vec<serde_json::Value>,
+    #[serde(default)]
+    #[allow(dead_code)]
+    roads_from: Option<String>,
+    /// OSM-derived roads, bridges and terrain kept while the historical layer
+    /// is in use, so it can be switched back.
+    #[serde(default)]
+    #[allow(dead_code)]
+    osm_backup: Option<serde_json::Value>,
 }
 
 #[derive(Debug, Deserialize)]

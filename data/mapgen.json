@@ -213,6 +213,16 @@
       "roof_color": "#e8dcc0",
       "edge_color": "#3a2e22"
     },
-    "seed": 1967
+    "seed": 1967,
+    "historical_roads": [
+      {
+        "kind": "secondary",
+        "width_km": 0.16
+      },
+      {
+        "kind": "primary",
+        "width_km": 0.22
+      }
+    ]
   }
 }

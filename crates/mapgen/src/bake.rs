@@ -56,6 +56,9 @@ pub struct BakeInput<'a> {
     pub proj: &'a Projection,
     /// Where city icons go (km from the bbox's north-west corner).
     pub cities: &'a [Km],
+    /// Roads drawn (OSM lines, or the historical layer) and their styles.
+    pub roads: &'a [crate::osm::Line],
+    pub road_styles: &'a [crate::config::RoadStyle],
     pub art: Art<'a>,
     pub cfg: &'a BakeConfig,
     pub shade: &'a HillshadeConfig,
@@ -669,10 +672,9 @@ fn road_layer(i: &BakeInput<'_>, pm: &mut Pixmap) -> Result<(), String> {
     let fill = solid(color(rgb(&i.cfg.road_color)?, 1.0));
     let edge_w = i.cfg.road_edge_km as f32 * p;
     let mut lines: Vec<(usize, Path, f32)> = Vec::new();
-    for l in &i.osm.roads {
+    for l in i.roads {
         let Some((rank, style)) = i
-            .cfg
-            .roads
+            .road_styles
             .iter()
             .enumerate()
             .find(|(_, s)| s.kind == l.kind)

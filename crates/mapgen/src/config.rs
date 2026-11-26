@@ -108,6 +108,8 @@ pub struct BakeConfig {
     pub vegetation: Vec<VegetationRule>,
     /// `highway` classes drawn, thinnest first.
     pub roads: Vec<RoadStyle>,
+    /// Classes of the historical road layer (`mapgen roads`), thinnest first.
+    pub historical_roads: Vec<RoadStyle>,
     pub road_color: String,
     pub road_edge_color: String,
     pub road_edge_km: f64,

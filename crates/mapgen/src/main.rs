@@ -15,6 +15,7 @@ mod hillshade;
 mod osm;
 mod output;
 mod relief;
+mod roads_layer;
 
 use std::collections::BTreeMap;
 use std::fs;
@@ -277,6 +278,9 @@ fn run(args: &[String]) -> Result<(), String> {
     if args.first().map(String::as_str) == Some("bake") {
         return run_bake(&args[1..]);
     }
+    if args.first().map(String::as_str) == Some("roads") {
+        return run_roads(&args[1..]);
+    }
     let a = parse(args)?;
     let cfg = Config::from_json(
         &fs::read_to_string(&a.config).map_err(|e| format!("{}: {e}", a.config.display()))?,
@@ -384,19 +388,15 @@ fn hex_terrain(map: &serde_json::Value) -> Result<Vec<Vec<String>>, String> {
         .collect()
 }
 
-fn run_bake(args: &[String]) -> Result<(), String> {
-    let a = parse_bake(args)?;
-    let cfg = Config::from_json(
-        &fs::read_to_string(&a.config).map_err(|e| format!("{}: {e}", a.config.display()))?,
-    )?;
-    let map = read_json(&a.map.join("map.json"))?;
+/// bbox, projection and grid of a generated map; checks its size.
+fn map_geometry(map: &serde_json::Value, cfg: &Config) -> Result<(BBox, Projection, Grid), String> {
     let geo = &map["geo"];
     let b: Vec<f64> = geo["bbox"]
         .as_array()
         .map(|v| v.iter().filter_map(serde_json::Value::as_f64).collect())
         .unwrap_or_default();
     let [west, south, east, north] = b[..] else {
-        return Err("map.json: geo.bbox is required for bake".into());
+        return Err("map.json: geo.bbox is required".into());
     };
     let bbox = BBox {
         west,
@@ -412,6 +412,47 @@ fn run_bake(args: &[String]) -> Result<(), String> {
     {
         return Err("map.json: width/height do not match geo.bbox and hex_km".into());
     }
+    Ok((bbox, proj, grid))
+}
+
+/// `mapgen roads --map DIR (--use historical|osm | --remove historical) [--config …]`
+fn run_roads(args: &[String]) -> Result<(), String> {
+    let usage = "usage: mapgen roads --map DIR (--use historical|osm | --remove historical) [--config data/mapgen.json]";
+    let (mut dir, mut action, mut config) = (None, None, PathBuf::from("data/mapgen.json"));
+    let mut it = args.iter();
+    while let Some(flag) = it.next() {
+        let v = it
+            .next()
+            .ok_or_else(|| format!("missing value for {flag}\n{usage}"))?;
+        match (flag.as_str(), v.as_str()) {
+            ("--map", _) => dir = Some(PathBuf::from(v)),
+            ("--use", "historical" | "osm") => action = Some(v.clone()),
+            ("--remove", "historical") => action = Some("remove".to_owned()),
+            ("--config", _) => config = PathBuf::from(v),
+            _ => return Err(format!("bad option {flag} {v}\n{usage}")),
+        }
+    }
+    let (dir, action) = (dir.ok_or(usage)?, action.ok_or(usage)?);
+    let cfg = Config::from_json(
+        &fs::read_to_string(&config).map_err(|e| format!("{}: {e}", config.display()))?,
+    )?;
+    let path = dir.join("map.json");
+    let mut map = read_json(&path)?;
+    let (_, proj, grid) = map_geometry(&map, &cfg)?;
+    let msg = roads_layer::apply(&mut map, &grid, &proj, &action, cfg.pass_char)?;
+    let text = serde_json::to_string_pretty(&map).map_err(|e| e.to_string())? + "\n";
+    fs::write(&path, text).map_err(|e| format!("{}: {e}", path.display()))?;
+    eprintln!("{msg} → {}", path.display());
+    Ok(())
+}
+
+fn run_bake(args: &[String]) -> Result<(), String> {
+    let a = parse_bake(args)?;
+    let cfg = Config::from_json(
+        &fs::read_to_string(&a.config).map_err(|e| format!("{}: {e}", a.config.display()))?,
+    )?;
+    let map = read_json(&a.map.join("map.json"))?;
+    let (bbox, proj, grid) = map_geometry(&map, &cfg)?;
     let terrain = hex_terrain(&map)?;
     let tiles = tiff_files(&a.dem)?
         .iter()
@@ -482,6 +523,13 @@ fn run_bake(args: &[String]) -> Result<(), String> {
             .map(|i| i.to_rgba8())
     };
     let (tree, city) = (object("tree"), object("city"));
+    // Roads: the historical layer when the map uses it, otherwise OSM lines.
+    let historical = map["roads_from"].as_str() == Some(roads_layer::FROM_HISTORICAL);
+    let (road_lines, road_styles) = if historical {
+        (roads_layer::layer_lines(&map)?, &cfg.bake.historical_roads)
+    } else {
+        (osm.roads.clone(), &cfg.bake.roads)
+    };
     let img = bake::bake(&bake::BakeInput {
         dem: &dem,
         osm: &osm,
@@ -489,6 +537,8 @@ fn run_bake(args: &[String]) -> Result<(), String> {
         grid: &grid,
         proj: &proj,
         cities: &cities,
+        roads: &road_lines,
+        road_styles,
         art: bake::Art {
             terrain: &textures,
             tree: tree.as_ref(),
@@ -763,6 +813,8 @@ mod tests {
                 grid: &grid,
                 proj: &proj,
                 cities: &cities,
+                roads: &data.roads,
+                road_styles: &cfg.bake.roads,
                 art: bake::Art {
                     terrain: &textures,
                     tree: None,
