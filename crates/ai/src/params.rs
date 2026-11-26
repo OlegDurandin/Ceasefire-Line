@@ -84,6 +84,17 @@ pub struct PocketWeights {
     pub finish_steps_per_phase: f64,
     /// Enemy phases counted when the scenario has no last turn.
     pub horizon_phases: u32,
+    /// Breakthrough: units that could move next to a defender, tried per sector.
+    pub breach_movers: usize,
+    /// × P(breach) when the way on is ZOC-to-ZOC (neighbours must be weakened first).
+    pub breach_closed_exit: f64,
+    /// A sector below this P(breach) is not attacked (no burning tanks head-on).
+    pub breach_min_p: f64,
+    /// A fresh operation replaces a carried one only if worth this much more (0.25 = 25%).
+    pub switch_margin: f64,
+    /// A unit leaves its operation at unit supply ≤ this or strength ≤ `drop_strength`.
+    pub drop_supply: u8,
+    pub drop_strength: u8,
 }
 
 #[derive(Debug, Clone, Deserialize)]

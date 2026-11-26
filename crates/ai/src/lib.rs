@@ -7,6 +7,7 @@
 //! budgets are counted in operations, never in time.
 
 pub mod greedy;
+pub mod operations;
 pub mod params;
 pub mod pockets;
 pub mod runner;

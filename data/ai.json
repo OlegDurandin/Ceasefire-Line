@@ -50,6 +50,12 @@
     "min_own_supply": 2,
     "min_vp": 0.5,
     "finish_steps_per_phase": 1.0,
-    "horizon_phases": 10
+    "horizon_phases": 10,
+    "breach_movers": 3,
+    "breach_closed_exit": 0.3,
+    "breach_min_p": 0.35,
+    "switch_margin": 0.25,
+    "drop_supply": 2,
+    "drop_strength": 3
   }
 }

@@ -22,6 +22,7 @@ use ceasefire_core::hex::Hex;
 use ceasefire_core::side::SideId;
 use ceasefire_core::supply::SupplyMap;
 
+use crate::operations::{is_mobile, op_units, reach_to, reconcile, Breach, OpStats, Operation};
 use crate::params::{AiHints, AiParams};
 use crate::pockets::{
     best_pocket, chokepoints, pocket_value, pocket_vp, supply_dependency, Pocket,
@@ -34,6 +35,14 @@ pub struct AiV1 {
     seed: u64,
     /// R-AI-01 operational level, once per phase: pockets and roles.
     plan: Option<Plan>,
+    /// Operations carried to each side's next phase (inertia).
+    carry: BTreeMap<u8, Vec<Operation>>,
+    /// Breakthrough forecasts waiting for their outcome: (P, defender, its hex).
+    pending: Vec<(f64, UnitId, Hex)>,
+    /// Breakthrough defenders fired at this phase.
+    attacked: BTreeSet<UnitId>,
+    /// For `sim`: kept operations and breakthrough calibration.
+    pub stats: OpStats,
 }
 
 /// A chokepoint and the unit sent to it (`None`: an own unit already holds it).
@@ -56,6 +65,10 @@ pub struct Plan {
     pub dependency: BTreeMap<Hex, f64>,
     /// Chokepoint hexes of the operations.
     pub chokes: BTreeSet<Hex>,
+    /// Breakthrough sectors of the operations (R-AI-01, step 7).
+    pub breaches: Vec<Breach>,
+    /// The operations themselves.
+    pub ops: Vec<Operation>,
     /// Own hex supply now (for the «no stranding» rule).
     own_supply: SupplyMap,
 }
@@ -89,6 +102,10 @@ impl AiV1 {
             hints,
             seed,
             plan: None,
+            carry: BTreeMap::new(),
+            pending: Vec::new(),
+            attacked: BTreeSet::new(),
+            stats: OpStats::default(),
         }
     }
 
@@ -101,7 +118,35 @@ impl AiV1 {
     pub fn plan_for(&mut self, s: &GameState) -> &Plan {
         let key = (s.turn(), s.active_side().0);
         if self.plan.as_ref().is_none_or(|p| p.key != key) {
-            self.plan = Some(self.make_plan(s, key));
+            // Calibration: did last phase's breakthrough defenders leave their hexes?
+            // Only sectors actually attacked count (the defender took fire).
+            let hit = std::mem::take(&mut self.attacked);
+            for (p, id, hex) in std::mem::take(&mut self.pending) {
+                if hit.contains(&id) {
+                    let left = s.unit(id).is_none_or(|u| u.hex != hex);
+                    self.stats.breaches.push((p, left));
+                }
+            }
+            let (mut plan, fresh) = self.make_plan(s, key);
+            let carried = self.carry.get(&key.1).cloned().unwrap_or_default();
+            let ops = if carried.is_empty() {
+                fresh
+            } else {
+                let (ops, kept) = reconcile(s, &carried, fresh, &self.params.pockets);
+                self.stats.carried_phases += 1;
+                if kept {
+                    self.stats.kept_phases += 1;
+                }
+                ops
+            };
+            self.fill_plan(s, &mut plan, ops.clone());
+            self.pending = plan
+                .breaches
+                .iter()
+                .map(|b| (b.p, b.defender, b.hex))
+                .collect();
+            self.carry.insert(key.1, ops);
+            self.plan = Some(plan);
         }
         self.plan.as_ref().expect("just made")
     }
@@ -146,8 +191,9 @@ impl AiV1 {
         margin * p
     }
 
-    /// R-AI-01 «поиск котлов»: pockets worth an operation, then roles.
-    fn make_plan(&self, s: &GameState, key: (u32, u8)) -> Plan {
+    /// R-AI-01 «поиск котлов»: the plan's base (dependency, own supply) and
+    /// the fresh operations worth taking this phase.
+    fn make_plan(&self, s: &GameState, key: (u32, u8)) -> (Plan, Vec<Operation>) {
         let w = &self.params.pockets;
         let us = s.active_side();
         let mut plan = Plan {
@@ -156,7 +202,7 @@ impl AiV1 {
             ..Plan::default()
         };
         let Some(enemy) = s.units().map(|u| u.side).find(|x| *x != us) else {
-            return plan;
+            return (plan, Vec::new());
         };
         let dep = supply_dependency(s, enemy).unwrap_or_default();
         let top = dep.values().copied().fold(0.0, f64::max);
@@ -164,7 +210,7 @@ impl AiV1 {
             plan.dependency = dep.into_iter().map(|(h, v)| (h, v / top)).collect();
         }
         if !w.enabled {
-            return plan;
+            return (plan, Vec::new());
         }
         // Pockets through each candidate; the same hexes count once.
         let mut pockets: Vec<Pocket> = Vec::new();
@@ -193,54 +239,26 @@ impl AiV1 {
             }
         }
         pockets.sort_by(|a, b| b.value.total_cmp(&a.value).then(a.hexes.cmp(&b.hexes)));
-        // Roles. Threat at a hex: enemy power around it.
-        let threat = |h: Hex| -> f64 {
-            s.units()
-                .filter(|e| e.side != us && e.hex.distance(h) <= 2)
-                .map(|e| f64::from(e.strength) / f64::from(1 + e.hex.distance(h)))
-                .sum()
-        };
         let mut own: Vec<&Unit> = s.units().filter(|u| u.side == us).collect();
         own.sort_by_key(|u| u.id);
-        let is_mobile = |u: &Unit| {
-            s.data()
-                .units
-                .get(&u.class)
-                .is_ok_and(|c| c.has_tag(UnitTag::Exploitation))
-        };
-        let reach_of = |u: &Unit, c: Hex| -> f64 {
-            if s.reachable(u.id).is_ok_and(|r| r.contains_key(&c)) {
-                return w.reach_now;
-            }
-            let ap = s
-                .data()
-                .units
-                .get(&u.class)
-                .ok()
-                .and_then(|cl| cl.ap)
-                .unwrap_or(0.0);
-            if f64::from(u.hex.distance(c)) <= 2.0 * ap {
-                w.reach_two_phases
-            } else {
-                0.0
-            }
-        };
+        let zoc: BTreeSet<Hex> = s.zoc_against(us);
+        // Own losses in VP: steps × own sensitivity / steps per NM point.
+        let own_step_vp = s.side(us).map_or(1.0, |x| f64::from(x.loss_sensitivity))
+            / f64::from(s.data().rules.national_morale.steps_per_loss.max(1));
         // R-AI-01 common currency: the objective the side attacks is worth its
         // VP margin × the chance to take it; an operation takes a share of it.
         let objective_vp = self.objective_vp(s, us);
-        let mobile_count = own.iter().filter(|u| is_mobile(u)).count().max(1) as f64;
-        // «Охват»: an operation only if every chokepoint gets a unit that can
-        // get there (or already holds it); utility = expected VP × Π reach −
-        // expected own losses − the objective's share taken away.
+        let mobile_count = own.iter().filter(|u| is_mobile(s, u)).count().max(1) as f64;
+        // «Охват»: every chokepoint needs a unit that gets there — freely now,
+        // through a free corridor in two phases, or through a breakthrough
+        // sector; utility = expected VP × Π reach − own losses − objective share.
         let mut busy: BTreeSet<UnitId> = BTreeSet::new();
-        let mut chosen: Vec<(f64, Pocket, Vec<Role>)> = Vec::new();
+        let mut chosen: Vec<Operation> = Vec::new();
         for p in pockets {
             let mut taken = busy.clone();
             let mut roles: Vec<Role> = Vec::new();
-            let mut reach = 1.0;
-            let mut now = true;
-            let mut used = 0.0;
-            let mut losses = 0.0;
+            let mut breaches = Vec::new();
+            let (mut reach, mut now, mut used, mut losses) = (1.0, true, 0.0, 0.0);
             for &c in &p.hexes {
                 if let Some(u) = own.iter().find(|u| u.hex == c) {
                     taken.insert(u.id);
@@ -249,19 +267,22 @@ impl AiV1 {
                 }
                 let best = own
                     .iter()
-                    .filter(|u| is_mobile(u) && !taken.contains(&u.id))
-                    .map(|u| (reach_of(u, c), u.id))
-                    .filter(|(r, _)| *r > 0.0)
-                    .max_by(|a, b| a.0.total_cmp(&b.0).then(b.1.cmp(&a.1)));
-                let Some((r, id)) = best else {
+                    .filter(|u| is_mobile(s, u) && !taken.contains(&u.id))
+                    .filter(|u| u.supply > w.drop_supply && u.strength > w.drop_strength)
+                    .filter_map(|u| reach_to(s, u, c, enemy, p.value, w, &zoc).map(|r| (r, u.id)))
+                    .max_by(|a, b| a.0 .0.total_cmp(&b.0 .0).then(b.1.cmp(&a.1)));
+                let Some(((r, closes, breach), id)) = best else {
                     reach = 0.0;
                     break;
                 };
                 taken.insert(id);
                 reach *= r;
-                now &= r >= w.reach_now;
+                now &= closes;
                 used += 1.0;
-                losses += w.loss_weight * threat(c);
+                if let Some(b) = breach {
+                    losses += b.losses * own_step_vp;
+                    breaches.push(b);
+                }
                 roles.push((c, Some(id)));
             }
             if reach <= 0.0 {
@@ -272,39 +293,58 @@ impl AiV1 {
             let utility = vp * reach - losses - objective_vp * used / mobile_count;
             if utility >= w.min_vp {
                 busy = taken;
-                chosen.push((utility, p, roles));
+                chosen.push(Operation {
+                    pocket: p,
+                    roles,
+                    breaches,
+                    utility,
+                });
                 if chosen.len() >= w.max_operations {
                     break;
                 }
             }
         }
-        chosen.sort_by(|a, b| b.0.total_cmp(&a.0));
-        let mut pockets = Vec::new();
-        for (_, p, roles) in chosen {
-            for (c, unit) in roles {
-                plan.chokes.insert(c);
-                match unit {
-                    Some(id) => {
-                        plan.envelop.insert(id, c);
-                    }
-                    None => {
-                        if let Some(u) = own.iter().find(|u| u.hex == c) {
-                            plan.hold.insert(u.id);
-                        }
+        chosen.sort_by(|a, b| b.utility.total_cmp(&a.utility));
+        (plan, chosen)
+    }
+
+    /// Roles of the operations in force: envelopment, holders, breakthrough
+    /// sectors, and «сковывание» for infantry and artillery near cut units.
+    fn fill_plan(&self, s: &GameState, plan: &mut Plan, ops: Vec<Operation>) {
+        let w = &self.params.pockets;
+        let us = s.active_side();
+        let mut busy: BTreeSet<UnitId> = BTreeSet::new();
+        for op in &ops {
+            for (id, c) in op_units(op) {
+                plan.envelop.insert(id, c);
+                busy.insert(id);
+            }
+            for (c, unit) in &op.roles {
+                plan.chokes.insert(*c);
+                if unit.is_none() {
+                    if let Some(u) = s.unit_at(*c).filter(|u| u.side == us) {
+                        plan.hold.insert(u.id);
+                        busy.insert(u.id);
                     }
                 }
             }
-            pockets.push(p);
+            // A breach still worth trying: its defender is still there.
+            for b in &op.breaches {
+                if s.unit(b.defender).is_some_and(|u| u.hex == b.hex) {
+                    plan.breaches.push(b.clone());
+                }
+            }
         }
-        // «Сковывание»: infantry and artillery near the units being cut off.
-        let cut: Vec<Hex> = pockets
+        let cut: Vec<Hex> = ops
             .iter()
-            .flat_map(|p| p.cut.iter())
+            .flat_map(|o| o.pocket.cut.iter())
             .filter_map(|id| s.unit(*id).map(|u| u.hex))
             .collect();
+        let mut own: Vec<&Unit> = s.units().filter(|u| u.side == us).collect();
+        own.sort_by_key(|u| u.id);
         for u in own
             .iter()
-            .filter(|u| !is_mobile(u) && u.hq_rating.is_none() && !busy.contains(&u.id))
+            .filter(|u| !is_mobile(s, u) && u.hq_rating.is_none() && !busy.contains(&u.id))
         {
             if let Some(h) = cut
                 .iter()
@@ -314,8 +354,8 @@ impl AiV1 {
                 plan.pin.insert(u.id, *h);
             }
         }
-        plan.pockets = pockets;
-        plan
+        plan.pockets = ops.iter().map(|o| o.pocket.clone()).collect();
+        plan.ops = ops;
     }
 
     pub fn max_commands(&self) -> u32 {
@@ -327,6 +367,16 @@ impl AiV1 {
         self.plan_for(s);
         let b = self.board(s);
         if let Some(c) = self.advance(&b) {
+            return c;
+        }
+        // R-AI-01 step 7: the breakthrough operations first, in order.
+        if let Some(c) = self.breakthrough(&b) {
+            if let Command::Attack { target, .. }
+            | Command::Bombard { target, .. }
+            | Command::AirStrike { target, .. } = &c
+            {
+                self.attacked.insert(*target);
+            }
             return c;
         }
         if let Some(c) = self.economy(&b) {
@@ -411,7 +461,11 @@ impl AiV1 {
             .filter(|e| e.hex.distance(p.hex) == 1)
             .count();
         let objective = b.objectives.contains_key(&p.hex);
-        (objective || adjacent <= self.params.advance.max_adjacent_enemies)
+        let breach = self
+            .plan
+            .as_ref()
+            .is_some_and(|pl| pl.breaches.iter().any(|x| x.hex == p.hex));
+        (objective || breach || adjacent <= self.params.advance.max_adjacent_enemies)
             .then_some(Command::Advance { unit: p.unit })
     }
 
@@ -590,6 +644,21 @@ impl AiV1 {
             for (id, h) in plan.envelop.iter().chain(plan.pin.iter()) {
                 if !taken.contains(id) {
                     goals.insert(*id, *h);
+                }
+            }
+            // While a breakthrough sector holds, the tanks of its operation
+            // close up to it (1–2 hexes) instead of heading for the chokepoint.
+            for op in &plan.ops {
+                for br in op
+                    .breaches
+                    .iter()
+                    .filter(|br| b.s.unit(br.defender).is_some_and(|u| u.hex == br.hex))
+                {
+                    for (id, _) in op_units(op) {
+                        if !taken.contains(&id) {
+                            goals.insert(id, br.hex);
+                        }
+                    }
                 }
             }
             for id in &plan.hold {
@@ -805,4 +874,98 @@ fn step_value(s: &GameState, u: &Unit) -> f64 {
 /// The core would accept the command (dry run on a copy).
 fn accepted(s: &GameState, cmd: &Command) -> bool {
     s.clone().apply(cmd.clone()).is_ok()
+}
+
+impl AiV1 {
+    /// R-AI-01 step 7, «прорыв к горловине»: per breakthrough sector, in
+    /// order — artillery on the defender, then aircraft, then attacks from
+    /// place (infantry, R-COMBAT-07), then tank and mech strikes; the advance
+    /// into the vacated hex is taken by `advance`; then the operation's tanks
+    /// with AP left go on to the chokepoint. Other operations come after.
+    fn breakthrough(&self, b: &Board) -> Option<Command> {
+        let plan = self.plan.as_ref()?;
+        for op in &plan.ops {
+            for br in &op.breaches {
+                let Some(def) = b.s.unit(br.defender).filter(|u| u.hex == br.hex) else {
+                    continue;
+                };
+                // 1. Artillery.
+                for u in b.own.iter().filter(|u| u.strikes_left > 0) {
+                    let cmd = Command::Bombard {
+                        unit: u.id,
+                        target: def.id,
+                    };
+                    if b.s.forecast_bombard(u.id, def.id).is_ok() && accepted(b.s, &cmd) {
+                        return Some(cmd);
+                    }
+                }
+                // 2. Aircraft (day only; the core refuses at night).
+                let mut planes: Vec<_> =
+                    b.s.air_units()
+                        .filter(|a| a.side == b.side && a.sorties == 0 && !a.rebased)
+                        .collect();
+                planes.sort_by_key(|a| a.id);
+                for a in planes {
+                    if b.s.forecast_air_strike(a.id, def.id).is_ok() {
+                        let cmd = Command::AirStrike {
+                            unit: a.id,
+                            target: def.id,
+                        };
+                        if accepted(b.s, &cmd) {
+                            return Some(cmd);
+                        }
+                    }
+                }
+                // 3. Infantry from place, then 4. tanks and mechs.
+                for mobile in [false, true] {
+                    for u in b
+                        .own
+                        .iter()
+                        .filter(|u| u.strikes_left > 0 && is_mobile(b.s, u) == mobile)
+                    {
+                        if b.s.forecast_attack(u.id, def.id).is_ok() {
+                            let cmd = Command::Attack {
+                                unit: u.id,
+                                target: def.id,
+                            };
+                            if accepted(b.s, &cmd) {
+                                return Some(cmd);
+                            }
+                        }
+                    }
+                }
+            }
+            // 5. The vacated sector is ours: the operation's tanks go on.
+            let units = op_units(op);
+            for (id, c) in &units {
+                let Some(u) = b.s.unit(*id) else { continue };
+                if !u.can_move || u.ap_halves == 0 || u.hex == *c {
+                    continue;
+                }
+                let reach = b.s.reachable(*id).unwrap_or_default();
+                let to = if reach.contains_key(c) {
+                    Some(*c)
+                } else if op
+                    .breaches
+                    .iter()
+                    .any(|br| b.s.unit(br.defender).is_none_or(|d| d.hex != br.hex))
+                {
+                    // Through the breach: the reachable hex nearest the chokepoint.
+                    reach
+                        .keys()
+                        .filter(|h| h.distance(*c) < u.hex.distance(*c))
+                        .min_by_key(|h| (h.distance(*c), **h))
+                        .copied()
+                } else {
+                    None
+                };
+                if let Some(to) = to {
+                    if let Some(path) = b.s.path_to(*id, to).ok().flatten() {
+                        return Some(Command::Move { unit: *id, path });
+                    }
+                }
+            }
+        }
+        None
+    }
 }

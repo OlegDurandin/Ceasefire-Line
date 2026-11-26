@@ -45,6 +45,9 @@ pub struct Options {
     sets: Vec<(String, String)>,
     /// П10: loss draws (`binomial` | `sc`), sim only.
     variance: Variance,
+    /// Hexes (offset `c,r;c,r`) whose first control by side 0 is reported
+    /// (e.g. the Sinai passes: «выход к перевалам», section 17).
+    watch: Vec<ceasefire_core::hex::Hex>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -80,6 +83,7 @@ struct Shared {
     trace: Option<u64>,
     variants: BTreeMap<String, bool>,
     variance: Variance,
+    watch: Vec<ceasefire_core::hex::Hex>,
 }
 
 pub fn parse_options(args: &[String]) -> Result<Options, String> {
@@ -95,6 +99,7 @@ pub fn parse_options(args: &[String]) -> Result<Options, String> {
         variants: BTreeMap::new(),
         sets: Vec::new(),
         variance: Variance::Binomial,
+        watch: Vec::new(),
     };
     let mut it = args.iter();
     while let Some(flag) = it.next() {
@@ -119,6 +124,17 @@ pub fn parse_options(args: &[String]) -> Result<Options, String> {
                     .split_once('=')
                     .ok_or_else(|| format!("--set {value}: expected section.key=value"))?;
                 o.sets.push((k.to_owned(), v.to_owned()));
+            }
+            "--watch" => {
+                for cr in value.split(';').filter(|x| !x.is_empty()) {
+                    let (c, r) = cr
+                        .split_once(',')
+                        .ok_or_else(|| format!("--watch {cr}: expected c,r"))?;
+                    let c: i32 = c.trim().parse().map_err(|e| format!("--watch: {e}"))?;
+                    let r: i32 = r.trim().parse().map_err(|e| format!("--watch: {e}"))?;
+                    o.watch
+                        .push(ceasefire_core::scenario::offset_to_axial([c, r]));
+                }
             }
             "--variance" => {
                 o.variance = match value.as_str() {
@@ -165,6 +181,13 @@ struct Game {
     favourable_attacks: u32,
     /// First turn from which the VP leader never changes (None: tie at the end).
     turning_point: Option<u32>,
+    /// R-AI-01 operations: phases with carried operations, and of those kept.
+    ops_carried: u32,
+    ops_kept: u32,
+    /// Breakthrough forecasts against outcomes.
+    breaches: Vec<(f64, bool)>,
+    /// First turn side 0 controls any watched hex.
+    watch_turn: Option<u32>,
 }
 
 /// Strength and «encircled» of every ground unit at the last look.
@@ -257,6 +280,9 @@ fn play_one(sh: &Shared, seed: u64) -> Result<Game, String> {
         .map_err(|e| e.to_string())?;
         // The closing EndPhase: losses up to the next side's phase start (attrition).
         look(&s, &mut steps);
+        if g.watch_turn.is_none() && sh.watch.iter().any(|h| s.controller(*h) == Some(SideId(0))) {
+            g.watch_turn = Some(s.turn());
+        }
         g.steps_encircled += steps.steps_encircled;
         g.steps_frontal += steps.steps_frontal;
         g.phases += 1;
@@ -358,6 +384,9 @@ fn play_one(sh: &Shared, seed: u64) -> Result<Game, String> {
         }
     }
     let o = s.outcome().ok_or("the game did not end")?;
+    g.ops_carried = v1.stats.carried_phases;
+    g.ops_kept = v1.stats.kept_phases;
+    g.breaches = v1.stats.breaches.clone();
     // Turning point: the first turn-end look after the last change of leader.
     let final_leader = leaders.last().and_then(|l| l.1);
     g.turning_point = final_leader.and_then(|w| {
@@ -403,6 +432,7 @@ pub fn run(o: &Options) -> Result<(), String> {
         trace: o.trace,
         variants: o.variants.clone(),
         variance: o.variance,
+        watch: o.watch.clone(),
     });
     let started = Instant::now();
     let threads = std::thread::available_parallelism()
@@ -669,6 +699,21 @@ fn summary(o: &Options, games: &[Game]) -> serde_json::Value {
             .count() as f64
             / n
     };
+    let carried: u32 = games.iter().map(|g| g.ops_carried).sum();
+    let kept: u32 = games.iter().map(|g| g.ops_kept).sum();
+    let ops_kept_share = if carried == 0 {
+        serde_json::Value::Null
+    } else {
+        serde_json::json!(f64::from(kept) / f64::from(carried))
+    };
+    let mut turns: Vec<u32> = games.iter().filter_map(|g| g.watch_turn).collect();
+    turns.sort();
+    let watch_turns = serde_json::json!({
+        "share": turns.len() as f64 / n,
+        "median": turns.get(turns.len() / 2),
+        "p25": turns.get(turns.len() / 4),
+        "p75": turns.get(turns.len() * 3 / 4),
+    });
     serde_json::json!({
         "scenario": o.scenario,
         "runs": games.len(),
@@ -691,5 +736,31 @@ fn summary(o: &Options, games: &[Game]) -> serde_json::Value {
         "turning_point": m.turning_point,
         "turning_share": m.turning_share,
         "refused": games.iter().map(|g| f64::from(g.refused)).sum::<f64>() / n,
+        "ops_kept_share": ops_kept_share,
+        "breach_calibration": calibration(games),
+        "watch_turns": watch_turns,
     })
+}
+
+/// P(breach) forecasts in bins against how often the defender left its hex.
+fn calibration(games: &[Game]) -> serde_json::Value {
+    let bins = [(0.0, 0.5), (0.5, 0.7), (0.7, 0.9), (0.9, 1.01)];
+    serde_json::Value::Array(
+        bins.iter()
+            .map(|&(lo, hi)| {
+                let xs: Vec<(f64, bool)> = games
+                    .iter()
+                    .flat_map(|g| g.breaches.iter().copied())
+                    .filter(|(p, _)| *p >= lo && *p < hi)
+                    .collect();
+                let n = xs.len().max(1) as f64;
+                serde_json::json!({
+                    "bin": [lo, hi.min(1.0)],
+                    "count": xs.len(),
+                    "forecast": xs.iter().map(|x| x.0).sum::<f64>() / n,
+                    "actual": xs.iter().filter(|x| x.1).count() as f64 / n,
+                })
+            })
+            .collect(),
+    )
 }
