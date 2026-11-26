@@ -14,16 +14,6 @@
     [
       [
         3,
-        1
-      ],
-      [
-        4,
-        1
-      ]
-    ],
-    [
-      [
-        3,
         3
       ],
       [
@@ -2711,121 +2701,6 @@
       }
     },
     {
-      "assumption": true,
-      "class": "secondary",
-      "id": "metula_marjayoun",
-      "name": "Метула — Кфар-Кила — Марджаюн",
-      "note": "The 1958 sheet shows a first-class road from Metula west to Kfar Kila and north to the edge (arrow 'Marjayoun'). The 1953 1:2M map shows Marj 'Uyun on the principal road net. The route via Qlayaa beyond the sheet is an assumption.",
-      "pts": [
-        [
-          35.576,
-          33.279,
-          "Metula"
-        ],
-        [
-          35.561,
-          33.28,
-          "Kfar Kila junction"
-        ],
-        [
-          35.559,
-          33.292,
-          "edge of 1958 sheet"
-        ],
-        [
-          35.571,
-          33.335,
-          "Qlayaa"
-        ],
-        [
-          35.59,
-          33.359,
-          "Marjayoun"
-        ]
-      ],
-      "source": {
-        "edition": "1951, partly revised 1958",
-        "map": "Survey of Israel, Israel 1:250,000",
-        "sheet": "Sheet 1",
-        "url": "https://commons.wikimedia.org/wiki/File:Survey_of_Israel,_Israel_01-sheet-1_(FL44250467_2367726).jpg"
-      }
-    },
-    {
-      "assumption": true,
-      "class": "secondary",
-      "id": "metula_khiam",
-      "name": "Метула — Хиям",
-      "note": "The 1958 sheet shows a first-class road leaving Metula north (arrow 'Chtaura'). That it runs via Khiam to the Hasbaya road at Ibl al-Saqi is an assumption.",
-      "pts": [
-        [
-          35.576,
-          33.279,
-          "Metula"
-        ],
-        [
-          35.58,
-          33.284,
-          ""
-        ],
-        [
-          35.584,
-          33.294,
-          "edge of 1958 sheet"
-        ],
-        [
-          35.609,
-          33.327,
-          "Khiam"
-        ],
-        [
-          35.626,
-          33.358,
-          "Ibl al-Saqi (junction)"
-        ]
-      ],
-      "source": {
-        "edition": "1951, partly revised 1958",
-        "map": "Survey of Israel, Israel 1:250,000",
-        "sheet": "Sheet 1",
-        "url": "https://commons.wikimedia.org/wiki/File:Survey_of_Israel,_Israel_01-sheet-1_(FL44250467_2367726).jpg"
-      }
-    },
-    {
-      "assumption": true,
-      "class": "secondary",
-      "id": "marjayoun_hasbaya",
-      "name": "Марджаюн — Хасбайя",
-      "note": "Principal road Marj 'Uyun – Rashayya on the 1953 map. At 1:2M only the existence and general direction are certain; the alignment via Ibl al-Saqi is an assumption.",
-      "pts": [
-        [
-          35.59,
-          33.359,
-          "Marjayoun"
-        ],
-        [
-          35.626,
-          33.358,
-          "Ibl al-Saqi"
-        ],
-        [
-          35.66,
-          33.38,
-          "Hasbani crossing (approx.)"
-        ],
-        [
-          35.681,
-          33.397,
-          "Hasbaya"
-        ]
-      ],
-      "source": {
-        "edition": "First revision 5-53 (1953)",
-        "map": "Syria and Lebanon 1:2,000,000 (US Government map 11188.12)",
-        "sheet": "single sheet",
-        "url": "https://commons.wikimedia.org/wiki/File:Syria_and_Lebanon_-_DPLA_-_2eb8c1f4c64b79a9a51aab7ff6755d9a.jpg"
-      }
-    },
-    {
       "assumption": false,
       "class": "primary",
       "id": "kiswah_daraa",
@@ -5228,41 +5103,11 @@
     [
       [
         2,
-        2
-      ],
-      [
-        2,
-        3
-      ]
-    ],
-    [
-      [
-        2,
-        2
-      ],
-      [
-        3,
-        1
-      ]
-    ],
-    [
-      [
-        2,
         3
       ],
       [
         2,
         4
-      ]
-    ],
-    [
-      [
-        2,
-        3
-      ],
-      [
-        3,
-        2
       ]
     ],
     [
@@ -5383,26 +5228,6 @@
       [
         3,
         16
-      ]
-    ],
-    [
-      [
-        3,
-        1
-      ],
-      [
-        3,
-        2
-      ]
-    ],
-    [
-      [
-        3,
-        1
-      ],
-      [
-        4,
-        1
       ]
     ],
     [
