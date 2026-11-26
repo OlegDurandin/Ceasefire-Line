@@ -415,10 +415,17 @@ fn map_geometry(map: &serde_json::Value, cfg: &Config) -> Result<(BBox, Projecti
     Ok((bbox, proj, grid))
 }
 
+/// The year of `scenario.json`'s `start_date` next to the map, if any.
+fn scenario_year(dir: &Path) -> Option<i64> {
+    let s = read_json(&dir.join("scenario.json")).ok()?;
+    s["start_date"].as_str()?.get(..4)?.parse().ok()
+}
+
 /// `mapgen roads --map DIR (--use historical|osm | --remove historical) [--config …]`
 fn run_roads(args: &[String]) -> Result<(), String> {
-    let usage = "usage: mapgen roads --map DIR (--use historical|osm | --remove historical) [--config data/mapgen.json]";
+    let usage = "usage: mapgen roads --map DIR (--use historical|osm | --remove historical) [--year YYYY] [--config data/mapgen.json]";
     let (mut dir, mut action, mut config) = (None, None, PathBuf::from("data/mapgen.json"));
+    let mut year: Option<i64> = None;
     let mut it = args.iter();
     while let Some(flag) = it.next() {
         let v = it
@@ -429,6 +436,7 @@ fn run_roads(args: &[String]) -> Result<(), String> {
             ("--use", "historical" | "osm") => action = Some(v.clone()),
             ("--remove", "historical") => action = Some("remove".to_owned()),
             ("--config", _) => config = PathBuf::from(v),
+            ("--year", _) => year = Some(v.parse().map_err(|e| format!("--year: {e}"))?),
             _ => return Err(format!("bad option {flag} {v}\n{usage}")),
         }
     }
@@ -439,7 +447,8 @@ fn run_roads(args: &[String]) -> Result<(), String> {
     let path = dir.join("map.json");
     let mut map = read_json(&path)?;
     let (_, proj, grid) = map_geometry(&map, &cfg)?;
-    let msg = roads_layer::apply(&mut map, &grid, &proj, &action, cfg.pass_char)?;
+    let year = year.or_else(|| scenario_year(&dir));
+    let msg = roads_layer::apply(&mut map, &grid, &proj, &action, cfg.pass_char, year)?;
     let text = serde_json::to_string_pretty(&map).map_err(|e| e.to_string())? + "\n";
     fs::write(&path, text).map_err(|e| format!("{}: {e}", path.display()))?;
     eprintln!("{msg} → {}", path.display());
@@ -526,7 +535,10 @@ fn run_bake(args: &[String]) -> Result<(), String> {
     // Roads: the historical layer when the map uses it, otherwise OSM lines.
     let historical = map["roads_from"].as_str() == Some(roads_layer::FROM_HISTORICAL);
     let (road_lines, road_styles) = if historical {
-        (roads_layer::layer_lines(&map)?, &cfg.bake.historical_roads)
+        (
+            roads_layer::layer_lines(&map, scenario_year(&a.map))?,
+            &cfg.bake.historical_roads,
+        )
     } else {
         (osm.roads.clone(), &cfg.bake.roads)
     };

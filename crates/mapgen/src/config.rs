@@ -159,6 +159,11 @@ pub struct VegetationRule {
 pub struct RoadStyle {
     pub kind: String,
     pub width_km: f64,
+    /// Own colour (else `road_color`) and dashes (dirt roads).
+    #[serde(default)]
+    pub color: Option<String>,
+    #[serde(default)]
+    pub dash_km: Option<f64>,
 }
 
 #[derive(Debug, Clone, Deserialize)]

@@ -13,6 +13,8 @@ export interface MapDoc {
   control_legend: Record<string, number>;
   control: string[];
   roads: Off[][];
+  /** R-MOVE-01: dirt roads, hex polylines like `roads`. */
+  tracks?: Off[][];
   canals: Edge[];
   bridges: Edge[];
   destroyed_bridges?: Edge[];
@@ -49,9 +51,14 @@ const withoutEdge = (list: Edge[] | undefined, a: Off, b: Off) => (list ?? []).f
 
 /** Road polylines → one 2-point polyline per hex side (what the editor writes). */
 export function normalizeRoads(map: MapDoc) {
+  map.roads = pairsOf(map.roads);
+  if (map.tracks) map.tracks = pairsOf(map.tracks);
+}
+
+function pairsOf(lines: Off[][]): Off[][] {
   const seen = new Set<string>();
   const pairs: Off[][] = [];
-  for (const line of map.roads) {
+  for (const line of lines) {
     for (let i = 0; i + 1 < line.length; i++) {
       const a = line[i]!;
       const b = line[i + 1]!;
@@ -62,7 +69,7 @@ export function normalizeRoads(map: MapDoc) {
       }
     }
   }
-  map.roads = pairs;
+  return pairs;
 }
 
 /** Legend character for a terrain (+ pass), adding one if needed. */
@@ -100,27 +107,32 @@ export function paintControl(map: MapDoc, [col, row]: Off, side: number | null) 
   map.control[row] = setChar(map.control[row]!, col, ch);
 }
 
-export type EdgeState = "none" | "road" | "canal" | "bridge" | "destroyed";
+export type EdgeState = "none" | "road" | "track" | "canal" | "bridge" | "destroyed";
+
+const onLines = (lines: Off[][] | undefined, a: Off, b: Off) =>
+  (lines ?? []).some((l) => l.some((p, i) => i + 1 < l.length && edgeKey(p, l[i + 1]!) === edgeKey(a, b)));
 
 export function edgeState(map: MapDoc, a: Off, b: Off): EdgeState {
-  const road = map.roads.some((l) => l.some((p, i) => i + 1 < l.length && edgeKey(p, l[i + 1]!) === edgeKey(a, b)));
   if (hasEdge(map.destroyed_bridges, a, b)) return "destroyed";
   if (hasEdge(map.bridges, a, b)) return "bridge";
   if (hasEdge(map.canals, a, b)) return "canal";
-  return road ? "road" : "none";
+  if (onLines(map.roads, a, b)) return "road";
+  return onLines(map.tracks, a, b) ? "track" : "none";
 }
 
-/** Next state of a hex side: none → road → canal → bridge → destroyed bridge → none.
+/** Next state of a hex side: none → road → dirt road → canal → bridge → destroyed bridge → none.
  *  A road and a canal on one side means a bridged crossing, so roads are kept on bridges. */
 export function cycleEdge(map: MapDoc, a: Off, b: Off): EdgeState {
   normalizeRoads(map);
-  const order: EdgeState[] = ["none", "road", "canal", "bridge", "destroyed"];
+  const order: EdgeState[] = ["none", "road", "track", "canal", "bridge", "destroyed"];
   const next = order[(order.indexOf(edgeState(map, a, b)) + 1) % order.length]!;
   map.roads = map.roads.filter((l) => edgeKey(l[0]!, l[1]!) !== edgeKey(a, b));
+  map.tracks = (map.tracks ?? []).filter((l) => edgeKey(l[0]!, l[1]!) !== edgeKey(a, b));
   map.canals = withoutEdge(map.canals, a, b);
   map.bridges = withoutEdge(map.bridges, a, b);
   map.destroyed_bridges = withoutEdge(map.destroyed_bridges, a, b);
   if (next === "road") map.roads.push([a, b]);
+  if (next === "track") map.tracks.push([a, b]);
   if (next === "canal" || next === "bridge" || next === "destroyed") map.canals.push([a, b]);
   if (next === "bridge") map.bridges.push([a, b]);
   if (next === "destroyed") map.destroyed_bridges.push([a, b]);

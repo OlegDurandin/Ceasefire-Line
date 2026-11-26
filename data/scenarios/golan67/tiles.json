@@ -1,6 +1,6 @@
 {
   "_comment": "mapgen bake: painted map tiles (R-UI-01). tiles/<z>/<x>_<y>.webp; level z is 2^z times smaller.",
-  "fnv1a64": "6a95d401386979a0",
+  "fnv1a64": "e99ea4fde0caf084",
   "format": "webp",
   "height_px": 2269,
   "hex_radius_km": 2.886751345948129,

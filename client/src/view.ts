@@ -35,6 +35,8 @@ export interface ScenarioView {
   hex_km: number | null;
   hexes: HexView[];
   roads: EdgeView[];
+  /** R-MOVE-01: dirt roads. */
+  tracks: EdgeView[];
   canals: EdgeView[];
   bridges: BridgeView[];
   sides: { id: number; tech: Record<string, number> }[];

@@ -41,8 +41,8 @@ pub fn enemy_zoc(map: &HexMap, occupancy: &Occupancy, side: SideId) -> BTreeSet<
 
 /// R-MOVE-01, R-MOVE-02: AP (in half-points) to enter `to` from adjacent
 /// `from`. `Ok(None)` means impassable: off-map, canal without bridge,
-/// mountain without a pass, neutral closed territory (R-MOVE-06). Roads do
-/// not work into enemy ZOC.
+/// mountain without a pass, neutral closed territory (R-MOVE-06). Roads and
+/// dirt roads (tracks) do not work into enemy ZOC.
 pub fn entry_cost_halves(
     map: &HexMap,
     terrain: &TerrainCatalog,
@@ -69,6 +69,10 @@ pub fn entry_cost_halves(
     }
     if map.has_road(from, to) && !to_in_enemy_zoc {
         return Ok(Some(terrain.road_ap_halves));
+    }
+    // A dirt road: the same AP whatever the terrain (also for supply paths).
+    if map.has_track(from, to) && !to_in_enemy_zoc {
+        return Ok(Some(terrain.track_ap_halves));
     }
     Ok(Some(match mobility {
         Mobility::Tracked => t.ap_halves,

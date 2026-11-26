@@ -1,5 +1,6 @@
 {
   "road_ap": 0.5,
+  "track_ap": 1,
   "terrain": [
     { "id": "plain", "ap": 1, "defense_mult": 1.0, "max_entrench": 2 },
     { "id": "dunes", "ap": 2, "wheeled_ap": 3, "defense_mult": 1.1, "max_entrench": 2 },

@@ -33,6 +33,8 @@ pub enum BridgeState {
 pub struct HexMap {
     cells: BTreeMap<Hex, HexCell>,
     roads: BTreeSet<HexEdge>,
+    /// R-MOVE-01: dirt roads (tracks).
+    tracks: BTreeSet<HexEdge>,
     canals: BTreeSet<HexEdge>,
     bridges: BTreeMap<HexEdge, BridgeState>,
     /// R-MOVE-06: neutral closed territory of the scenario (no ground units,
@@ -59,6 +61,11 @@ impl HexMap {
 
     pub fn add_road(&mut self, a: Hex, b: Hex) -> Result<(), RuleError> {
         self.roads.insert(edge(a, b)?);
+        Ok(())
+    }
+
+    pub fn add_track(&mut self, a: Hex, b: Hex) -> Result<(), RuleError> {
+        self.tracks.insert(edge(a, b)?);
         Ok(())
     }
 
@@ -101,6 +108,11 @@ impl HexMap {
         self.roads.iter().copied()
     }
 
+    /// Hex sides with a dirt road (track).
+    pub fn tracks(&self) -> impl Iterator<Item = HexEdge> + '_ {
+        self.tracks.iter().copied()
+    }
+
     /// Hex sides with a canal or major river.
     pub fn canals(&self) -> impl Iterator<Item = HexEdge> + '_ {
         self.canals.iter().copied()
@@ -117,6 +129,10 @@ impl HexMap {
 
     pub fn has_road(&self, a: Hex, b: Hex) -> bool {
         Self::has(&self.roads, a, b)
+    }
+
+    pub fn has_track(&self, a: Hex, b: Hex) -> bool {
+        Self::has(&self.tracks, a, b)
     }
 
     pub fn has_canal(&self, a: Hex, b: Hex) -> bool {

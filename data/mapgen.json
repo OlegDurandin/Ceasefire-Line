@@ -216,6 +216,12 @@
     "seed": 1967,
     "historical_roads": [
       {
+        "kind": "track",
+        "width_km": 0.12,
+        "color": "#d9c08a",
+        "dash_km": 0.45
+      },
+      {
         "kind": "secondary",
         "width_km": 0.16
       },

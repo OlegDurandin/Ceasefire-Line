@@ -346,6 +346,8 @@ pub struct TerrainDef {
 #[serde(deny_unknown_fields)]
 struct TerrainFile {
     road_ap: f64,
+    /// R-MOVE-01: dirt road (track) — entering costs this whatever the terrain.
+    track_ap: f64,
     terrain: Vec<TerrainDef>,
 }
 
@@ -360,6 +362,7 @@ pub struct Terrain {
 #[derive(Debug, Clone, PartialEq)]
 pub struct TerrainCatalog {
     pub road_ap_halves: u32,
+    pub track_ap_halves: u32,
     terrain: BTreeMap<String, Terrain>,
 }
 
@@ -385,6 +388,7 @@ impl TerrainCatalog {
         }
         Ok(Self {
             road_ap_halves: ap_to_halves(file.road_ap)?,
+            track_ap_halves: ap_to_halves(file.track_ap)?,
             terrain,
         })
     }

@@ -1,8 +1,10 @@
 //! `mapgen roads`: the historical road layer of a map (R-UI-01).
 //!
 //! `map.json` keeps `historical_roads` — roads as lon/lat polylines, each with
-//! its `source` (map, sheet, edition) or `"assumption": true` — apart from the
-//! OSM-derived data. `--use historical` derives the rules' road sides,
+//! its `source` (map, sheet, edition) or `"assumption": true`, a class
+//! (`primary`, `secondary`, `track` = dirt road) and optional years of use
+//! `from`/`to` — apart from the OSM-derived data. A scenario takes the roads
+//! that exist in its year; tracks go to `tracks` (R-MOVE-01). `--use historical` derives the rules' road sides,
 //! bridges (road over river/canal) and passes (mountain hex with a road) from
 //! the layer and keeps the OSM ones in `osm_backup`; `--use osm` brings them
 //! back; `--remove historical` also deletes the layer. One action each.
@@ -17,8 +19,14 @@ use crate::osm::Line;
 
 pub const FROM_HISTORICAL: &str = "historical_roads";
 
-/// The layer's polylines as `Line`s (`kind` = road class).
-pub fn layer_lines(map: &Value) -> Result<Vec<Line>, String> {
+/// Whether a road of the layer exists in `year` (no year: always).
+fn in_use(r: &Value, year: Option<i64>) -> bool {
+    let Some(y) = year else { return true };
+    r["from"].as_i64().is_none_or(|f| f <= y) && r["to"].as_i64().is_none_or(|t| y <= t)
+}
+
+/// The layer's polylines in use in `year` as `Line`s (`kind` = road class).
+pub fn layer_lines(map: &Value, year: Option<i64>) -> Result<Vec<Line>, String> {
     let mut out = Vec::new();
     for (k, r) in map["historical_roads"]
         .as_array()
@@ -43,6 +51,9 @@ pub fn layer_lines(map: &Value) -> Result<Vec<Line>, String> {
             .collect::<Result<Vec<_>, _>>()?;
         if pts.len() < 2 {
             return Err(format!("historical_roads[{k}] `{id}`: fewer than 2 points"));
+        }
+        if !in_use(r, year) {
+            continue;
         }
         out.push(Line {
             kind: r["class"].as_str().unwrap_or("primary").to_owned(),
@@ -80,14 +91,20 @@ pub fn apply(
     proj: &Projection,
     action: &str,
     pass_char: char,
+    year: Option<i64>,
 ) -> Result<String, String> {
     let using_hist = map["roads_from"].as_str() == Some(FROM_HISTORICAL);
     let obj = map.as_object_mut().ok_or("map.json is not an object")?;
     let restore = |obj: &mut serde_json::Map<String, Value>| {
         if let Some(b) = obj.remove("osm_backup") {
-            for k in ["roads", "bridges", "terrain"] {
-                if let Some(v) = b.get(k) {
-                    obj.insert(k.to_owned(), v.clone());
+            for k in ["roads", "tracks", "bridges", "terrain"] {
+                match b.get(k) {
+                    Some(v) => {
+                        obj.insert(k.to_owned(), v.clone());
+                    }
+                    None => {
+                        obj.remove(k);
+                    }
                 }
             }
         }
@@ -107,22 +124,30 @@ pub fn apply(
             Ok(format!("historical layer removed ({n} roads); roads: OSM"))
         }
         "historical" => {
-            let lines = layer_lines(&Value::Object(obj.clone()))?;
+            let lines = layer_lines(&Value::Object(obj.clone()), year)?;
             if lines.is_empty() {
                 return Err("map.json has no historical_roads".into());
             }
             if using_hist {
                 restore(obj);
             }
-            let backup = json!({
-                "roads": obj.get("roads").cloned().unwrap_or(json!([])),
-                "bridges": obj.get("bridges").cloned().unwrap_or(json!([])),
-                "terrain": obj.get("terrain").cloned().unwrap_or(json!([])),
-            });
-            let roads = features::road_edges(grid, proj, &lines);
+            // Only the keys the map has, so switching back restores it exactly.
+            let backup: serde_json::Map<String, Value> = ["roads", "tracks", "bridges", "terrain"]
+                .into_iter()
+                .filter_map(|k| Some((k.to_owned(), obj.get(k)?.clone())))
+                .collect();
+            let (track_lines, road_lines): (Vec<Line>, Vec<Line>) =
+                lines.iter().cloned().partition(|l| l.kind == "track");
+            let roads = features::road_edges(grid, proj, &road_lines);
+            // A side with a road is not also a track.
+            let tracks: BTreeSet<[Off; 2]> = features::road_edges(grid, proj, &track_lines)
+                .difference(&roads)
+                .copied()
+                .collect();
             // Canal sides are pairs of hexes: the same parser as polylines.
             let canal_pairs = edge_list(obj.get("canals").unwrap_or(&json!([])));
-            let bridges: Vec<[Off; 2]> = roads.intersection(&canal_pairs).copied().collect();
+            let crossings: BTreeSet<[Off; 2]> = roads.union(&tracks).copied().collect();
+            let bridges: Vec<[Off; 2]> = crossings.intersection(&canal_pairs).copied().collect();
             // Passes: a mountain hex with a historical road (existing passes stay).
             let legend = obj.get("legend").cloned().unwrap_or(json!({}));
             let mountain: BTreeSet<char> = legend
@@ -140,7 +165,7 @@ pub fn apply(
                 .map(|r| r.as_str().unwrap_or("").chars().collect())
                 .collect();
             let mut passes = 0;
-            for [c, r] in roads.iter().flat_map(|e| e.iter().copied()) {
+            for [c, r] in crossings.iter().flat_map(|e| e.iter().copied()) {
                 if let Some(ch) = rows
                     .get_mut(r as usize)
                     .and_then(|row| row.get_mut(c as usize))
@@ -162,13 +187,19 @@ pub fn apply(
                 "roads".into(),
                 json!(roads.iter().map(|[a, b]| vec![*a, *b]).collect::<Vec<_>>()),
             );
+            obj.insert(
+                "tracks".into(),
+                json!(tracks.iter().map(|[a, b]| vec![*a, *b]).collect::<Vec<_>>()),
+            );
             obj.insert("bridges".into(), json!(bridges));
             obj.insert("roads_from".into(), json!(FROM_HISTORICAL));
-            obj.insert("osm_backup".into(), backup);
+            obj.insert("osm_backup".into(), Value::Object(backup));
             Ok(format!(
-                "roads: historical layer, {} roads → {} hex sides, {} bridges, {passes} new passes",
+                "roads: historical layer{}, {} roads → {} road sides + {} track sides, {} bridges, {passes} new passes",
+                year.map_or(String::new(), |y| format!(" for {y}")),
                 lines.len(),
                 roads.len(),
+                tracks.len(),
                 bridges.len()
             ))
         }
@@ -206,17 +237,17 @@ mod tests {
         let (g, p) = grid();
         let mut m = map();
         let before = m.clone();
-        let msg = apply(&mut m, &g, &p, "historical", 'P').unwrap();
+        let msg = apply(&mut m, &g, &p, "historical", 'P', None).unwrap();
         assert!(msg.contains("2 roads"), "{msg}");
         assert_eq!(m["roads_from"], FROM_HISTORICAL);
         assert_ne!(m["roads"], before["roads"]);
-        apply(&mut m, &g, &p, "osm", 'P').unwrap();
+        apply(&mut m, &g, &p, "osm", 'P', None).unwrap();
         assert_eq!(m["roads"], before["roads"]);
         assert_eq!(m["terrain"], before["terrain"]);
         assert!(m.get("osm_backup").is_none() && m.get("roads_from").is_none());
         assert!(m["historical_roads"].is_array(), "the layer itself stays");
-        apply(&mut m, &g, &p, "historical", 'P').unwrap();
-        apply(&mut m, &g, &p, "remove", 'P').unwrap();
+        apply(&mut m, &g, &p, "historical", 'P', None).unwrap();
+        apply(&mut m, &g, &p, "remove", 'P', None).unwrap();
         assert_eq!(
             m,
             before
@@ -231,9 +262,41 @@ mod tests {
     }
 
     #[test]
+    fn years_pick_the_roads_of_the_scenario_and_tracks_go_apart() {
+        let (g, p) = grid();
+        let mut m = map();
+        m["historical_roads"][1]["class"] = json!("track");
+        m["historical_roads"][1]["to"] = json!(1969);
+        m["historical_roads"].as_array_mut().unwrap().push(json!({
+            "id": "c", "name": "C", "class": "secondary", "from": 1970, "assumption": true,
+            "pts": [[35.47, 33.38], [35.52, 33.36]]
+        }));
+        let kinds = |y| -> Vec<String> {
+            layer_lines(&m, Some(y))
+                .unwrap()
+                .into_iter()
+                .map(|l| l.kind)
+                .collect()
+        };
+        assert_eq!(kinds(1967), ["primary", "track"]);
+        assert_eq!(kinds(1973), ["primary", "secondary"]);
+        let mut y67 = m.clone();
+        apply(&mut y67, &g, &p, "historical", 'P', Some(1967)).unwrap();
+        assert!(
+            !y67["tracks"].as_array().unwrap().is_empty(),
+            "1967: the dirt road is a track"
+        );
+        let mut y73 = m.clone();
+        apply(&mut y73, &g, &p, "historical", 'P', Some(1973)).unwrap();
+        assert!(y73["tracks"].as_array().unwrap().is_empty(), "1973: paved");
+        apply(&mut y73, &g, &p, "osm", 'P', None).unwrap();
+        assert!(y73["tracks"].as_array().is_none_or(Vec::is_empty));
+    }
+
+    #[test]
     fn every_road_needs_a_source_or_an_assumption_mark() {
         let mut m = map();
         m["historical_roads"][1]["assumption"] = json!(false);
-        assert!(layer_lines(&m).unwrap_err().contains("`b`"));
+        assert!(layer_lines(&m, None).unwrap_err().contains("`b`"));
     }
 }

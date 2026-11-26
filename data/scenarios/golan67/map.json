@@ -2062,10 +2062,10 @@
     },
     {
       "assumption": false,
-      "class": "secondary",
+      "class": "primary",
       "id": "butmiya_khisfin_fiq",
       "name": "Бутмия — Джухадар — Хисфин — Эль-Аль — Фик",
-      "note": "Second-class road leaving the Quneitra–Rafid road near Butmiya. The July 1967 AMS map shows the Quneitra–Fiq axis as a primary road, so it could be upgraded to primary.",
+      "note": "Second-class road leaving the Quneitra–Rafid road near Butmiya. The July 1967 AMS map shows the Quneitra–Fiq axis as a primary road, so it could be upgraded to primary. Class by the July 1967 AMS map (primary on the Quneitra–Fiq axis), closer to the scenario date than the 1958 sheet (second class) — designer decision.",
       "pts": [
         [
           35.89,
@@ -2167,10 +2167,10 @@
     },
     {
       "assumption": false,
-      "class": "primary",
+      "class": "secondary",
       "id": "quneitra_rafid_sheikh_miskin",
       "name": "Кунейтра — Рафид — Нава — Шейх-Мискин",
-      "note": "First-class road to the sheet edge (arrow 'Ch. Meskine'). Rafid itself is off the road, about 1 km east. Past the edge: the July 1967 AMS map has a secondary road to Sheikh Miskin, and the 1943 1:50k Cheikh Meskine sheet shows a road leaving Sheikh Miskin towards Nawa. Passing through Nawa is inferred, since Nawa lies on the straight line. Not on the 1953 map.",
+      "note": "First-class road to the sheet edge (arrow 'Ch. Meskine'). Rafid itself is off the road, about 1 km east. Past the edge: the July 1967 AMS map has a secondary road to Sheikh Miskin, and the 1943 1:50k Cheikh Meskine sheet shows a road leaving Sheikh Miskin towards Nawa. Passing through Nawa is inferred, since Nawa lies on the straight line. Not on the 1953 map. Class by the July 1967 AMS map (secondary to Sheikh Miskin), closer to the scenario date than the 1958 sheet (first class) — designer decision.",
       "pts": [
         [
           35.823,
@@ -2947,10 +2947,57 @@
     },
     {
       "assumption": true,
-      "class": "secondary",
-      "id": "tapline_golan",
+      "class": "track",
+      "id": "tapline_golan_track",
       "name": "Дорога Тэплайн (вдоль нефтепровода): Гаджар — Баниас — Васит — Кафр-Наффах — Хушния — Джухадар",
-      "note": "ASSUMPTION. The pipeline (built about 1950) is on the 1953 and July 1967 small-scale maps, but the road itself is on none of the maps checked; the 1958 sheet does not show the pipeline. Text source (English Wikipedia, 'Petroleum Road'): in 1967 a dirt service road ran beside the pipeline, paved and fenced after 1969. Waypoints come from the present-day road's junctions (Ghajar, Banias Hwy 99, Revaya/Wasit, Nafah, Keshet/Hushniya, Orha near Joukhadar), ±1–2 km. A dirt road, so poor going.",
+      "note": "ASSUMPTION. The pipeline (built about 1950) is on the 1953 and July 1967 small-scale maps, but the road itself is on none of the maps checked; the 1958 sheet does not show the pipeline. Text source (English Wikipedia, 'Petroleum Road'): in 1967 a dirt service road ran beside the pipeline, paved and fenced after 1969. Waypoints come from the present-day road's junctions (Ghajar, Banias Hwy 99, Revaya/Wasit, Nafah, Keshet/Hushniya, Orha near Joukhadar), ±1–2 km. A dirt road, so poor going. Designer decision: kept; a dirt road (track) until 1969.",
+      "pts": [
+        [
+          35.624,
+          33.272,
+          "Ghajar (Lebanese border)"
+        ],
+        [
+          35.68,
+          33.244,
+          "west of Banias"
+        ],
+        [
+          35.7,
+          33.205,
+          "approx."
+        ],
+        [
+          35.732,
+          33.139,
+          "Wasit"
+        ],
+        [
+          35.738,
+          33.061,
+          "Kafr Naffakh"
+        ],
+        [
+          35.811,
+          32.997,
+          "Khushniyye"
+        ],
+        [
+          35.845,
+          32.945,
+          "Joukhadar area (Orha junction)"
+        ]
+      ],
+      "source": null,
+      "to": 1969
+    },
+    {
+      "assumption": true,
+      "class": "secondary",
+      "from": 1970,
+      "id": "tapline_golan_paved",
+      "name": "Шоссе Тэплайн (вдоль нефтепровода): Гаджар — Баниас — Васит — Кафр-Наффах — Хушния — Джухадар",
+      "note": "Paved and fenced after 1969 (English Wikipedia, 'Petroleum Road'); designer decision: a road from 1970. Same alignment as the track.",
       "pts": [
         [
           35.624,
@@ -5524,16 +5571,6 @@
         4
       ],
       [
-        5,
-        5
-      ]
-    ],
-    [
-      [
-        5,
-        4
-      ],
-      [
         6,
         4
       ]
@@ -5541,51 +5578,11 @@
     [
       [
         5,
-        5
-      ],
-      [
-        5,
-        6
-      ]
-    ],
-    [
-      [
-        5,
         6
       ],
       [
         6,
         6
-      ]
-    ],
-    [
-      [
-        5,
-        6
-      ],
-      [
-        6,
-        7
-      ]
-    ],
-    [
-      [
-        5,
-        7
-      ],
-      [
-        6,
-        7
-      ]
-    ],
-    [
-      [
-        5,
-        7
-      ],
-      [
-        6,
-        8
       ]
     ],
     [
@@ -5674,28 +5671,8 @@
         8
       ],
       [
-        6,
-        9
-      ]
-    ],
-    [
-      [
-        6,
-        8
-      ],
-      [
         7,
         7
-      ]
-    ],
-    [
-      [
-        6,
-        9
-      ],
-      [
-        7,
-        9
       ]
     ],
     [
@@ -5856,16 +5833,6 @@
       [
         9,
         5
-      ]
-    ],
-    [
-      [
-        8,
-        10
-      ],
-      [
-        8,
-        11
       ]
     ],
     [
@@ -6309,6 +6276,88 @@
     "hhwwhmhmhmhppppppppppp",
     "hhhhhmmhhhhppppppppppp",
     "hhphhhhhphhppppppppppp"
+  ],
+  "tracks": [
+    [
+      [
+        5,
+        4
+      ],
+      [
+        5,
+        5
+      ]
+    ],
+    [
+      [
+        5,
+        5
+      ],
+      [
+        5,
+        6
+      ]
+    ],
+    [
+      [
+        5,
+        6
+      ],
+      [
+        6,
+        7
+      ]
+    ],
+    [
+      [
+        5,
+        7
+      ],
+      [
+        6,
+        7
+      ]
+    ],
+    [
+      [
+        5,
+        7
+      ],
+      [
+        6,
+        8
+      ]
+    ],
+    [
+      [
+        6,
+        8
+      ],
+      [
+        6,
+        9
+      ]
+    ],
+    [
+      [
+        6,
+        9
+      ],
+      [
+        7,
+        9
+      ]
+    ],
+    [
+      [
+        8,
+        10
+      ],
+      [
+        8,
+        11
+      ]
+    ]
   ],
   "width": 22
 }

@@ -60,6 +60,9 @@ struct MapFile {
     control: Vec<String>,
     #[serde(default)]
     roads: Vec<Vec<[i32; 2]>>,
+    /// R-MOVE-01: dirt roads, polylines of hexes like `roads`.
+    #[serde(default)]
+    tracks: Vec<Vec<[i32; 2]>>,
     #[serde(default)]
     canals: Vec<[[i32; 2]; 2]>,
     #[serde(default)]
@@ -431,6 +434,14 @@ pub fn load_map(json: &str) -> Result<(HexMap, BTreeMap<Hex, SideId>), RuleError
             map.add_road(offset_to_axial(pair[0]), offset_to_axial(pair[1]))
                 .map_err(|_| {
                     invalid(format!("road {:?} → {:?}: not adjacent", pair[0], pair[1]))
+                })?;
+        }
+    }
+    for track in &file.tracks {
+        for pair in track.windows(2) {
+            map.add_track(offset_to_axial(pair[0]), offset_to_axial(pair[1]))
+                .map_err(|_| {
+                    invalid(format!("track {:?} → {:?}: not adjacent", pair[0], pair[1]))
                 })?;
         }
     }

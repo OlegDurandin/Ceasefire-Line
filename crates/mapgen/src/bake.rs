@@ -671,7 +671,7 @@ fn road_layer(i: &BakeInput<'_>, pm: &mut Pixmap) -> Result<(), String> {
     let edge = solid(color(rgb(&i.cfg.road_edge_color)?, 1.0));
     let fill = solid(color(rgb(&i.cfg.road_color)?, 1.0));
     let edge_w = i.cfg.road_edge_km as f32 * p;
-    let mut lines: Vec<(usize, Path, f32)> = Vec::new();
+    let mut lines: Vec<(usize, Path, f32, &crate::config::RoadStyle)> = Vec::new();
     for l in i.roads {
         let Some((rank, style)) = i
             .road_styles
@@ -682,22 +682,35 @@ fn road_layer(i: &BakeInput<'_>, pm: &mut Pixmap) -> Result<(), String> {
             continue;
         };
         if let Some(path) = line_path(l.pts.iter().map(|&q| px(i, q))) {
-            lines.push((rank, path, style.width_km as f32 * p));
+            lines.push((rank, path, style.width_km as f32 * p, style));
         }
     }
     // Stable: thin classes first so big roads stay on top at junctions.
-    lines.sort_by_key(|(rank, _, _)| *rank);
-    for (_, path, w) in &lines {
-        pm.stroke_path(
-            path,
-            &edge,
-            &stroke(w + 2.0 * edge_w),
-            Transform::identity(),
-            None,
-        );
+    lines.sort_by_key(|(rank, ..)| *rank);
+    for (_, path, w, style) in &lines {
+        // Dirt roads: no dark edge, a dashed line of their own colour.
+        if style.dash_km.is_none() {
+            pm.stroke_path(
+                path,
+                &edge,
+                &stroke(w + 2.0 * edge_w),
+                Transform::identity(),
+                None,
+            );
+        }
     }
-    for (_, path, w) in &lines {
-        pm.stroke_path(path, &fill, &stroke(*w), Transform::identity(), None);
+    for (_, path, w, style) in &lines {
+        let paint = match &style.color {
+            Some(c) => solid(color(rgb(c)?, 1.0)),
+            None => fill.clone(),
+        };
+        let mut st = stroke(*w);
+        if let Some(d) = style.dash_km {
+            let d = (d * f64::from(p)) as f32;
+            st.dash = tiny_skia::StrokeDash::new(vec![d, d * 0.6], 0.0);
+            st.line_cap = LineCap::Butt;
+        }
+        pm.stroke_path(path, &paint, &st, Transform::identity(), None);
     }
     Ok(())
 }

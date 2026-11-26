@@ -66,6 +66,8 @@ struct ScenarioView {
     hex_km: Option<f64>,
     hexes: Vec<HexView>,
     roads: Vec<EdgeView>,
+    /// R-MOVE-01: dirt roads.
+    tracks: Vec<EdgeView>,
     canals: Vec<EdgeView>,
     bridges: Vec<BridgeView>,
     sides: Vec<SideView>,
@@ -138,6 +140,7 @@ impl Core {
                 })
                 .collect(),
             roads: hex_map.roads().map(edge).collect(),
+            tracks: hex_map.tracks().map(edge).collect(),
             canals: hex_map.canals().map(edge).collect(),
             bridges: hex_map
                 .bridges()

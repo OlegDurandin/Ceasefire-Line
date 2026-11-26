@@ -48,6 +48,7 @@ const GRID_LABEL = "grid";
 
 const ROAD = 0xd8c39a;
 const ROAD_EDGE = 0x3a2e22;
+const TRACK = 0xd9c08a;
 const WATER = 0x4a7a9a;
 
 const flat = (pts: Point[]) => pts.flatMap((p) => [p.x, p.y]);
@@ -163,6 +164,11 @@ export function drawMap(
   };
   stroke(size * 0.2, ROAD_EDGE);
   stroke(size * 0.11, ROAD);
+  // R-MOVE-01: dirt roads — thinner, dashed, no dark edge.
+  for (const pts of roadChains(view.tracks).map((c) => chaikin(c.map((h) => hexCenter(ax(h), size))))) {
+    dashPolyline(roads, pts, size * 0.22, size * 0.14);
+  }
+  roads.stroke({ width: size * 0.07, color: TRACK, cap: "butt" });
 
   const water = new Graphics();
   for (const e of view.canals) {
@@ -196,6 +202,30 @@ export function drawBridges(list: ScenarioView["bridges"], tex: MapTextures, siz
     layer.addChild(s);
   }
   return layer;
+}
+
+/** Dashes along a polyline (Pixi has no dashed strokes). */
+function dashPolyline(g: Graphics, pts: Point[], dash: number, gap: number) {
+  let on = true;
+  let left = dash;
+  for (let i = 0; i + 1 < pts.length; i++) {
+    let a = pts[i]!;
+    const b = pts[i + 1]!;
+    let len = Math.hypot(b.x - a.x, b.y - a.y);
+    while (len > 0) {
+      const step = Math.min(left, len);
+      const t = step / len;
+      const c = { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t };
+      if (on) g.moveTo(a.x, a.y).lineTo(c.x, c.y);
+      a = c;
+      len -= step;
+      left -= step;
+      if (left <= 1e-6) {
+        on = !on;
+        left = on ? dash : gap;
+      }
+    }
+  }
 }
 
 /** R-UI-02: the grid shows up while a unit is selected. */

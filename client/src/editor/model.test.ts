@@ -33,12 +33,15 @@ describe("editor model", () => {
     expect(m.control_legend["1"]).toBe(1);
   });
 
-  it("cycles a hex side through road, canal, bridge, destroyed bridge", () => {
+  it("cycles a hex side through road, dirt road, canal, bridge, destroyed bridge", () => {
     const m = map();
     const a: [number, number] = [0, 0];
     const b: [number, number] = [1, 0];
     expect(edgeState(m, a, b)).toBe("road");
+    expect(cycleEdge(m, a, b)).toBe("track");
+    expect(m.tracks).toEqual([[a, b]]);
     expect(cycleEdge(m, a, b)).toBe("canal");
+    expect(m.tracks).toHaveLength(0);
     expect(cycleEdge(m, a, b)).toBe("bridge");
     expect(m.bridges).toHaveLength(1);
     expect(cycleEdge(m, a, b)).toBe("destroyed");
