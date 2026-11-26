@@ -259,3 +259,46 @@ fn r_air_01_aircraft_need_an_own_base() {
     sc.units[0].hex = Hex::new(1, 1); // own hex, but no city or airfield
     assert!(GameState::new(std::sync::Arc::new(common::data()), sc).is_err());
 }
+
+/// Designer decision 2026-11-26: at most two interceptors meet one strike.
+#[test]
+fn r_air_02_at_most_two_interceptors() {
+    let migs = vec![
+        unit("fighter", B, B_CITY),
+        unit("fighter", B, B_CITY),
+        unit("fighter", B, B_CITY),
+    ];
+    let s = start(air_setup(migs));
+    let f = s.forecast_air_strike(STRIKE, TARGET).unwrap();
+    assert_eq!(
+        f.interceptors.len(),
+        s.data().rules.air.max_intercepts_per_strike
+    );
+}
+
+/// R-TURN-03 (designer decision 2026-11-26): a base taken by the enemy sends
+/// its aircraft to the nearest own base with −30% readiness.
+#[test]
+fn r_air_01_lost_base_rebases_with_a_readiness_loss() {
+    let mut sc = air_setup(vec![unit("infantry", B, Hex::new(3, 0))]);
+    sc.units[0].hex = Hex::new(2, 0); // the strike group sits at the front-line city
+    let mut s = start(sc);
+    s.apply(Command::EndPhase).unwrap(); // B's phase
+    let raider = s
+        .units()
+        .find(|u| u.side == B && u.hex == Hex::new(3, 0))
+        .unwrap()
+        .id;
+    s.apply(Command::Move {
+        unit: raider,
+        path: vec![Hex::new(2, 0)],
+    })
+    .unwrap();
+    s.apply(Command::EndPhase).unwrap(); // A's phase: the aircraft must leave
+    let a = s.air_unit(STRIKE).unwrap();
+    assert_eq!(a.base, AirBase::Hex { hex: A_CITY });
+    assert_eq!(
+        a.fatigue_pct,
+        s.data().rules.air.base_lost_readiness_loss_pct
+    );
+}

@@ -324,6 +324,8 @@ impl GameState {
         };
         order(&mut escorts);
         order(&mut interceptors);
+        // Designer decision 2026-11-26: at most `max_intercepts_per_strike` interceptors.
+        interceptors.truncate(air.max_intercepts_per_strike);
         // One escort per interceptor at most: the rest stay home.
         escorts.truncate(interceptors.len());
         Ok((
@@ -696,8 +698,10 @@ impl GameState {
             });
             match next {
                 Some(base) => {
+                    let loss = self.data.rules.air.base_lost_readiness_loss_pct;
                     if let Some(a) = self.air.get_mut(&id) {
                         a.base = base.clone();
+                        a.fatigue_pct = a.fatigue_pct.saturating_add(loss).min(100);
                     }
                     events.push(Event::Rebased { unit: id, base });
                 }

@@ -130,7 +130,9 @@
     "parked_air_defense": 2.0,
     "airfield_strike_readiness_loss_pct": 30,
     "intercept_min_readiness_pct": 50,
-    "intercept_radius_km": 100
+    "intercept_radius_km": 100,
+    "max_intercepts_per_strike": 2,
+    "base_lost_readiness_loss_pct": 30
   },
   "tactical": {
     "percentiles": {

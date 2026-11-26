@@ -76,6 +76,10 @@ pub struct AirRules {
     pub intercept_min_readiness_pct: u8,
     /// A fighter intercepts sorties whose target is within this range of its base.
     pub intercept_radius_km: f64,
+    /// At most this many interceptors meet one strike (the best ones).
+    pub max_intercepts_per_strike: usize,
+    /// Readiness lost by an aircraft forced to another base when its own fell (R-TURN-03).
+    pub base_lost_readiness_loss_pct: u8,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
