@@ -40,6 +40,16 @@ use crate::unit::{fatigue_pct, readiness_pct};
 #[serde(transparent)]
 pub struct UnitId(pub u32);
 
+/// R-UNIT-01: what the phase-start readiness was computed from: supply,
+/// morale and experience then, and the HQ modifier (R-HQ-02) in points.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+pub struct ReadinessBasis {
+    pub supply: u8,
+    pub morale_pct: u8,
+    pub exp_stars: u8,
+    pub hq_pct: i32,
+}
+
 /// A ground unit on the map.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Unit {
@@ -57,6 +67,8 @@ pub struct Unit {
     pub zero_supply_phases: u8,
     /// R-UNIT-01 value before fatigue, set at the start of the own phase.
     pub base_readiness_pct: u8,
+    /// R-UNIT-01: inputs of `base_readiness_pct` (for the UI's explanation).
+    pub readiness_basis: ReadinessBasis,
     /// Fatigue counters, reset at the start of the own phase.
     pub attacks_made: u32,
     pub attacks_received: u32,
@@ -104,6 +116,7 @@ impl Unit {
             supply: 0,
             zero_supply_phases: 0,
             base_readiness_pct: 0,
+            readiness_basis: ReadinessBasis::default(),
             attacks_made: 0,
             attacks_received: 0,
             ap_halves: 0,
@@ -511,6 +524,12 @@ impl GameState {
                     u.exp_stars(),
                     0,
                 );
+                u.readiness_basis = ReadinessBasis {
+                    supply: u.supply,
+                    morale_pct: u.morale_pct,
+                    exp_stars: u.exp_stars(),
+                    hq_pct: 0,
+                };
             }
         }
         // R-HQ-02: a side with line units but no HQ gets −10% everywhere.

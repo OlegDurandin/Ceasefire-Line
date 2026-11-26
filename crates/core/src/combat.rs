@@ -24,7 +24,9 @@ pub struct FireParams {
 }
 
 /// Everything [`fire_params`] needs; callers fill in context multipliers.
-#[derive(Debug, Clone, Copy, PartialEq)]
+/// Serializable so the UI can show the formula with the very inputs the
+/// resolution uses (R-UI-04).
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub struct FireInput {
     pub strength: u8,
     pub readiness_pct: u8,
@@ -119,6 +121,21 @@ pub fn ground_exchange(
     defender: &Combatant<'_>,
     ctx: &GroundAttack,
 ) -> Result<Exchange, RuleError> {
+    let [to_defender, to_attacker] = ground_inputs(rules, attacker, defender, ctx)?;
+    Ok(Exchange {
+        vs_defender: fire_params(rules, &to_defender),
+        vs_attacker: fire_params(rules, &to_attacker),
+    })
+}
+
+/// Inputs of both fires in a ground combat: `[attacker → defender, defender →
+/// attacker]`. [`ground_exchange`] and the UI explanation use this one function.
+pub fn ground_inputs(
+    rules: &CombatRules,
+    attacker: &Combatant<'_>,
+    defender: &Combatant<'_>,
+    ctx: &GroundAttack,
+) -> Result<[FireInput; 2], RuleError> {
     let night_mult = if ctx.night && !attacker.class.has_tag(UnitTag::NightCombat) {
         rules.night_attack_mult
     } else {
@@ -129,44 +146,35 @@ pub fn ground_exchange(
     } else {
         1.0
     };
-    let vs_defender = fire_params(
-        rules,
-        &FireInput {
-            strength: attacker.strength,
-            readiness_pct: attacker.readiness_pct,
-            shot_fraction: 1.0,
-            attack: attacker.stats.attack.against(defender.class.target_class),
-            shooter_exp: attacker.exp_stars,
-            attack_mult: night_mult,
-            defense: ground_defense(defender)?,
-            target_exp: defender.exp_stars,
-            terrain_mult: ctx.terrain_mult,
-            entrenchment: defender.entrenchment,
-            defense_mult: canal_mult,
-            p_shift: 0.0,
-        },
-    );
-    let vs_attacker = fire_params(
-        rules,
-        &FireInput {
-            strength: defender.strength,
-            readiness_pct: defender.readiness_pct,
-            shot_fraction: 1.0,
-            attack: defender.stats.attack.against(attacker.class.target_class),
-            shooter_exp: defender.exp_stars,
-            attack_mult: 1.0,
-            defense: ground_defense(attacker)?,
-            target_exp: attacker.exp_stars,
-            terrain_mult: 1.0,
-            entrenchment: 0,
-            defense_mult: 1.0,
-            p_shift: 0.0,
-        },
-    );
-    Ok(Exchange {
-        vs_defender,
-        vs_attacker,
-    })
+    let vs_defender = FireInput {
+        strength: attacker.strength,
+        readiness_pct: attacker.readiness_pct,
+        shot_fraction: 1.0,
+        attack: attacker.stats.attack.against(defender.class.target_class),
+        shooter_exp: attacker.exp_stars,
+        attack_mult: night_mult,
+        defense: ground_defense(defender)?,
+        target_exp: defender.exp_stars,
+        terrain_mult: ctx.terrain_mult,
+        entrenchment: defender.entrenchment,
+        defense_mult: canal_mult,
+        p_shift: 0.0,
+    };
+    let vs_attacker = FireInput {
+        strength: defender.strength,
+        readiness_pct: defender.readiness_pct,
+        shot_fraction: 1.0,
+        attack: defender.stats.attack.against(attacker.class.target_class),
+        shooter_exp: defender.exp_stars,
+        attack_mult: 1.0,
+        defense: ground_defense(attacker)?,
+        target_exp: attacker.exp_stars,
+        terrain_mult: 1.0,
+        entrenchment: 0,
+        defense_mult: 1.0,
+        p_shift: 0.0,
+    };
+    Ok([vs_defender, vs_attacker])
 }
 
 /// R-COMBAT-03: forecast of a ground combat.

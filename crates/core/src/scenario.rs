@@ -233,6 +233,11 @@ struct ScenarioFile {
     /// R-MOVE-06: neutral closed territory by country, offset hexes.
     #[serde(default)]
     neutral: Vec<NeutralFile>,
+    /// R-UI-04: calendar date of the first turn ("YYYY-MM-DD"); client data,
+    /// the rules ignore it.
+    #[serde(default)]
+    #[allow(dead_code)]
+    start_date: Option<String>,
     units: Vec<UnitFile>,
 }
 

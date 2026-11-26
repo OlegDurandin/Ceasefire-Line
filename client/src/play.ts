@@ -8,7 +8,8 @@ import { Assets, Container, Graphics, type Texture } from "pixi.js";
 import type { Camera } from "./camera";
 import type { BridgeTarget, EconomyView, Forecast, GameStateView, LiveUnit, Reach, Target, TransferTargets } from "./game-view";
 import { axialToOffset, offsetToAxial, pixelToAxial } from "./hex";
-import { formatEvent, type UnitRef } from "./log";
+import { attrText, fireLines, num, readinessTip, supplyTip, turnDate, type FireInput, type Rules } from "./explain";
+import { fill, formatEvent, type UnitRef } from "./log";
 import { drawControl } from "./render/control";
 import { drawBridges, setGridActive, type MapTextures } from "./render/map";
 import { drawOverlays } from "./render/overlays";
@@ -27,6 +28,16 @@ interface Selection {
 }
 
 type Panel = "purchases" | "tech" | "reports" | null;
+
+/** Data the panels explain numbers with (R-UI-04). */
+export interface PlayContext {
+  rules: Rules;
+  /** Terrain id → max entrenchment (data/terrain.json). */
+  maxEntrench: Map<string, number>;
+  startDate?: string;
+  startTurn: number;
+  suddenDeathPct: number;
+}
 
 const NIGHT_TINT = 0x8796c4;
 const LOG_LIMIT = 300;
@@ -60,6 +71,7 @@ export class Play {
     private colors: number[],
     private size: number,
     private mapTex: MapTextures,
+    private ctx: PlayContext,
   ) {
     world.addChild(this.bridges);
     world.addChild(this.control);
@@ -126,12 +138,15 @@ export class Play {
     const side = s.sides.find((x) => x.id === s.active_side);
     const left = s.last_turn === null ? "—" : String(Math.max(0, s.last_turn - s.turn));
     const top = document.getElementById("top")!;
+    const date = turnDate(this.ctx.startDate, this.ctx.startTurn, s.turn, this.ru);
+    const income = JSON.parse(this.game.economy()) as EconomyView;
+    const tip = (key: string, args: Record<string, string | number>) => attrText(fill(this.t(key), args));
     top.innerHTML = `
       <span><b>${this.sideName(s.active_side)}</b></span>
-      <span>${this.t("ui.turn")} ${s.turn} · ${s.night ? this.t("ui.night") : this.t("ui.day")}</span>
-      <span>MPP ${side?.mpp ?? 0}</span>
-      <span>NM ${s.sides.map((x) => `${this.sideName(x.id)} ${x.national_morale_pct}%`).join(" · ")}</span>
-      <span class="muted">${this.t("ui.to_ceasefire")}: ${left}</span>
+      <span>${date ? `${date} · ` : ""}${this.t("ui.turn")} ${s.turn} · ${s.night ? this.t("ui.night") : this.t("ui.day")}</span>
+      <span title="${tip("ui.mpp_tip", { income: income.base_income })}">MPP ${side?.mpp ?? 0}</span>
+      <span title="${tip("ui.nm_tip", { death: this.ctx.suddenDeathPct })}">NM ${s.sides.map((x) => `${this.sideName(x.id)} ${x.national_morale_pct}%`).join(" · ")}</span>
+      <span class="muted" title="${tip("ui.ceasefire_tip", { turn: s.last_turn ?? "—" })}">${this.t("ui.to_ceasefire")}: ${left}</span>
       <span class="tabs">${(["map", "purchases", "tech", "reports"] as const)
         .map((p) => `<button data-panel="${p}" class="${(this.panel ?? "map") === p ? "on" : ""}">${this.t(`ui.${p}`)}</button>`)
         .join("")}</span>
@@ -277,9 +292,24 @@ export class Play {
   private showInfo(u: LiveUnit) {
     const info = document.getElementById("info")!;
     info.style.display = "block";
-    info.innerHTML = `<b>${this.t(`unit.${u.class}`, u.class)}</b> · ${this.sideName(u.side)}<br>
-      ${this.t("ui.strength")} ${u.strength} · ${this.t("ui.readiness")} ${u.readiness_pct}% · ${this.t("ui.morale")} ${u.morale_pct}%<br>
-      AP ${u.ap_halves / 2} · ${this.t("ui.strikes")} ${u.strikes_left} · ${this.t("ui.supply")} ${u.supply} · ${this.t("ui.entrench")} ${u.entrenchment}
+    const r = this.ctx.rules;
+    const tips = {
+      readiness: attrText(readinessTip(u, r, this.ru)),
+      supply: attrText(supplyTip(u.supply, r, this.ru)),
+      ap: attrText(
+        fill(this.t("ui.ap_tip"), { night: r.movement.night_ap_penalty, low: r.supply.low_supply_max, supply: r.movement.low_supply_ap_penalty }),
+      ),
+      entrench: attrText(
+        fill(this.t("ui.entrench_tip"), {
+          terrain: this.t(`terrain.${u.terrain}`, u.terrain),
+          max: this.ctx.maxEntrench.get(u.terrain) ?? "—",
+          min: r.supply.entrench_min_supply,
+        }),
+      ),
+    };
+    info.innerHTML = `<b>${this.t(`unit.${u.class}`, u.class)}</b> · ${this.sideName(u.side)} · <span class="muted">${this.t(`terrain.${u.terrain}`, u.terrain)}</span><br>
+      ${this.t("ui.strength")} ${u.strength} · <span class="tip" title="${tips.readiness}">${this.t("ui.readiness")} ${u.readiness_pct}%</span> · ${this.t("ui.morale")} ${u.morale_pct}%<br>
+      <span class="tip" title="${tips.ap}">AP ${u.ap_halves / 2}</span> · ${this.t("ui.strikes")} ${u.strikes_left} · <span class="tip" title="${tips.supply}">${this.t("ui.supply")} ${u.supply}</span> · <span class="tip" title="${tips.entrench}">${this.t("ui.entrench")} ${u.entrenchment}</span>
       ${this.actions(u)}`;
     this.bindActions(info, u);
   }
@@ -369,27 +399,47 @@ export class Play {
   private aim(target: Target) {
     if (!this.selection) return;
     this.selection.aimed = target;
-    const f = JSON.parse(this.game.forecast(this.selection.unit.id, target.target)) as Forecast;
+    const attacker = this.selection.unit;
+    const defender = this.state.units.find((u) => u.id === target.target);
+    const f = JSON.parse(this.game.forecast(attacker.id, target.target)) as Forecast;
+    const ex = JSON.parse(this.game.explain(attacker.id, target.target)) as { kind: string; inputs: FireInput[] };
     const box = document.getElementById("combat")!;
     const range = (l: { low: number; high: number }) => `${l.low}–${l.high}`;
-    let body: string;
+    const card = (u: LiveUnit | undefined) =>
+      u
+        ? `<div class="card"><b>${this.t(`unit.${u.class}`, u.class)}</b><br><span class="muted">${this.sideName(u.side)} · ${this.t(`terrain.${u.terrain}`, u.terrain)}</span><br>
+          ${this.t("ui.strength")} ${u.strength} · ${u.readiness_pct}%${u.entrenchment ? ` · ${this.t("ui.entrench")} ${u.entrenchment}` : ""}</div>`
+        : "<div class=\"card\"></div>";
+    let center: string;
+    const details: string[] = [];
     if (f.kind === "attack") {
       const x = f.forecast;
       const a = x.attacker_losses;
       const d = x.defender_losses;
-      body = `<div class="row"><span>${this.t("ui.attacker")}</span><span>${this.t("ui.defender")}</span></div>
-        <div class="big">−${a.expected.toFixed(1)} | −${d.expected.toFixed(1)}</div>
+      center = `<div class="big">−${num(a.expected, 1)} | −${num(d.expected, 1)}</div>
         <div class="row detail"><span>${range(a)}</span><span>${range(d)}</span></div>
-        <div class="detail">A ${x.exchange.vs_defender.a.toFixed(1)} · D ${x.exchange.vs_defender.d.toFixed(1)} · p ${x.exchange.vs_defender.p.toFixed(2)} · n ${x.exchange.vs_defender.n}
-          &nbsp;|&nbsp; ${this.t("ui.return_fire")}: p ${x.exchange.vs_attacker.p.toFixed(2)} · n ${x.exchange.vs_attacker.n}</div>`;
+        <div class="detail">p ${num(x.exchange.vs_defender.p, 2)} · n ${x.exchange.vs_defender.n} | ${this.t("ui.return_fire")}: p ${num(x.exchange.vs_attacker.p, 2)} · n ${x.exchange.vs_attacker.n}</div>`;
+      details.push(`<b>${this.t("ui.attacker")} → ${this.t("ui.defender")}</b>`, ...fireLines(ex.inputs[0]!, x.exchange.vs_defender, this.ctx.rules, this.ru));
+      details.push(`<b>${this.t("ui.return_fire")}</b>`, ...fireLines(ex.inputs[1]!, x.exchange.vs_attacker, this.ctx.rules, this.ru));
     } else {
       const d = f.defender_losses;
-      body = `<div>${this.t("ui.bombardment")}</div><div class="big">−0 | −${d.expected.toFixed(1)}</div>
-        <div class="detail">${range(d)}</div>`;
+      center = `<div>${this.t("ui.bombardment")}</div><div class="big">−0 | −${num(d.expected, 1)}</div><div class="detail">${range(d)}</div>`;
     }
-    box.innerHTML = `${body}<div class="actions"><button id="strike">${this.t(target.kind === "attack" ? "ui.attack" : "ui.bombard")}</button>
+    box.innerHTML = `<div class="duel">${card(attacker)}<div class="center">${center}</div>${card(defender)}</div>
+      ${details.length ? `<div class="formula" style="display:none">${details.map((l) => `<div>${l}</div>`).join("")}</div>` : ""}
+      <div class="actions"><button id="strike">${this.t(target.kind === "attack" ? "ui.attack" : "ui.bombard")}</button>
+      ${details.length ? `<button id="details">${this.t("ui.details")}</button>` : ""}
       <button id="cancel">${this.t("ui.cancel")}</button></div>`;
     box.style.display = "block";
+    const toggle = document.getElementById("details");
+    if (toggle) {
+      toggle.onclick = () => {
+        const fbox = box.querySelector<HTMLElement>(".formula")!;
+        const open = fbox.style.display === "none";
+        fbox.style.display = open ? "block" : "none";
+        toggle.textContent = this.t(open ? "ui.hide_details" : "ui.details");
+      };
+    }
     document.getElementById("strike")!.onclick = () => this.selection && this.strike(this.selection.unit, target);
     document.getElementById("cancel")!.onclick = () => {
       if (this.selection) this.selection.aimed = null;

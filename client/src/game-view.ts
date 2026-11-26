@@ -23,6 +23,13 @@ export interface LiveUnit {
   attached_hq: number | null;
   /** R-HQ-01: manual pin, applied from the next own phase. */
   pinned_hq: number | null;
+  /** R-UNIT-01 explanation. */
+  base_readiness_pct: number;
+  readiness_basis: { supply: number; morale_pct: number; exp_stars: number; hq_pct: number };
+  attacks_made: number;
+  attacks_received: number;
+  crossing_penalty_pct: number;
+  terrain: string;
 }
 
 export interface Outcome {

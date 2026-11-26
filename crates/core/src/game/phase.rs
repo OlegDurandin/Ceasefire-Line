@@ -149,6 +149,12 @@ impl GameState {
                 unit.exp_stars(),
                 hq_readiness,
             );
+            unit.readiness_basis = super::ReadinessBasis {
+                supply: unit.supply,
+                morale_pct: unit.morale_pct,
+                exp_stars: unit.exp_stars(),
+                hq_pct: hq_readiness,
+            };
 
             // R-UNIT-02: AP penalties for low supply and night, minimum AP.
             let mut ap = class_ap;

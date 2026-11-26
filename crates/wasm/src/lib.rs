@@ -220,6 +220,13 @@ struct LiveUnitView {
     attached_hq: Option<u32>,
     /// R-HQ-01: manual pin, applied from the next own phase.
     pinned_hq: Option<u32>,
+    /// R-UNIT-01 explanation: phase-start readiness, its inputs, fatigue.
+    base_readiness_pct: u8,
+    readiness_basis: ceasefire_core::game::ReadinessBasis,
+    attacks_made: u32,
+    attacks_received: u32,
+    crossing_penalty_pct: u8,
+    terrain: String,
 }
 
 #[derive(Serialize)]
@@ -359,6 +366,16 @@ impl Game {
                         formation: u.formation.clone(),
                         attached_hq: u.attached_hq.map(|h| h.0),
                         pinned_hq: u.pinned_hq.map(|h| h.0),
+                        base_readiness_pct: u.base_readiness_pct,
+                        readiness_basis: u.readiness_basis,
+                        attacks_made: u.attacks_made,
+                        attacks_received: u.attacks_received,
+                        crossing_penalty_pct: u.crossing_penalty_pct,
+                        terrain: s
+                            .map()
+                            .cell(u.hex)
+                            .map(|c| c.terrain.clone())
+                            .unwrap_or_default(),
                     }
                 })
                 .collect(),
@@ -433,6 +450,19 @@ impl Game {
             Err(_) => {
                 let f = self.state.forecast_bombard(u, t).map_err(js)?;
                 to_json(&serde_json::json!({ "kind": "bombard", "defender_losses": f }))
+            }
+        }
+    }
+
+    /// R-UI-04: the formula inputs of an attack (`[to defender, to attacker]`)
+    /// or a bombardment, from the same code as the resolution.
+    pub fn explain(&self, unit: u32, target: u32) -> Result<String, JsError> {
+        let (u, t) = (UnitId(unit), UnitId(target));
+        match self.state.explain_attack(u, t) {
+            Ok(inputs) => to_json(&serde_json::json!({ "kind": "attack", "inputs": inputs })),
+            Err(_) => {
+                let input = self.state.explain_bombard(u, t).map_err(js)?;
+                to_json(&serde_json::json!({ "kind": "bombard", "inputs": [input] }))
             }
         }
     }

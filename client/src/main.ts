@@ -8,6 +8,7 @@ import type { MapDoc, ScenarioDoc } from "./editor/model";
 import { Camera } from "./camera";
 import { hexCenter, hexCorners, offsetToAxial } from "./hex";
 import { hillshadePlacement, type HillshadeMeta } from "./hillshade";
+import type { Rules } from "./explain";
 import { Play } from "./play";
 import { drawControl } from "./render/control";
 import { drawMap, setGridActive } from "./render/map";
@@ -63,6 +64,7 @@ async function main() {
     return acc;
   }, []);
   const colors = sideColors(scenarioSides);
+  const scenarioMeta = JSON.parse(scenario) as { start_date?: string; start_turn?: number };
 
   stage("Загрузка ядра…");
   await init();
@@ -194,7 +196,15 @@ async function main() {
     stage("Ход…");
     const game = new Game(core, scenario, map, events);
     devGame = game;
-    const play = new Play(game, world, camera, sprites, ru, sideKeys, colors, HEX_SIZE, { terrain: terrainTex, bridge, bridgeDestroyed });
+    const play = new Play(game, world, camera, sprites, ru, sideKeys, colors, HEX_SIZE, { terrain: terrainTex, bridge, bridgeDestroyed }, {
+      rules: JSON.parse(rules) as Rules,
+      maxEntrench: new Map(
+        (JSON.parse(terrain) as { terrain: { id: string; max_entrench: number }[] }).terrain.map((t) => [t.id, t.max_entrench] as const),
+      ),
+      startDate: scenarioMeta.start_date,
+      startTurn: scenarioMeta.start_turn ?? 1,
+      suddenDeathPct: (JSON.parse(rules) as { national_morale: { sudden_death_pct: number } }).national_morale.sudden_death_pct,
+    });
     await play.refresh();
     if (!view.issues.length) panel.style.display = "none";
   }

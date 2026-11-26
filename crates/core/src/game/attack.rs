@@ -3,8 +3,8 @@
 use std::sync::Arc;
 
 use crate::combat::{
-    fire_params, forecast_fire, forecast_ground, sample_hits, Combatant, ExchangeForecast,
-    FireInput, FireParams, GroundAttack,
+    fire_params, forecast_fire, forecast_ground, ground_inputs, sample_hits, Combatant,
+    ExchangeForecast, FireInput, FireParams, GroundAttack,
 };
 use crate::data::{GameData, UnitTag};
 use crate::error::{AttackError, RuleError};
@@ -95,6 +95,27 @@ impl GameState {
             &self.combatant(&data, &d)?,
             &ctx,
         )
+    }
+
+    /// R-UI-04: inputs of the attack's two fires, `[to defender, to attacker]`,
+    /// from the same code as the forecast and the resolution.
+    pub fn explain_attack(&self, id: UnitId, target: UnitId) -> Result<[FireInput; 2], RuleError> {
+        let (a, d) = self.check_attack(id, target)?;
+        let data = Arc::clone(&self.data);
+        let ctx = self.ground_context(&a, &d)?;
+        ground_inputs(
+            &data.rules.combat,
+            &self.combatant(&data, &a)?,
+            &self.combatant(&data, &d)?,
+            &ctx,
+        )
+    }
+
+    /// R-UI-04: inputs of a bombardment.
+    pub fn explain_bombard(&self, id: UnitId, target: UnitId) -> Result<FireInput, RuleError> {
+        let (a, d) = self.check_bombard(id, target)?;
+        let data = Arc::clone(&self.data);
+        self.bombard_input(&data, &a, &d)
     }
 
     /// R-MOVE-04: 1 AP and a strike; non-mechanised units lose the rest of
@@ -412,6 +433,14 @@ impl GameState {
     }
 
     fn bombard_params(&self, data: &GameData, a: &Unit, d: &Unit) -> Result<FireParams, RuleError> {
+        Ok(fire_params(
+            &data.rules.combat,
+            &self.bombard_input(data, a, d)?,
+        ))
+    }
+
+    /// R-COMBAT-04: inputs of a bombardment (shared by the explanation).
+    fn bombard_input(&self, data: &GameData, a: &Unit, d: &Unit) -> Result<FireInput, RuleError> {
         let att = self.combatant(data, a)?;
         let def = self.combatant(data, d)?;
         let rules = &data.rules;
@@ -421,27 +450,24 @@ impl GameState {
             1.0
         };
         let terrain = data.terrain.get(&self.map_terrain(d.hex)?)?;
-        Ok(fire_params(
-            &rules.combat,
-            &FireInput {
-                strength: att.strength,
-                readiness_pct: att.readiness_pct,
-                shot_fraction: rules.bombard.shot_fraction,
-                attack: att.stats.attack.against(def.class.target_class),
-                shooter_exp: att.exp_stars,
-                attack_mult: night_mult,
-                defense: def
-                    .stats
-                    .defense
-                    .ground
-                    .ok_or_else(|| RuleError::NoGroundDefense(def.class.id.clone()))?,
-                target_exp: def.exp_stars,
-                terrain_mult: terrain.def.defense_mult,
-                entrenchment: def.entrenchment,
-                defense_mult: 1.0,
-                p_shift: 0.0,
-            },
-        ))
+        Ok(FireInput {
+            strength: att.strength,
+            readiness_pct: att.readiness_pct,
+            shot_fraction: rules.bombard.shot_fraction,
+            attack: att.stats.attack.against(def.class.target_class),
+            shooter_exp: att.exp_stars,
+            attack_mult: night_mult,
+            defense: def
+                .stats
+                .defense
+                .ground
+                .ok_or_else(|| RuleError::NoGroundDefense(def.class.id.clone()))?,
+            target_exp: def.exp_stars,
+            terrain_mult: terrain.def.defense_mult,
+            entrenchment: def.entrenchment,
+            defense_mult: 1.0,
+            p_shift: 0.0,
+        })
     }
 
     /// R-COMBAT-03 for bombardment.
