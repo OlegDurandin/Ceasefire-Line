@@ -35,6 +35,7 @@ use crate::rng::Pcg32;
 use crate::side::SideId;
 use crate::supply::{
     compute_supply, supply_tree, HqPosition, SupplyInput, SupplyMap, SupplyParams, SupplySource,
+    SupplyTree,
 };
 use crate::tech::TechLevels;
 use crate::unit::{fatigue_pct, readiness_pct};
@@ -805,49 +806,19 @@ impl GameState {
 
     /// R-SUP-02 / R-SUP-04: current hex supply map of `side`.
     pub fn hex_supply(&self, side: SideId) -> Result<SupplyMap, RuleError> {
-        let max = self.supply_params.max;
-        let occupancy = self.occupancy();
-        // R-SUP-01 variant `source_isolation`: hexes a supply path (R-SUP-02,
-        // any cost) reaches from the side's sources of max.
-        let linked = if self.variants.source_isolation {
-            let main: Vec<SupplySource> = self
-                .sources
-                .iter()
-                .filter(|(h, s)| self.control.get(h) == Some(&side) && s.base >= max)
-                .map(|(&hex, _)| SupplySource { hex, value: max })
-                .collect();
-            let input = SupplyInput {
-                map: &self.map,
-                terrain: &self.data.terrain,
-                params: &self.supply_params,
-                side,
-                sources: &main,
-                occupancy: &occupancy,
-                control: &self.control,
-                hqs: &[],
-            };
-            Some(
-                supply_tree(&input, &main, None)?
-                    .cost
-                    .into_keys()
-                    .collect::<BTreeSet<Hex>>(),
-            )
-        } else {
-            None
-        };
-        let cap = self.data.rules.supply.isolated_source_cap;
-        let sources: Vec<SupplySource> = self
-            .sources
-            .iter()
-            .filter(|(h, _)| self.control.get(h) == Some(&side))
-            .map(|(&hex, s)| SupplySource {
-                hex,
-                value: match &linked {
-                    Some(l) if s.base < max && !l.contains(&hex) => s.current.min(cap),
-                    _ => s.current,
-                },
-            })
-            .collect();
+        self.hex_supply_if(side, &[])
+    }
+
+    /// R-AI-01 «поиск котлов»: the supply map of `side` if each hex in
+    /// `held` were controlled by and occupied with a unit (exerting ZOC) of
+    /// the given side — a trial recount, the state does not change.
+    pub fn hex_supply_if(
+        &self,
+        side: SideId,
+        held: &[(Hex, SideId)],
+    ) -> Result<SupplyMap, RuleError> {
+        let (control, occupancy) = self.with_held(held);
+        let sources = self.supply_sources(side, &control, &occupancy)?;
         let hqs: Vec<HqPosition> = self
             .units
             .values()
@@ -867,9 +838,104 @@ impl GameState {
             side,
             sources: &sources,
             occupancy: &occupancy,
-            control: &self.control,
+            control: &control,
             hqs: &hqs,
         })
+    }
+
+    /// R-SUP-02 best supply paths of `side` (cost and predecessor per hex),
+    /// from the same sources as [`Self::hex_supply`], without HQ effects.
+    pub fn supply_tree(&self, side: SideId) -> Result<SupplyTree, RuleError> {
+        let occupancy = self.occupancy();
+        let sources = self.supply_sources(side, &self.control, &occupancy)?;
+        supply_tree(
+            &SupplyInput {
+                map: &self.map,
+                terrain: &self.data.terrain,
+                params: &self.supply_params,
+                side,
+                sources: &sources,
+                occupancy: &occupancy,
+                control: &self.control,
+                hqs: &[],
+            },
+            &sources,
+            None,
+        )
+    }
+
+    /// Control and occupancy with hypothetical held hexes.
+    fn with_held(
+        &self,
+        held: &[(Hex, SideId)],
+    ) -> (std::borrow::Cow<'_, BTreeMap<Hex, SideId>>, Occupancy) {
+        let mut occupancy = self.occupancy();
+        if held.is_empty() {
+            return (std::borrow::Cow::Borrowed(&self.control), occupancy);
+        }
+        let mut control = self.control.clone();
+        for &(h, side) in held {
+            control.insert(h, side);
+            occupancy.insert(
+                h,
+                Occupant {
+                    side,
+                    exerts_zoc: true,
+                },
+            );
+        }
+        (std::borrow::Cow::Owned(control), occupancy)
+    }
+
+    /// R-SUP-01 sources of `side` with their values now (isolation variant applied).
+    fn supply_sources(
+        &self,
+        side: SideId,
+        control: &BTreeMap<Hex, SideId>,
+        occupancy: &Occupancy,
+    ) -> Result<Vec<SupplySource>, RuleError> {
+        let max = self.supply_params.max;
+        // R-SUP-01 variant `source_isolation`: hexes a supply path (R-SUP-02,
+        // any cost) reaches from the side's sources of max.
+        let linked = if self.variants.source_isolation {
+            let main: Vec<SupplySource> = self
+                .sources
+                .iter()
+                .filter(|(h, s)| control.get(h) == Some(&side) && s.base >= max)
+                .map(|(&hex, _)| SupplySource { hex, value: max })
+                .collect();
+            let input = SupplyInput {
+                map: &self.map,
+                terrain: &self.data.terrain,
+                params: &self.supply_params,
+                side,
+                sources: &main,
+                occupancy,
+                control,
+                hqs: &[],
+            };
+            Some(
+                supply_tree(&input, &main, None)?
+                    .cost
+                    .into_keys()
+                    .collect::<BTreeSet<Hex>>(),
+            )
+        } else {
+            None
+        };
+        let cap = self.data.rules.supply.isolated_source_cap;
+        Ok(self
+            .sources
+            .iter()
+            .filter(|(h, _)| control.get(h) == Some(&side))
+            .map(|(&hex, s)| SupplySource {
+                hex,
+                value: match &linked {
+                    Some(l) if s.base < max && !l.contains(&hex) => s.current.min(cap),
+                    _ => s.current,
+                },
+            })
+            .collect())
     }
 
     // ------------------------------------------------------------ helpers

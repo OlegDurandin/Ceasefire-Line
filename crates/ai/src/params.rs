@@ -43,6 +43,23 @@ pub struct MoveWeights {
     pub attack_from_aggressiveness: f64,
 }
 
+/// R-AI-01 «поиск котлов».
+#[derive(Debug, Clone, Deserialize)]
+pub struct PocketWeights {
+    #[serde(default, rename = "_comment")]
+    _comment: Option<String>,
+    /// K: chokepoint candidates per phase.
+    pub candidates: usize,
+    /// At most this many chokepoints in one pocket (pincers).
+    pub max_pincers: usize,
+    /// Phases of supply inertia (R-SUP-05) the trial recount looks ahead.
+    pub lookahead_phases: u8,
+    /// A unit counts as cut off at this unit supply or less.
+    pub cut_supply_max: u8,
+    /// × for units whose supply drops to 0.
+    pub zero_supply_mult: f64,
+}
+
 #[derive(Debug, Clone, Deserialize)]
 pub struct EconomyWeights {
     pub reinforce_at_or_below: u8,
@@ -64,6 +81,7 @@ pub struct AiParams {
     #[serde(rename = "move")]
     pub moves: MoveWeights,
     pub economy: EconomyWeights,
+    pub pockets: PocketWeights,
 }
 
 impl AiParams {

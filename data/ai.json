@@ -30,5 +30,13 @@
   "economy": {
     "reinforce_at_or_below": 8,
     "boost_mpp_reserve": 20
+  },
+  "pockets": {
+    "_comment": "R-AI-01 «поиск котлов» (step 7): chokepoint candidates K, pincers, lookahead phases, supply bands.",
+    "candidates": 8,
+    "max_pincers": 2,
+    "lookahead_phases": 2,
+    "cut_supply_max": 3,
+    "zero_supply_mult": 1.5
   }
 }

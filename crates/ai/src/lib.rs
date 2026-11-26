@@ -8,6 +8,7 @@
 
 pub mod greedy;
 pub mod params;
+pub mod pockets;
 pub mod runner;
 pub mod v1;
 
