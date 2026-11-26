@@ -79,13 +79,13 @@ fn r_sup_03_reinforcement_full_supply() {
 
     assert_eq!(
         s.reinforce_cost(UnitId(1), 3, false),
-        Ok(18),
-        "3 × 10% of 60"
+        Ok(21),
+        "3 × 10% of 70"
     );
     reinforce(&mut s, 1, 3, false).unwrap();
     let x = s.unit(UnitId(1)).unwrap();
     assert_eq!((x.strength, x.exp), (8, 62), "1 star × 5/8 → 0.62 star");
-    assert_eq!(mpp(&s), 82);
+    assert_eq!(mpp(&s), 79);
     assert_eq!(
         refused(reinforce(&mut s, 1, 1, false)),
         EconomyError::StepLimit
@@ -104,11 +104,11 @@ fn r_sup_03_reinforcement_bands_and_elite() {
     sc.sides[0].mpp = 200;
     let mut s = start(sc);
     assert_eq!(s.unit(UnitId(1)).unwrap().supply, 5);
-    assert_eq!(s.reinforce_cost(UnitId(1), 2, false), Ok(18), "×1.5");
+    assert_eq!(s.reinforce_cost(UnitId(1), 2, false), Ok(21), "×1.5");
     assert_eq!(
         s.reinforce_cost(UnitId(1), 2, true),
-        Ok(22),
-        "elite: 21.6 → 22"
+        Ok(25),
+        "elite: 25.2 → 25"
     );
     assert_eq!(
         refused(reinforce(&mut s, 1, 3, false)),
@@ -123,7 +123,7 @@ fn r_sup_03_reinforcement_bands_and_elite() {
 
     end_turn(&mut s);
     assert_eq!(s.unit(UnitId(1)).unwrap().supply, 2);
-    assert_eq!(s.reinforce_cost(UnitId(1), 1, false), Ok(12), "×2");
+    assert_eq!(s.reinforce_cost(UnitId(1), 1, false), Ok(14), "×2");
     assert_eq!(
         refused(reinforce(&mut s, 1, 2, false)),
         EconomyError::StepLimit
@@ -187,11 +187,11 @@ fn r_eco_03_purchase_limit_and_arrival() {
         vec![Event::Purchased {
             side: A,
             class: "tank".into(),
-            cost: 100,
+            cost: 105,
             arrives_turn: 3,
         }]
     );
-    assert_eq!(mpp(&s), 150);
+    assert_eq!(mpp(&s), 145);
     let limit = s.apply(Command::Purchase {
         class: "tank".into(),
     });

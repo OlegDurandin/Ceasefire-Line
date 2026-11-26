@@ -19,8 +19,11 @@ use crate::combat_matrix::{load, matrix, tech_at, MatrixRow};
 /// Section 17, «Эффект ПТУР»: tank losses / infantry losses.
 const ATGM_1967_MAX_RATIO: f64 = 1.0 / 3.0;
 const ATGM_1973_MIN_RATIO: f64 = 0.5;
-/// Section 17, «Стоимость юнитов»: damage per MPP within ±25% of the mean.
-const COST_SPREAD: f64 = 0.25;
+/// Section 17, «Стоимость юнитов» (decision A, final): the MPP exchange ratio
+/// of each class within ±35% of the mean. Wider than the general ±25% because
+/// the scenario's force limits (R-ECO-03) cap how many units can be bought, so
+/// the price mostly sets the cost of reinforcement, not the army's make-up.
+const COST_SPREAD: f64 = 0.35;
 /// Section 17 + designer decision B: aircraft MPP lost / target MPP destroyed.
 const UMBRELLA_ONE_RANGE: (f64, f64) = (0.8, 1.2);
 const UMBRELLA_ONE_EW_MAX: f64 = 0.8;
@@ -361,9 +364,21 @@ fn mpp_ratio(steps: &[[f64; 4]], own_price: u32, prices: &[u32]) -> f64 {
     }
 }
 
-/// For discussion (not the criterion): the MPP exchange ratio is positive by
-/// construction, so «±25% of the mean» is meaningful and prices matter.
-fn ratio_variant(data: &GameData, ids: &[&str], current: &[u32]) -> Result<String, String> {
+/// Combat value per MPP (decision A, final): enemy MPP destroyed / own MPP
+/// lost against the reference classes, attack and defence together; tech 1
+/// and 2 separately; ±35% of the mean over the priced classes. If the current
+/// prices fail, the price grid is searched for the set nearest to them.
+fn check_cost(data: &GameData) -> Result<Check, String> {
+    let ids: Vec<&str> = PRICED.iter().map(|p| p.0).collect();
+    let current: Vec<u32> = ids
+        .iter()
+        .map(|id| {
+            data.units
+                .get(id)
+                .map(|c| c.cost_mpp)
+                .map_err(|e| e.to_string())
+        })
+        .collect::<Result<_, _>>()?;
     let mut steps = Vec::new();
     for level in [1u8, 2] {
         steps.push(
@@ -387,165 +402,52 @@ fn ratio_variant(data: &GameData, ids: &[&str], current: &[u32]) -> Result<Strin
             .collect()
     };
     let worst = |d: &[Vec<f64>]| d.iter().flatten().fold(0.0f64, |m, v| m.max(v.abs()));
-    let grids: Vec<Vec<u32>> = PRICED
-        .iter()
-        .map(|(_, lo, hi)| (*lo..=*hi).step_by(PRICE_STEP).collect())
-        .collect();
-    let mut best_ok: Option<(u32, Vec<u32>)> = None;
-    let mut best_any: Option<(f64, Vec<u32>)> = None;
-    let mut idx = vec![0usize; grids.len()];
-    loop {
-        let prices: Vec<u32> = idx.iter().zip(&grids).map(|(i, g)| g[*i]).collect();
-        let w = worst(&devs(&prices));
-        let distance: u32 = prices
-            .iter()
-            .zip(current)
-            .map(|(p, c)| p.abs_diff(*c))
-            .sum();
-        if w <= COST_SPREAD && best_ok.as_ref().is_none_or(|(d, _)| distance < *d) {
-            best_ok = Some((distance, prices.clone()));
-        }
-        if best_any.as_ref().is_none_or(|(b, _)| w < *b) {
-            best_any = Some((w, prices.clone()));
-        }
-        let mut k = 0;
-        while k < idx.len() {
-            idx[k] += 1;
-            if idx[k] < grids[k].len() {
-                break;
-            }
-            idx[k] = 0;
-            k += 1;
-        }
-        if k == idx.len() {
-            break;
-        }
-    }
-    let mut s = String::from("\n### Для обсуждения: отношение «уничтожено MPP противника / потеряно своих MPP»\n\nНе критерий. Шаг силы стоит 10% цены; атака и оборона против тех же эталонных классов и при тех же условиях суммируются. Отношение всегда положительно, поэтому «±25% от среднего» имеет смысл, а цена влияет и на числитель (цены эталонов), и на знаменатель (своя цена).\n\n");
-    let mut table = |title: String, prices: &[u32]| {
+    let pass = worst(&devs(&current)) <= COST_SPREAD;
+    let mut body = format!(
+        "Боевая ценность за MPP (решение A): отношение «уничтожено MPP противника / потеряно своих MPP» против эталонных классов (пехота, мех. бригада, танки) — в атаке на них и в обороне от них, за все удары фазы (второй удар с усталостью обеих сторон; артиллерия в атаке — обстрелом без ответа); шаг силы стоит 10% цены; окопы обороняющегося — за один ход без движения (`entrench_per_turn`: пехота 2, остальные 1, не больше максимума местности); среднее по проходимой местности. Сравниваются пехота, мех. бригада, танки, артиллерия; тех. 1 и 2 отдельно. Допуск ±{:.0}%: шире общих ±25%, потому что лимит сил сценария (R-ECO-03) ограничивает покупку и цена в основном задаёт стоимость пополнения.\n\n",
+        COST_SPREAD * 100.0
+    );
+    let table = |body: &mut String, title: &str, prices: &[u32]| {
         let d = devs(prices);
-        let _ = writeln!(s, "{title}\n\n| тех. | класс | цена | отношение | отклонение |\n| --- | --- | --- | --- | --- |");
+        let _ = writeln!(body, "{title}\n\n| тех. | класс | цена | отношение | отклонение |\n| --- | --- | --- | --- | --- |");
         for (li, level) in [1u8, 2].iter().enumerate() {
             for (k, id) in ids.iter().enumerate() {
                 let r = mpp_ratio(&steps[li][k], prices[k], prices);
+                let ok = d[li][k].abs() <= COST_SPREAD;
                 let _ = writeln!(
-                    s,
+                    body,
                     "| {level} | {id} | {} | {r:.2} | {:+.0}%{} |",
                     prices[k],
                     d[li][k] * 100.0,
-                    if d[li][k].abs() <= COST_SPREAD {
-                        ""
-                    } else {
-                        " ✗"
-                    }
+                    if ok { "" } else { " ✗" }
                 );
             }
         }
-        s.push('\n');
+        body.push('\n');
     };
-    table("Текущие цены:".into(), current);
-    match (best_ok, best_any) {
-        (Some((dist, p)), _) => table(
-            format!("Ближайший к текущим проходящий набор (сумма |Δ| = {dist} MPP):"),
-            &p,
-        ),
-        (None, Some((w, p))) => table(
-            format!(
-                "Ни один набор не проходит; лучший по наибольшему отклонению ({:.0}%):",
-                w * 100.0
-            ),
-            &p,
-        ),
-        (None, None) => {}
-    }
-    Ok(s)
-}
-
-/// Deviation of each class's value per MPP from the mean over the priced
-/// classes, at one tech level.
-fn deviations(values: &[f64], prices: &[u32]) -> Vec<f64> {
-    let per: Vec<f64> = values
-        .iter()
-        .zip(prices)
-        .map(|(v, p)| v / f64::from(*p))
-        .collect();
-    let mean = per.iter().sum::<f64>() / per.len() as f64;
-    per.iter().map(|v| v / mean - 1.0).collect()
-}
-
-/// «Стоимость юнитов» (decision A): combat value per MPP within ±25% of the
-/// mean, tech 1 and 2 separately; otherwise a search over the price grid.
-fn check_cost(data: &GameData) -> Result<Check, String> {
-    let ids: Vec<&str> = PRICED.iter().map(|p| p.0).collect();
-    let current: Vec<u32> = ids
-        .iter()
-        .map(|id| {
-            data.units
-                .get(id)
-                .map(|c| c.cost_mpp)
-                .map_err(|e| e.to_string())
-        })
-        .collect::<Result<_, _>>()?;
-    // values[level][class] = (attack, defence, combat value)
-    let mut values = Vec::new();
-    for level in [1u8, 2] {
-        let mut row = Vec::new();
-        for id in &ids {
-            let (a, d) = combat_value(data, id, level)?;
-            row.push((a, d, (a + d) / 2.0));
-        }
-        values.push(row);
-    }
-    let mut body = String::from(
-        "Боевая ценность за MPP (решение A): среднее (а) чистого размена в атаке против эталонных защитников (пехота, мех. бригада, танки) и (б) чистого размена в обороне, когда класс атакуют те же эталонные классы. Размен — ожидаемые потери противника минус свои за все удары фазы (второй удар с усталостью обеих сторон; артиллерия в атаке — обстрелом без ответа). Окопы обороняющегося — за один ход без движения (`entrench_per_turn`: пехота 2, остальные 1, не больше максимума местности). Среднее по проходимой местности. Сравниваются пехота, мех. бригада, танки, артиллерия; тех. 1 и 2 отдельно.\n\n| тех. | класс | цена | атака (а) | оборона (б) | ценность | на 100 MPP | отклонение |\n| --- | --- | --- | --- | --- | --- | --- | --- |\n",
-    );
-    let value = |level: usize| -> Vec<f64> { values[level].iter().map(|v| v.2).collect() };
-    let mut pass = true;
-    for (li, level) in [1u8, 2].iter().enumerate() {
-        let dev = deviations(&value(li), &current);
-        for (k, id) in ids.iter().enumerate() {
-            let (a, d, v) = values[li][k];
-            let ok = dev[k].abs() <= COST_SPREAD;
-            pass &= ok;
-            let _ = writeln!(
-                body,
-                "| {level} | {id} | {} | {a:.2} | {d:.2} | {v:.2} | {:.2} | {:+.0}%{} |",
-                current[k],
-                v / f64::from(current[k]) * 100.0,
-                dev[k] * 100.0,
-                if ok { "" } else { " ✗" }
-            );
-        }
-    }
-    let _ = writeln!(body, "\nДопуск ±{:.0}%.", COST_SPREAD * 100.0);
+    table(&mut body, "Текущие цены:", &current);
     if !pass {
-        // Price grid: every set, the worst deviation over both tech levels.
         let grids: Vec<Vec<u32>> = PRICED
             .iter()
             .map(|(_, lo, hi)| (*lo..=*hi).step_by(PRICE_STEP).collect())
             .collect();
         let mut best_ok: Option<(u32, Vec<u32>)> = None;
         let mut best_any: Option<(f64, Vec<u32>)> = None;
-        let mut sets = 0;
         let mut idx = vec![0usize; grids.len()];
         loop {
             let prices: Vec<u32> = idx.iter().zip(&grids).map(|(i, g)| g[*i]).collect();
-            sets += 1;
-            let worst = (0..2)
-                .flat_map(|l| deviations(&value(l), &prices))
-                .fold(0.0f64, |m, d| m.max(d.abs()));
+            let w = worst(&devs(&prices));
             let distance: u32 = prices
                 .iter()
                 .zip(&current)
                 .map(|(p, c)| p.abs_diff(*c))
                 .sum();
-            if worst <= COST_SPREAD && best_ok.as_ref().is_none_or(|(d, _)| distance < *d) {
+            if w <= COST_SPREAD && best_ok.as_ref().is_none_or(|(d, _)| distance < *d) {
                 best_ok = Some((distance, prices.clone()));
             }
-            if best_any.as_ref().is_none_or(|(w, _)| worst < *w) {
-                best_any = Some((worst, prices.clone()));
+            if best_any.as_ref().is_none_or(|(b, _)| w < *b) {
+                best_any = Some((w, prices.clone()));
             }
-            // Next combination (odometer).
             let mut k = 0;
             while k < idx.len() {
                 idx[k] += 1;
@@ -559,55 +461,34 @@ fn check_cost(data: &GameData) -> Result<Check, String> {
                 break;
             }
         }
-        let grid_desc: Vec<String> = PRICED
-            .iter()
-            .map(|(id, lo, hi)| format!("{id} {lo}–{hi}"))
-            .collect();
-        let _ = writeln!(
-            body,
-            "\nТекущие цены не проходят. Перебор цен с шагом {PRICE_STEP} ({}): {sets} наборов.\n",
-            grid_desc.join(", ")
-        );
-        let (title, prices) = match (&best_ok, &best_any) {
-            (Some((d, p)), _) => (
-                format!("Проходят; ближайший к текущим набор (сумма |Δ| = {d} MPP)"),
-                p.clone(),
+        match (best_ok, best_any) {
+            (Some((dist, p)), _) => table(
+                &mut body,
+                &format!("Ближайший к текущим проходящий набор (сумма |Δ| = {dist} MPP):"),
+                &p,
             ),
-            (None, Some((w, p))) => (
-                format!(
-                    "Ни один набор не проходит. Лучший по наибольшему отклонению ({:.0}%)",
+            (None, Some((w, p))) => table(
+                &mut body,
+                &format!(
+                    "Ни один набор не проходит; лучший по наибольшему отклонению ({:.0}%):",
                     w * 100.0
                 ),
-                p.clone(),
+                &p,
             ),
-            (None, None) => ("Нет наборов".into(), current.clone()),
-        };
-        let _ = writeln!(body, "{title}:\n\n| тех. | класс | цена сейчас → предложено | на 100 MPP | отклонение |\n| --- | --- | --- | --- | --- |");
-        for (li, level) in [1u8, 2].iter().enumerate() {
-            let dev = deviations(&value(li), &prices);
-            for (k, id) in ids.iter().enumerate() {
-                let _ = writeln!(
-                    body,
-                    "| {level} | {id} | {} → {} | {:.2} | {:+.0}%{} |",
-                    current[k],
-                    prices[k],
-                    values[li][k].2 / f64::from(prices[k]) * 100.0,
-                    dev[k] * 100.0,
-                    if dev[k].abs() <= COST_SPREAD {
-                        ""
-                    } else {
-                        " ✗"
-                    }
-                );
-            }
+            (None, None) => {}
         }
     }
-    if !pass {
-        let _ = writeln!(
-            body,
-            "\nПочему не проходит ни один набор: чистый размен у классов близок к нулю и разного знака (пехота и артиллерия — в минусе, танки — в плюсе), среднее по классам около нуля; цена делит ценность, но не меняет её знак, поэтому отклонения от среднего остаются сотнями процентов при любых ценах."
-        );
-        body.push_str(&ratio_variant(data, &ids, &current)?);
+    // For reference: the first form of decision A (net exchange), not the criterion.
+    body.push_str("### Для справки: чистый размен (первая форма решения A, не критерий)\n\nЧистый размен у классов близок к нулю и разного знака, поэтому «±% от среднего» для него не работает при любых ценах.\n\n| тех. | класс | атака (а) | оборона (б) | ценность |\n| --- | --- | --- | --- | --- |\n");
+    for level in [1u8, 2] {
+        for id in &ids {
+            let (a, d) = combat_value(data, id, level)?;
+            let _ = writeln!(
+                body,
+                "| {level} | {id} | {a:.2} | {d:.2} | {:.2} |",
+                (a + d) / 2.0
+            );
+        }
     }
     Ok(Check {
         name: "Боевая ценность за MPP",

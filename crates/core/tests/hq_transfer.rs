@@ -272,14 +272,14 @@ fn r_move_05_transfer_by_road_any_distance() {
         unit("infantry", A, Hex::new(3, 0)),
     ];
     let mut s = road_setup(units, 50);
-    assert_eq!(s.transfer_cost(UnitId(1)), Ok(10), "10% of 100");
+    assert_eq!(s.transfer_cost(UnitId(1)), Ok(11), "10% of 105 = 10.5 → 11");
     let events = transfer(&mut s, 1, 10, 0).unwrap();
     let Event::Transferred { path, cost, .. } = &events[0] else {
         panic!("expected a transfer");
     };
     assert_eq!(
         (path.len(), *cost),
-        (10, 10),
+        (10, 11),
         "passes through the friendly unit at (3,0)"
     );
     let tank = s.unit(UnitId(1)).unwrap();
@@ -287,7 +287,7 @@ fn r_move_05_transfer_by_road_any_distance() {
         (tank.hex, tank.ap_halves, tank.strikes_left),
         (Hex::new(10, 0), 0, 0)
     );
-    assert_eq!(s.side(A).unwrap().mpp, 40);
+    assert_eq!(s.side(A).unwrap().mpp, 39);
 }
 
 #[test]
