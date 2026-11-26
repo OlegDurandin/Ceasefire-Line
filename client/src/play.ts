@@ -62,6 +62,8 @@ export interface PlayContext {
   savedFacing: Map<number, Facing>;
   /** R-AI-01: the side the computer plays, or null for hotseat. */
   aiSide: number | null;
+  /** R-AI-01: the game's AI seed (kept in the save). */
+  aiSeed: number;
   /** R-UI-03: flag stripes per side id (scenario.json `sides[].flag`). */
   flags: (FlagStripes | null)[];
   /** Class → full AP (data/units.json), for «AP тек. / макс.». */
@@ -1397,7 +1399,7 @@ export class Play {
   private save() {
     try {
       if (this.state?.outcome) localStorage.removeItem(this.ctx.saveKey);
-      else localStorage.setItem(this.ctx.saveKey, encodeSave(this.game.commands(), this.facing, this.ctx.aiSide));
+      else localStorage.setItem(this.ctx.saveKey, encodeSave(this.game.commands(), this.facing, this.ctx.aiSide, this.ctx.aiSeed));
     } catch {
       // Storage may be unavailable (private mode); the game goes on without saves.
     }

@@ -34,9 +34,6 @@ pub struct Options {
     report: Option<PathBuf>,
     /// Player of each side, by side id: `greedy` or `v1`.
     players: Vec<Player>,
-    /// ± spread of each side's aggressiveness per game (seeded), so AI-vs-AI
-    /// games sample different plans, not only different dice.
-    jitter: f64,
     /// Print a phase-by-phase trace of the game with this seed (stderr).
     trace: Option<u64>,
 }
@@ -71,8 +68,6 @@ struct Shared {
     params: AiParams,
     hints: AiHints,
     players: Vec<Player>,
-    jitter: f64,
-    default_aggressiveness: f64,
     trace: Option<u64>,
 }
 
@@ -84,7 +79,6 @@ pub fn parse_options(args: &[String]) -> Result<Options, String> {
         seed: 1,
         report: None,
         players: vec![Player::Greedy, Player::Greedy],
-        jitter: 0.0,
         trace: None,
     };
     let mut it = args.iter();
@@ -98,7 +92,6 @@ pub fn parse_options(args: &[String]) -> Result<Options, String> {
             "--runs" => o.runs = value.parse().map_err(|e| format!("--runs: {e}"))?,
             "--seed" => o.seed = value.parse().map_err(|e| format!("--seed: {e}"))?,
             "--report" => o.report = Some(PathBuf::from(value)),
-            "--jitter" => o.jitter = value.parse().map_err(|e| format!("--jitter: {e}"))?,
             "--trace" => o.trace = Some(value.parse().map_err(|e| format!("--trace: {e}"))?),
             "--players" => {
                 o.players = value
@@ -139,25 +132,7 @@ fn play_one(sh: &Shared, seed: u64) -> Result<Game, String> {
     setup.seed = seed;
     let (mut s, _) = GameState::new(Arc::clone(&sh.data), setup).map_err(|e| e.to_string())?;
     let mut g = Game::default();
-    let mut hints = sh.hints.clone();
-    if sh.jitter > 0.0 {
-        // SplitMix64 of the game's seed: a fixed, platform-independent spread.
-        let mut x = seed ^ 0x9e37_79b9_7f4a_7c15;
-        let mut next = || {
-            x = x.wrapping_add(0x9e37_79b9_7f4a_7c15);
-            let mut z = x;
-            z = (z ^ (z >> 30)).wrapping_mul(0xbf58_476d_1ce4_e5b9);
-            z = (z ^ (z >> 27)).wrapping_mul(0x94d0_49bb_1331_11eb);
-            ((z ^ (z >> 31)) >> 11) as f64 / (1u64 << 53) as f64
-        };
-        for i in 0..sh.players.len() {
-            let side = SideId(i as u8);
-            let h = hints.sides.entry(side).or_default();
-            let base = h.aggressiveness.unwrap_or(sh.default_aggressiveness);
-            h.aggressiveness = Some((base + (next() * 2.0 - 1.0) * sh.jitter).clamp(0.0, 1.0));
-        }
-    }
-    let mut v1 = AiV1::new(sh.params.clone(), hints);
+    let mut v1 = AiV1::new(sh.params.clone(), sh.hints.clone(), seed);
     while s.outcome().is_none() && g.phases < MAX_PHASES {
         let player = sh
             .players
@@ -280,15 +255,12 @@ pub fn run(o: &Options) -> Result<(), String> {
     let params = AiParams::from_json(
         &fs::read_to_string(o.data.join("ai.json")).map_err(|e| format!("ai.json: {e}"))?,
     )?;
-    let default_aggressiveness = params.default_aggressiveness;
     let shared = Arc::new(Shared {
         data: Arc::clone(&data),
         texts: (*texts).clone(),
         params,
         hints: AiHints::from_scenario_json(&texts.0)?,
         players: o.players.clone(),
-        jitter: o.jitter,
-        default_aggressiveness,
         trace: o.trace,
     });
     let started = Instant::now();

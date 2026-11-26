@@ -1,6 +1,7 @@
 {
   "_comment": "R-AI-01: weights of the computer opponent (stage 4, AI v1). Scores are in MPP; distances in hexes. Tuned by sim ai-vs-ai (GDD section 17).",
   "default_aggressiveness": 0.5,
+  "aggressiveness_jitter": 0.25,
   "max_commands_per_phase": 400,
   "attack": {
     "min_score_defensive": 0.6,

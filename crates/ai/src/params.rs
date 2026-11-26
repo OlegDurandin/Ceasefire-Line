@@ -55,6 +55,9 @@ pub struct AiParams {
     #[serde(default, rename = "_comment")]
     _comment: Option<String>,
     pub default_aggressiveness: f64,
+    /// ± seeded spread of each side's aggressiveness per game: the AI does not
+    /// play the same plan every game (designer decision 2026-11-26).
+    pub aggressiveness_jitter: f64,
     pub max_commands_per_phase: u32,
     pub attack: AttackWeights,
     pub advance: AdvanceWeights,

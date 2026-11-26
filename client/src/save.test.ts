@@ -13,6 +13,7 @@ describe("save (R-UI-05, R-UI-03 facing)", () => {
 
   it("keeps the side the AI plays (R-AI-01)", () => {
     expect(decodeSave(encodeSave("[]", new Map(), 1))!.ai).toBe(1);
+    expect(decodeSave(encodeSave("[]", new Map(), 1, 4242))!.aiSeed).toBe(4242);
     expect(decodeSave('{"commands":[],"ai":"x"}')!.ai).toBeNull();
   });
 

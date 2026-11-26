@@ -39,6 +39,7 @@ fn game(
     let mut ai = AiV1::new(
         AiParams::from_json(AI).unwrap(),
         AiHints::from_scenario_json(SCENARIO).unwrap(),
+        seed,
     );
     let (mut log, mut refused) = (Vec::new(), 0);
     for _ in 0..40 {
@@ -129,6 +130,7 @@ fn v1_flies_air_strikes() {
     let mut ai = AiV1::new(
         AiParams::from_json(AI).unwrap(),
         AiHints::from_scenario_json(SCENARIO).unwrap(),
+        1,
     );
     let (mut strikes, mut refused) = (0, 0);
     for _ in 0..40 {

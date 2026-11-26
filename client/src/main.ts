@@ -265,6 +265,7 @@ async function main() {
     let game = new Game(core, scenario, map, events);
     let savedFacing = new Map<number, Facing>();
     let aiSide: number | null | undefined;
+    let aiSeed: number | null = null;
     const save = saved ? decodeSave(saved) : null;
     if (save && save.commands.length) {
       try {
@@ -275,6 +276,7 @@ async function main() {
           game = resumed;
           savedFacing = save.facing;
           aiSide = save.ai;
+          aiSeed = save.aiSeed;
         }
       } catch (e) {
         console.warn("[client] save does not replay:", e);
@@ -284,7 +286,9 @@ async function main() {
     }
     // R-AI-01: a new game asks who plays (or `?vs=hotseat|<side key>`).
     if (aiSide === undefined) aiSide = await chooseMode(ru, sideKeys, PARAMS.get("vs"));
-    game.setAi(aiText, scenario);
+    // A new game draws the AI's seed; a resumed one keeps it (R-AI-01).
+    if (aiSeed === null) aiSeed = crypto.getRandomValues(new Uint32Array(1))[0]!;
+    game.setAi(aiText, scenario, aiSeed);
     devGame = game;
     const play = new Play(game, world, camera, sprites, ru, sideKeys, colors, HEX_SIZE, { terrain: terrainTex, bridge, bridgeDestroyed }, {
       rules: JSON.parse(rules) as Rules,
@@ -301,6 +305,7 @@ async function main() {
       sideFacing,
       savedFacing,
       aiSide,
+      aiSeed,
       hexes: new Map(view.hexes.map((h) => [`${h.col},${h.row}`, h] as const)),
       roadHexes: new Set(view.roads.flatMap((e) => [e.a.join(","), e.b.join(",")])),
       trackHexes: new Set(view.tracks.flatMap((e) => [e.a.join(","), e.b.join(",")])),

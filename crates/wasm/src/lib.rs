@@ -413,14 +413,15 @@ impl Game {
         })
     }
 
-    /// R-AI-01: the AI's weights (`data/ai.json`) and the scenario's hints
-    /// (`scenario.json` → `ai`).
+    /// R-AI-01: the AI's weights (`data/ai.json`), the scenario's hints
+    /// (`scenario.json` → `ai`) and the game's AI seed (the per-game spread of
+    /// the weights; kept in the save so a resumed game plays on the same).
     #[wasm_bindgen(js_name = setAi)]
-    pub fn set_ai(&mut self, params: &str, scenario: &str) -> Result<(), JsError> {
+    pub fn set_ai(&mut self, params: &str, scenario: &str, seed: u32) -> Result<(), JsError> {
         let params = ceasefire_ai::AiParams::from_json(params).map_err(|e| JsError::new(&e))?;
         let hints =
             ceasefire_ai::AiHints::from_scenario_json(scenario).map_err(|e| JsError::new(&e))?;
-        self.ai = Some(ceasefire_ai::AiV1::new(params, hints));
+        self.ai = Some(ceasefire_ai::AiV1::new(params, hints, u64::from(seed)));
         Ok(())
     }
 

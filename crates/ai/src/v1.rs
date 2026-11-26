@@ -25,6 +25,17 @@ use crate::params::{AiHints, AiParams};
 pub struct AiV1 {
     params: AiParams,
     hints: AiHints,
+    /// The game's seed: the per-game spread of the weights comes from it.
+    seed: u64,
+}
+
+/// SplitMix64 → [0, 1): a fixed, platform-independent spread from the seed.
+fn unit_float(seed: u64, salt: u64) -> f64 {
+    let mut z = seed ^ salt.wrapping_mul(0x9e37_79b9_7f4a_7c15);
+    z = z.wrapping_add(0x9e37_79b9_7f4a_7c15);
+    z = (z ^ (z >> 30)).wrapping_mul(0xbf58_476d_1ce4_e5b9);
+    z = (z ^ (z >> 27)).wrapping_mul(0x94d0_49bb_1331_11eb);
+    ((z ^ (z >> 31)) >> 11) as f64 / (1u64 << 53) as f64
 }
 
 /// Per-command view of the board for the active side.
@@ -40,8 +51,13 @@ struct Board<'a> {
 }
 
 impl AiV1 {
-    pub fn new(params: AiParams, hints: AiHints) -> Self {
-        Self { params, hints }
+    /// `seed`: the game's seed (the same game always gets the same spread).
+    pub fn new(params: AiParams, hints: AiHints, seed: u64) -> Self {
+        Self {
+            params,
+            hints,
+            seed,
+        }
     }
 
     pub fn max_commands(&self) -> u32 {
@@ -69,9 +85,15 @@ impl AiV1 {
         Command::EndPhase
     }
 
+    /// The side's aggressiveness: the scenario's hint (or the default) moved by
+    /// up to ± `aggressiveness_jitter`, fixed for the game by its seed.
     fn aggressiveness(&self, side: SideId) -> f64 {
-        self.hints
-            .aggressiveness(side, self.params.default_aggressiveness)
+        let base = self
+            .hints
+            .aggressiveness(side, self.params.default_aggressiveness);
+        let spread = (unit_float(self.seed, u64::from(side.0) + 1) * 2.0 - 1.0)
+            * self.params.aggressiveness_jitter;
+        (base + spread).clamp(0.0, 1.0)
     }
 
     fn board<'a>(&self, s: &'a GameState) -> Board<'a> {
