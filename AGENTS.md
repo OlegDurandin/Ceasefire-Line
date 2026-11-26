@@ -70,7 +70,7 @@ scripts/install-hooks.sh      # git config core.hooksPath scripts/hooks
 ```
 
 - **pre-commit:** `cargo fmt --all --check && cargo check --workspace && cargo run -p sim -- check-data`.
-- **pre-push:** то же плюс `cargo test --workspace`.
+- **pre-push:** то же плюс `cargo clippy -- -D warnings` и `cargo test --workspace`.
 - **CI** (`.github/workflows/ci.yml`) на каждый push и pull request: те же шаги плюс `clippy`.
 
 Обходить хуки через `--no-verify` нельзя: если проверка не проходит, чинить до коммита. В цепочках команд проверка и коммит соединяются через `&&`, а не `;`. Опубликованную историю ради исправления не переписывать — чинить следующим коммитом и отметить это в `docs/decisions.md`.
