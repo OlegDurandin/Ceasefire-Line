@@ -3,42 +3,12 @@
   "bridges": [
     [
       [
-        1,
-        1
-      ],
-      [
         2,
-        1
-      ]
-    ],
-    [
-      [
-        1,
-        1
-      ],
-      [
-        2,
-        2
-      ]
-    ],
-    [
-      [
-        1,
-        2
-      ],
-      [
-        2,
-        2
-      ]
-    ],
-    [
-      [
-        2,
-        6
+        16
       ],
       [
         3,
-        5
+        15
       ]
     ],
     [
@@ -54,11 +24,11 @@
     [
       [
         3,
-        5
+        3
       ],
       [
-        3,
-        6
+        4,
+        4
       ]
     ],
     [
@@ -75,16 +45,6 @@
       [
         3,
         6
-      ],
-      [
-        4,
-        7
-      ]
-    ],
-    [
-      [
-        3,
-        7
       ],
       [
         4,
@@ -1559,6 +1519,1478 @@
     ]
   },
   "height": 18,
+  "historical_roads": [
+    {
+      "assumption": false,
+      "class": "primary",
+      "id": "quneitra_damascus",
+      "name": "Кунейтра — Дамаск",
+      "note": "First-class road on the 1958 sheet from Quneitra NE, passing just south of Khan Arnabeh, to the sheet edge (arrow 'Damascus'). Beyond the edge: principal road on the 1953 1:2M map and primary road on the AMS July 1967 briefing map. The route via Sa'sa', Khan ash-Shih and Jdeidat Artouz (towns on the road today) is inferred; small-scale maps only.",
+      "pts": [
+        [
+          35.823,
+          33.123,
+          "Quneitra"
+        ],
+        [
+          35.855,
+          33.16,
+          "junction near Ahmadiyeh"
+        ],
+        [
+          35.894,
+          33.181,
+          "south of Khan Arnabeh"
+        ],
+        [
+          35.942,
+          33.201,
+          "plateau"
+        ],
+        [
+          35.961,
+          33.209,
+          "edge of 1958 sheet"
+        ],
+        [
+          36.023,
+          33.284,
+          "Sa'sa'"
+        ],
+        [
+          36.115,
+          33.374,
+          "Khan ash-Shih"
+        ],
+        [
+          36.163,
+          33.439,
+          "Jdeidat Artouz"
+        ],
+        [
+          36.175,
+          33.45,
+          "map edge (towards Damascus)"
+        ]
+      ],
+      "source": {
+        "edition": "1951, partly revised 1958 (printed 1959)",
+        "map": "Survey of Israel, Israel 1:250,000",
+        "sheet": "Sheet 1",
+        "url": "https://commons.wikimedia.org/wiki/File:Survey_of_Israel,_Israel_01-sheet-1_(FL44250467_2367726).jpg"
+      }
+    },
+    {
+      "assumption": false,
+      "class": "primary",
+      "id": "quneitra_bnot_yaakov_rosh_pinna",
+      "name": "Кунейтра — Кафр-Наффах — мост Бнот-Яаков — Рош-Пинна",
+      "note": "First-class road throughout: Customs, Gesher Benot Ya'aqov, Mahanayim. Also primary on the July 1967 AMS map and metalled on the 1944 sheet.",
+      "pts": [
+        [
+          35.823,
+          33.123,
+          "Quneitra"
+        ],
+        [
+          35.809,
+          33.105,
+          "SW of Quneitra"
+        ],
+        [
+          35.786,
+          33.088,
+          ""
+        ],
+        [
+          35.766,
+          33.072,
+          ""
+        ],
+        [
+          35.738,
+          33.061,
+          "Kafr Naffakh"
+        ],
+        [
+          35.716,
+          33.052,
+          ""
+        ],
+        [
+          35.703,
+          33.046,
+          ""
+        ],
+        [
+          35.691,
+          33.035,
+          "escarpment descent"
+        ],
+        [
+          35.675,
+          33.026,
+          ""
+        ],
+        [
+          35.657,
+          33.016,
+          ""
+        ],
+        [
+          35.647,
+          33.011,
+          "Customs House"
+        ],
+        [
+          35.633,
+          33.016,
+          "Jisr Banat Ya'qub (Bnot Ya'akov bridge)"
+        ],
+        [
+          35.616,
+          33.013,
+          ""
+        ],
+        [
+          35.607,
+          33.009,
+          ""
+        ],
+        [
+          35.589,
+          32.999,
+          ""
+        ],
+        [
+          35.569,
+          32.989,
+          "Mahanayim"
+        ],
+        [
+          35.545,
+          32.968,
+          "Rosh Pinna junction"
+        ]
+      ],
+      "source": {
+        "edition": "1951, partly revised 1958",
+        "map": "Survey of Israel, Israel 1:250,000",
+        "sheet": "Sheet 1",
+        "url": "https://commons.wikimedia.org/wiki/File:Survey_of_Israel,_Israel_01-sheet-1_(FL44250467_2367726).jpg"
+      }
+    },
+    {
+      "assumption": false,
+      "class": "primary",
+      "id": "metula_rosh_pinna",
+      "name": "Метула — Кирьят-Шмона — долина Хула — Рош-Пинна",
+      "note": "First-class road along the west edge of the Hula valley.",
+      "pts": [
+        [
+          35.576,
+          33.279,
+          "Metula"
+        ],
+        [
+          35.571,
+          33.242,
+          "Kfar Giladi / Tel Hai"
+        ],
+        [
+          35.568,
+          33.22,
+          "Kiryat Shmona"
+        ],
+        [
+          35.568,
+          33.192,
+          ""
+        ],
+        [
+          35.569,
+          33.154,
+          ""
+        ],
+        [
+          35.573,
+          33.106,
+          ""
+        ],
+        [
+          35.571,
+          33.045,
+          "Yesud HaMa'ala junction"
+        ],
+        [
+          35.564,
+          33.01,
+          "Ayelet HaShahar"
+        ],
+        [
+          35.559,
+          32.985,
+          ""
+        ],
+        [
+          35.545,
+          32.968,
+          "Rosh Pinna"
+        ]
+      ],
+      "source": {
+        "edition": "1951, partly revised 1958",
+        "map": "Survey of Israel, Israel 1:250,000",
+        "sheet": "Sheet 1",
+        "url": "https://commons.wikimedia.org/wiki/File:Survey_of_Israel,_Israel_01-sheet-1_(FL44250467_2367726).jpg"
+      }
+    },
+    {
+      "assumption": false,
+      "class": "primary",
+      "id": "rosh_pinna_tiberias",
+      "name": "Рош-Пинна — Мигдаль — Тверия",
+      "note": "First-class road: south from Rosh Pinna, down past Ginosar and Migdal, then along the shore.",
+      "pts": [
+        [
+          35.545,
+          32.968,
+          "Rosh Pinna"
+        ],
+        [
+          35.544,
+          32.953,
+          ""
+        ],
+        [
+          35.545,
+          32.895,
+          ""
+        ],
+        [
+          35.55,
+          32.882,
+          "descent towards Ginosar"
+        ],
+        [
+          35.527,
+          32.853,
+          ""
+        ],
+        [
+          35.507,
+          32.838,
+          "Migdal"
+        ],
+        [
+          35.522,
+          32.812,
+          "shore"
+        ],
+        [
+          35.531,
+          32.792,
+          "Tiberias"
+        ]
+      ],
+      "source": {
+        "edition": "1951, partly revised 1958",
+        "map": "Survey of Israel, Israel 1:250,000",
+        "sheet": "Sheet 1",
+        "url": "https://commons.wikimedia.org/wiki/File:Survey_of_Israel,_Israel_01-sheet-1_(FL44250467_2367726).jpg"
+      }
+    },
+    {
+      "assumption": false,
+      "class": "secondary",
+      "id": "rosh_pinna_safed",
+      "name": "Рош-Пинна — Цфат",
+      "note": "Road shown climbing west from Rosh Pinna to Safed. The bends were not traced; the midpoint is approximate.",
+      "pts": [
+        [
+          35.537,
+          32.967,
+          "Rosh Pinna"
+        ],
+        [
+          35.516,
+          32.963,
+          "climb"
+        ],
+        [
+          35.499,
+          32.97,
+          "Safed"
+        ]
+      ],
+      "source": {
+        "edition": "1951, partly revised 1958",
+        "map": "Survey of Israel, Israel 1:250,000",
+        "sheet": "Sheet 1",
+        "url": "https://commons.wikimedia.org/wiki/File:Survey_of_Israel,_Israel_01-sheet-1_(FL44250467_2367726).jpg"
+      }
+    },
+    {
+      "assumption": false,
+      "class": "primary",
+      "id": "tiberias_tsemah_south",
+      "name": "Тверия — Цемах — долина Иордана (юг)",
+      "note": "First-class road along the SW shore to Tsemah, then south past Ashdot Ya'akov. The last point at the 32.60 edge (towards Gesher) is approximate.",
+      "pts": [
+        [
+          35.531,
+          32.792,
+          "Tiberias"
+        ],
+        [
+          35.554,
+          32.763,
+          "Hammat"
+        ],
+        [
+          35.568,
+          32.742,
+          ""
+        ],
+        [
+          35.574,
+          32.723,
+          "Kinneret"
+        ],
+        [
+          35.592,
+          32.702,
+          "Tsemah"
+        ],
+        [
+          35.587,
+          32.68,
+          ""
+        ],
+        [
+          35.585,
+          32.657,
+          "Ashdot Ya'akov"
+        ],
+        [
+          35.557,
+          32.62,
+          "towards Gesher (map edge)"
+        ]
+      ],
+      "source": {
+        "edition": "1951, partly revised 1958",
+        "map": "Survey of Israel, Israel 1:250,000",
+        "sheet": "Sheet 1",
+        "url": "https://commons.wikimedia.org/wiki/File:Survey_of_Israel,_Israel_01-sheet-1_(FL44250467_2367726).jpg"
+      }
+    },
+    {
+      "assumption": false,
+      "class": "secondary",
+      "id": "ein_gev_tsemah",
+      "name": "Эйн-Гев — Ха-Он — Цемах (восточный берег)",
+      "note": "Second-class road along the SE shore of the Sea of Galilee. North of Ein Gev there is no road.",
+      "pts": [
+        [
+          35.64,
+          32.782,
+          "Ein Gev"
+        ],
+        [
+          35.643,
+          32.769,
+          ""
+        ],
+        [
+          35.639,
+          32.751,
+          ""
+        ],
+        [
+          35.633,
+          32.735,
+          ""
+        ],
+        [
+          35.626,
+          32.728,
+          "Ha'On"
+        ],
+        [
+          35.617,
+          32.717,
+          ""
+        ],
+        [
+          35.604,
+          32.708,
+          "Ma'agan"
+        ],
+        [
+          35.592,
+          32.702,
+          "Tsemah"
+        ]
+      ],
+      "source": {
+        "edition": "1951, partly revised 1958",
+        "map": "Survey of Israel, Israel 1:250,000",
+        "sheet": "Sheet 1",
+        "url": "https://commons.wikimedia.org/wiki/File:Survey_of_Israel,_Israel_01-sheet-1_(FL44250467_2367726).jpg"
+      }
+    },
+    {
+      "assumption": false,
+      "class": "secondary",
+      "id": "tsemah_el_hamma",
+      "name": "Цемах — Эль-Хамма",
+      "note": "All-weather road beside the Yarmuk railway. East of El Hamma along the gorge only the railway is drawn, so no road continues.",
+      "pts": [
+        [
+          35.592,
+          32.702,
+          "Tsemah"
+        ],
+        [
+          35.605,
+          32.697,
+          ""
+        ],
+        [
+          35.621,
+          32.69,
+          ""
+        ],
+        [
+          35.638,
+          32.684,
+          ""
+        ],
+        [
+          35.65,
+          32.684,
+          ""
+        ],
+        [
+          35.667,
+          32.686,
+          ""
+        ],
+        [
+          35.67,
+          32.684,
+          "El Hamma (Hammat Gader)"
+        ]
+      ],
+      "source": {
+        "edition": "1951, partly revised 1958",
+        "map": "Survey of Israel, Israel 1:250,000",
+        "sheet": "Sheet 1",
+        "url": "https://commons.wikimedia.org/wiki/File:Survey_of_Israel,_Israel_01-sheet-1_(FL44250467_2367726).jpg"
+      }
+    },
+    {
+      "assumption": false,
+      "class": "secondary",
+      "id": "fiq_el_hamma",
+      "name": "Фик — Кафр-Хариб — Эль-Хамма",
+      "note": "Second-class road from Fiq SW past Kafr Harib, then down to the Yarmuk at El Hamma. The 1944 sheet has it as an 'other road'. Winding descent; points every 1–2 km.",
+      "pts": [
+        [
+          35.704,
+          32.774,
+          "Fiq"
+        ],
+        [
+          35.696,
+          32.769,
+          ""
+        ],
+        [
+          35.683,
+          32.764,
+          ""
+        ],
+        [
+          35.674,
+          32.76,
+          "east of Kafr Harib"
+        ],
+        [
+          35.669,
+          32.751,
+          ""
+        ],
+        [
+          35.665,
+          32.738,
+          ""
+        ],
+        [
+          35.659,
+          32.731,
+          ""
+        ],
+        [
+          35.657,
+          32.717,
+          "descent"
+        ],
+        [
+          35.651,
+          32.695,
+          ""
+        ],
+        [
+          35.653,
+          32.689,
+          ""
+        ],
+        [
+          35.67,
+          32.684,
+          "El Hamma"
+        ]
+      ],
+      "source": {
+        "edition": "1951, partly revised 1958",
+        "map": "Survey of Israel, Israel 1:250,000",
+        "sheet": "Sheet 1",
+        "url": "https://commons.wikimedia.org/wiki/File:Survey_of_Israel,_Israel_01-sheet-1_(FL44250467_2367726).jpg"
+      }
+    },
+    {
+      "assumption": false,
+      "class": "secondary",
+      "id": "butmiya_khisfin_fiq",
+      "name": "Бутмия — Джухадар — Хисфин — Эль-Аль — Фик",
+      "note": "Second-class road leaving the Quneitra–Rafid road near Butmiya. The July 1967 AMS map shows the Quneitra–Fiq axis as a primary road, so it could be upgraded to primary.",
+      "pts": [
+        [
+          35.89,
+          32.955,
+          "junction on the Quneitra–Rafid road"
+        ],
+        [
+          35.882,
+          32.946,
+          "Butmiya"
+        ],
+        [
+          35.87,
+          32.944,
+          ""
+        ],
+        [
+          35.86,
+          32.936,
+          ""
+        ],
+        [
+          35.851,
+          32.926,
+          "Joukhadar"
+        ],
+        [
+          35.847,
+          32.917,
+          ""
+        ],
+        [
+          35.842,
+          32.905,
+          ""
+        ],
+        [
+          35.837,
+          32.898,
+          ""
+        ],
+        [
+          35.833,
+          32.884,
+          ""
+        ],
+        [
+          35.826,
+          32.871,
+          ""
+        ],
+        [
+          35.814,
+          32.849,
+          "Khisfin"
+        ],
+        [
+          35.803,
+          32.837,
+          ""
+        ],
+        [
+          35.789,
+          32.827,
+          "Mazraat Nab"
+        ],
+        [
+          35.776,
+          32.818,
+          ""
+        ],
+        [
+          35.757,
+          32.807,
+          ""
+        ],
+        [
+          35.742,
+          32.801,
+          "El Al"
+        ],
+        [
+          35.712,
+          32.78,
+          ""
+        ],
+        [
+          35.704,
+          32.774,
+          "Fiq"
+        ]
+      ],
+      "source": {
+        "edition": "1951, partly revised 1958",
+        "map": "Survey of Israel, Israel 1:250,000",
+        "sheet": "Sheet 1",
+        "url": "https://commons.wikimedia.org/wiki/File:Survey_of_Israel,_Israel_01-sheet-1_(FL44250467_2367726).jpg"
+      }
+    },
+    {
+      "assumption": false,
+      "class": "primary",
+      "id": "quneitra_rafid_sheikh_miskin",
+      "name": "Кунейтра — Рафид — Нава — Шейх-Мискин",
+      "note": "First-class road to the sheet edge (arrow 'Ch. Meskine'). Rafid itself is off the road, about 1 km east. Past the edge: the July 1967 AMS map has a secondary road to Sheikh Miskin, and the 1943 1:50k Cheikh Meskine sheet shows a road leaving Sheikh Miskin towards Nawa. Passing through Nawa is inferred, since Nawa lies on the straight line. Not on the 1953 map.",
+      "pts": [
+        [
+          35.823,
+          33.123,
+          "Quneitra"
+        ],
+        [
+          35.824,
+          33.105,
+          ""
+        ],
+        [
+          35.827,
+          33.085,
+          ""
+        ],
+        [
+          35.834,
+          33.047,
+          ""
+        ],
+        [
+          35.838,
+          33.024,
+          "Tell Akasha (junction to Kodna)"
+        ],
+        [
+          35.835,
+          33.009,
+          ""
+        ],
+        [
+          35.83,
+          32.988,
+          ""
+        ],
+        [
+          35.838,
+          32.98,
+          ""
+        ],
+        [
+          35.852,
+          32.974,
+          ""
+        ],
+        [
+          35.87,
+          32.967,
+          ""
+        ],
+        [
+          35.89,
+          32.955,
+          "junction to Butmiya"
+        ],
+        [
+          35.906,
+          32.949,
+          "by Rafid"
+        ],
+        [
+          35.924,
+          32.939,
+          ""
+        ],
+        [
+          35.935,
+          32.93,
+          ""
+        ],
+        [
+          35.959,
+          32.918,
+          "edge of 1958 sheet"
+        ],
+        [
+          36.04,
+          32.891,
+          "Nawa"
+        ],
+        [
+          36.158,
+          32.829,
+          "Sheikh Miskin"
+        ]
+      ],
+      "source": {
+        "edition": "1951, partly revised 1958",
+        "map": "Survey of Israel, Israel 1:250,000",
+        "sheet": "Sheet 1",
+        "url": "https://commons.wikimedia.org/wiki/File:Survey_of_Israel,_Israel_01-sheet-1_(FL44250467_2367726).jpg"
+      }
+    },
+    {
+      "assumption": false,
+      "class": "secondary",
+      "id": "quneitra_khushniyye",
+      "name": "Кунейтра-Рафидская дорога — Хушния",
+      "note": "Short spur, partly first class, from the main road near Fazara to Khushniyye. Beyond Khushniyye only dry-weather roads.",
+      "pts": [
+        [
+          35.835,
+          33.015,
+          "junction on the Quneitra–Rafid road"
+        ],
+        [
+          35.811,
+          32.997,
+          "Khushniyye"
+        ]
+      ],
+      "source": {
+        "edition": "1951, partly revised 1958",
+        "map": "Survey of Israel, Israel 1:250,000",
+        "sheet": "Sheet 1",
+        "url": "https://commons.wikimedia.org/wiki/File:Survey_of_Israel,_Israel_01-sheet-1_(FL44250467_2367726).jpg"
+      }
+    },
+    {
+      "assumption": false,
+      "class": "secondary",
+      "id": "quneitra_mansura_masada",
+      "name": "Кунейтра — Мансура — Айн-эль-Хаджаль — Буката — Масада",
+      "note": "All-weather road with a second-class stretch near Buq'ata. North–south axis along the eastern Golan.",
+      "pts": [
+        [
+          35.823,
+          33.123,
+          "Quneitra"
+        ],
+        [
+          35.816,
+          33.127,
+          ""
+        ],
+        [
+          35.795,
+          33.139,
+          "Mansura"
+        ],
+        [
+          35.787,
+          33.149,
+          ""
+        ],
+        [
+          35.772,
+          33.167,
+          "Ain el-Hajal"
+        ],
+        [
+          35.776,
+          33.181,
+          ""
+        ],
+        [
+          35.776,
+          33.195,
+          "by Buq'ata"
+        ],
+        [
+          35.771,
+          33.216,
+          ""
+        ],
+        [
+          35.757,
+          33.231,
+          "Mas'ade"
+        ]
+      ],
+      "source": {
+        "edition": "1951, partly revised 1958",
+        "map": "Survey of Israel, Israel 1:250,000",
+        "sheet": "Sheet 1",
+        "url": "https://commons.wikimedia.org/wiki/File:Survey_of_Israel,_Israel_01-sheet-1_(FL44250467_2367726).jpg"
+      }
+    },
+    {
+      "assumption": false,
+      "class": "secondary",
+      "id": "mansura_wasit",
+      "name": "Мансура — Васит",
+      "note": "First-class road westward from Mansura. It ends at Wasit; further west only tracks down the escarpment.",
+      "pts": [
+        [
+          35.795,
+          33.139,
+          "Mansura"
+        ],
+        [
+          35.782,
+          33.141,
+          ""
+        ],
+        [
+          35.758,
+          33.142,
+          ""
+        ],
+        [
+          35.732,
+          33.139,
+          "Wasit"
+        ]
+      ],
+      "source": {
+        "edition": "1951, partly revised 1958",
+        "map": "Survey of Israel, Israel 1:250,000",
+        "sheet": "Sheet 1",
+        "url": "https://commons.wikimedia.org/wiki/File:Survey_of_Israel,_Israel_01-sheet-1_(FL44250467_2367726).jpg"
+      }
+    },
+    {
+      "assumption": false,
+      "class": "primary",
+      "id": "banias_masada_majdal_shams",
+      "name": "Баниас — Масада — Мадждаль-Шамс",
+      "note": "Mostly a first-class road. The Mas'ade–Majdal Shams stretch is partly second class.",
+      "pts": [
+        [
+          35.692,
+          33.248,
+          "Banias"
+        ],
+        [
+          35.69,
+          33.243,
+          ""
+        ],
+        [
+          35.7,
+          33.239,
+          ""
+        ],
+        [
+          35.709,
+          33.236,
+          ""
+        ],
+        [
+          35.709,
+          33.226,
+          "by Ain Fit"
+        ],
+        [
+          35.718,
+          33.229,
+          ""
+        ],
+        [
+          35.732,
+          33.225,
+          ""
+        ],
+        [
+          35.745,
+          33.228,
+          ""
+        ],
+        [
+          35.757,
+          33.231,
+          "Mas'ade"
+        ],
+        [
+          35.765,
+          33.243,
+          ""
+        ],
+        [
+          35.763,
+          33.25,
+          ""
+        ],
+        [
+          35.767,
+          33.265,
+          ""
+        ],
+        [
+          35.769,
+          33.268,
+          "Majdal Shams"
+        ]
+      ],
+      "source": {
+        "edition": "1951, partly revised 1958",
+        "map": "Survey of Israel, Israel 1:250,000",
+        "sheet": "Sheet 1",
+        "url": "https://commons.wikimedia.org/wiki/File:Survey_of_Israel,_Israel_01-sheet-1_(FL44250467_2367726).jpg"
+      }
+    },
+    {
+      "assumption": false,
+      "class": "secondary",
+      "id": "majdal_shams_hadar_beit_jinn",
+      "name": "Мадждаль-Шамс — Хадар — Бейт-Джин",
+      "note": "All-weather road over the southern Hermon slopes to the sheet edge (arrow 'Maz. Beit Jine'). The last point, Mazraat Beit Jinn, is a present-day place and the link from the edge is an assumption. Onward towards Qatana/Damascus not checked.",
+      "pts": [
+        [
+          35.769,
+          33.268,
+          "Majdal Shams"
+        ],
+        [
+          35.783,
+          33.283,
+          ""
+        ],
+        [
+          35.804,
+          33.288,
+          ""
+        ],
+        [
+          35.815,
+          33.289,
+          ""
+        ],
+        [
+          35.824,
+          33.281,
+          "Hadar"
+        ],
+        [
+          35.84,
+          33.27,
+          ""
+        ],
+        [
+          35.842,
+          33.255,
+          "junction to Jubata el-Khashab (dry-weather)"
+        ],
+        [
+          35.867,
+          33.259,
+          ""
+        ],
+        [
+          35.886,
+          33.28,
+          ""
+        ],
+        [
+          35.909,
+          33.293,
+          "edge of 1958 sheet"
+        ],
+        [
+          35.918,
+          33.31,
+          "Mazraat Beit Jinn"
+        ]
+      ],
+      "source": {
+        "edition": "1951, partly revised 1958",
+        "map": "Survey of Israel, Israel 1:250,000",
+        "sheet": "Sheet 1",
+        "url": "https://commons.wikimedia.org/wiki/File:Survey_of_Israel,_Israel_01-sheet-1_(FL44250467_2367726).jpg"
+      }
+    },
+    {
+      "assumption": false,
+      "class": "secondary",
+      "id": "kiryat_shmona_dan",
+      "name": "Кирьят-Шмона — Хагошрим — Дафна — Дан",
+      "note": "Paved road east from Kiryat Shmona. On the 1958 sheet it ends at Dan; on the 1944 sheet it continued to Banias. No link to Banias is traced (border/DMZ, about 2 km gap).",
+      "pts": [
+        [
+          35.568,
+          33.22,
+          "Kiryat Shmona"
+        ],
+        [
+          35.582,
+          33.22,
+          ""
+        ],
+        [
+          35.595,
+          33.223,
+          ""
+        ],
+        [
+          35.609,
+          33.223,
+          ""
+        ],
+        [
+          35.623,
+          33.222,
+          "Hagoshrim"
+        ],
+        [
+          35.631,
+          33.223,
+          "junction"
+        ],
+        [
+          35.639,
+          33.229,
+          "Dafna"
+        ],
+        [
+          35.652,
+          33.238,
+          "Dan"
+        ]
+      ],
+      "source": {
+        "edition": "1951, partly revised 1958",
+        "map": "Survey of Israel, Israel 1:250,000",
+        "sheet": "Sheet 1",
+        "url": "https://commons.wikimedia.org/wiki/File:Survey_of_Israel,_Israel_01-sheet-1_(FL44250467_2367726).jpg"
+      }
+    },
+    {
+      "assumption": false,
+      "class": "secondary",
+      "id": "hagoshrim_gonen",
+      "name": "Хагошрим — Кфар-Сольд — Шамир — Гонен (восточный край Хулы)",
+      "note": "Road along the east edge of the Hula valley, mostly red (first/second class). The intermediate bends are approximate.",
+      "pts": [
+        [
+          35.631,
+          33.223,
+          "junction near Hagoshrim"
+        ],
+        [
+          35.641,
+          33.216,
+          ""
+        ],
+        [
+          35.653,
+          33.203,
+          ""
+        ],
+        [
+          35.657,
+          33.195,
+          "Kfar Szold"
+        ],
+        [
+          35.662,
+          33.182,
+          ""
+        ],
+        [
+          35.658,
+          33.165,
+          "Shamir"
+        ],
+        [
+          35.645,
+          33.142,
+          "Lahavot HaBashan"
+        ],
+        [
+          35.646,
+          33.125,
+          "Gonen"
+        ]
+      ],
+      "source": {
+        "edition": "1951, partly revised 1958",
+        "map": "Survey of Israel, Israel 1:250,000",
+        "sheet": "Sheet 1",
+        "url": "https://commons.wikimedia.org/wiki/File:Survey_of_Israel,_Israel_01-sheet-1_(FL44250467_2367726).jpg"
+      }
+    },
+    {
+      "assumption": false,
+      "class": "secondary",
+      "id": "banias_ghajar_lebanon",
+      "name": "Баниас — Гаджар — граница Ливана",
+      "note": "First-class road NW from Banias, passing about 1.5 km east of Ghajar, to the sheet edge (arrow 'Chtaura', i.e. towards Hasbaya). The continuation in Lebanon was not traced; it probably joins the Marjayoun/Khiam–Hasbaya road.",
+      "pts": [
+        [
+          35.692,
+          33.248,
+          "Banias"
+        ],
+        [
+          35.678,
+          33.25,
+          ""
+        ],
+        [
+          35.67,
+          33.254,
+          ""
+        ],
+        [
+          35.658,
+          33.261,
+          ""
+        ],
+        [
+          35.647,
+          33.266,
+          ""
+        ],
+        [
+          35.637,
+          33.278,
+          "east of Ghajar"
+        ],
+        [
+          35.635,
+          33.289,
+          ""
+        ],
+        [
+          35.628,
+          33.295,
+          ""
+        ],
+        [
+          35.615,
+          33.294,
+          ""
+        ],
+        [
+          35.609,
+          33.293,
+          "edge of 1958 sheet (towards Khiam/Hasbaya)"
+        ]
+      ],
+      "source": {
+        "edition": "1951, partly revised 1958",
+        "map": "Survey of Israel, Israel 1:250,000",
+        "sheet": "Sheet 1",
+        "url": "https://commons.wikimedia.org/wiki/File:Survey_of_Israel,_Israel_01-sheet-1_(FL44250467_2367726).jpg"
+      }
+    },
+    {
+      "assumption": true,
+      "class": "secondary",
+      "id": "metula_marjayoun",
+      "name": "Метула — Кфар-Кила — Марджаюн",
+      "note": "The 1958 sheet shows a first-class road from Metula west to Kfar Kila and north to the edge (arrow 'Marjayoun'). The 1953 1:2M map shows Marj 'Uyun on the principal road net. The route via Qlayaa beyond the sheet is an assumption.",
+      "pts": [
+        [
+          35.576,
+          33.279,
+          "Metula"
+        ],
+        [
+          35.561,
+          33.28,
+          "Kfar Kila junction"
+        ],
+        [
+          35.559,
+          33.292,
+          "edge of 1958 sheet"
+        ],
+        [
+          35.571,
+          33.335,
+          "Qlayaa"
+        ],
+        [
+          35.59,
+          33.359,
+          "Marjayoun"
+        ]
+      ],
+      "source": {
+        "edition": "1951, partly revised 1958",
+        "map": "Survey of Israel, Israel 1:250,000",
+        "sheet": "Sheet 1",
+        "url": "https://commons.wikimedia.org/wiki/File:Survey_of_Israel,_Israel_01-sheet-1_(FL44250467_2367726).jpg"
+      }
+    },
+    {
+      "assumption": true,
+      "class": "secondary",
+      "id": "metula_khiam",
+      "name": "Метула — Хиям",
+      "note": "The 1958 sheet shows a first-class road leaving Metula north (arrow 'Chtaura'). That it runs via Khiam to the Hasbaya road at Ibl al-Saqi is an assumption.",
+      "pts": [
+        [
+          35.576,
+          33.279,
+          "Metula"
+        ],
+        [
+          35.58,
+          33.284,
+          ""
+        ],
+        [
+          35.584,
+          33.294,
+          "edge of 1958 sheet"
+        ],
+        [
+          35.609,
+          33.327,
+          "Khiam"
+        ],
+        [
+          35.626,
+          33.358,
+          "Ibl al-Saqi (junction)"
+        ]
+      ],
+      "source": {
+        "edition": "1951, partly revised 1958",
+        "map": "Survey of Israel, Israel 1:250,000",
+        "sheet": "Sheet 1",
+        "url": "https://commons.wikimedia.org/wiki/File:Survey_of_Israel,_Israel_01-sheet-1_(FL44250467_2367726).jpg"
+      }
+    },
+    {
+      "assumption": true,
+      "class": "secondary",
+      "id": "marjayoun_hasbaya",
+      "name": "Марджаюн — Хасбайя",
+      "note": "Principal road Marj 'Uyun – Rashayya on the 1953 map. At 1:2M only the existence and general direction are certain; the alignment via Ibl al-Saqi is an assumption.",
+      "pts": [
+        [
+          35.59,
+          33.359,
+          "Marjayoun"
+        ],
+        [
+          35.626,
+          33.358,
+          "Ibl al-Saqi"
+        ],
+        [
+          35.66,
+          33.38,
+          "Hasbani crossing (approx.)"
+        ],
+        [
+          35.681,
+          33.397,
+          "Hasbaya"
+        ]
+      ],
+      "source": {
+        "edition": "First revision 5-53 (1953)",
+        "map": "Syria and Lebanon 1:2,000,000 (US Government map 11188.12)",
+        "sheet": "single sheet",
+        "url": "https://commons.wikimedia.org/wiki/File:Syria_and_Lebanon_-_DPLA_-_2eb8c1f4c64b79a9a51aab7ff6755d9a.jpg"
+      }
+    },
+    {
+      "assumption": false,
+      "class": "primary",
+      "id": "kiswah_daraa",
+      "name": "(Дамаск) — Кисве — Гхабагхиб — Санамейн — Шейх-Мискин — Даэль — Дераа",
+      "note": "Principal road on the 1953 map (Kiswah, Ghabaghib, As Sanamayn, Shaykh Miskin, Dar'a). Primary on the July 1967 AMS map. The 1943 1:50k Cheikh Meskine sheet shows the Sheikh Miskin–Ibta'–Da'el–south stretch. Alignment between towns is straight-line; the north end at 33.45 and the Atman waypoint are approximate.",
+      "pts": [
+        [
+          36.262,
+          33.45,
+          "map edge (from Damascus)"
+        ],
+        [
+          36.241,
+          33.358,
+          "Kiswah"
+        ],
+        [
+          36.225,
+          33.183,
+          "Ghabaghib"
+        ],
+        [
+          36.183,
+          33.073,
+          "As Sanamayn"
+        ],
+        [
+          36.17,
+          32.95,
+          ""
+        ],
+        [
+          36.158,
+          32.829,
+          "Sheikh Miskin"
+        ],
+        [
+          36.153,
+          32.79,
+          "Ibta'"
+        ],
+        [
+          36.13,
+          32.755,
+          "Da'el"
+        ],
+        [
+          36.115,
+          32.666,
+          "Atman"
+        ],
+        [
+          36.107,
+          32.623,
+          "Daraa"
+        ]
+      ],
+      "source": {
+        "edition": "First revision 5-53 (1953)",
+        "map": "Syria and Lebanon 1:2,000,000 (US Government map 11188.12)",
+        "sheet": "single sheet",
+        "url": "https://commons.wikimedia.org/wiki/File:Syria_and_Lebanon_-_DPLA_-_2eb8c1f4c64b79a9a51aab7ff6755d9a.jpg"
+      }
+    },
+    {
+      "assumption": false,
+      "class": "secondary",
+      "id": "sheikh_miskin_izra",
+      "name": "Шейх-Мискин — Изра",
+      "note": "Principal road on the 1953 map, continuing east towards As Suwayda. Secondary on the July 1967 AMS map.",
+      "pts": [
+        [
+          36.158,
+          32.829,
+          "Sheikh Miskin"
+        ],
+        [
+          36.242,
+          32.855,
+          "Izra"
+        ]
+      ],
+      "source": {
+        "edition": "First revision 5-53 (1953)",
+        "map": "Syria and Lebanon 1:2,000,000 (US Government map 11188.12)",
+        "sheet": "single sheet",
+        "url": "https://commons.wikimedia.org/wiki/File:Syria_and_Lebanon_-_DPLA_-_2eb8c1f4c64b79a9a51aab7ff6755d9a.jpg"
+      }
+    },
+    {
+      "assumption": false,
+      "class": "secondary",
+      "id": "dael_tafas_muzayrib",
+      "name": "Даэль — Тафас — Музейриб",
+      "note": "Roads Da'el–Tafas–Mzairib on the 1943 sheet; not on the small-scale 1953 and 1967 maps. Status in 1967 not confirmed.",
+      "pts": [
+        [
+          36.13,
+          32.755,
+          "Da'el"
+        ],
+        [
+          36.068,
+          32.737,
+          "Tafas"
+        ],
+        [
+          36.021,
+          32.705,
+          "Muzayrib"
+        ]
+      ],
+      "source": {
+        "edition": "1943",
+        "map": "South Levant 1:50,000 (Service Géographique des F.F.L.-M.O.)",
+        "sheet": "Cheikh Meskine, N.I.37 S.I.S.W.",
+        "url": "https://commons.wikimedia.org/wiki/File:French_Service_g%C3%A9ographique_de_l%27arm%C3%A9e,_Cheikh_Meskine_(FL78830589_3801678).jpg"
+      }
+    },
+    {
+      "assumption": true,
+      "class": "secondary",
+      "id": "tapline_golan",
+      "name": "Дорога Тэплайн (вдоль нефтепровода): Гаджар — Баниас — Васит — Кафр-Наффах — Хушния — Джухадар",
+      "note": "ASSUMPTION. The pipeline (built about 1950) is on the 1953 and July 1967 small-scale maps, but the road itself is on none of the maps checked; the 1958 sheet does not show the pipeline. Text source (English Wikipedia, 'Petroleum Road'): in 1967 a dirt service road ran beside the pipeline, paved and fenced after 1969. Waypoints come from the present-day road's junctions (Ghajar, Banias Hwy 99, Revaya/Wasit, Nafah, Keshet/Hushniya, Orha near Joukhadar), ±1–2 km. A dirt road, so poor going.",
+      "pts": [
+        [
+          35.624,
+          33.272,
+          "Ghajar (Lebanese border)"
+        ],
+        [
+          35.68,
+          33.244,
+          "west of Banias"
+        ],
+        [
+          35.7,
+          33.205,
+          "approx."
+        ],
+        [
+          35.732,
+          33.139,
+          "Wasit"
+        ],
+        [
+          35.738,
+          33.061,
+          "Kafr Naffakh"
+        ],
+        [
+          35.811,
+          32.997,
+          "Khushniyye"
+        ],
+        [
+          35.845,
+          32.945,
+          "Joukhadar area (Orha junction)"
+        ]
+      ],
+      "source": null
+    }
+  ],
   "legend": {
     "P": {
       "pass": true,
@@ -1589,125 +3021,2071 @@
       "terrain": "water"
     }
   },
+  "osm_backup": {
+    "bridges": [
+      [
+        [
+          1,
+          1
+        ],
+        [
+          2,
+          1
+        ]
+      ],
+      [
+        [
+          1,
+          1
+        ],
+        [
+          2,
+          2
+        ]
+      ],
+      [
+        [
+          1,
+          2
+        ],
+        [
+          2,
+          2
+        ]
+      ],
+      [
+        [
+          2,
+          6
+        ],
+        [
+          3,
+          5
+        ]
+      ],
+      [
+        [
+          3,
+          1
+        ],
+        [
+          4,
+          1
+        ]
+      ],
+      [
+        [
+          3,
+          5
+        ],
+        [
+          3,
+          6
+        ]
+      ],
+      [
+        [
+          3,
+          6
+        ],
+        [
+          4,
+          6
+        ]
+      ],
+      [
+        [
+          3,
+          6
+        ],
+        [
+          4,
+          7
+        ]
+      ],
+      [
+        [
+          3,
+          7
+        ],
+        [
+          4,
+          7
+        ]
+      ],
+      [
+        [
+          3,
+          9
+        ],
+        [
+          4,
+          9
+        ]
+      ],
+      [
+        [
+          3,
+          16
+        ],
+        [
+          4,
+          17
+        ]
+      ],
+      [
+        [
+          4,
+          16
+        ],
+        [
+          4,
+          17
+        ]
+      ]
+    ],
+    "roads": [
+      [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          1
+        ]
+      ],
+      [
+        [
+          0,
+          1
+        ],
+        [
+          0,
+          2
+        ]
+      ],
+      [
+        [
+          0,
+          1
+        ],
+        [
+          1,
+          0
+        ]
+      ],
+      [
+        [
+          0,
+          7
+        ],
+        [
+          1,
+          6
+        ]
+      ],
+      [
+        [
+          0,
+          8
+        ],
+        [
+          0,
+          9
+        ]
+      ],
+      [
+        [
+          0,
+          8
+        ],
+        [
+          1,
+          7
+        ]
+      ],
+      [
+        [
+          0,
+          8
+        ],
+        [
+          1,
+          8
+        ]
+      ],
+      [
+        [
+          0,
+          9
+        ],
+        [
+          0,
+          10
+        ]
+      ],
+      [
+        [
+          0,
+          10
+        ],
+        [
+          0,
+          11
+        ]
+      ],
+      [
+        [
+          0,
+          11
+        ],
+        [
+          0,
+          12
+        ]
+      ],
+      [
+        [
+          0,
+          11
+        ],
+        [
+          1,
+          10
+        ]
+      ],
+      [
+        [
+          0,
+          12
+        ],
+        [
+          1,
+          11
+        ]
+      ],
+      [
+        [
+          0,
+          13
+        ],
+        [
+          1,
+          13
+        ]
+      ],
+      [
+        [
+          0,
+          14
+        ],
+        [
+          1,
+          14
+        ]
+      ],
+      [
+        [
+          0,
+          16
+        ],
+        [
+          1,
+          15
+        ]
+      ],
+      [
+        [
+          0,
+          16
+        ],
+        [
+          1,
+          16
+        ]
+      ],
+      [
+        [
+          1,
+          0
+        ],
+        [
+          1,
+          1
+        ]
+      ],
+      [
+        [
+          1,
+          0
+        ],
+        [
+          2,
+          1
+        ]
+      ],
+      [
+        [
+          1,
+          1
+        ],
+        [
+          2,
+          1
+        ]
+      ],
+      [
+        [
+          1,
+          1
+        ],
+        [
+          2,
+          2
+        ]
+      ],
+      [
+        [
+          1,
+          2
+        ],
+        [
+          2,
+          2
+        ]
+      ],
+      [
+        [
+          1,
+          3
+        ],
+        [
+          1,
+          4
+        ]
+      ],
+      [
+        [
+          1,
+          3
+        ],
+        [
+          2,
+          4
+        ]
+      ],
+      [
+        [
+          1,
+          4
+        ],
+        [
+          1,
+          5
+        ]
+      ],
+      [
+        [
+          1,
+          4
+        ],
+        [
+          2,
+          4
+        ]
+      ],
+      [
+        [
+          1,
+          4
+        ],
+        [
+          2,
+          5
+        ]
+      ],
+      [
+        [
+          1,
+          5
+        ],
+        [
+          1,
+          6
+        ]
+      ],
+      [
+        [
+          1,
+          5
+        ],
+        [
+          2,
+          5
+        ]
+      ],
+      [
+        [
+          1,
+          5
+        ],
+        [
+          2,
+          6
+        ]
+      ],
+      [
+        [
+          1,
+          6
+        ],
+        [
+          1,
+          7
+        ]
+      ],
+      [
+        [
+          1,
+          6
+        ],
+        [
+          2,
+          6
+        ]
+      ],
+      [
+        [
+          1,
+          6
+        ],
+        [
+          2,
+          7
+        ]
+      ],
+      [
+        [
+          1,
+          7
+        ],
+        [
+          1,
+          8
+        ]
+      ],
+      [
+        [
+          1,
+          7
+        ],
+        [
+          2,
+          7
+        ]
+      ],
+      [
+        [
+          1,
+          10
+        ],
+        [
+          2,
+          10
+        ]
+      ],
+      [
+        [
+          1,
+          10
+        ],
+        [
+          2,
+          11
+        ]
+      ],
+      [
+        [
+          1,
+          11
+        ],
+        [
+          2,
+          11
+        ]
+      ],
+      [
+        [
+          1,
+          11
+        ],
+        [
+          2,
+          12
+        ]
+      ],
+      [
+        [
+          1,
+          12
+        ],
+        [
+          1,
+          13
+        ]
+      ],
+      [
+        [
+          1,
+          12
+        ],
+        [
+          2,
+          12
+        ]
+      ],
+      [
+        [
+          1,
+          13
+        ],
+        [
+          1,
+          14
+        ]
+      ],
+      [
+        [
+          1,
+          14
+        ],
+        [
+          1,
+          15
+        ]
+      ],
+      [
+        [
+          1,
+          14
+        ],
+        [
+          2,
+          15
+        ]
+      ],
+      [
+        [
+          1,
+          15
+        ],
+        [
+          2,
+          16
+        ]
+      ],
+      [
+        [
+          1,
+          17
+        ],
+        [
+          2,
+          17
+        ]
+      ],
+      [
+        [
+          2,
+          0
+        ],
+        [
+          2,
+          1
+        ]
+      ],
+      [
+        [
+          2,
+          2
+        ],
+        [
+          2,
+          3
+        ]
+      ],
+      [
+        [
+          2,
+          2
+        ],
+        [
+          3,
+          1
+        ]
+      ],
+      [
+        [
+          2,
+          2
+        ],
+        [
+          3,
+          2
+        ]
+      ],
+      [
+        [
+          2,
+          3
+        ],
+        [
+          2,
+          4
+        ]
+      ],
+      [
+        [
+          2,
+          3
+        ],
+        [
+          3,
+          2
+        ]
+      ],
+      [
+        [
+          2,
+          4
+        ],
+        [
+          2,
+          5
+        ]
+      ],
+      [
+        [
+          2,
+          5
+        ],
+        [
+          2,
+          6
+        ]
+      ],
+      [
+        [
+          2,
+          5
+        ],
+        [
+          3,
+          4
+        ]
+      ],
+      [
+        [
+          2,
+          6
+        ],
+        [
+          2,
+          7
+        ]
+      ],
+      [
+        [
+          2,
+          6
+        ],
+        [
+          3,
+          5
+        ]
+      ],
+      [
+        [
+          2,
+          7
+        ],
+        [
+          2,
+          8
+        ]
+      ],
+      [
+        [
+          2,
+          8
+        ],
+        [
+          2,
+          9
+        ]
+      ],
+      [
+        [
+          2,
+          9
+        ],
+        [
+          2,
+          10
+        ]
+      ],
+      [
+        [
+          2,
+          10
+        ],
+        [
+          3,
+          9
+        ]
+      ],
+      [
+        [
+          2,
+          12
+        ],
+        [
+          3,
+          11
+        ]
+      ],
+      [
+        [
+          2,
+          15
+        ],
+        [
+          2,
+          16
+        ]
+      ],
+      [
+        [
+          2,
+          16
+        ],
+        [
+          2,
+          17
+        ]
+      ],
+      [
+        [
+          2,
+          16
+        ],
+        [
+          3,
+          16
+        ]
+      ],
+      [
+        [
+          3,
+          1
+        ],
+        [
+          4,
+          1
+        ]
+      ],
+      [
+        [
+          3,
+          4
+        ],
+        [
+          4,
+          4
+        ]
+      ],
+      [
+        [
+          3,
+          4
+        ],
+        [
+          4,
+          5
+        ]
+      ],
+      [
+        [
+          3,
+          5
+        ],
+        [
+          3,
+          6
+        ]
+      ],
+      [
+        [
+          3,
+          5
+        ],
+        [
+          4,
+          5
+        ]
+      ],
+      [
+        [
+          3,
+          5
+        ],
+        [
+          4,
+          6
+        ]
+      ],
+      [
+        [
+          3,
+          6
+        ],
+        [
+          4,
+          6
+        ]
+      ],
+      [
+        [
+          3,
+          6
+        ],
+        [
+          4,
+          7
+        ]
+      ],
+      [
+        [
+          3,
+          7
+        ],
+        [
+          3,
+          8
+        ]
+      ],
+      [
+        [
+          3,
+          7
+        ],
+        [
+          4,
+          7
+        ]
+      ],
+      [
+        [
+          3,
+          8
+        ],
+        [
+          3,
+          9
+        ]
+      ],
+      [
+        [
+          3,
+          9
+        ],
+        [
+          4,
+          9
+        ]
+      ],
+      [
+        [
+          3,
+          9
+        ],
+        [
+          4,
+          10
+        ]
+      ],
+      [
+        [
+          3,
+          10
+        ],
+        [
+          3,
+          11
+        ]
+      ],
+      [
+        [
+          3,
+          10
+        ],
+        [
+          4,
+          10
+        ]
+      ],
+      [
+        [
+          3,
+          11
+        ],
+        [
+          4,
+          12
+        ]
+      ],
+      [
+        [
+          3,
+          12
+        ],
+        [
+          4,
+          12
+        ]
+      ],
+      [
+        [
+          3,
+          12
+        ],
+        [
+          4,
+          13
+        ]
+      ],
+      [
+        [
+          3,
+          13
+        ],
+        [
+          4,
+          13
+        ]
+      ],
+      [
+        [
+          3,
+          13
+        ],
+        [
+          4,
+          14
+        ]
+      ],
+      [
+        [
+          3,
+          14
+        ],
+        [
+          4,
+          14
+        ]
+      ],
+      [
+        [
+          3,
+          14
+        ],
+        [
+          4,
+          15
+        ]
+      ],
+      [
+        [
+          3,
+          15
+        ],
+        [
+          3,
+          16
+        ]
+      ],
+      [
+        [
+          3,
+          15
+        ],
+        [
+          4,
+          15
+        ]
+      ],
+      [
+        [
+          3,
+          16
+        ],
+        [
+          4,
+          17
+        ]
+      ],
+      [
+        [
+          4,
+          0
+        ],
+        [
+          4,
+          1
+        ]
+      ],
+      [
+        [
+          4,
+          4
+        ],
+        [
+          5,
+          4
+        ]
+      ],
+      [
+        [
+          4,
+          6
+        ],
+        [
+          4,
+          7
+        ]
+      ],
+      [
+        [
+          4,
+          7
+        ],
+        [
+          5,
+          6
+        ]
+      ],
+      [
+        [
+          4,
+          9
+        ],
+        [
+          5,
+          8
+        ]
+      ],
+      [
+        [
+          4,
+          11
+        ],
+        [
+          4,
+          12
+        ]
+      ],
+      [
+        [
+          4,
+          11
+        ],
+        [
+          5,
+          10
+        ]
+      ],
+      [
+        [
+          4,
+          12
+        ],
+        [
+          5,
+          11
+        ]
+      ],
+      [
+        [
+          4,
+          12
+        ],
+        [
+          5,
+          12
+        ]
+      ],
+      [
+        [
+          4,
+          13
+        ],
+        [
+          5,
+          13
+        ]
+      ],
+      [
+        [
+          4,
+          14
+        ],
+        [
+          5,
+          13
+        ]
+      ],
+      [
+        [
+          4,
+          14
+        ],
+        [
+          5,
+          14
+        ]
+      ],
+      [
+        [
+          4,
+          15
+        ],
+        [
+          4,
+          16
+        ]
+      ],
+      [
+        [
+          4,
+          15
+        ],
+        [
+          5,
+          14
+        ]
+      ],
+      [
+        [
+          4,
+          16
+        ],
+        [
+          4,
+          17
+        ]
+      ],
+      [
+        [
+          5,
+          3
+        ],
+        [
+          5,
+          4
+        ]
+      ],
+      [
+        [
+          5,
+          3
+        ],
+        [
+          6,
+          4
+        ]
+      ],
+      [
+        [
+          5,
+          4
+        ],
+        [
+          6,
+          4
+        ]
+      ],
+      [
+        [
+          5,
+          5
+        ],
+        [
+          5,
+          6
+        ]
+      ],
+      [
+        [
+          5,
+          5
+        ],
+        [
+          6,
+          5
+        ]
+      ],
+      [
+        [
+          5,
+          6
+        ],
+        [
+          5,
+          7
+        ]
+      ],
+      [
+        [
+          5,
+          6
+        ],
+        [
+          6,
+          6
+        ]
+      ],
+      [
+        [
+          5,
+          7
+        ],
+        [
+          6,
+          8
+        ]
+      ],
+      [
+        [
+          5,
+          8
+        ],
+        [
+          6,
+          8
+        ]
+      ],
+      [
+        [
+          5,
+          9
+        ],
+        [
+          5,
+          10
+        ]
+      ],
+      [
+        [
+          5,
+          9
+        ],
+        [
+          6,
+          10
+        ]
+      ],
+      [
+        [
+          5,
+          12
+        ],
+        [
+          6,
+          12
+        ]
+      ],
+      [
+        [
+          5,
+          14
+        ],
+        [
+          6,
+          14
+        ]
+      ],
+      [
+        [
+          6,
+          3
+        ],
+        [
+          6,
+          4
+        ]
+      ],
+      [
+        [
+          6,
+          4
+        ],
+        [
+          6,
+          5
+        ]
+      ],
+      [
+        [
+          6,
+          5
+        ],
+        [
+          6,
+          6
+        ]
+      ],
+      [
+        [
+          6,
+          6
+        ],
+        [
+          7,
+          6
+        ]
+      ],
+      [
+        [
+          6,
+          8
+        ],
+        [
+          7,
+          7
+        ]
+      ],
+      [
+        [
+          6,
+          10
+        ],
+        [
+          6,
+          11
+        ]
+      ],
+      [
+        [
+          6,
+          10
+        ],
+        [
+          7,
+          9
+        ]
+      ],
+      [
+        [
+          6,
+          11
+        ],
+        [
+          6,
+          12
+        ]
+      ],
+      [
+        [
+          6,
+          12
+        ],
+        [
+          7,
+          12
+        ]
+      ],
+      [
+        [
+          6,
+          14
+        ],
+        [
+          7,
+          13
+        ]
+      ],
+      [
+        [
+          7,
+          6
+        ],
+        [
+          7,
+          7
+        ]
+      ],
+      [
+        [
+          7,
+          7
+        ],
+        [
+          8,
+          8
+        ]
+      ],
+      [
+        [
+          7,
+          8
+        ],
+        [
+          8,
+          8
+        ]
+      ],
+      [
+        [
+          7,
+          8
+        ],
+        [
+          8,
+          9
+        ]
+      ],
+      [
+        [
+          7,
+          9
+        ],
+        [
+          8,
+          9
+        ]
+      ],
+      [
+        [
+          7,
+          9
+        ],
+        [
+          8,
+          10
+        ]
+      ],
+      [
+        [
+          7,
+          12
+        ],
+        [
+          7,
+          13
+        ]
+      ],
+      [
+        [
+          7,
+          12
+        ],
+        [
+          8,
+          12
+        ]
+      ],
+      [
+        [
+          8,
+          6
+        ],
+        [
+          9,
+          5
+        ]
+      ],
+      [
+        [
+          8,
+          10
+        ],
+        [
+          8,
+          11
+        ]
+      ],
+      [
+        [
+          8,
+          11
+        ],
+        [
+          8,
+          12
+        ]
+      ],
+      [
+        [
+          9,
+          5
+        ],
+        [
+          10,
+          5
+        ]
+      ],
+      [
+        [
+          10,
+          5
+        ],
+        [
+          11,
+          4
+        ]
+      ],
+      [
+        [
+          11,
+          3
+        ],
+        [
+          11,
+          4
+        ]
+      ],
+      [
+        [
+          11,
+          3
+        ],
+        [
+          12,
+          3
+        ]
+      ],
+      [
+        [
+          12,
+          2
+        ],
+        [
+          12,
+          3
+        ]
+      ],
+      [
+        [
+          12,
+          2
+        ],
+        [
+          13,
+          2
+        ]
+      ],
+      [
+        [
+          12,
+          16
+        ],
+        [
+          12,
+          17
+        ]
+      ],
+      [
+        [
+          12,
+          16
+        ],
+        [
+          13,
+          15
+        ]
+      ],
+      [
+        [
+          12,
+          17
+        ],
+        [
+          13,
+          17
+        ]
+      ],
+      [
+        [
+          13,
+          1
+        ],
+        [
+          13,
+          2
+        ]
+      ],
+      [
+        [
+          13,
+          1
+        ],
+        [
+          14,
+          1
+        ]
+      ],
+      [
+        [
+          13,
+          15
+        ],
+        [
+          14,
+          15
+        ]
+      ],
+      [
+        [
+          13,
+          17
+        ],
+        [
+          14,
+          17
+        ]
+      ],
+      [
+        [
+          14,
+          0
+        ],
+        [
+          14,
+          1
+        ]
+      ],
+      [
+        [
+          14,
+          13
+        ],
+        [
+          15,
+          12
+        ]
+      ],
+      [
+        [
+          14,
+          13
+        ],
+        [
+          15,
+          13
+        ]
+      ],
+      [
+        [
+          14,
+          14
+        ],
+        [
+          14,
+          15
+        ]
+      ],
+      [
+        [
+          14,
+          14
+        ],
+        [
+          15,
+          13
+        ]
+      ],
+      [
+        [
+          14,
+          15
+        ],
+        [
+          14,
+          16
+        ]
+      ],
+      [
+        [
+          14,
+          15
+        ],
+        [
+          15,
+          15
+        ]
+      ],
+      [
+        [
+          14,
+          16
+        ],
+        [
+          14,
+          17
+        ]
+      ],
+      [
+        [
+          15,
+          7
+        ],
+        [
+          15,
+          8
+        ]
+      ],
+      [
+        [
+          15,
+          7
+        ],
+        [
+          16,
+          7
+        ]
+      ],
+      [
+        [
+          15,
+          8
+        ],
+        [
+          15,
+          9
+        ]
+      ],
+      [
+        [
+          15,
+          9
+        ],
+        [
+          15,
+          10
+        ]
+      ],
+      [
+        [
+          15,
+          10
+        ],
+        [
+          15,
+          11
+        ]
+      ],
+      [
+        [
+          15,
+          11
+        ],
+        [
+          15,
+          12
+        ]
+      ],
+      [
+        [
+          15,
+          15
+        ],
+        [
+          16,
+          15
+        ]
+      ],
+      [
+        [
+          16,
+          1
+        ],
+        [
+          17,
+          0
+        ]
+      ],
+      [
+        [
+          16,
+          1
+        ],
+        [
+          17,
+          1
+        ]
+      ],
+      [
+        [
+          16,
+          2
+        ],
+        [
+          16,
+          3
+        ]
+      ],
+      [
+        [
+          16,
+          2
+        ],
+        [
+          17,
+          1
+        ]
+      ],
+      [
+        [
+          16,
+          3
+        ],
+        [
+          16,
+          4
+        ]
+      ],
+      [
+        [
+          16,
+          4
+        ],
+        [
+          16,
+          5
+        ]
+      ],
+      [
+        [
+          16,
+          5
+        ],
+        [
+          16,
+          6
+        ]
+      ],
+      [
+        [
+          16,
+          6
+        ],
+        [
+          16,
+          7
+        ]
+      ],
+      [
+        [
+          16,
+          13
+        ],
+        [
+          17,
+          12
+        ]
+      ],
+      [
+        [
+          16,
+          15
+        ],
+        [
+          17,
+          15
+        ]
+      ],
+      [
+        [
+          17,
+          12
+        ],
+        [
+          17,
+          13
+        ]
+      ],
+      [
+        [
+          17,
+          13
+        ],
+        [
+          18,
+          13
+        ]
+      ],
+      [
+        [
+          17,
+          15
+        ],
+        [
+          18,
+          15
+        ]
+      ],
+      [
+        [
+          18,
+          13
+        ],
+        [
+          19,
+          13
+        ]
+      ],
+      [
+        [
+          18,
+          15
+        ],
+        [
+          19,
+          15
+        ]
+      ],
+      [
+        [
+          19,
+          0
+        ],
+        [
+          19,
+          1
+        ]
+      ],
+      [
+        [
+          19,
+          1
+        ],
+        [
+          20,
+          2
+        ]
+      ],
+      [
+        [
+          19,
+          2
+        ],
+        [
+          20,
+          2
+        ]
+      ],
+      [
+        [
+          19,
+          2
+        ],
+        [
+          20,
+          3
+        ]
+      ],
+      [
+        [
+          19,
+          13
+        ],
+        [
+          20,
+          14
+        ]
+      ],
+      [
+        [
+          19,
+          14
+        ],
+        [
+          19,
+          15
+        ]
+      ],
+      [
+        [
+          20,
+          3
+        ],
+        [
+          20,
+          4
+        ]
+      ],
+      [
+        [
+          20,
+          4
+        ],
+        [
+          21,
+          4
+        ]
+      ],
+      [
+        [
+          20,
+          14
+        ],
+        [
+          21,
+          14
+        ]
+      ],
+      [
+        [
+          21,
+          4
+        ],
+        [
+          21,
+          5
+        ]
+      ]
+    ],
+    "terrain": [
+      "hPhmhhmmmmmhppphpppppp",
+      "chhhhmmmmhhhpppphcpppp",
+      "hPhhmhmmmhhpppppphhppp",
+      "mhhhmPPhhpppppppphhppp",
+      "hhhphhhphpppppppphpppp",
+      "hhPpfhhppppppppppppppp",
+      "hhhphhhcpppppppppppppp",
+      "hhhphhphpppppppcpppppp",
+      "Phhphhhhhpphpppppppppp",
+      "hhphfhhphppppppppppppp",
+      "chphphhppppppppppppppp",
+      "Phhhhhhppppppppppppppp",
+      "hhhwhhhpppppcppppppppp",
+      "hwwwfhhphppppppppppppp",
+      "hcwwhhphhhpppppppppppp",
+      "hhwwhmhmhmhppppppppppp",
+      "hhhhhmmhhhhppppppppppp",
+      "hhphhhhhphhppppppppppp"
+    ]
+  },
   "roads": [
     [
       [
         0,
-        0
-      ],
-      [
-        0,
-        1
-      ]
-    ],
-    [
-      [
-        0,
-        1
-      ],
-      [
-        0,
-        2
-      ]
-    ],
-    [
-      [
-        0,
-        1
-      ],
-      [
-        1,
-        0
-      ]
-    ],
-    [
-      [
-        0,
-        7
-      ],
-      [
-        1,
-        6
-      ]
-    ],
-    [
-      [
-        0,
-        8
-      ],
-      [
-        0,
-        9
-      ]
-    ],
-    [
-      [
-        0,
-        8
-      ],
-      [
-        1,
-        7
-      ]
-    ],
-    [
-      [
-        0,
-        8
-      ],
-      [
-        1,
-        8
-      ]
-    ],
-    [
-      [
-        0,
-        9
-      ],
-      [
-        0,
         10
-      ]
-    ],
-    [
-      [
-        0,
-        10
-      ],
-      [
-        0,
-        11
-      ]
-    ],
-    [
-      [
-        0,
-        11
-      ],
-      [
-        0,
-        12
-      ]
-    ],
-    [
-      [
-        0,
-        11
       ],
       [
         1,
         10
-      ]
-    ],
-    [
-      [
-        0,
-        12
-      ],
-      [
-        1,
-        11
       ]
     ],
     [
@@ -1718,216 +5096,6 @@
       [
         1,
         13
-      ]
-    ],
-    [
-      [
-        0,
-        14
-      ],
-      [
-        1,
-        14
-      ]
-    ],
-    [
-      [
-        0,
-        16
-      ],
-      [
-        1,
-        15
-      ]
-    ],
-    [
-      [
-        0,
-        16
-      ],
-      [
-        1,
-        16
-      ]
-    ],
-    [
-      [
-        1,
-        0
-      ],
-      [
-        1,
-        1
-      ]
-    ],
-    [
-      [
-        1,
-        0
-      ],
-      [
-        2,
-        1
-      ]
-    ],
-    [
-      [
-        1,
-        1
-      ],
-      [
-        2,
-        1
-      ]
-    ],
-    [
-      [
-        1,
-        1
-      ],
-      [
-        2,
-        2
-      ]
-    ],
-    [
-      [
-        1,
-        2
-      ],
-      [
-        2,
-        2
-      ]
-    ],
-    [
-      [
-        1,
-        3
-      ],
-      [
-        1,
-        4
-      ]
-    ],
-    [
-      [
-        1,
-        3
-      ],
-      [
-        2,
-        4
-      ]
-    ],
-    [
-      [
-        1,
-        4
-      ],
-      [
-        1,
-        5
-      ]
-    ],
-    [
-      [
-        1,
-        4
-      ],
-      [
-        2,
-        4
-      ]
-    ],
-    [
-      [
-        1,
-        4
-      ],
-      [
-        2,
-        5
-      ]
-    ],
-    [
-      [
-        1,
-        5
-      ],
-      [
-        1,
-        6
-      ]
-    ],
-    [
-      [
-        1,
-        5
-      ],
-      [
-        2,
-        5
-      ]
-    ],
-    [
-      [
-        1,
-        5
-      ],
-      [
-        2,
-        6
-      ]
-    ],
-    [
-      [
-        1,
-        6
-      ],
-      [
-        1,
-        7
-      ]
-    ],
-    [
-      [
-        1,
-        6
-      ],
-      [
-        2,
-        6
-      ]
-    ],
-    [
-      [
-        1,
-        6
-      ],
-      [
-        2,
-        7
-      ]
-    ],
-    [
-      [
-        1,
-        7
-      ],
-      [
-        1,
-        8
-      ]
-    ],
-    [
-      [
-        1,
-        7
-      ],
-      [
-        2,
-        7
       ]
     ],
     [
@@ -2006,48 +5174,8 @@
         14
       ],
       [
-        1,
-        15
-      ]
-    ],
-    [
-      [
-        1,
-        14
-      ],
-      [
         2,
         15
-      ]
-    ],
-    [
-      [
-        1,
-        15
-      ],
-      [
-        2,
-        16
-      ]
-    ],
-    [
-      [
-        1,
-        17
-      ],
-      [
-        2,
-        17
-      ]
-    ],
-    [
-      [
-        2,
-        0
-      ],
-      [
-        2,
-        1
       ]
     ],
     [
@@ -2068,16 +5196,6 @@
       [
         3,
         1
-      ]
-    ],
-    [
-      [
-        2,
-        2
-      ],
-      [
-        3,
-        2
       ]
     ],
     [
@@ -2143,16 +5261,6 @@
     [
       [
         2,
-        6
-      ],
-      [
-        3,
-        5
-      ]
-    ],
-    [
-      [
-        2,
         7
       ],
       [
@@ -2188,16 +5296,6 @@
       [
         3,
         9
-      ]
-    ],
-    [
-      [
-        2,
-        12
-      ],
-      [
-        3,
-        11
       ]
     ],
     [
@@ -2227,7 +5325,27 @@
       ],
       [
         3,
+        15
+      ]
+    ],
+    [
+      [
+        2,
         16
+      ],
+      [
+        3,
+        16
+      ]
+    ],
+    [
+      [
+        3,
+        1
+      ],
+      [
+        3,
+        2
       ]
     ],
     [
@@ -2243,7 +5361,17 @@
     [
       [
         3,
-        4
+        2
+      ],
+      [
+        3,
+        3
+      ]
+    ],
+    [
+      [
+        3,
+        3
       ],
       [
         4,
@@ -2257,37 +5385,17 @@
       ],
       [
         4,
-        5
+        4
       ]
     ],
     [
       [
         3,
-        5
-      ],
-      [
-        3,
-        6
-      ]
-    ],
-    [
-      [
-        3,
-        5
+        4
       ],
       [
         4,
         5
-      ]
-    ],
-    [
-      [
-        3,
-        5
-      ],
-      [
-        4,
-        6
       ]
     ],
     [
@@ -2313,131 +5421,11 @@
     [
       [
         3,
-        7
-      ],
-      [
-        3,
-        8
-      ]
-    ],
-    [
-      [
-        3,
-        7
-      ],
-      [
-        4,
-        7
-      ]
-    ],
-    [
-      [
-        3,
-        8
-      ],
-      [
-        3,
-        9
-      ]
-    ],
-    [
-      [
-        3,
         9
       ],
       [
         4,
         9
-      ]
-    ],
-    [
-      [
-        3,
-        9
-      ],
-      [
-        4,
-        10
-      ]
-    ],
-    [
-      [
-        3,
-        10
-      ],
-      [
-        3,
-        11
-      ]
-    ],
-    [
-      [
-        3,
-        10
-      ],
-      [
-        4,
-        10
-      ]
-    ],
-    [
-      [
-        3,
-        11
-      ],
-      [
-        4,
-        12
-      ]
-    ],
-    [
-      [
-        3,
-        12
-      ],
-      [
-        4,
-        12
-      ]
-    ],
-    [
-      [
-        3,
-        12
-      ],
-      [
-        4,
-        13
-      ]
-    ],
-    [
-      [
-        3,
-        13
-      ],
-      [
-        4,
-        13
-      ]
-    ],
-    [
-      [
-        3,
-        13
-      ],
-      [
-        4,
-        14
-      ]
-    ],
-    [
-      [
-        3,
-        14
-      ],
-      [
-        4,
-        14
       ]
     ],
     [
@@ -2448,16 +5436,6 @@
       [
         4,
         15
-      ]
-    ],
-    [
-      [
-        3,
-        15
-      ],
-      [
-        3,
-        16
       ]
     ],
     [
@@ -2483,16 +5461,6 @@
     [
       [
         4,
-        0
-      ],
-      [
-        4,
-        1
-      ]
-    ],
-    [
-      [
-        4,
         4
       ],
       [
@@ -2503,20 +5471,10 @@
     [
       [
         4,
-        6
+        5
       ],
       [
         4,
-        7
-      ]
-    ],
-    [
-      [
-        4,
-        7
-      ],
-      [
-        5,
         6
       ]
     ],
@@ -2528,76 +5486,6 @@
       [
         5,
         8
-      ]
-    ],
-    [
-      [
-        4,
-        11
-      ],
-      [
-        4,
-        12
-      ]
-    ],
-    [
-      [
-        4,
-        11
-      ],
-      [
-        5,
-        10
-      ]
-    ],
-    [
-      [
-        4,
-        12
-      ],
-      [
-        5,
-        11
-      ]
-    ],
-    [
-      [
-        4,
-        12
-      ],
-      [
-        5,
-        12
-      ]
-    ],
-    [
-      [
-        4,
-        13
-      ],
-      [
-        5,
-        13
-      ]
-    ],
-    [
-      [
-        4,
-        14
-      ],
-      [
-        5,
-        13
-      ]
-    ],
-    [
-      [
-        4,
-        14
-      ],
-      [
-        5,
-        14
       ]
     ],
     [
@@ -2633,21 +5521,11 @@
     [
       [
         5,
-        3
+        4
       ],
       [
         5,
-        4
-      ]
-    ],
-    [
-      [
-        5,
-        3
-      ],
-      [
-        6,
-        4
+        5
       ]
     ],
     [
@@ -2673,11 +5551,11 @@
     [
       [
         5,
-        5
+        6
       ],
       [
         6,
-        5
+        6
       ]
     ],
     [
@@ -2686,18 +5564,18 @@
         6
       ],
       [
-        5,
+        6,
         7
       ]
     ],
     [
       [
         5,
-        6
+        7
       ],
       [
         6,
-        6
+        7
       ]
     ],
     [
@@ -2718,36 +5596,6 @@
       [
         6,
         8
-      ]
-    ],
-    [
-      [
-        5,
-        9
-      ],
-      [
-        5,
-        10
-      ]
-    ],
-    [
-      [
-        5,
-        9
-      ],
-      [
-        6,
-        10
-      ]
-    ],
-    [
-      [
-        5,
-        12
-      ],
-      [
-        6,
-        12
       ]
     ],
     [
@@ -2773,6 +5621,16 @@
     [
       [
         6,
+        3
+      ],
+      [
+        7,
+        3
+      ]
+    ],
+    [
+      [
+        6,
         4
       ],
       [
@@ -2786,8 +5644,18 @@
         5
       ],
       [
+        7,
+        5
+      ]
+    ],
+    [
+      [
         6,
         6
+      ],
+      [
+        7,
+        5
       ]
     ],
     [
@@ -2806,6 +5674,16 @@
         8
       ],
       [
+        6,
+        9
+      ]
+    ],
+    [
+      [
+        6,
+        8
+      ],
+      [
         7,
         7
       ]
@@ -2813,41 +5691,11 @@
     [
       [
         6,
-        10
-      ],
-      [
-        6,
-        11
-      ]
-    ],
-    [
-      [
-        6,
-        10
+        9
       ],
       [
         7,
         9
-      ]
-    ],
-    [
-      [
-        6,
-        11
-      ],
-      [
-        6,
-        12
-      ]
-    ],
-    [
-      [
-        6,
-        12
-      ],
-      [
-        7,
-        12
       ]
     ],
     [
@@ -2863,10 +5711,50 @@
     [
       [
         7,
+        3
+      ],
+      [
+        8,
+        3
+      ]
+    ],
+    [
+      [
+        7,
         6
       ],
       [
         7,
+        7
+      ]
+    ],
+    [
+      [
+        7,
+        6
+      ],
+      [
+        8,
+        6
+      ]
+    ],
+    [
+      [
+        7,
+        6
+      ],
+      [
+        8,
+        7
+      ]
+    ],
+    [
+      [
+        7,
+        7
+      ],
+      [
+        8,
         7
       ]
     ],
@@ -2938,6 +5826,26 @@
       [
         8,
         12
+      ]
+    ],
+    [
+      [
+        8,
+        3
+      ],
+      [
+        8,
+        4
+      ]
+    ],
+    [
+      [
+        8,
+        4
+      ],
+      [
+        9,
+        3
       ]
     ],
     [
@@ -2963,11 +5871,41 @@
     [
       [
         8,
+        10
+      ],
+      [
+        9,
+        10
+      ]
+    ],
+    [
+      [
+        8,
         11
       ],
       [
         8,
         12
+      ]
+    ],
+    [
+      [
+        8,
+        11
+      ],
+      [
+        9,
+        10
+      ]
+    ],
+    [
+      [
+        9,
+        2
+      ],
+      [
+        9,
+        3
       ]
     ],
     [
@@ -2982,6 +5920,16 @@
     ],
     [
       [
+        9,
+        10
+      ],
+      [
+        10,
+        11
+      ]
+    ],
+    [
+      [
         10,
         5
       ],
@@ -2992,6 +5940,16 @@
     ],
     [
       [
+        10,
+        11
+      ],
+      [
+        11,
+        11
+      ]
+    ],
+    [
+      [
         11,
         3
       ],
@@ -3012,18 +5970,18 @@
     ],
     [
       [
-        12,
-        2
+        11,
+        11
       ],
       [
         12,
-        3
+        12
       ]
     ],
     [
       [
         12,
-        2
+        3
       ],
       [
         13,
@@ -3033,11 +5991,11 @@
     [
       [
         12,
-        16
+        12
       ],
       [
-        12,
-        17
+        13,
+        12
       ]
     ],
     [
@@ -3048,16 +6006,6 @@
       [
         13,
         15
-      ]
-    ],
-    [
-      [
-        12,
-        17
-      ],
-      [
-        13,
-        17
       ]
     ],
     [
@@ -3078,6 +6026,16 @@
       [
         14,
         1
+      ]
+    ],
+    [
+      [
+        13,
+        12
+      ],
+      [
+        14,
+        13
       ]
     ],
     [
@@ -3163,21 +6121,31 @@
     [
       [
         14,
-        15
-      ],
-      [
-        15,
-        15
-      ]
-    ],
-    [
-      [
-        14,
         16
       ],
       [
         14,
         17
+      ]
+    ],
+    [
+      [
+        15,
+        6
+      ],
+      [
+        16,
+        6
+      ]
+    ],
+    [
+      [
+        15,
+        6
+      ],
+      [
+        16,
+        7
       ]
     ],
     [
@@ -3243,11 +6211,11 @@
     [
       [
         15,
-        15
+        13
       ],
       [
         16,
-        15
+        13
       ]
     ],
     [
@@ -3318,189 +6286,10 @@
       [
         16,
         6
-      ]
-    ],
-    [
-      [
-        16,
-        6
-      ],
-      [
-        16,
-        7
-      ]
-    ],
-    [
-      [
-        16,
-        13
-      ],
-      [
-        17,
-        12
-      ]
-    ],
-    [
-      [
-        16,
-        15
-      ],
-      [
-        17,
-        15
-      ]
-    ],
-    [
-      [
-        17,
-        12
-      ],
-      [
-        17,
-        13
-      ]
-    ],
-    [
-      [
-        17,
-        13
-      ],
-      [
-        18,
-        13
-      ]
-    ],
-    [
-      [
-        17,
-        15
-      ],
-      [
-        18,
-        15
-      ]
-    ],
-    [
-      [
-        18,
-        13
-      ],
-      [
-        19,
-        13
-      ]
-    ],
-    [
-      [
-        18,
-        15
-      ],
-      [
-        19,
-        15
-      ]
-    ],
-    [
-      [
-        19,
-        0
-      ],
-      [
-        19,
-        1
-      ]
-    ],
-    [
-      [
-        19,
-        1
-      ],
-      [
-        20,
-        2
-      ]
-    ],
-    [
-      [
-        19,
-        2
-      ],
-      [
-        20,
-        2
-      ]
-    ],
-    [
-      [
-        19,
-        2
-      ],
-      [
-        20,
-        3
-      ]
-    ],
-    [
-      [
-        19,
-        13
-      ],
-      [
-        20,
-        14
-      ]
-    ],
-    [
-      [
-        19,
-        14
-      ],
-      [
-        19,
-        15
-      ]
-    ],
-    [
-      [
-        20,
-        3
-      ],
-      [
-        20,
-        4
-      ]
-    ],
-    [
-      [
-        20,
-        4
-      ],
-      [
-        21,
-        4
-      ]
-    ],
-    [
-      [
-        20,
-        14
-      ],
-      [
-        21,
-        14
-      ]
-    ],
-    [
-      [
-        21,
-        4
-      ],
-      [
-        21,
-        5
       ]
     ]
   ],
+  "roads_from": "historical_roads",
   "terrain": [
     "hPhmhhmmmmmhppphpppppp",
     "chhhhmmmmhhhpppphcpppp",
