@@ -774,7 +774,11 @@ mod tests {
             .unwrap()
         };
         let (a, b) = (run(), run());
-        assert_eq!(fnv1a(a.as_raw()), fnv1a(b.as_raw()), "same inputs, same pixels");
+        assert_eq!(
+            fnv1a(a.as_raw()),
+            fnv1a(b.as_raw()),
+            "same inputs, same pixels"
+        );
         let at = |lon: f64, lat: f64| {
             let k = proj.to_km(lon, lat);
             let p = cfg.bake.px_per_km;
@@ -785,7 +789,10 @@ mod tests {
         let road = at(35.40, 33.10);
         assert!(road[0] > 200 && road[1] > 190, "road is light: {road:?}");
         let forest = at(35.875, 33.275);
-        assert!(forest[1] > forest[2] && forest[0] < 150, "forest is green: {forest:?}");
+        assert!(
+            forest[1] > forest[2] && forest[0] < 150,
+            "forest is green: {forest:?}"
+        );
         // The pyramid ends in one tile.
         let levels = bake::pyramid(a, 64);
         let last = levels.last().unwrap();
