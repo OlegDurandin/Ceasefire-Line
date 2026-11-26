@@ -15,6 +15,7 @@ fn ctx(night: bool, across_canal: bool) -> GroundAttack {
         terrain_mult: 1.0,
         night,
         across_canal,
+        attack_mult: 1.0,
     }
 }
 

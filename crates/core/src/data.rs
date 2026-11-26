@@ -41,6 +41,12 @@ pub struct CombatRules {
     /// R-COMBAT-02 variant `attack_strips_entrenchment`: levels a ground
     /// attack or an air strike strips from the target after the combat.
     pub attack_entrench_loss: u8,
+    /// R-COMBAT-07 (variant `prepared_attack`): readiness points of an
+    /// attacker that has not moved this phase, for this attack only.
+    pub prepared_attack_readiness_pct: u8,
+    /// R-COMBAT-05 (variant `unsupplied_target`): × attacker's A when the
+    /// target's unit supply is 0.
+    pub unsupplied_target_attack_mult: f64,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

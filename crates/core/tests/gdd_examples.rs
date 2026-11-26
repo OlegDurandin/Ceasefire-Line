@@ -37,6 +37,7 @@ fn plain(d: &ceasefire_core::data::GameData) -> GroundAttack {
         terrain_mult: d.terrain.get("plain").unwrap().def.defense_mult,
         night: false,
         across_canal: false,
+        attack_mult: 1.0,
     }
 }
 

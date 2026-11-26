@@ -17,6 +17,17 @@ use super::{DeclaredAttack, Event, GameState, PendingAdvance, Unit, UnitId};
 use crate::prob::{hits_distribution, quantile};
 use crate::tactical::CombatSource;
 
+/// R-UI-04: what the rule variants add to one ground attack.
+#[derive(Debug, Clone, Copy, PartialEq, serde::Serialize, serde::Deserialize)]
+pub struct AttackModifiers {
+    /// R-COMBAT-07: readiness points of the prepared attack (0: none).
+    pub prepared_pct: u8,
+    /// R-COMBAT-05: × attacker's A against a target without supply (1.0: none).
+    pub unsupplied_target_mult: f64,
+    /// R-COMBAT-02 variant: entrenchment levels the attack will strip.
+    pub entrench_strip: u8,
+}
+
 fn illegal(unit: UnitId, reason: AttackError) -> RuleError {
     RuleError::IllegalAttack {
         unit: unit.0,
@@ -79,7 +90,54 @@ impl GameState {
             terrain_mult: terrain.def.defense_mult,
             night: self.is_night(),
             across_canal: self.map.has_canal(attacker.hex, defender.hex),
+            attack_mult: self
+                .modifiers_for(attacker, defender)
+                .unsupplied_target_mult,
         })
+    }
+
+    /// R-COMBAT-07, R-COMBAT-05 variants of one ground attack.
+    fn modifiers_for(&self, attacker: &Unit, defender: &Unit) -> AttackModifiers {
+        let c = &self.data.rules.combat;
+        let v = self.variants;
+        AttackModifiers {
+            prepared_pct: if v.prepared_attack && !attacker.moved {
+                c.prepared_attack_readiness_pct
+            } else {
+                0
+            },
+            unsupplied_target_mult: if v.unsupplied_target && defender.supply == 0 {
+                c.unsupplied_target_attack_mult
+            } else {
+                1.0
+            },
+            entrench_strip: self.attack_entrench_loss().min(defender.entrenchment),
+        }
+    }
+
+    /// Both sides of a ground attack as they fight: the attacker with the
+    /// R-COMBAT-07 bonus, and the context. Forecast, explanation and
+    /// resolution all start here.
+    fn ground_sides<'d>(
+        &self,
+        data: &'d GameData,
+        a: &Unit,
+        d: &Unit,
+    ) -> Result<(Combatant<'d>, Combatant<'d>, GroundAttack), RuleError> {
+        let mut att = self.combatant(data, a)?;
+        let bonus = self.modifiers_for(a, d).prepared_pct;
+        att.readiness_pct = att.readiness_pct.saturating_add(bonus).min(100);
+        Ok((att, self.combatant(data, d)?, self.ground_context(a, d)?))
+    }
+
+    /// R-UI-04: rule variants that change this attack (for the forecast lines).
+    pub fn attack_modifiers(
+        &self,
+        id: UnitId,
+        target: UnitId,
+    ) -> Result<AttackModifiers, RuleError> {
+        let (a, d) = self.check_attack(id, target)?;
+        Ok(self.modifiers_for(&a, &d))
     }
 
     /// R-COMBAT-03: forecast with the same code path as [`Command::Attack`].
@@ -92,13 +150,8 @@ impl GameState {
     ) -> Result<ExchangeForecast, RuleError> {
         let (a, d) = self.check_attack(id, target)?;
         let data = Arc::clone(&self.data);
-        let ctx = self.ground_context(&a, &d)?;
-        forecast_ground(
-            &data.rules.combat,
-            &self.combatant(&data, &a)?,
-            &self.combatant(&data, &d)?,
-            &ctx,
-        )
+        let (att, def, ctx) = self.ground_sides(&data, &a, &d)?;
+        forecast_ground(&data.rules.combat, &att, &def, &ctx)
     }
 
     /// R-UI-04: inputs of the attack's two fires, `[to defender, to attacker]`,
@@ -106,13 +159,8 @@ impl GameState {
     pub fn explain_attack(&self, id: UnitId, target: UnitId) -> Result<[FireInput; 2], RuleError> {
         let (a, d) = self.check_attack(id, target)?;
         let data = Arc::clone(&self.data);
-        let ctx = self.ground_context(&a, &d)?;
-        ground_inputs(
-            &data.rules.combat,
-            &self.combatant(&data, &a)?,
-            &self.combatant(&data, &d)?,
-            &ctx,
-        )
+        let (att, def, ctx) = self.ground_sides(&data, &a, &d)?;
+        ground_inputs(&data.rules.combat, &att, &def, &ctx)
     }
 
     /// R-UI-04: inputs of a bombardment.
@@ -151,9 +199,7 @@ impl GameState {
     ) -> Result<DeclaredAttack, RuleError> {
         let (a, d) = self.check_attack(id, target)?;
         let data = Arc::clone(&self.data);
-        let ctx = self.ground_context(&a, &d)?;
-        let att = self.combatant(&data, &a)?;
-        let def = self.combatant(&data, &d)?;
+        let (att, def, ctx) = self.ground_sides(&data, &a, &d)?;
         let forecast = forecast_ground(&data.rules.combat, &att, &def, &ctx)?;
         // R-COMBAT-06 + R-MOVE-02: across a canal without a bridge only
         // infantry may occupy, by boat.

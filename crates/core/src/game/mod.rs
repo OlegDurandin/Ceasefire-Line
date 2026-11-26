@@ -1,6 +1,7 @@
 //! R-TURN-01: game state. It changes only through [`GameState::apply`].
 
 mod attack;
+pub use attack::AttackModifiers;
 mod aviation;
 mod boosts;
 mod bridge;

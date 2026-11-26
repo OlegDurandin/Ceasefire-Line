@@ -78,3 +78,93 @@ fn unknown_variant_is_an_error() {
     let sc = with("no_such_rule", three_on_one());
     assert!(GameState::new(std::sync::Arc::new(common::data()), sc).is_err());
 }
+
+/// A's infantry at (2, 0) next to B's infantry at (3, 0); `target_supply` is
+/// the defender's unit supply.
+fn duel(target_supply: u8) -> ScenarioSetup {
+    let (map, control) = board();
+    let mut target = unit("infantry", B, Hex::new(3, 0));
+    target.supply = Some(target_supply);
+    setup(
+        map,
+        control,
+        vec![target, unit("infantry", A, Hex::new(1, 0))],
+    )
+}
+
+const ATTACKER: UnitId = UnitId(2);
+
+/// П2: an attacker that has not moved this phase gets +10 readiness points
+/// for this attack only; after a move — none.
+#[test]
+fn r_combat_07_prepared_attack() {
+    // The attacker standing next to the target from the start.
+    let still = |variant: bool| {
+        let mut sc = duel(8);
+        sc.units[1].hex = Hex::new(2, 0);
+        let s = start(if variant {
+            with("prepared_attack", sc)
+        } else {
+            sc
+        });
+        let m = s.attack_modifiers(ATTACKER, TARGET).unwrap();
+        (
+            s.explain_attack(ATTACKER, TARGET).unwrap()[0].readiness_pct,
+            m.prepared_pct,
+        )
+    };
+    let (off, none) = still(false);
+    let (on, bonus) = still(true);
+    assert_eq!((none, bonus), (0, 10));
+    assert_eq!(on, off + 10, "+10 points for this attack");
+    // After a move: no bonus, even with the variant.
+    let moved = |variant: bool| {
+        let s = duel(8);
+        let mut s = start(if variant {
+            with("prepared_attack", s)
+        } else {
+            s
+        });
+        s.apply(Command::Move {
+            unit: ATTACKER,
+            path: vec![Hex::new(2, 0)],
+        })
+        .unwrap();
+        (
+            s.explain_attack(ATTACKER, TARGET).unwrap()[0].readiness_pct,
+            s.attack_modifiers(ATTACKER, TARGET).unwrap().prepared_pct,
+        )
+    };
+    assert_eq!(moved(true), moved(false));
+    assert_eq!(moved(true).1, 0);
+}
+
+/// П3: against a unit with supply 0 the attacker's A is ×1.5; the target's
+/// return fire does not change.
+#[test]
+fn r_combat_05_attack_on_a_unit_without_supply() {
+    let fire = |variant: bool, supply: u8| {
+        let mut sc = duel(supply);
+        sc.units[1].hex = Hex::new(2, 0);
+        let s = start(if variant {
+            with("unsupplied_target", sc)
+        } else {
+            sc
+        });
+        let m = s.attack_modifiers(ATTACKER, TARGET).unwrap();
+        let f = s.forecast_attack(ATTACKER, TARGET).unwrap();
+        (f.exchange, m.unsupplied_target_mult)
+    };
+    let (base, m0) = fire(true, 3);
+    let (hit, m1) = fire(true, 0);
+    let (off, _) = fire(false, 0);
+    assert_eq!((m0, m1), (1.0, 1.5));
+    common::assert_close(hit.vs_defender.a, base.vs_defender.a * 1.5, 1e-9, "A × 1.5");
+    assert!(hit.vs_defender.p > base.vs_defender.p);
+    assert_eq!(off.vs_defender.a, base.vs_defender.a, "off: no change");
+    assert_eq!(
+        hit.vs_attacker.a, off.vs_attacker.a,
+        "return fire unchanged"
+    );
+    assert_eq!(hit.vs_attacker.p, off.vs_attacker.p);
+}

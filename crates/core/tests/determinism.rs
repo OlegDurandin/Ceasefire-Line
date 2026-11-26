@@ -18,6 +18,7 @@ fn same_seed_same_outcomes() {
         terrain_mult: 1.0,
         night: false,
         across_canal: false,
+        attack_mult: 1.0,
     };
     let run = |seed| {
         let mut rng = Pcg32::new(seed, 0);
@@ -42,6 +43,7 @@ fn r_combat_03_monte_carlo_matches_forecast() {
         terrain_mult: 1.0,
         night: false,
         across_canal: false,
+        attack_mult: 1.0,
     };
     let f = forecast_ground(&d.rules.combat, &a, &b, &ctx).unwrap();
     let mut rng = Pcg32::new(2026, 1);

@@ -104,6 +104,7 @@ fn plain(data: &GameData) -> Result<GroundAttack, String> {
             .defense_mult,
         night: false,
         across_canal: false,
+        attack_mult: 1.0,
     })
 }
 
@@ -278,6 +279,7 @@ fn combat_value(data: &GameData, id: &str, level: u8) -> Result<(f64, f64), Stri
             terrain_mult: terrain.def.defense_mult,
             night: false,
             across_canal: false,
+            attack_mult: 1.0,
         };
         for r in REFERENCE {
             let rc = data.units.get(r).map_err(|e| e.to_string())?;
@@ -326,6 +328,7 @@ fn exchange_steps(data: &GameData, id: &str, level: u8) -> Result<Vec<[f64; 4]>,
             terrain_mult: terrain.def.defense_mult,
             night: false,
             across_canal: false,
+            attack_mult: 1.0,
         };
         for (k, r) in REFERENCE.iter().enumerate() {
             let rc = data.units.get(r).map_err(|e| e.to_string())?;

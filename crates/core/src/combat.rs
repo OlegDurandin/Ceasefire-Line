@@ -95,6 +95,9 @@ pub struct GroundAttack {
     pub terrain_mult: f64,
     pub night: bool,
     pub across_canal: bool,
+    /// Other multipliers of the attacker's A (R-COMBAT-05 variant: target
+    /// without supply); 1.0 normally.
+    pub attack_mult: f64,
 }
 
 /// Fire of both sides in one ground combat.
@@ -152,7 +155,7 @@ pub fn ground_inputs(
         shot_fraction: 1.0,
         attack: attacker.stats.attack.against(defender.class.target_class),
         shooter_exp: attacker.exp_stars,
-        attack_mult: night_mult,
+        attack_mult: night_mult * ctx.attack_mult,
         defense: ground_defense(defender)?,
         target_exp: defender.exp_stars,
         terrain_mult: ctx.terrain_mult,

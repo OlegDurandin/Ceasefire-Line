@@ -169,6 +169,7 @@ pub fn matrix(
                             terrain_mult: terrain.def.defense_mult,
                             night: false,
                             across_canal: false,
+                            attack_mult: 1.0,
                         };
                         let forecast = forecast_ground(rules, &attacker, &defender, &ctx)
                             .map_err(|e| e.to_string())?;
