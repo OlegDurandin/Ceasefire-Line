@@ -1,16 +1,19 @@
-// R-UI-02: reachable hexes in green with the range border, attack targets
-// with a red ring (R-UI-03), the selected unit with a bright ring; R-MOVE-05
-// transfer targets in blue.
+// R-UI-02, as on the approved mock (board «Окно атаки в контексте карты»):
+// reachable hexes green with the range border, the selected unit's hex
+// yellow, attack targets hatched red-orange (the tokens draw their own
+// halos); R-MOVE-05 transfer targets in blue.
 
 import { Graphics } from "pixi.js";
 
 import { hexCenter, hexCorners, offsetToAxial, type Point } from "../hex";
 import { reachBorder } from "./layers";
-import { DISK } from "./units";
 
-const REACH = 0x4caf50;
-const TARGET = 0xe0453a;
-const SELECT = 0xffe27a;
+const REACH = 0x6caa48;
+const REACH_EDGE = 0x468c28;
+const TARGET = 0xc4401e;
+const HATCH = 0xd65c28;
+const SELECT = 0xffd76a;
+const SELECT_EDGE = 0xe8b93c;
 const TRANSFER = 0x4a90d9;
 
 const flat = (pts: Point[]) => pts.flatMap((p) => [p.x, p.y]);
@@ -29,21 +32,26 @@ export function drawOverlays(
     g.poly(flat(hexCorners(center(h.col, h.row, size), size * 0.94))).fill({ color: TRANSFER, alpha: 0.3 }).stroke({ width: 2, color: TRANSFER });
   }
   for (const h of reach) {
-    g.poly(flat(hexCorners(center(h.col, h.row, size), size * 0.94))).fill({ color: REACH, alpha: 0.28 });
+    g.poly(flat(hexCorners(center(h.col, h.row, size), size))).fill({ color: REACH, alpha: 0.3 }).stroke({ width: 1.5, color: REACH_EDGE, alpha: 0.75 });
   }
   // R-UI-02: the border of the movement range.
-  if (reach.length) reachBorder(g, size, selected ? [...reach, selected] : reach, REACH);
-  // R-UI-03: a red ring around each target's disk, a bright one around the selected unit.
+  if (reach.length) reachBorder(g, size, selected ? [...reach, selected] : reach, REACH_EDGE);
+  if (selected) {
+    g.poly(flat(hexCorners(center(selected.col, selected.row, size), size))).fill({ color: SELECT, alpha: 0.3 }).stroke({ width: 2.5, color: SELECT_EDGE });
+  }
   for (const h of targets) {
     const c = center(h.col, h.row, size);
-    g.poly(flat(hexCorners(c, size * 0.94))).fill({ color: TARGET, alpha: 0.12 });
-    diskRing(g, c, size, TARGET);
+    const corners = hexCorners(c, size);
+    g.poly(flat(corners)).fill({ color: HATCH, alpha: 0.22 });
+    // Diagonal stripes clipped to the hex (inscribed circle).
+    const r = size * 0.86;
+    for (let d = -r; d <= r; d += size * 0.2) {
+      const half = Math.sqrt(Math.max(0, r * r - d * d));
+      const ox = c.x + d / Math.SQRT2;
+      const oy = c.y + d / Math.SQRT2;
+      g.moveTo(ox - half / Math.SQRT2, oy + half / Math.SQRT2).lineTo(ox + half / Math.SQRT2, oy - half / Math.SQRT2);
+    }
+    g.stroke({ width: size * 0.08, color: TARGET, alpha: 0.75 });
+    g.poly(flat(corners)).stroke({ width: 2.5, color: TARGET });
   }
-  if (selected) diskRing(g, center(selected.col, selected.row, size), size, SELECT);
-}
-
-/** A ring just outside a unit's disk (drawn under the unit, so it shows around it). */
-function diskRing(g: Graphics, c: Point, size: number, color: number) {
-  const y = c.y + (DISK.drop + DISK.h / 2) * size;
-  g.ellipse(c.x, y, (DISK.rx + 0.1) * size, (DISK.ry + 0.1) * size).stroke({ width: size * 0.08, color });
 }

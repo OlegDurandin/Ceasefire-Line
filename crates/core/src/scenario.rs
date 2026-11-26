@@ -147,6 +147,11 @@ struct SideFile {
     #[serde(default)]
     #[allow(dead_code)]
     facing: Option<String>,
+    /// R-UI-03: horizontal stripes of the small flag on the unit's plate,
+    /// `[["#rrggbb", share], …]` top to bottom; client data.
+    #[serde(default)]
+    #[allow(dead_code)]
+    flag: Option<serde_json::Value>,
 }
 
 fn one() -> u8 {

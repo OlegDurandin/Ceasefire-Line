@@ -1,15 +1,20 @@
-// Units (GDD R-UI-03), after Strategic Command with own art. Default: a
-// painted miniature standing on a disk filled with the side's colour
-// (scenario.json `sides[].color`); strength in white at the bottom of the disk,
-// a tiny pennant, a shadow to the south-east; the model faces the enemy or
-// its last move (`facing`); selection and target rings are drawn under the
-// unit by the overlays (see DISK). Fallback (no miniature, or
-// `?units=medallion`): the medallion. Experience stars are shown only in the
-// attack window's cards.
+// Units (GDD R-UI-03), as on the approved mock (board «Фишка юнита»): a
+// painted miniature on a perspective base drawn in code — the top ellipse
+// (rx ≈ 0.47·w, ry ≈ 0.29·w) with a rim in the side's colour, a side band
+// ≈ 0.13·w high with a vertical gradient of that colour, sandy ground with a
+// radial gradient and grain; the model (manifest anchor) stands on the
+// ground a little below the ellipse's centre, about w wide, rising above it;
+// a plate (flag + strength) centred on the band's front edge; a blurred
+// shadow to the south-east. Selected — a yellow outline with a translucent
+// halo around the base, target — red; no AP and no strikes — the whole token
+// is muted. The base's centre is the hex centre. Fallback (no miniature, or
+// `?units=medallion`): the medallion. Experience stars only in the attack
+// window's card.
 
-import { Container, Graphics, Sprite, Text, type Texture } from "pixi.js";
+import { ColorMatrixFilter, Container, FillGradient, Graphics, Sprite, Text, type Texture } from "pixi.js";
 
 import { hexCenter, offsetToAxial } from "../hex";
+import { GROUND_STOPS, HALO, sideGradient, tokenGeom, type FlagStripes, type TokenGeom } from "./token-geom";
 
 export interface Token {
   key: number;
@@ -18,9 +23,9 @@ export interface Token {
   row: number;
   /** Strength, or `★rating` for a headquarters. */
   label: string;
-  /** Experience stars (0–3). */
+  /** Experience stars (0–3); shown in the attack window, not on the map. */
   stars: number;
-  /** R-UI-05: units that have already acted are dimmed. */
+  /** R-UI-05: units with no AP and no strikes left are muted. */
   dim: boolean;
   style: "miniature" | "medallion";
   /** Contact point of the picture (share of its size). */
@@ -30,19 +35,22 @@ export interface Token {
   encircled?: boolean;
   /** R-UI-03: the pictures face left; `right` mirrors the model (not its shadow). */
   facing?: "left" | "right";
+  selected?: boolean;
+  target?: boolean;
 }
+
+/** Token width in hex radii (on the mock: 72 px tokens on hexes of radius 48). */
+export const TOKEN_W = 1.5;
 
 /** Ring colour when a scenario gives none for the side. */
 const FALLBACK_SIDE = 0xb08d57;
 const BACKING = 0xd9cfb8;
 const DARK = 0x1c1a17;
-const PLATE_TEXT = 0xf4efe2;
-const STAR = 0xe8c25a;
+const PLATE_BG = 0x1c1e21;
+const PLATE_EDGE = 0xc9a46a;
+const PLATE_TEXT = 0xffffff;
 const DIM_ALPHA = 0.55;
-/** The model's width on screen, in hex radii (pictures are square). */
-const MODEL_SIZE = 1.6;
-/** Hover lift, in hex radii. */
-const LIFT = 0.1;
+const ELLIPSE_STEPS = 28;
 
 /** "#rrggbb" → 0xrrggbb; anything else → null. */
 export function parseColor(s: unknown): number | null {
@@ -56,152 +64,151 @@ export function sideColors(sides: { id: number; color?: unknown }[]): number[] {
   return out;
 }
 
-/** A darker shade of a colour (the shaded side of the base rim). */
-function shade(c: number, k: number): number {
-  const ch = (shift: number) => Math.round(((c >> shift) & 0xff) * k);
-  return (ch(16) << 16) | (ch(8) << 8) | ch(0);
-}
-
-function plate(token: Container, label: string, y: number, size: number, color: number): number {
-  const text = new Text({
-    text: label,
-    style: { fill: PLATE_TEXT, fontSize: size * 0.42, fontWeight: "800", fontFamily: "Arial, sans-serif" },
-  });
-  text.anchor.set(0.5);
-  const h = size * 0.46;
-  const w = Math.max(text.width + size * 0.22, h * 1.15);
-  text.position.set(0, y);
-  token.addChild(
-    new Graphics()
-      .roundRect(-w / 2, y - h / 2, w, h, size * 0.1)
-      .fill({ color: DARK, alpha: 0.95 })
-      .stroke({ width: size * 0.04, color }),
-  );
-  token.addChild(text);
-  return y - h / 2;
-}
-
-/** R-UI-03 status icons left of the strength plate: supply ≤ 3, encircled. */
-function statusIcons(token: Container, u: Token, y: number, size: number) {
-  const icons: Graphics[] = [];
-  if (u.encircled) {
-    const r = size * 0.15;
-    icons.push(
-      new Graphics()
-        .circle(0, 0, r)
-        .fill(0x1c1a17)
-        .arc(0, 0, r * 0.62, Math.PI * 0.35, Math.PI * 2.15)
-        .stroke({ width: size * 0.06, color: 0xe0453a }),
-    );
-  } else if (u.lowSupply) {
-    const r = size * 0.15;
-    icons.push(
-      new Graphics()
-        .circle(0, 0, r)
-        .fill(0x1c1a17)
-        .roundRect(-r * 0.45, -r * 0.55, r * 0.9, r * 1.1, r * 0.2)
-        .fill(0xd9a23a),
-    );
+/** Points of the lower half of an ellipse, left to right. */
+function lowerArc(cx: number, cy: number, rx: number, ry: number): number[] {
+  const pts: number[] = [];
+  for (let i = 0; i <= ELLIPSE_STEPS; i++) {
+    const a = Math.PI - (Math.PI * i) / ELLIPSE_STEPS;
+    pts.push(cx + rx * Math.cos(a), cy + ry * Math.sin(a));
   }
-  icons.forEach((g, k) => {
-    g.position.set(-size * (0.5 + 0.34 * k), y);
-    token.addChild(g);
-  });
+  return pts;
 }
 
-function pennant(x: number, bottom: number, top: number, size: number, color: number): Graphics {
-  return new Graphics()
-    .moveTo(x, bottom)
-    .lineTo(x, top)
-    .stroke({ width: size * 0.045, color: DARK })
-    .poly([x, top, x + size * 0.38, top + size * 0.12, x, top + size * 0.24])
-    .fill(color)
-    .stroke({ width: size * 0.025, color: DARK });
+/** The side band: the lower half of the top ellipse shifted down by t, joined to it. */
+function sideBand(g: TokenGeom): number[] {
+  const bottom = lowerArc(g.cx, g.cy + g.t, g.rx, g.ry);
+  const top = lowerArc(g.cx, g.cy, g.rx, g.ry);
+  const back: number[] = [];
+  for (let i = top.length - 2; i >= 0; i -= 2) back.push(top[i]!, top[i + 1]!);
+  return [...bottom, ...back];
 }
 
-/** R-UI-03 disk geometry in hex radii: half-axes, rim height, drop below the hex centre. */
-export const DISK = { rx: 0.62, ry: 0.3, h: 0.12, drop: 0.3 };
-
-function mix(a: number, b: number, k: number): number {
-  const ch = (c: number, s: number) => (c >> s) & 0xff;
-  const m = (s: number) => Math.round(ch(a, s) * (1 - k) + ch(b, s) * k);
-  return (m(16) << 16) | (m(8) << 8) | m(0);
+/** Plate: flag + strength on a dark tag with a bronze edge, centred at x = 0, top at y = 0. */
+function drawPlate(label: string, g: TokenGeom, flag: FlagStripes | null, color: number): Container {
+  const plate = new Container();
+  const text = new Text({ text: label, style: { fill: PLATE_TEXT, fontSize: g.fs, fontWeight: "700", fontFamily: "'PT Sans', Arial, sans-serif" } });
+  const h = Math.round(g.fs * 1.2) + 2;
+  const w = 4 + g.fW + 4 + text.width + 6;
+  plate.addChild(new Graphics().roundRect(-w / 2, 0, w, h, 3).fill(PLATE_BG).stroke({ width: 1, color: PLATE_EDGE }));
+  const fx = -w / 2 + 4;
+  const fy = (h - g.fH) / 2;
+  const f = new Graphics();
+  let y = fy;
+  const stripes: FlagStripes = flag ?? [[`#${color.toString(16).padStart(6, "0")}`, 1]];
+  for (const [c, k] of stripes) {
+    f.rect(fx, y, g.fW, g.fH * k).fill(parseInt(c.slice(1), 16));
+    y += g.fH * k;
+  }
+  f.rect(fx, fy, g.fW, g.fH).stroke({ width: 1, color: 0xffffff, alpha: 0.7 });
+  plate.addChild(f);
+  text.position.set(fx + g.fW + 4, (h - text.height) / 2);
+  plate.addChild(text);
+  return plate;
 }
 
-/**
- * R-UI-03, after Strategic Command (own art): a disk filled with the side's
- * colour with a light bevel, the miniature standing on it and rising above
- * its top edge, a shadow to the south-east, the strength in white at the
- * bottom of the disk, a tiny pennant on the left. A unit with no AP and no
- * strikes left gets a muted disk. Stars only in the attack window's card.
- */
-function drawMiniature(u: Token, tex: Texture | null, size: number, color: number): Container {
+/** R-UI-03 status icons right of the plate: supply ≤ 3, encircled. */
+function statusIcons(token: Container, u: Token, x: number, y: number, size: number) {
+  const r = size * 0.14;
+  const g = new Graphics();
+  if (u.encircled) {
+    g.circle(0, 0, r).fill(DARK).arc(0, 0, r * 0.62, Math.PI * 0.35, Math.PI * 2.15).stroke({ width: size * 0.055, color: 0xe0453a });
+  } else if (u.lowSupply) {
+    g.circle(0, 0, r).fill(DARK).roundRect(-r * 0.45, -r * 0.55, r * 0.9, r * 1.1, r * 0.2).fill(0xd9a23a);
+  } else return;
+  g.position.set(x, y);
+  token.addChild(g);
+}
+
+function drawMiniature(u: Token, tex: Texture | null, size: number, color: number, flag: FlagStripes | null): Container {
+  const g = tokenGeom(TOKEN_W * size);
+  // Origin of the token = the base's centre = the hex centre.
   const token = new Container();
-  const rx = DISK.rx * size;
-  const ry = DISK.ry * size;
-  const h = DISK.h * size;
-  const base = u.dim ? mix(shade(color, 0.8), 0x6e6c66, 0.55) : color;
-  token.addChild(new Graphics().ellipse(size * 0.13, h + size * 0.08, rx * 1.04, ry * 1.08).fill({ color: 0x000000, alpha: 0.4 }));
+  const root = new Container();
+  root.position.set(-g.cx, -g.cy);
+  token.addChild(root);
+
+  // Blurred shadow to the south-east: concentric ellipses fading out.
+  const sh = new Graphics();
+  const scx = g.shL + g.shW / 2;
+  const scy = g.shT + g.shH / 2;
+  const steps = 5;
+  for (let i = steps; i >= 1; i--) {
+    const grow = (g.shB * i) / steps;
+    sh.ellipse(scx, scy, g.shW / 2 + grow, g.shH / 2 + grow).fill({ color: 0x281a08, alpha: 0.42 / steps });
+  }
+  sh.ellipse(scx, scy, g.shW / 2 - g.shB / 2, g.shH / 2 - g.shB / 2).fill({ color: 0x281a08, alpha: 0.2 });
+  root.addChild(sh);
+
   const body = new Container();
-  token.addChild(body);
-  body.addChild(
-    new Graphics()
-      // Rim (the disk's thickness), then the top with a bevel: a lighter
-      // upper-left edge and the face inside it.
-      .ellipse(0, h, rx, ry)
-      .fill(shade(base, 0.55))
-      .rect(-rx, 0, rx * 2, h)
-      .fill(shade(base, 0.7))
-      .ellipse(0, 0, rx, ry)
-      .fill(mix(base, 0xffffff, 0.28))
-      .ellipse(rx * 0.02, ry * 0.06, rx * 0.9, ry * 0.82)
-      .fill(base)
-      .ellipse(0, h, rx, ry)
-      .stroke({ width: size * 0.022, color: DARK, alpha: 0.7 }),
-  );
+  root.addChild(body);
+  const halo = u.selected ? HALO.selected : u.target ? HALO.target : null;
+  const haloColor = halo ? parseInt(halo.slice(1), 16) : 0;
+  if (halo) body.addChild(new Graphics().ellipse(g.cx, g.cy, g.gRx, g.gRy).stroke({ width: g.gW, color: haloColor, alpha: 0.45 }));
+  const [top, bottom] = sideGradient(color);
+  const band = new FillGradient({
+    type: "linear",
+    start: { x: 0, y: 0 },
+    end: { x: 0, y: 1 },
+    colorStops: [
+      { offset: 0, color: top },
+      { offset: 1, color: bottom },
+    ],
+    textureSpace: "local",
+  });
+  const ground = new FillGradient({
+    type: "radial",
+    center: { x: 0.4, y: 0.35 },
+    innerRadius: 0,
+    outerCenter: { x: 0.4, y: 0.35 },
+    outerRadius: 0.75,
+    colorStops: GROUND_STOPS.map(([offset, c]) => ({ offset, color: c })),
+    textureSpace: "local",
+  });
+  const base = new Graphics()
+    .poly(sideBand(g))
+    .fill(band)
+    .stroke({ width: 1, color: 0x141414, alpha: 0.55 })
+    .ellipse(g.cx, g.cy, g.rx, g.ry)
+    .fill(ground)
+    .stroke({ width: g.rimW, color });
+  for (const s of g.specks) base.circle(s.x, s.y, s.r).fill(parseInt(s.c.slice(1), 16));
+  body.addChild(base);
+  if (halo) {
+    // The front half of the outline, along the middle of the band.
+    const arc = lowerArc(g.cx, g.cy + g.t / 2, g.rx, g.ry);
+    const ring = new Graphics().moveTo(arc[0]!, arc[1]!);
+    for (let i = 2; i < arc.length; i += 2) ring.lineTo(arc[i]!, arc[i + 1]!);
+    body.addChild(ring.stroke({ width: g.ringW, color: haloColor }));
+  }
   if (tex) {
     const model = new Sprite(tex);
     model.anchor.set(u.anchor[0], u.anchor[1]);
-    model.width = MODEL_SIZE * size;
-    model.height = MODEL_SIZE * size;
+    model.width = g.mW;
+    model.height = g.mW;
     if (u.facing === "right") model.scale.x = -Math.abs(model.scale.x);
-    model.position.set(0, -ry * 0.05);
+    model.position.set(g.cx, g.contactY);
     body.addChild(model);
   } else {
-    body.addChild(new Graphics().rect(-rx * 0.5, -size * 0.6, rx, size * 0.5).stroke({ width: 2, color: DARK }));
+    body.addChild(new Graphics().rect(g.cx - g.rx * 0.5, g.cy - g.w * 0.6, g.rx, g.w * 0.5).stroke({ width: 2, color: DARK }));
   }
-  // Tiny pennant on the left.
-  const px = -rx * 0.82;
-  body.addChild(
-    new Graphics()
-      .moveTo(px, ry * 0.1)
-      .lineTo(px, -size * 0.42)
-      .stroke({ width: size * 0.03, color: DARK })
-      .poly([px, -size * 0.42, px - size * 0.22, -size * 0.36, px, -size * 0.3])
-      .fill(color)
-      .stroke({ width: size * 0.018, color: DARK }),
-  );
-  // Strength in white at the bottom of the disk.
-  const text = new Text({
-    text: u.label,
-    style: { fill: 0xffffff, fontSize: size * 0.4, fontWeight: "800", fontFamily: "Arial, sans-serif", stroke: { color: DARK, width: size * 0.08 } },
-  });
-  text.anchor.set(0.5);
-  text.position.set(0, ry * 0.62);
-  body.addChild(text);
-  statusIcons(body, u, ry * 0.62, size);
-  body.eventMode = "static";
-  body.cursor = "pointer";
-  body.on("pointerover", () => (body.y = -LIFT * size));
-  body.on("pointerout", () => (body.y = 0));
+  const plate = drawPlate(u.label, g, flag, color);
+  plate.position.set(g.cx, g.plT);
+  body.addChild(plate);
+  statusIcons(body, u, g.cx + plate.width / 2 + size * 0.18, g.plT + plate.height / 2, size);
+  if (u.dim) {
+    // As on the mock: saturate(0.35) brightness(0.78).
+    const cm = new ColorMatrixFilter();
+    cm.saturate(-0.65, false);
+    cm.brightness(0.78, true);
+    body.filters = [cm];
+  }
   return token;
 }
 
-function drawMedallion(u: Token, tex: Texture | null, size: number, color: number): Container {
+function drawMedallion(u: Token, tex: Texture | null, size: number, color: number, flag: FlagStripes | null): Container {
   const token = new Container();
   const radius = size * 0.66;
   const ring = size * 0.15;
-  token.addChild(pennant(radius * 0.62, -radius * 0.5, -radius * 1.42, size, color));
   token.addChild(
     new Graphics()
       .circle(0, 0, radius + ring / 2 + size * 0.02)
@@ -222,23 +229,35 @@ function drawMedallion(u: Token, tex: Texture | null, size: number, color: numbe
   } else {
     token.addChild(new Graphics().rect(-radius * 0.6, -radius * 0.4, radius * 1.2, radius * 0.8).stroke({ width: 2, color: DARK }));
   }
-  token.addChild(new Graphics().circle(0, 0, radius).stroke({ width: ring, color }));
-  plate(token, u.label, radius * 0.98, size, color);
-  statusIcons(token, u, radius * 0.98, size);
+  const halo = u.selected ? HALO.selected : u.target ? HALO.target : null;
+  token.addChild(new Graphics().circle(0, 0, radius).stroke({ width: ring, color: halo ? parseInt(halo.slice(1), 16) : color }));
+  const g = tokenGeom(TOKEN_W * size);
+  const plate = drawPlate(u.label, g, flag, color);
+  plate.position.set(0, radius * 0.7);
+  token.addChild(plate);
+  statusIcons(token, u, plate.width / 2 + size * 0.18, radius * 0.7 + plate.height / 2, size);
+  token.alpha = u.dim ? DIM_ALPHA : 1;
   return token;
 }
 
-export function drawUnits(tokens: Token[], textures: Map<number, Texture | null>, size: number, colors: number[]): Container {
+export function drawUnits(
+  tokens: Token[],
+  textures: Map<number, Texture | null>,
+  size: number,
+  colors: number[],
+  flags: (FlagStripes | null)[] = [],
+): Container {
   const layer = new Container();
   // Painter's order: units lower on the screen are drawn over those above.
-  const placed = tokens.map((u) => ({ u, c: hexCenter(offsetToAxial({ col: u.col, row: u.row }), size) })).sort((a, b) => a.c.y - b.c.y || a.c.x - b.c.x);
+  const placed = tokens
+    .map((u) => ({ u, c: hexCenter(offsetToAxial({ col: u.col, row: u.row }), size) }))
+    .sort((a, b) => a.c.y - b.c.y || a.c.x - b.c.x);
   for (const { u, c } of placed) {
     const color = colors[u.side] ?? FALLBACK_SIDE;
     const tex = textures.get(u.key) ?? null;
-    const mini = u.style === "miniature";
-    const token = mini ? drawMiniature(u, tex, size, color) : drawMedallion(u, tex, size, color);
-    token.position.set(c.x, c.y + (mini ? DISK.drop * size : 0));
-    token.alpha = u.dim && !mini ? DIM_ALPHA : 1;
+    const flag = flags[u.side] ?? null;
+    const token = u.style === "miniature" ? drawMiniature(u, tex, size, color, flag) : drawMedallion(u, tex, size, color, flag);
+    token.position.set(c.x, c.y);
     layer.addChild(token);
   }
   return layer;

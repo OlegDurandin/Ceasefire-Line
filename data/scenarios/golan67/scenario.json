@@ -11,8 +11,30 @@
     {
       "id": 0,
       "key": "isr",
-      "color": "#9fb6cc",
+      "color": "#9fb3bf",
       "facing": "right",
+      "flag": [
+        [
+          "#ffffff",
+          0.22
+        ],
+        [
+          "#2b59c3",
+          0.14
+        ],
+        [
+          "#ffffff",
+          0.28
+        ],
+        [
+          "#2b59c3",
+          0.14
+        ],
+        [
+          "#ffffff",
+          0.22
+        ]
+      ],
       "tech": {},
       "national_morale_pct": 85,
       "mpp": 40,
@@ -23,8 +45,22 @@
     {
       "id": 1,
       "key": "syr",
-      "color": "#b3a46c",
+      "color": "#b59c63",
       "facing": "left",
+      "flag": [
+        [
+          "#ce1126",
+          0.34
+        ],
+        [
+          "#ffffff",
+          0.32
+        ],
+        [
+          "#111111",
+          0.34
+        ]
+      ],
       "tech": {},
       "national_morale_pct": 70,
       "mpp": 30,
