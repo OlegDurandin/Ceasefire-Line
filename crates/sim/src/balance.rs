@@ -236,12 +236,26 @@ fn exchange_per_phase(
 const REFERENCE: [&str; 3] = ["infantry", "mech", "tank"];
 /// Classes whose prices are searched, with the price grid (min, max, step).
 const PRICED: [(&str, u32, u32); 4] = [
-    ("infantry", 50, 70),
-    ("mech", 70, 90),
-    ("tank", 100, 140),
-    ("artillery", 50, 70),
+    ("infantry", 40, 90),
+    ("mech", 50, 110),
+    ("tank", 70, 160),
+    ("artillery", 30, 90),
 ];
 const PRICE_STEP: usize = 5;
+/// Designer's price order: (class, cheaper class, minimum gap in MPP) — mech
+/// must not dominate infantry at the same price, tanks cost more than mech.
+const PRICE_ORDER: [(&str, &str, u32); 2] = [("mech", "infantry", 10), ("tank", "mech", 20)];
+
+/// `prices[k]` is the price of `PRICED[k]`; true if `PRICE_ORDER` holds.
+fn ordered(prices: &[u32]) -> bool {
+    let price_of = |id: &str| PRICED.iter().position(|p| p.0 == id).map(|k| prices[k]);
+    PRICE_ORDER
+        .iter()
+        .all(|(hi, lo, gap)| match (price_of(hi), price_of(lo)) {
+            (Some(h), Some(l)) => h >= l + gap,
+            _ => false,
+        })
+}
 
 /// Entrenchment after one own turn without moving (R-SUP-03: class growth,
 /// capped by the terrain).
@@ -406,9 +420,9 @@ fn check_cost(data: &GameData) -> Result<Check, String> {
             .collect()
     };
     let worst = |d: &[Vec<f64>]| d.iter().flatten().fold(0.0f64, |m, v| m.max(v.abs()));
-    let pass = worst(&devs(&current)) <= COST_SPREAD;
+    let pass = ordered(&current) && worst(&devs(&current)) <= COST_SPREAD;
     let mut body = format!(
-        "Боевая ценность за MPP (решение A): отношение «уничтожено MPP противника / потеряно своих MPP» против эталонных классов (пехота, мех. бригада, танки) — в атаке на них и в обороне от них, за все удары фазы (второй удар с усталостью обеих сторон; артиллерия в атаке — обстрелом без ответа); шаг силы стоит 10% цены; окопы обороняющегося — за один ход без движения (`entrench_per_turn`: пехота 2, остальные 1, не больше максимума местности); среднее по проходимой местности. Сравниваются пехота, мех. бригада, танки, артиллерия; тех. 1 и 2 отдельно. Допуск ±{:.0}%: шире общих ±25%, потому что лимит сил сценария (R-ECO-03) ограничивает покупку и цена в основном задаёт стоимость пополнения.\n\n",
+        "Боевая ценность за MPP (решение A): отношение «уничтожено MPP противника / потеряно своих MPP» против эталонных классов (пехота, мех. бригада, танки) — в атаке на них и в обороне от них, за все удары фазы (второй удар с усталостью обеих сторон; артиллерия в атаке — обстрелом без ответа); шаг силы стоит 10% цены; окопы обороняющегося — за один ход без движения (`entrench_per_turn`: пехота 2, остальные 1, не больше максимума местности); среднее по проходимой местности. Сравниваются пехота, мех. бригада, танки, артиллерия; тех. 1 и 2 отдельно. Допуск ±{:.0}%: шире общих ±25%, потому что лимит сил сценария (R-ECO-03) ограничивает покупку и цена в основном задаёт стоимость пополнения. Порядок цен (решение дизайнера): мех. бригада ≥ пехота + 10, танки ≥ мех. бригада + 20 — иначе мех. бригада доминирует пехоту.\n\n",
         COST_SPREAD * 100.0
     );
     let table = |body: &mut String, title: &str, prices: &[u32]| {
@@ -440,7 +454,11 @@ fn check_cost(data: &GameData) -> Result<Check, String> {
         let mut idx = vec![0usize; grids.len()];
         loop {
             let prices: Vec<u32> = idx.iter().zip(&grids).map(|(i, g)| g[*i]).collect();
-            let w = worst(&devs(&prices));
+            let w = if ordered(&prices) {
+                worst(&devs(&prices))
+            } else {
+                f64::INFINITY
+            };
             let distance: u32 = prices
                 .iter()
                 .zip(&current)

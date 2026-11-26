@@ -8,7 +8,7 @@
       "tags": ["boat_crossing"]
     },
     {
-      "id": "mech", "target_class": "hard", "cost_mpp": 70, "ap": 4, "strikes": 1,
+      "id": "mech", "target_class": "hard", "cost_mpp": 80, "ap": 4, "strikes": 1,
       "attack": { "soft": 4, "hard": 3, "air": 1, "naval": 0 },
       "defense": { "ground": 4, "air": 3 },
       "exerts_zoc": true,
@@ -30,7 +30,7 @@
       "tags": ["heli_transfer", "night_combat"]
     },
     {
-      "id": "artillery", "target_class": "soft", "cost_mpp": 55, "ap": 3, "strikes": 1,
+      "id": "artillery", "target_class": "soft", "cost_mpp": 50, "ap": 3, "strikes": 1,
       "attack": { "soft": 5, "hard": 3, "air": 0, "naval": 1 },
       "defense": { "ground": 2, "air": 2 },
       "range_km": 20,
