@@ -62,6 +62,7 @@ cargo fmt --all
 cargo clippy --workspace --all-targets -- -D warnings
 cargo test --workspace
 cd client && npm run typecheck && npm test
+cd client && npm run e2e   # при запущенном npm run dev: партия «Голан-67» до конца через интерфейс (нужен Chrome; путь — CHROME, адрес — E2E_URL)
 ```
 
 Утилиты:

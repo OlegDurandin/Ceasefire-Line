@@ -7,13 +7,15 @@
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "e2e": "node e2e/fullgame.mjs"
   },
   "dependencies": {
     "pixi.js": "8.23.0"
   },
   "devDependencies": {
     "@types/node": "22.20.7",
+    "puppeteer-core": "^24.43.1",
     "typescript": "7.0.2",
     "vite": "8.3.8",
     "vitest": "5.1.2"
