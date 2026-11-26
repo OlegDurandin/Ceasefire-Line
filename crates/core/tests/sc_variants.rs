@@ -219,3 +219,33 @@ fn r_move_05_transfer_costs_morale() {
     .unwrap();
     assert_eq!(s.unit(UnitId(1)).unwrap().morale_pct, 0);
 }
+
+/// П7: supply 1–3 −1 AP, supply 0 −2 AP; at least 1 AP stays.
+#[test]
+fn r_unit_02_zero_supply_costs_two_ap() {
+    let ap = |variant: bool| {
+        let (map, control) = board();
+        let mut units = vec![
+            unit("tank", A, Hex::new(1, 0)),     // supply 3 (source 3)
+            unit("tank", A, Hex::new(5, 0)),     // B's hex: supply 0
+            unit("infantry", A, Hex::new(5, 2)), // supply 0, 3 AP
+        ];
+        for u in &mut units {
+            u.supply = Some(0);
+        }
+        let mut sc = setup(map, control, units);
+        sc.sources[0].value = 3;
+        let s = start(if variant {
+            with("zero_supply_ap", sc)
+        } else {
+            sc
+        });
+        [1, 2, 3].map(|i| {
+            let u = s.unit(UnitId(i)).unwrap();
+            (u.supply.min(4), u.ap_halves)
+        })
+    };
+    // Halves of AP: tank 5 AP, infantry 3 AP.
+    assert_eq!(ap(false), [(3, 8), (0, 8), (0, 4)]);
+    assert_eq!(ap(true), [(3, 8), (0, 6), (0, 2)]);
+}

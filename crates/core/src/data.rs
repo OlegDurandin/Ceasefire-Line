@@ -134,9 +134,14 @@ pub struct MovementRules {
     pub exploit_min_ap: f64,
     pub night_ap_penalty: f64,
     pub low_supply_ap_penalty: f64,
+    /// R-UNIT-02 (variant `zero_supply_ap`): AP penalty at supply 0, instead
+    /// of `low_supply_ap_penalty`.
+    pub zero_supply_ap_penalty: f64,
     pub min_ap: f64,
     /// R-MOVE-02: readiness penalty for a boat crossing, until the next own phase.
     pub boat_crossing_readiness_pct: u8,
+    /// R-MOVE-05 (variant `transfer_morale`): morale lost by a strategic transfer.
+    pub transfer_morale_loss: u8,
 }
 
 /// Unit morale changes (GDD section 3).
@@ -370,6 +375,7 @@ impl Rules {
             m.exploit_min_ap,
             m.night_ap_penalty,
             m.low_supply_ap_penalty,
+            m.zero_supply_ap_penalty,
             m.min_ap,
         ] {
             ap_to_halves(ap)?;

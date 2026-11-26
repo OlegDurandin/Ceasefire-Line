@@ -341,6 +341,8 @@ struct ApParams {
     exploit_min: u32,
     night_penalty: u32,
     low_supply_penalty: u32,
+    /// R-UNIT-02 variant `zero_supply_ap`; equals `low_supply_penalty` when off.
+    zero_supply_penalty: u32,
     min: u32,
 }
 
@@ -403,6 +405,11 @@ impl GameState {
         supply_params.hq_node = variants.hq_supply_node;
         let m = &data.rules.movement;
         let ap = ApParams {
+            zero_supply_penalty: ap_to_halves(if variants.zero_supply_ap {
+                m.zero_supply_ap_penalty
+            } else {
+                m.low_supply_ap_penalty
+            })?,
             zoc_exit: ap_to_halves(m.zoc_exit_ap)?,
             attack: ap_to_halves(m.attack_ap)?,
             exploit_min: ap_to_halves(m.exploit_min_ap)?,
