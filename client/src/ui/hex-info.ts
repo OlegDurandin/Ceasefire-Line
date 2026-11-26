@@ -54,10 +54,12 @@ export function hexRows(f: HexFacts, ru: Locale): { label: string; value: string
   ];
 }
 
-export function hexCardHtml(f: HexFacts | null, where: "selected" | "cursor", side: "left" | "right", ru: Locale, r: HexRules): string {
+/** `touch`: no hover on this screen — the right card comes from a long press. */
+export function hexCardHtml(f: HexFacts | null, where: "selected" | "cursor", side: "left" | "right", ru: Locale, r: HexRules, touch = false): string {
   const t = (k: string) => ru[k] ?? k;
   if (!f) {
-    return `<div class="aw-card ${side} hx-empty"><div class="aw-info"><div class="aw-sub">${t(where === "selected" ? "ui.hex.pick" : "ui.hex.hover_hint")}</div></div></div>`;
+    const hint = where === "selected" ? "ui.hex.pick" : touch ? "ui.hex.hold_hint" : "ui.hex.hover_hint";
+    return `<div class="aw-card ${side} hx-empty"><div class="aw-info"><div class="aw-sub">${t(hint)}</div></div></div>`;
   }
   const tips: Record<string, string> = {
     move: fill(t("ui.hex.move_tip"), { road: num(r.roadAp, 1), track: num(r.trackAp, 1) }),

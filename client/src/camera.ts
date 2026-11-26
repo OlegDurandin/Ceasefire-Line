@@ -12,6 +12,8 @@ export const MIN_SCALE = 0.25;
 export const MAX_SCALE = 3;
 /** Pointer travel (px) below which a press counts as a tap, not a drag. */
 export const TAP_SLOP = 6;
+/** Touch held this long without moving is a long press (the hex «under the cursor»). */
+export const LONG_PRESS_MS = 450;
 
 /** Zoom by `factor` keeping the screen point (px, py) fixed. */
 export function zoomAt(v: View, factor: number, px: number, py: number): View {
@@ -69,12 +71,16 @@ export class Camera {
   private pinch: number | null = null;
   private travel = 0;
   private multi = false;
+  private pressTimer: number | undefined;
+  private longPressed = false;
   /** Called with screen coordinates when a single pointer taps without dragging. */
   onTap: ((x: number, y: number) => void) | null = null;
   /** Called after every pan or zoom. */
   onChange: ((v: View) => void) | null = null;
   /** Called with screen coordinates when the pointer moves with no button down. */
   onHover: ((x: number, y: number) => void) | null = null;
+  /** Touch: a finger held still for LONG_PRESS_MS (no tap follows). */
+  onLongPress: ((x: number, y: number) => void) | null = null;
 
   constructor(
     private world: Container,
@@ -124,9 +130,20 @@ export class Camera {
     this.el.setPointerCapture(e.pointerId);
     this.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
     this.pinch = null;
+    window.clearTimeout(this.pressTimer);
+    this.longPressed = false;
     if (this.pointers.size === 1) {
       this.travel = 0;
       this.multi = false;
+      if (e.pointerType !== "mouse") {
+        const { clientX: x, clientY: y } = e;
+        this.pressTimer = window.setTimeout(() => {
+          if (this.pointers.size === 1 && !this.multi && this.travel < TAP_SLOP) {
+            this.longPressed = true;
+            this.onLongPress?.(x, y);
+          }
+        }, LONG_PRESS_MS);
+      }
     } else {
       this.multi = true;
     }
@@ -141,6 +158,7 @@ export class Camera {
     const next = { x: e.clientX, y: e.clientY };
     this.pointers.set(e.pointerId, next);
     this.travel += Math.hypot(next.x - prev.x, next.y - prev.y);
+    if (this.travel >= TAP_SLOP) window.clearTimeout(this.pressTimer);
     const all = [...this.pointers.values()];
     if (all.length === 1) {
       this.view = { ...this.view, x: this.view.x + next.x - prev.x, y: this.view.y + next.y - prev.y };
@@ -158,7 +176,8 @@ export class Camera {
   private up = (e: PointerEvent) => {
     const had = this.pointers.delete(e.pointerId);
     this.pinch = null;
-    if (had && e.type === "pointerup" && this.pointers.size === 0 && !this.multi && this.travel < TAP_SLOP) {
+    window.clearTimeout(this.pressTimer);
+    if (had && e.type === "pointerup" && this.pointers.size === 0 && !this.multi && this.travel < TAP_SLOP && !this.longPressed) {
       this.onTap?.(e.clientX, e.clientY);
     }
   };

@@ -395,5 +395,6 @@
   "formation.syr_11_inf": "11-я пехотная бригада",
   "formation.syr_8_inf": "8-я пехотная бригада",
   "formation.syr_19_inf": "19-я пехотная бригада",
-  "formation.syr_44_armored": "44-я бронетанковая бригада"
+  "formation.syr_44_armored": "44-я бронетанковая бригада",
+  "ui.hex.hold_hint": "Удерживайте палец на гексе"
 }

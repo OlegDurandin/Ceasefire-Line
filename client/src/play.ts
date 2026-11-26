@@ -132,6 +132,8 @@ export class Play {
   /** Hex mode: the selected hex and the hex under the pointer. */
   private picked: Cell | null = null;
   private pointer: Cell | null = null;
+  /** The line bottom left: the hex last hovered, tapped or long-pressed. */
+  private lineCell: Cell | null = null;
   /** Own supply and enemy ZOC of the active side, per refresh (hex mode). */
   private supplyHere: Map<string, number> | null = null;
   private zocHere: Set<string> | null = null;
@@ -161,6 +163,8 @@ export class Play {
     window.addEventListener("keydown", (e) => this.key(e));
     this.aw = new AttackWindow(document.getElementById("attack")!, ru, ctx.rules);
     camera.onHover = (x, y) => this.hover(x, y);
+    // Touch: a long press is the hover («гекс под курсором» and a target's forecast).
+    camera.onLongPress = (x, y) => this.hover(x, y);
     const mm = ctx.minimap;
     this.minimap = new Minimap(mm.world, mm.image?.rect ?? null, mm.image?.url ?? null, MINIMAP_W, MINIMAP_H, this.t("ui.minimap"), (x, y) => {
       this.camera.centerOn(x, y);
@@ -386,6 +390,10 @@ export class Play {
   private tap(x: number, y: number) {
     if (this.state.outcome) return;
     const { col, row } = this.cellAt(x, y);
+    if (this.ctx.hexes.has(key(col, row))) {
+      this.lineCell = { col, row };
+      this.drawPointerLine();
+    }
     const there = this.unitAt(col, row);
     const sel = this.selection;
     if (sel && this.transfer) {
@@ -499,7 +507,8 @@ export class Play {
     if (!cell) return;
     const at = side === "left" ? this.picked : this.pointer;
     const rules = { roadAp: this.ctx.roadAp, trackAp: this.ctx.trackAp, entrenchMinSupply: this.ctx.rules.supply.entrench_min_supply };
-    cell.outerHTML = hexCardHtml(at ? this.hexFacts(at) : null, side === "left" ? "selected" : "cursor", side, this.ru, rules).replace(
+    const touch = window.matchMedia("(hover: none)").matches;
+    cell.outerHTML = hexCardHtml(at ? this.hexFacts(at) : null, side === "left" ? "selected" : "cursor", side, this.ru, rules, touch).replace(
       `class="aw-card ${side}`,
       `id="hx-${side}" class="aw-card ${side}`,
     );
@@ -558,7 +567,7 @@ export class Play {
   private drawPointerLine() {
     const el = document.getElementById("hover-line");
     if (!el) return;
-    const f = this.pointer && this.hexFacts(this.pointer);
+    const f = this.lineCell && this.hexFacts(this.lineCell);
     if (!f || this.state.outcome) {
       el.style.display = "none";
       return;
@@ -645,6 +654,7 @@ export class Play {
     const c = this.cellAt(x, y);
     const moved = !this.pointer || this.pointer.col !== c.col || this.pointer.row !== c.row;
     this.pointer = this.ctx.hexes.has(key(c.col, c.row)) ? c : null;
+    if (this.pointer) this.lineCell = this.pointer;
     if (moved) {
       this.drawPointerLine();
       if (!(this.selection && this.info === "unit")) this.drawHexCard("right");
