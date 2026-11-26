@@ -1089,6 +1089,7 @@ export class Play {
     const o = this.state.outcome!;
     this.aw.hide();
     document.getElementById("actionbar")!.style.display = "none";
+    document.getElementById("hover-line")!.style.display = "none";
     const modal = document.getElementById("modal")!;
     const winner = o.winner === null ? this.t("ui.outcome.draw") : `${this.t(`ui.outcome.${o.level}`)}: ${this.sideName(o.winner)}`;
     modal.querySelector(".panel")!.innerHTML = `<h2>${winner}</h2>
