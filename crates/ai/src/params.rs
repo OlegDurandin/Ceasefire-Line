@@ -68,7 +68,7 @@ pub struct PocketWeights {
     /// Reachability of a chokepoint: this phase / within two phases.
     pub reach_now: f64,
     pub reach_two_phases: f64,
-    /// × enemy threat at the chokepoint, subtracted from the utility.
+    /// VP per unit of enemy threat at a chokepoint (expected own losses), subtracted.
     pub loss_weight: f64,
     /// «Сковывание»: infantry and artillery within this many hexes of a cut unit keep contact.
     pub pin_radius: u32,
@@ -78,6 +78,12 @@ pub struct PocketWeights {
     pub finish_bonus: f64,
     /// No move may end where own supply in a phase drops below this, except on a chokepoint.
     pub min_own_supply: u8,
+    /// R-AI-01 common currency: an operation is taken at this expected VP gain or more.
+    pub min_vp: f64,
+    /// «Добивание» (with R-COMBAT-05 on): steps our attacks take per phase from a unit at supply 0.
+    pub finish_steps_per_phase: f64,
+    /// Enemy phases counted when the scenario has no last turn.
+    pub horizon_phases: u32,
 }
 
 #[derive(Debug, Clone, Deserialize)]

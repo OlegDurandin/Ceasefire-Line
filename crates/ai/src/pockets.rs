@@ -198,3 +198,83 @@ pub fn best_pocket(
     }
     Ok(best)
 }
+
+/// Enemy phases left in the scenario after a pocket closes `delay` own
+/// phases from now (0: this phase). Without a last turn: `horizon_phases`.
+pub fn enemy_phases_left(
+    s: &GameState,
+    enemy: SideId,
+    delay: u32,
+    w: &crate::params::PocketWeights,
+) -> u32 {
+    let Some(last) = s.last_turn() else {
+        return w.horizon_phases.saturating_sub(delay);
+    };
+    let us = s.active_side();
+    // Does the enemy still move this turn after us? (phase order = side order)
+    let later =
+        s.sides().iter().position(|x| x.id == enemy) > s.sides().iter().position(|x| x.id == us);
+    let phases = last.saturating_sub(s.turn()) + u32::from(later);
+    phases.saturating_sub(delay)
+}
+
+/// R-AI-01 common currency: expected victory points (R-NM-02) the pocket
+/// `held` brings by the end of the scenario if it closes `delay` own phases
+/// from now. Each cut unit's supply is projected phase by phase (R-SUP-05
+/// inertia); at 0 it suffers attrition (R-SUP-03), desertion (variant) and our
+/// finishing attacks (R-COMBAT-05 variant); its steps and, if it dies, the unit
+/// itself cost its side NM (R-NM-01) — our margin grows by as much.
+pub fn pocket_vp(
+    s: &GameState,
+    us: SideId,
+    enemy: SideId,
+    held: &[Hex],
+    delay: u32,
+    w: &crate::params::PocketWeights,
+) -> Result<f64, RuleError> {
+    let phases = enemy_phases_left(s, enemy, delay, w);
+    if phases == 0 {
+        return Ok(0.0);
+    }
+    let trial: Vec<(Hex, SideId)> = held.iter().map(|&h| (h, us)).collect();
+    let map = s.hex_supply_if(enemy, &trial)?;
+    let rules = &s.data().rules;
+    let v = s.variants();
+    let sensitivity = s.side(enemy).map_or(1.0, |x| f64::from(x.loss_sensitivity));
+    let per_step = sensitivity / f64::from(rules.national_morale.steps_per_loss.max(1));
+    let mut vp = 0.0;
+    let mut units: Vec<_> = s.units().filter(|u| u.side == enemy).collect();
+    units.sort_by_key(|u| u.id);
+    for u in units {
+        let level = map.get(u.hex);
+        if level > 0 {
+            continue; // still supplied: no steps lost to the pocket
+        }
+        let (mut supply, mut zero) = (u.supply, u32::from(u.zero_supply_phases));
+        let mut lost = 0.0;
+        for _ in 0..phases {
+            supply = supply.saturating_sub(rules.supply.max_drop_per_phase);
+            if supply > 0 {
+                zero = 0;
+                continue;
+            }
+            zero += 1;
+            if zero >= u32::from(rules.supply.attrition_after_phases) {
+                lost += f64::from(rules.supply.attrition_steps);
+            }
+            if v.pocket_desertion {
+                lost += rules.supply.desertion_chance * f64::from(rules.supply.desertion_steps);
+            }
+            if v.unsupplied_target {
+                lost += w.finish_steps_per_phase;
+            }
+        }
+        let strength = f64::from(u.strength);
+        let lost = lost.min(strength);
+        vp += lost * per_step;
+        if lost >= strength {
+            vp += f64::from(s.unit_nm_loss(&u.class, true));
+        }
+    }
+    Ok(vp)
+}

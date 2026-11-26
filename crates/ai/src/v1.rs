@@ -23,7 +23,9 @@ use ceasefire_core::side::SideId;
 use ceasefire_core::supply::SupplyMap;
 
 use crate::params::{AiHints, AiParams};
-use crate::pockets::{best_pocket, chokepoints, pocket_value, supply_dependency, Pocket};
+use crate::pockets::{
+    best_pocket, chokepoints, pocket_value, pocket_vp, supply_dependency, Pocket,
+};
 
 pub struct AiV1 {
     params: AiParams,
@@ -90,6 +92,11 @@ impl AiV1 {
         }
     }
 
+    /// The last plan made (R-AI-01 debugging layer «Намерения ИИ»).
+    pub fn last_plan(&self) -> Option<&Plan> {
+        self.plan.as_ref()
+    }
+
     /// The phase's plan (made on the first command of the phase).
     pub fn plan_for(&mut self, s: &GameState) -> &Plan {
         let key = (s.turn(), s.active_side().0);
@@ -97,6 +104,46 @@ impl AiV1 {
             self.plan = Some(self.make_plan(s, key));
         }
         self.plan.as_ref().expect("just made")
+    }
+
+    /// R-AI-01 common currency: expected VP of the objective the side attacks —
+    /// its margin (VP to both holders, NM lost and half gained) × the chance
+    /// to take it, by own and enemy power within 3 hexes. 0 when the side holds.
+    fn objective_vp(&self, s: &GameState, us: SideId) -> f64 {
+        let m = &self.params.moves;
+        if self.aggressiveness(us) < m.attack_from_aggressiveness {
+            return 0.0;
+        }
+        let next = self.hints.sides.get(&us).and_then(|h| {
+            h.sequence
+                .iter()
+                .find(|hex| s.controller(**hex) != Some(us))
+                .copied()
+        });
+        let target = next.or_else(|| {
+            s.objectives()
+                .iter()
+                .filter(|o| s.controller(o.hex) != Some(us))
+                .max_by_key(|o| (o.vp, std::cmp::Reverse(o.hex)))
+                .map(|o| o.hex)
+        });
+        let Some(t) = target else {
+            return 0.0;
+        };
+        let Some(o) = s.objectives().iter().find(|o| o.hex == t) else {
+            return 0.0;
+        };
+        let share = f64::from(s.data().rules.national_morale.objective_taken_share_pct) / 100.0;
+        let margin = 2.0 * f64::from(o.vp) + f64::from(o.nm_value) * (1.0 + share);
+        let near = |own: bool| -> f64 {
+            s.units()
+                .filter(|u| (u.side == us) == own && u.hex.distance(t) <= 3)
+                .map(|u| power(s, u))
+                .sum()
+        };
+        let (a, d) = (near(true), near(false));
+        let p = if a + d > 0.0 { a / (a + d) } else { 0.0 };
+        margin * p
     }
 
     /// R-AI-01 «поиск котлов»: pockets worth an operation, then roles.
@@ -178,14 +225,21 @@ impl AiV1 {
                 0.0
             }
         };
+        // R-AI-01 common currency: the objective the side attacks is worth its
+        // VP margin × the chance to take it; an operation takes a share of it.
+        let objective_vp = self.objective_vp(s, us);
+        let mobile_count = own.iter().filter(|u| is_mobile(u)).count().max(1) as f64;
         // «Охват»: an operation only if every chokepoint gets a unit that can
-        // get there (or already holds it); utility V × Π reach − losses.
+        // get there (or already holds it); utility = expected VP × Π reach −
+        // expected own losses − the objective's share taken away.
         let mut busy: BTreeSet<UnitId> = BTreeSet::new();
         let mut chosen: Vec<(f64, Pocket, Vec<Role>)> = Vec::new();
         for p in pockets {
             let mut taken = busy.clone();
             let mut roles: Vec<Role> = Vec::new();
             let mut reach = 1.0;
+            let mut now = true;
+            let mut used = 0.0;
             let mut losses = 0.0;
             for &c in &p.hexes {
                 if let Some(u) = own.iter().find(|u| u.hex == c) {
@@ -205,11 +259,18 @@ impl AiV1 {
                 };
                 taken.insert(id);
                 reach *= r;
+                now &= r >= w.reach_now;
+                used += 1.0;
                 losses += w.loss_weight * threat(c);
                 roles.push((c, Some(id)));
             }
-            let utility = p.value * reach - losses;
-            if reach > 0.0 && utility > 0.0 {
+            if reach <= 0.0 {
+                continue;
+            }
+            let delay = if now { 0 } else { 1 };
+            let vp = pocket_vp(s, us, enemy, &p.hexes, delay, w).unwrap_or(0.0);
+            let utility = vp * reach - losses - objective_vp * used / mobile_count;
+            if utility >= w.min_vp {
                 busy = taken;
                 chosen.push((utility, p, roles));
                 if chosen.len() >= w.max_operations {

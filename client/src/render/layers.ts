@@ -173,3 +173,54 @@ export function drawTrail(size: number, marks: TrailMark[], colors: number[]): G
   }
   return g;
 }
+
+/** R-AI-01 «Намерения ИИ»: the AI's last plan. */
+export interface AiPlanView {
+  pockets: { hexes: [number, number][]; value: number; cut: number[] }[];
+  envelop: [number, [number, number]][];
+  hold: number[];
+  pin: [number, [number, number]][];
+}
+
+/** Chokepoints (yellow rings with V), arrows from the units sent there,
+ * holders (yellow dot), pinning units (thin lines) and cut-off units (red rings). */
+export function drawIntent(size: number, plan: AiPlanView, units: { id: number; col: number; row: number }[]): Container {
+  const layer = new Container();
+  const g = new Graphics();
+  layer.addChild(g);
+  const at = new Map(units.map((u) => [u.id, center(u.col, u.row, size)] as const));
+  for (const p of plan.pockets) {
+    for (const id of p.cut) {
+      const c = at.get(id);
+      if (c) g.circle(c.x, c.y, size * 0.62).stroke({ width: size * 0.06, color: 0xd2402a, alpha: 0.9 });
+    }
+    for (const [col, row] of p.hexes) {
+      const c = center(col, row, size);
+      g.circle(c.x, c.y, size * 0.7).stroke({ width: size * 0.1, color: 0x1c1a17, alpha: 0.6 });
+      g.circle(c.x, c.y, size * 0.7).stroke({ width: size * 0.06, color: 0xf2c94c });
+      const label = new Text({ text: String(Math.round(p.value)), style: { fontFamily: "sans-serif", fontSize: size * 0.32, fill: 0xf2c94c, stroke: { color: 0x1c1a17, width: size * 0.06 } } });
+      label.anchor.set(0.5);
+      label.position.set(c.x, c.y - size * 0.95);
+      layer.addChild(label);
+    }
+  }
+  for (const [id, [col, row]] of plan.envelop) {
+    const a = at.get(id);
+    if (!a) continue;
+    const b = center(col, row, size);
+    g.moveTo(a.x, a.y).lineTo(b.x, b.y).stroke({ width: size * 0.09, color: 0x1c1a17, alpha: 0.5, cap: "round" });
+    g.moveTo(a.x, a.y).lineTo(b.x, b.y).stroke({ width: size * 0.05, color: 0xf2c94c, cap: "round" });
+    g.circle(b.x, b.y, size * 0.12).fill(0xf2c94c);
+  }
+  for (const [id, [col, row]] of plan.pin) {
+    const a = at.get(id);
+    if (!a) continue;
+    const b = center(col, row, size);
+    g.moveTo(a.x, a.y).lineTo(b.x, b.y).stroke({ width: size * 0.03, color: 0xe8d9b0, alpha: 0.7 });
+  }
+  for (const id of plan.hold) {
+    const a = at.get(id);
+    if (a) g.circle(a.x, a.y - size * 0.5, size * 0.12).fill(0xf2c94c);
+  }
+  return layer;
+}

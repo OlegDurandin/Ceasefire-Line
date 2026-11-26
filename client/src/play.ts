@@ -14,7 +14,7 @@ import { applyFacing, type Facing } from "./facing";
 import { encodeSave } from "./save";
 import { fill, formatEvent, type UnitRef } from "./log";
 import { drawControl } from "./render/control";
-import { drawHqLinks, drawObjectives, drawSupply, drawTrail, drawUmbrellas, drawZoc } from "./render/layers";
+import { drawHqLinks, drawIntent, drawObjectives, drawSupply, drawTrail, drawUmbrellas, drawZoc, type AiPlanView } from "./render/layers";
 import { AI_SPEEDS, aiTiming, storeSetting, type AiSpeed } from "./settings";
 import { focusOf, trailOf, type TrailMark } from "./trail";
 import { PhaseLog } from "./phase-summary";
@@ -444,6 +444,10 @@ export class Play {
     if (this.layers.has("objectives")) this.layerBox.addChild(drawObjectives(this.size, this.state.objectives, this.colors));
     // During the AI's phase its moves so far; otherwise the previous phase (the opponent's).
     if (this.layers.has("trail")) this.layerBox.addChild(drawTrail(this.size, this.aiTurn() ? this.trailNow : this.trailLast, this.colors));
+    if (this.layers.has("intent")) {
+      const plan = JSON.parse(this.game.aiPlan()) as AiPlanView | null;
+      if (plan) this.layerBox.addChild(drawIntent(this.size, plan, this.state.units));
+    }
   }
 
   /** R-UI-04 panels under the tabs: purchases, reinforcements on the way, technologies, reports. */

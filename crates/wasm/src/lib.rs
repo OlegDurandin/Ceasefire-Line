@@ -438,6 +438,27 @@ impl Game {
         serde_json::to_string(&cmd).map_err(|e| JsError::new(&e.to_string()))
     }
 
+    /// R-AI-01 layer «Намерения ИИ»: the AI's last phase plan — pocket
+    /// operations (chokepoints `[col,row]`, V, cut units), units sent to
+    /// chokepoints, units holding them, units pinning. `null` before any plan.
+    #[wasm_bindgen(js_name = aiPlan)]
+    pub fn ai_plan(&self) -> Result<String, JsError> {
+        let Some(p) = self.ai.as_ref().and_then(|a| a.last_plan()) else {
+            return Ok("null".into());
+        };
+        let cell = |h: &ceasefire_core::hex::Hex| axial_to_offset(*h);
+        to_json(&serde_json::json!({
+            "pockets": p.pockets.iter().map(|q| serde_json::json!({
+                "hexes": q.hexes.iter().map(cell).collect::<Vec<_>>(),
+                "value": q.value,
+                "cut": q.cut.iter().map(|id| id.0).collect::<Vec<_>>(),
+            })).collect::<Vec<_>>(),
+            "envelop": p.envelop.iter().map(|(id, h)| (id.0, cell(h))).collect::<Vec<_>>(),
+            "hold": p.hold.iter().map(|id| id.0).collect::<Vec<_>>(),
+            "pin": p.pin.iter().map(|(id, h)| (id.0, cell(h))).collect::<Vec<_>>(),
+        }))
+    }
+
     /// R-AI-02: the AI's command budget per phase.
     #[wasm_bindgen(js_name = aiMaxCommands)]
     pub fn ai_max_commands(&self) -> u32 {

@@ -33,7 +33,7 @@
   },
   "pockets": {
     "_comment": "R-AI-01 «поиск котлов» (step 7): chokepoint candidates K, pincers, lookahead phases, supply bands.",
-    "enabled": false,
+    "enabled": true,
     "candidates": 10,
     "max_pincers": 2,
     "lookahead_phases": 2,
@@ -43,10 +43,13 @@
     "min_value": 30.0,
     "reach_now": 1.0,
     "reach_two_phases": 0.6,
-    "loss_weight": 0.5,
+    "loss_weight": 0.02,
     "pin_radius": 4,
     "dependency_weight": 1.0,
     "finish_bonus": 1.0,
-    "min_own_supply": 2
+    "min_own_supply": 2,
+    "min_vp": 0.5,
+    "finish_steps_per_phase": 1.0,
+    "horizon_phases": 10
   }
 }

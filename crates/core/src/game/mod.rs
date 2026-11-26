@@ -769,6 +769,11 @@ impl GameState {
         self.sources.get(&hex).copied()
     }
 
+    /// Sides in phase order (R-TURN-01).
+    pub fn sides(&self) -> &[SideState] {
+        &self.sides
+    }
+
     pub fn side(&self, side: SideId) -> Option<&SideState> {
         self.sides.iter().find(|s| s.id == side)
     }
