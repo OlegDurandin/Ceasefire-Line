@@ -58,6 +58,26 @@ pub struct SamRules {
     pub next_sam_mult: f64,
 }
 
+/// R-AIR-01, R-AIR-02: sorties, interception, strikes on airfields.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct AirRules {
+    /// Readiness lost per sortie (strike, escort, interception).
+    pub sortie_readiness_loss_pct: u8,
+    /// Readiness regained after an own phase without sorties.
+    pub rest_readiness_gain_pct: u8,
+    /// Readiness the target of a ground strike loses.
+    pub ground_strike_readiness_loss_pct: u8,
+    /// Air defense of aircraft parked at an airfield.
+    pub parked_air_defense: f64,
+    /// Readiness every aircraft in a struck airfield's hex loses.
+    pub airfield_strike_readiness_loss_pct: u8,
+    /// Fighters intercept or escort only at or above this readiness.
+    pub intercept_min_readiness_pct: u8,
+    /// A fighter intercepts sorties whose target is within this range of its base.
+    pub intercept_radius_km: f64,
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct SupplyRules {
@@ -233,6 +253,7 @@ pub struct Rules {
     pub readiness: ReadinessRules,
     /// R-AIR-03: SAM fire.
     pub sam: SamRules,
+    pub air: AirRules,
     pub supply: SupplyRules,
     pub scale: ScaleRules,
     pub movement: MovementRules,

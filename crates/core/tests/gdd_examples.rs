@@ -7,7 +7,10 @@ mod common;
 
 use std::collections::BTreeMap;
 
-use ceasefire_core::air::forecast_barrage;
+use ceasefire_core::air::{
+    air_fire_input, forecast_barrage, parked_strike_input, strike_input, strike_return_input,
+};
+use ceasefire_core::combat::{fire_params, forecast_fire};
 use ceasefire_core::combat::{forecast_ground, GroundAttack};
 use ceasefire_core::hex::Hex;
 use ceasefire_core::map::{HexCell, HexMap};
@@ -176,4 +179,156 @@ fn r_air_03_sam_umbrella_example() {
     let two = forecast_barrage(&d.rules, &[sam.clone(), sam], &aircraft, 0.0);
     assert_close(two.shots[1].params.p, 0.54 * 0.8, EPS, "p second SAM");
     assert_close(two.losses.expected, 1.94, TOL, "E[losses], two SAMs");
+}
+
+/// R-AIR-02, example А: strike level 2 on entrenched infantry; terrain does
+/// not count, entrenchment does.
+#[test]
+fn r_air_02_a_strike_on_entrenched_infantry() {
+    let d = data();
+    let c = &d.rules.combat;
+    let air = TechLevels::default().with(TechBranch::Aviation, 2);
+    let strike = unit(&d, "strike", &air, 10, 90, 0, 0);
+    let inf = unit(&d, "infantry", &TechLevels::default(), 8, 80, 0, 2);
+    assert_close(
+        strike.stats.attack.soft,
+        6.0,
+        EPS,
+        "strike soft attack, level 2",
+    );
+    let hit = fire_params(c, &strike_input(&strike, &inf));
+    assert_eq!(hit.n, 9);
+    assert_close(hit.d, 3.9, EPS, "D = 3 × 1,3");
+    assert_close(hit.p, 0.426, EPS, "p");
+    assert_close(
+        forecast_fire(c, &hit, inf.strength).expected,
+        3.83,
+        TOL,
+        "E[infantry losses]",
+    );
+    let back = fire_params(c, &strike_return_input(&inf, &strike));
+    assert_eq!(back.n, 6);
+    assert_close(back.a, 1.0, EPS, "A = infantry air attack");
+    assert_close(back.d, 5.0, EPS, "D = strike air defense, level 2");
+    assert_close(back.p, 0.06, EPS, "p");
+    assert_close(
+        forecast_fire(c, &back, strike.strength).expected,
+        0.36,
+        TOL,
+        "E[strike losses]",
+    );
+}
+
+/// R-AIR-02, example Б: a MiG-21 (level 1) meets an F-4 escort (level 2, 1★);
+/// the escort takes the interceptor on, the strike group loses nothing.
+#[test]
+fn r_air_02_b_interceptor_against_escort() {
+    let d = data();
+    let c = &d.rules.combat;
+    let mig = unit(
+        &d,
+        "fighter",
+        &TechLevels::default().with(TechBranch::Aviation, 1),
+        8,
+        80,
+        0,
+        0,
+    );
+    let f4 = unit(
+        &d,
+        "fighter",
+        &TechLevels::default().with(TechBranch::Aviation, 2),
+        10,
+        90,
+        1,
+        0,
+    );
+    assert_close(mig.stats.attack.air, 6.0, EPS, "MiG air attack");
+    assert_close(f4.stats.defense.air, 6.0, EPS, "F-4 air defense");
+    let escort = fire_params(c, &air_fire_input(&f4, &mig));
+    assert_close(escort.p, 0.462, EPS, "p escort");
+    assert_close(
+        forecast_fire(c, &escort, mig.strength).expected,
+        4.16,
+        TOL,
+        "E[MiG losses]",
+    );
+    let interceptor = fire_params(c, &air_fire_input(&mig, &f4));
+    assert_close(interceptor.p, 0.264, EPS, "p MiG");
+    assert_close(
+        forecast_fire(c, &interceptor, f4.strength).expected,
+        1.58,
+        TOL,
+        "E[escort losses]",
+    );
+}
+
+/// R-AIR-02, example В: the same MiG against a strike group without escort.
+#[test]
+fn r_air_02_c_interceptor_against_strike_group() {
+    let d = data();
+    let c = &d.rules.combat;
+    let mig = unit(
+        &d,
+        "fighter",
+        &TechLevels::default().with(TechBranch::Aviation, 1),
+        8,
+        80,
+        0,
+        0,
+    );
+    let strike = unit(
+        &d,
+        "strike",
+        &TechLevels::default().with(TechBranch::Aviation, 2),
+        10,
+        90,
+        0,
+        0,
+    );
+    let at_strike = fire_params(c, &air_fire_input(&mig, &strike));
+    assert_close(at_strike.p, 0.36, EPS, "p MiG");
+    assert_close(
+        forecast_fire(c, &at_strike, strike.strength).expected,
+        2.16,
+        TOL,
+        "E[strike losses]",
+    );
+    let back = fire_params(c, &air_fire_input(&strike, &mig));
+    assert_close(back.p, 0.18, EPS, "p strike group");
+    assert_close(
+        forecast_fire(c, &back, mig.strength).expected,
+        1.62,
+        TOL,
+        "E[MiG losses]",
+    );
+}
+
+/// R-AIR-02, example Г: a strike on an airfield with MiGs on the ground.
+#[test]
+fn r_air_02_d_strike_on_parked_aircraft() {
+    let d = data();
+    let c = &d.rules.combat;
+    let strike = unit(
+        &d,
+        "strike",
+        &TechLevels::default().with(TechBranch::Aviation, 2),
+        10,
+        90,
+        0,
+        0,
+    );
+    let hit = fire_params(
+        c,
+        &parked_strike_input(&strike, d.rules.air.parked_air_defense),
+    );
+    assert_close(hit.d, 2.0, EPS, "D = parked_air_defense");
+    assert_close(hit.p, 0.54, EPS, "p");
+    assert_close(
+        forecast_fire(c, &hit, 10).expected,
+        4.86,
+        TOL,
+        "E[losses on the ground]",
+    );
+    assert_eq!(d.rules.air.airfield_strike_readiness_loss_pct, 30);
 }

@@ -95,3 +95,78 @@ pub fn resolve_barrage(
         .sum();
     u8::try_from(hits).unwrap_or(u8::MAX).min(aircraft.strength)
 }
+
+/// R-AIR-02: fire of an aircraft at a ground unit. Terrain does not count,
+/// entrenchment and experience do: D = AirDef × (1 + 0,15·Entr) × (1 + 0,1·Exp).
+pub fn strike_input(striker: &Combatant<'_>, target: &Combatant<'_>) -> FireInput {
+    FireInput {
+        strength: striker.strength,
+        readiness_pct: striker.readiness_pct,
+        shot_fraction: 1.0,
+        attack: striker.stats.attack.against(target.class.target_class),
+        shooter_exp: striker.exp_stars,
+        attack_mult: 1.0,
+        defense: target.stats.defense.air,
+        target_exp: target.exp_stars,
+        terrain_mult: 1.0,
+        entrenchment: target.entrenchment,
+        defense_mult: 1.0,
+        p_shift: 0.0,
+    }
+}
+
+/// R-AIR-02: the target answers with its own air attack only.
+pub fn strike_return_input(target: &Combatant<'_>, striker: &Combatant<'_>) -> FireInput {
+    FireInput {
+        strength: target.strength,
+        readiness_pct: target.readiness_pct,
+        shot_fraction: 1.0,
+        attack: target.stats.attack.air,
+        shooter_exp: target.exp_stars,
+        attack_mult: 1.0,
+        defense: striker.stats.defense.air,
+        target_exp: striker.exp_stars,
+        terrain_mult: 1.0,
+        entrenchment: 0,
+        defense_mult: 1.0,
+        p_shift: 0.0,
+    }
+}
+
+/// R-AIR-02: one aircraft's fire at another in an air battle (interception,
+/// escort); both fire at once, like a ground combat.
+pub fn air_fire_input(shooter: &Combatant<'_>, target: &Combatant<'_>) -> FireInput {
+    FireInput {
+        strength: shooter.strength,
+        readiness_pct: shooter.readiness_pct,
+        shot_fraction: 1.0,
+        attack: shooter.stats.attack.air,
+        shooter_exp: shooter.exp_stars,
+        attack_mult: 1.0,
+        defense: target.stats.defense.air,
+        target_exp: target.exp_stars,
+        terrain_mult: 1.0,
+        entrenchment: 0,
+        defense_mult: 1.0,
+        p_shift: 0.0,
+    }
+}
+
+/// R-AIR-02: a strike on aircraft parked at an airfield; they defend with
+/// `parked_air_defense` and are hit with the striker's soft attack.
+pub fn parked_strike_input(striker: &Combatant<'_>, parked_air_defense: f64) -> FireInput {
+    FireInput {
+        strength: striker.strength,
+        readiness_pct: striker.readiness_pct,
+        shot_fraction: 1.0,
+        attack: striker.stats.attack.soft,
+        shooter_exp: striker.exp_stars,
+        attack_mult: 1.0,
+        defense: parked_air_defense,
+        target_exp: 0,
+        terrain_mult: 1.0,
+        entrenchment: 0,
+        defense_mult: 1.0,
+        p_shift: 0.0,
+    }
+}
