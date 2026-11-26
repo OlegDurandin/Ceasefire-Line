@@ -104,12 +104,11 @@ pub struct SupplyRules {
     pub hq_high_rating: u8,
     /// R-SUP-06 (variant `hq_supply_node`): an HQ with its own supply S at
     /// least this works as a source of `min(hq_node_max, S + hq_node_bonus)`
-    /// within `hq_bonus_radius_km`; below `hq_node_full_strength` the value is
-    /// × strength / `hq_node_strength_divisor` (floor).
+    /// within `hq_bonus_radius_km`, × strength / `hq_node_strength_divisor`
+    /// (floor) at any strength.
     pub hq_node_min_supply: u8,
     pub hq_node_bonus: u8,
     pub hq_node_max: u8,
-    pub hq_node_full_strength: u8,
     pub hq_node_strength_divisor: u8,
     /// R-SUP-03: supply at or below this gives −AP and no entrenchment growth.
     pub low_supply_max: u8,
