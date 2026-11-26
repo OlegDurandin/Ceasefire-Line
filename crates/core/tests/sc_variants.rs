@@ -401,3 +401,87 @@ fn sim_variance_sc_stays_next_to_the_expectation() {
         "the game draws binomially"
     );
 }
+
+/// R-ECO-02 / R-MOVE-05: with `reinforce_locks` a reinforced unit is not
+/// transferred this phase; without the flag it is.
+#[test]
+fn r_eco_02_reinforced_unit_is_not_transferred() {
+    use ceasefire_core::{RuleError, TransferError};
+    let transfer_after_reinforce = |variant: Option<&str>| {
+        let mut worn = unit("infantry", A, Hex::new(0, 0));
+        worn.strength = 6;
+        let mut s = road_board(vec![worn], variant);
+        s.apply(Command::Reinforce {
+            unit: UnitId(1),
+            steps: 1,
+            elite: false,
+        })
+        .unwrap();
+        s.apply(Command::Transfer {
+            unit: UnitId(1),
+            to: Hex::new(6, 0),
+        })
+    };
+    assert_eq!(
+        transfer_after_reinforce(Some("reinforce_locks")),
+        Err(RuleError::IllegalTransfer {
+            unit: 1,
+            reason: TransferError::Reinforced
+        })
+    );
+    assert!(transfer_after_reinforce(None).is_ok());
+}
+
+/// R-COMBAT-07: every strike of the phase is prepared while the unit has not
+/// moved (the tanks' second strike too); an advance after combat ends it.
+#[test]
+fn r_combat_07_bonus_per_strike_until_the_unit_moves() {
+    use ceasefire_core::game::Event;
+    // Tanks at (2,0) against two weak B units at (3,0) and (3,-1).
+    let game = || {
+        let (map, mut control) = board();
+        control.insert(Hex::new(3, -1), A);
+        let mut first = unit("infantry", B, Hex::new(3, 0));
+        first.strength = 2;
+        let second = unit("infantry", B, Hex::new(2, 1));
+        let units = vec![first, second, unit("tank", A, Hex::new(2, 0))];
+        start(with("prepared_attack", setup(map, control, units)))
+    };
+    const TANKS: UnitId = UnitId(3);
+    let attack = |s: &mut GameState, target: u32| {
+        let bonus = s
+            .attack_modifiers(TANKS, UnitId(target))
+            .unwrap()
+            .prepared_pct;
+        let events = s
+            .apply(Command::Attack {
+                unit: TANKS,
+                target: UnitId(target),
+            })
+            .unwrap();
+        (bonus, events)
+    };
+    // Two strikes without moving: the bonus on both.
+    let mut s = game();
+    let (b1, _) = attack(&mut s, 2);
+    let (b2, _) = attack(&mut s, 2);
+    assert_eq!((b1, b2), (10, 10));
+    // Strike → advance into the vacated hex → strike: the bonus on the first only.
+    let mut s = game();
+    let (b1, events) = attack(&mut s, 1);
+    assert_eq!(b1, 10);
+    assert!(
+        events
+            .iter()
+            .any(|e| matches!(e, Event::Retreated { .. } | Event::UnitDestroyed { .. })),
+        "strength 2 retreats or dies: {events:?}"
+    );
+    s.apply(Command::Advance { unit: TANKS }).unwrap();
+    assert!(s
+        .unit(UnitId(2))
+        .unwrap()
+        .hex
+        .is_adjacent(s.unit(TANKS).unwrap().hex));
+    let (b2, _) = attack(&mut s, 2);
+    assert_eq!(b2, 0, "advance counts as movement");
+}

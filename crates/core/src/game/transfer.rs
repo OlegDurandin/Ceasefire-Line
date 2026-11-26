@@ -25,6 +25,10 @@ impl GameState {
         if unit.acted {
             return Err(refuse(id, TransferError::Acted));
         }
+        // R-ECO-02 variant: a reinforced unit is not transferred this phase either.
+        if self.variants.reinforce_locks && unit.reinforced_steps > 0 {
+            return Err(refuse(id, TransferError::Reinforced));
+        }
         let occupancy = self.occupancy();
         let zoc = enemy_zoc(&self.map, &occupancy, unit.side);
         if zoc.contains(&unit.hex) {

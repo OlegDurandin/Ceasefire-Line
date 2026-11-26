@@ -287,6 +287,7 @@
   "refusal.transfer.StartsInZoc": "Юнит в ZOC противника",
   "refusal.transfer.NoRoute": "Нет пути по дорогам через свои гексы",
   "refusal.transfer.NotEnoughMpp": "Не хватает MPP",
+  "refusal.transfer.Reinforced": "Юнит пополнен в этой фазе",
   "refusal.bridge.NotEngineer": "Мосты наводят только инженеры",
   "refusal.bridge.Acted": "Инженеры уже действовали в этой фазе",
   "refusal.bridge.NoCanal": "Рядом нет канала без моста",

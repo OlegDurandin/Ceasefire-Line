@@ -75,6 +75,8 @@ pub enum TransferError {
     /// No road route through own hexes outside enemy ZOC to a free destination.
     NoRoute,
     NotEnoughMpp,
+    /// R-ECO-02 variant `reinforce_locks`: reinforced this phase.
+    Reinforced,
 }
 
 /// Why a reinforcement or purchase is rejected (R-ECO-02, R-ECO-03, R-SUP-03).
