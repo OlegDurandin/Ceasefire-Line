@@ -11,7 +11,7 @@
     {
       "id": 0,
       "key": "isr",
-      "color": "#3d6fa8",
+      "color": "#9fb6cc",
       "facing": "right",
       "tech": {},
       "national_morale_pct": 85,
@@ -23,7 +23,7 @@
     {
       "id": 1,
       "key": "syr",
-      "color": "#8c3f73",
+      "color": "#b3a46c",
       "facing": "left",
       "tech": {},
       "national_morale_pct": 70,

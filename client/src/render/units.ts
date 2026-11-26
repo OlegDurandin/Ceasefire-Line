@@ -1,11 +1,11 @@
-// Units (GDD R-UI-03). Default: a painted miniature on a base drawn in code —
-// the base rim in the side's colour (scenario.json `sides[].color`) with light
-// ground on top, the model standing on its contact point (manifest anchor)
-// and rising above the base, a shadow to the south-east, the strength plate
-// on the front edge with experience stars above it, a small pennant; the
-// token lifts when hovered. Fallback (no miniature, or `?units=medallion`):
-// the medallion — picture in a ring, strength plate below. Units without a
-// picture get a plain frame until APP-6 symbols (stage 6).
+// Units (GDD R-UI-03), after Strategic Command with own art. Default: a
+// painted miniature standing on a disk filled with the side's colour
+// (scenario.json `sides[].color`); strength in white at the bottom of the disk,
+// a tiny pennant, a shadow to the south-east; the model faces the enemy or
+// its last move (`facing`); selection and target rings are drawn under the
+// unit by the overlays (see DISK). Fallback (no miniature, or
+// `?units=medallion`): the medallion. Experience stars are shown only in the
+// attack window's cards.
 
 import { Container, Graphics, Sprite, Text, type Texture } from "pixi.js";
 
@@ -35,19 +35,12 @@ export interface Token {
 /** Ring colour when a scenario gives none for the side. */
 const FALLBACK_SIDE = 0xb08d57;
 const BACKING = 0xd9cfb8;
-const GROUND = 0xcdbb94;
 const DARK = 0x1c1a17;
 const PLATE_TEXT = 0xf4efe2;
 const STAR = 0xe8c25a;
 const DIM_ALPHA = 0.55;
-/** Base shape (in hex radii): half-width, height of the ellipse, thickness. */
-const BASE_RX = 0.68;
-const BASE_RY = 0.32;
-const BASE_H = 0.13;
 /** The model's width on screen, in hex radii (pictures are square). */
-const MODEL_SIZE = 1.85;
-/** Where the base sits below the hex centre, in hex radii. */
-const BASE_DROP = 0.28;
+const MODEL_SIZE = 1.6;
 /** Hover lift, in hex radii. */
 const LIFT = 0.1;
 
@@ -116,17 +109,6 @@ function statusIcons(token: Container, u: Token, y: number, size: number) {
   });
 }
 
-function stars(token: Container, n: number, top: number, size: number) {
-  if (n <= 0) return;
-  const r = size * 0.1;
-  const gap = r * 2.1;
-  const y = top - r * 1.05;
-  const g = new Graphics();
-  for (let i = 0; i < n; i++) g.star((i - (n - 1) / 2) * gap, y, 5, r, r * 0.45);
-  g.fill(STAR).stroke({ width: size * 0.02, color: DARK });
-  token.addChild(g);
-}
-
 function pennant(x: number, bottom: number, top: number, size: number, color: number): Graphics {
   return new Graphics()
     .moveTo(x, bottom)
@@ -137,46 +119,77 @@ function pennant(x: number, bottom: number, top: number, size: number, color: nu
     .stroke({ width: size * 0.025, color: DARK });
 }
 
+/** R-UI-03 disk geometry in hex radii: half-axes, rim height, drop below the hex centre. */
+export const DISK = { rx: 0.62, ry: 0.3, h: 0.12, drop: 0.3 };
+
+function mix(a: number, b: number, k: number): number {
+  const ch = (c: number, s: number) => (c >> s) & 0xff;
+  const m = (s: number) => Math.round(ch(a, s) * (1 - k) + ch(b, s) * k);
+  return (m(16) << 16) | (m(8) << 8) | m(0);
+}
+
+/**
+ * R-UI-03, after Strategic Command (own art): a disk filled with the side's
+ * colour with a light bevel, the miniature standing on it and rising above
+ * its top edge, a shadow to the south-east, the strength in white at the
+ * bottom of the disk, a tiny pennant on the left. A unit with no AP and no
+ * strikes left gets a muted disk. Stars only in the attack window's card.
+ */
 function drawMiniature(u: Token, tex: Texture | null, size: number, color: number): Container {
   const token = new Container();
-  const rx = BASE_RX * size;
-  const ry = BASE_RY * size;
-  const h = BASE_H * size;
-  // Shadow to the south-east (light from the north-west, R-UI-06); it stays put when the token lifts.
-  token.addChild(new Graphics().ellipse(size * 0.14, h + size * 0.1, rx * 1.05, ry * 1.1).fill({ color: 0x000000, alpha: 0.38 }));
+  const rx = DISK.rx * size;
+  const ry = DISK.ry * size;
+  const h = DISK.h * size;
+  const base = u.dim ? mix(shade(color, 0.8), 0x6e6c66, 0.55) : color;
+  token.addChild(new Graphics().ellipse(size * 0.13, h + size * 0.08, rx * 1.04, ry * 1.08).fill({ color: 0x000000, alpha: 0.4 }));
   const body = new Container();
   token.addChild(body);
-  // Base: dark side band, rim in the side's colour, light ground on top.
   body.addChild(
     new Graphics()
+      // Rim (the disk's thickness), then the top with a bevel: a lighter
+      // upper-left edge and the face inside it.
       .ellipse(0, h, rx, ry)
-      .fill(shade(color, 0.6))
+      .fill(shade(base, 0.55))
       .rect(-rx, 0, rx * 2, h)
-      .fill(shade(color, 0.75))
+      .fill(shade(base, 0.7))
       .ellipse(0, 0, rx, ry)
-      .fill(color)
-      .ellipse(0, 0, rx * 0.86, ry * 0.8)
-      .fill(GROUND)
+      .fill(mix(base, 0xffffff, 0.28))
+      .ellipse(rx * 0.02, ry * 0.06, rx * 0.9, ry * 0.82)
+      .fill(base)
       .ellipse(0, h, rx, ry)
-      .stroke({ width: size * 0.025, color: DARK, alpha: 0.6 }),
+      .stroke({ width: size * 0.022, color: DARK, alpha: 0.7 }),
   );
-  body.addChild(pennant(rx * 0.78, -ry * 0.2, -size * 1.05, size, color));
   if (tex) {
     const model = new Sprite(tex);
     model.anchor.set(u.anchor[0], u.anchor[1]);
     model.width = MODEL_SIZE * size;
     model.height = MODEL_SIZE * size;
     if (u.facing === "right") model.scale.x = -Math.abs(model.scale.x);
-    // Contact point a little behind the base's centre, so the model stands on the ground.
-    model.position.set(0, ry * 0.25);
+    model.position.set(0, -ry * 0.05);
     body.addChild(model);
   } else {
-    body.addChild(new Graphics().rect(-rx * 0.6, -size * 0.7, rx * 1.2, size * 0.6).stroke({ width: 2, color: DARK }));
+    body.addChild(new Graphics().rect(-rx * 0.5, -size * 0.6, rx, size * 0.5).stroke({ width: 2, color: DARK }));
   }
-  const top = plate(body, u.label, ry + h * 0.6, size, color);
-  stars(body, u.stars, top, size);
-  statusIcons(body, u, ry + h * 0.6, size);
-  // R-UI-03: lift on hover.
+  // Tiny pennant on the left.
+  const px = -rx * 0.82;
+  body.addChild(
+    new Graphics()
+      .moveTo(px, ry * 0.1)
+      .lineTo(px, -size * 0.42)
+      .stroke({ width: size * 0.03, color: DARK })
+      .poly([px, -size * 0.42, px - size * 0.22, -size * 0.36, px, -size * 0.3])
+      .fill(color)
+      .stroke({ width: size * 0.018, color: DARK }),
+  );
+  // Strength in white at the bottom of the disk.
+  const text = new Text({
+    text: u.label,
+    style: { fill: 0xffffff, fontSize: size * 0.4, fontWeight: "800", fontFamily: "Arial, sans-serif", stroke: { color: DARK, width: size * 0.08 } },
+  });
+  text.anchor.set(0.5);
+  text.position.set(0, ry * 0.62);
+  body.addChild(text);
+  statusIcons(body, u, ry * 0.62, size);
   body.eventMode = "static";
   body.cursor = "pointer";
   body.on("pointerover", () => (body.y = -LIFT * size));
@@ -210,8 +223,7 @@ function drawMedallion(u: Token, tex: Texture | null, size: number, color: numbe
     token.addChild(new Graphics().rect(-radius * 0.6, -radius * 0.4, radius * 1.2, radius * 0.8).stroke({ width: 2, color: DARK }));
   }
   token.addChild(new Graphics().circle(0, 0, radius).stroke({ width: ring, color }));
-  const top = plate(token, u.label, radius * 0.98, size, color);
-  stars(token, u.stars, top, size);
+  plate(token, u.label, radius * 0.98, size, color);
   statusIcons(token, u, radius * 0.98, size);
   return token;
 }
@@ -225,8 +237,8 @@ export function drawUnits(tokens: Token[], textures: Map<number, Texture | null>
     const tex = textures.get(u.key) ?? null;
     const mini = u.style === "miniature";
     const token = mini ? drawMiniature(u, tex, size, color) : drawMedallion(u, tex, size, color);
-    token.position.set(c.x, c.y + (mini ? BASE_DROP * size : 0));
-    token.alpha = u.dim ? DIM_ALPHA : 1;
+    token.position.set(c.x, c.y + (mini ? DISK.drop * size : 0));
+    token.alpha = u.dim && !mini ? DIM_ALPHA : 1;
     layer.addChild(token);
   }
   return layer;
