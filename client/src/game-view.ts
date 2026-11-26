@@ -31,6 +31,8 @@ export interface LiveUnit {
   attacks_made: number;
   attacks_received: number;
   crossing_penalty_pct: number;
+  /** R-EVT-01: readiness penalty from a scenario event, until the next own phase. */
+  event_penalty_pct: number;
   terrain: string;
   /** Supply of the unit's side in its hex now; 0 = encircled. */
   hex_supply: number;

@@ -142,6 +142,7 @@ impl GameState {
             unit.attacks_made = 0;
             unit.attacks_received = 0;
             unit.crossing_penalty_pct = 0;
+            unit.event_penalty_pct = 0;
             unit.base_readiness_pct = readiness_pct(
                 &rules.readiness,
                 unit.supply,

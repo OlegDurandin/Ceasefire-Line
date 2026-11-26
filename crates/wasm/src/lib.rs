@@ -231,6 +231,7 @@ struct LiveUnitView {
     attacks_made: u32,
     attacks_received: u32,
     crossing_penalty_pct: u8,
+    event_penalty_pct: u8,
     terrain: String,
     /// R-SUP-02 now in the unit's hex for its side; 0 = encircled (R-NM-01).
     hex_supply: u8,
@@ -458,6 +459,7 @@ impl Game {
                         attacks_made: u.attacks_made,
                         attacks_received: u.attacks_received,
                         crossing_penalty_pct: u.crossing_penalty_pct,
+                        event_penalty_pct: u.event_penalty_pct,
                         terrain: s
                             .map()
                             .cell(u.hex)

@@ -92,6 +92,7 @@ export interface ReadinessUnit {
   attacks_made: number;
   attacks_received: number;
   crossing_penalty_pct: number;
+  event_penalty_pct: number;
 }
 
 /** R-UNIT-01, R-HQ-02: how the unit's readiness came about. */
@@ -107,6 +108,7 @@ export function readinessTip(u: ReadinessUnit, rules: Rules, ru: Locale): string
   const fatigue = u.attacks_made * r.fatigue_per_attack_pct + u.attacks_received * r.fatigue_per_attacked_pct;
   if (fatigue) lines.push(`${t("ui.fatigue")}: −${fatigue} ${t("ui.pp")}`);
   if (u.crossing_penalty_pct) lines.push(`${t("ui.crossing")}: −${u.crossing_penalty_pct} ${t("ui.pp")}`);
+  if (u.event_penalty_pct) lines.push(`${t("ui.event_penalty")}: −${u.event_penalty_pct} ${t("ui.pp")}`);
   lines.push(`${t("ui.now")}: ${u.readiness_pct}%`);
   return lines.join("\n");
 }

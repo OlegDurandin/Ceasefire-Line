@@ -41,7 +41,7 @@ describe("explanations (R-UI-04)", () => {
 
   it("R-UNIT-01 example: supply 8, morale 85%, 1 star → 80%", () => {
     const tip = readinessTip(
-      { readiness_pct: 75, base_readiness_pct: 80, readiness_basis: { supply: 8, morale_pct: 85, exp_stars: 1, hq_pct: 0 }, attacks_made: 1, attacks_received: 0, crossing_penalty_pct: 0 },
+      { readiness_pct: 75, base_readiness_pct: 80, readiness_basis: { supply: 8, morale_pct: 85, exp_stars: 1, hq_pct: 0 }, attacks_made: 1, attacks_received: 0, crossing_penalty_pct: 0, event_penalty_pct: 0 },
       rules,
       ru,
     );

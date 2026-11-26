@@ -100,6 +100,8 @@ pub struct Unit {
     pub attacked_by: Vec<UnitId>,
     /// R-MOVE-02: boat crossing penalty, until the next own phase.
     pub crossing_penalty_pct: u8,
+    /// R-EVT-01: readiness penalty from a scenario event, until the next own phase.
+    pub event_penalty_pct: u8,
 }
 
 impl Unit {
@@ -138,6 +140,7 @@ impl Unit {
             hq_lost: false,
             attacked_by: Vec::new(),
             crossing_penalty_pct: 0,
+            event_penalty_pct: 0,
         }
     }
 
@@ -148,7 +151,7 @@ impl Unit {
     /// R-UNIT-01: readiness including fatigue.
     pub fn readiness_pct(&self, rules: &ReadinessRules) -> u8 {
         let fatigue = fatigue_pct(rules, self.attacks_made, self.attacks_received);
-        let crossing = i32::from(self.crossing_penalty_pct);
+        let crossing = i32::from(self.crossing_penalty_pct) + i32::from(self.event_penalty_pct);
         (i32::from(self.base_readiness_pct) + fatigue - crossing).clamp(0, 100) as u8
     }
 

@@ -222,6 +222,7 @@ fn r_evt_01_any_of_trigger_morale_and_entrenchment_effects() {
                 side: B,
                 change: -2,
             },
+            Effect::UnitsReadinessPenalty { side: B, pct: 15 },
         ],
     };
     let never = ScenarioEvent {
@@ -278,4 +279,14 @@ fn r_evt_01_any_of_trigger_morale_and_entrenchment_effects() {
     );
     let own = s.unit_at(Hex::new(0, 0)).unwrap();
     assert!(own.morale_pct >= own_before, "the other side is untouched");
+    // Readiness −15 points at once (like fatigue), gone at the start of B's next phase.
+    let rules = common::data().rules.readiness.clone();
+    let dug_in_now = s.unit_at(Hex::new(4, 0)).unwrap();
+    assert_eq!(
+        i32::from(dug_in_now.readiness_pct(&rules)),
+        i32::from(before.readiness_pct(&rules)) - 15
+    );
+    assert!(events.contains(&Event::UnitsReadinessPenalty { side: B, pct: 15 }));
+    end_phase(&mut s); // B's phase of turn 2
+    assert_eq!(s.unit_at(Hex::new(4, 0)).unwrap().event_penalty_pct, 0);
 }

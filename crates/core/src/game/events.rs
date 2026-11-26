@@ -63,6 +63,12 @@ pub enum Effect {
         side: SideId,
         change: i32,
     },
+    /// Readiness of every ground unit of `side` drops by `pct` points until
+    /// the start of that side's next phase (like fatigue).
+    UnitsReadinessPenalty {
+        side: SideId,
+        pct: u8,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -183,6 +189,15 @@ impl GameState {
                 events.push(Event::UnitsEntrenchmentChanged {
                     side: *side,
                     change: *change,
+                });
+            }
+            Effect::UnitsReadinessPenalty { side, pct } => {
+                for unit in self.ground_units_mut(*side)? {
+                    unit.event_penalty_pct = unit.event_penalty_pct.saturating_add(*pct).min(100);
+                }
+                events.push(Event::UnitsReadinessPenalty {
+                    side: *side,
+                    pct: *pct,
                 });
             }
         }

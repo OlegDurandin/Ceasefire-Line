@@ -314,6 +314,11 @@ pub enum Event {
         side: SideId,
         change: i32,
     },
+    /// R-EVT-01: readiness of a side's ground units down `pct` points until their next phase.
+    UnitsReadinessPenalty {
+        side: SideId,
+        pct: u8,
+    },
     /// R-TECH-02.
     TechBoostBought {
         id: String,

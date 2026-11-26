@@ -356,6 +356,7 @@ enum EffectFile {
     Message { key: String },
     UnitsMorale { side: u8, change: i32 },
     UnitsEntrenchment { side: u8, change: i32 },
+    UnitsReadinessPenalty { side: u8, pct: u8 },
 }
 
 impl From<EffectFile> for Effect {
@@ -382,6 +383,10 @@ impl From<EffectFile> for Effect {
             EffectFile::UnitsEntrenchment { side, change } => Effect::UnitsEntrenchment {
                 side: SideId(side),
                 change,
+            },
+            EffectFile::UnitsReadinessPenalty { side, pct } => Effect::UnitsReadinessPenalty {
+                side: SideId(side),
+                pct,
             },
         }
     }
@@ -899,7 +904,8 @@ fn validate_events(
                 Effect::Mpp { side, .. }
                 | Effect::Nm { side, .. }
                 | Effect::UnitsMorale { side, .. }
-                | Effect::UnitsEntrenchment { side, .. } => side_refs.push(*side),
+                | Effect::UnitsEntrenchment { side, .. }
+                | Effect::UnitsReadinessPenalty { side, .. } => side_refs.push(*side),
                 _ => {}
             }
         }

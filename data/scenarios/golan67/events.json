@@ -35,6 +35,7 @@
       "effects": [
         { "kind": "units_morale", "side": 1, "change": -20 },
         { "kind": "units_entrenchment", "side": 1, "change": -2 },
+        { "kind": "units_readiness_penalty", "side": 1, "pct": 15 },
         { "kind": "message", "key": "event.golan67.withdrawal_order" }
       ]
     },
