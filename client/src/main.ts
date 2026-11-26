@@ -10,6 +10,7 @@ import { hexCenter, hexCorners, offsetToAxial } from "./hex";
 import { hillshadePlacement, type HillshadeMeta } from "./hillshade";
 import type { Rules } from "./explain";
 import type { Facing } from "./facing";
+import { parseFlag } from "./render/token-geom";
 import { Play } from "./play";
 import { drawControl } from "./render/control";
 import { drawMap, setGridActive } from "./render/map";
@@ -184,7 +185,18 @@ async function main() {
         tex.set(u.index, ref ? (unitTextures.get(ref.url) ?? null) : null);
         tokens.push({ key: u.index, side: u.side, col: u.col, row: u.row, label: u.hq_rating !== null ? `★${u.hq_rating}` : String(u.strength), stars: expStars(u.exp), dim: false, style: ref?.style ?? "medallion", anchor: ref?.anchor ?? [0.5, 0.5], facing: sideFacing[u.side] ?? "left" });
       }
-      world.addChild(drawUnits(tokens, tex, HEX_SIZE, colors));
+      world.addChild(
+        drawUnits(
+          tokens,
+          tex,
+          HEX_SIZE,
+          colors,
+          scenarioSides.reduce<ReturnType<typeof parseFlag>[]>((acc, x) => {
+            acc[x.id] = parseFlag((x as { flag?: unknown }).flag);
+            return acc;
+          }, []),
+        ),
+      );
     };
     const terrainIds = (JSON.parse(terrain) as { terrain: { id: string }[] }).terrain.map((t) => t.id);
     const classIds = (JSON.parse(units) as { units: { id: string; target_class: string }[] }).units
@@ -242,6 +254,11 @@ async function main() {
       minis,
       saveKey,
       sideFacing,
+      flags: scenarioSides.reduce<ReturnType<typeof parseFlag>[]>((acc, s) => {
+        acc[s.id] = parseFlag((s as { flag?: unknown }).flag);
+        return acc;
+      }, []),
+      classAp: new Map((JSON.parse(units) as { units: { id: string; ap?: number }[] }).units.filter((u) => u.ap !== undefined).map((u) => [u.id, u.ap!] as const)),
     });
     await play.refresh();
     if (!view.issues.length) panel.style.display = "none";

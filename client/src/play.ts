@@ -16,7 +16,9 @@ import { drawHqLinks, drawObjectives, drawSupply, drawUmbrellas, drawZoc } from 
 import { AttackWindow, type CardData, type Explained } from "./ui/attack-window";
 import { drawBridges, setGridActive, type MapTextures } from "./render/map";
 import { drawOverlays } from "./render/overlays";
+import type { FlagStripes } from "./render/token-geom";
 import { drawUnits, expStars, type Token } from "./render/units";
+import { tokenHtml } from "./ui/token-svg";
 import { pickSprite, styledSprite, type MiniIndex, type SpritesFile, type UnitStyle } from "./sprites";
 import type { Game } from "./wasm/ceasefire_wasm.js";
 
@@ -47,6 +49,10 @@ export interface PlayContext {
   saveKey: string;
   /** R-UI-03: default facing per side id (scenario.json `sides[].facing`). */
   sideFacing: Facing[];
+  /** R-UI-03: flag stripes per side id (scenario.json `sides[].flag`). */
+  flags: (FlagStripes | null)[];
+  /** Class → full AP (data/units.json), for «AP тек. / макс.». */
+  classAp: Map<string, number>;
   minis: MiniIndex;
 }
 
@@ -80,6 +86,8 @@ export class Play {
   private aw: AttackWindow;
   /** The target the pointer is over (preview without aiming). */
   private hovered: number | null = null;
+  /** Selection and targets the tokens were last drawn with. */
+  private haloKey = "";
   private layerBox = new Container();
 
   constructor(
@@ -159,10 +167,12 @@ export class Play {
         encircled: u.hex_supply === 0,
         style: ref?.style ?? "medallion",
         anchor: ref?.anchor ?? [0.5, 0.5],
+        selected: this.selection?.unit.id === u.id,
+        target: !!this.selection?.targets.some((t) => t.target === u.id),
       });
     }
     this.unitsLayer.removeChildren().forEach((c) => c.destroy({ children: true }));
-    this.unitsLayer.addChild(drawUnits(tokens, tex, this.size, this.colors));
+    this.unitsLayer.addChild(drawUnits(tokens, tex, this.size, this.colors, this.ctx.flags));
   }
 
   private drawTop() {
@@ -198,12 +208,28 @@ export class Play {
   /** R-UI-04: the strip of icons above the attack window — layers, next unit, undo, end of phase. */
   private drawToolbar() {
     const bar = document.getElementById("toolbar")!;
-    const layer = (l: Layer, icon: string) =>
-      `<button data-layer="${l}" class="icon${this.layers.has(l) ? " on" : ""}" title="${attrText(this.t(`ui.layer.${l}`))}">${icon}</button>`;
-    bar.innerHTML = `<span class="group">${(["supply", "zoc", "hq", "umbrella", "objectives"] as const).map((l) => layer(l, this.t(`ui.layer_short.${l}`))).join("")}</span>
-      <span class="group"><button id="next-unit" class="icon" title="${attrText(this.t("ui.next_unit"))}">N</button>
-      <button id="undo" title="${attrText(this.t("ui.undo_tip"))}"${this.game.canUndo() ? "" : " disabled"}>↶ ${this.t("ui.undo")}</button>
-      <button id="end-phase" title="Enter">${this.t("ui.end_phase")} ⏎</button></span>`;
+    // Icons of the approved mock: stroke SVG, 20 px on 38 px buttons.
+    const ICON: Record<string, string> = {
+      supply: '<path d="M3 8l9-4 9 4-9 4-9-4z"></path><path d="M3 8v8l9 4 9-4V8"></path><path d="M12 12v8"></path>',
+      zoc: '<path d="M7 3h10l5 9-5 9H7l-5-9z"></path><path d="M10 9h4l2 3-2 3h-4l-2-3z"></path>',
+      hq: '<path d="M5 21V4"></path><path d="M5 4h12l-3 4 3 4H5"></path>',
+      umbrella: '<path d="M3 13a9 9 0 0118 0z"></path><path d="M12 13v7"></path>',
+      objectives: '<path d="M12 3l2.6 5.6 6.1.6-4.6 4.1 1.3 6-5.4-3.1-5.4 3.1 1.3-6L3.3 9.2l6.1-.6z"></path>',
+      prev: '<path d="M15 5l-7 7 7 7"></path>',
+      next: '<path d="M9 5l7 7-7 7"></path>',
+      undo: '<path d="M9 7L4 12l5 5"></path><path d="M4 12h10a6 6 0 010 12"></path>',
+    };
+    const icon = (name: string, w = 1.8) =>
+      `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${w}" aria-hidden="true">${ICON[name]}</svg>`;
+    const layer = (l: Layer) =>
+      `<button type="button" data-layer="${l}" class="tb${this.layers.has(l) ? " on" : ""}" aria-pressed="${this.layers.has(l)}" aria-label="${attrText(this.t(`ui.layer.${l}`))}" title="${attrText(this.t(`ui.layer.${l}`))}">${icon(l)}</button>`;
+    const button = (id: string, name: string, label: string, disabled = false) =>
+      `<button type="button" id="${id}" class="tb" aria-label="${attrText(label)}" title="${attrText(label)}"${disabled ? " disabled" : ""}>${icon(name, 2)}</button>`;
+    bar.innerHTML = `${(["supply", "zoc", "hq", "umbrella", "objectives"] as const).map(layer).join("")}
+      <span class="tb-sep" aria-hidden="true"></span>
+      ${button("prev-unit", "prev", this.t("ui.prev_unit"))}${button("next-unit", "next", this.t("ui.next_unit"))}${button("undo", "undo", this.t("ui.undo_tip"), !this.game.canUndo())}
+      <span class="tb-sep" aria-hidden="true"></span>
+      <button type="button" id="end-phase" class="tb-end">${this.t("ui.end_phase")} · Enter</button>`;
     bar.style.display = this.state.outcome ? "none" : "flex";
     for (const b of bar.querySelectorAll<HTMLButtonElement>("[data-layer]")) {
       b.onclick = () => {
@@ -214,7 +240,8 @@ export class Play {
         this.drawLayers();
       };
     }
-    document.getElementById("next-unit")!.onclick = () => this.nextUnit();
+    document.getElementById("prev-unit")!.onclick = () => this.nextUnit(-1);
+    document.getElementById("next-unit")!.onclick = () => this.nextUnit(1);
     document.getElementById("undo")!.onclick = () => void this.undo();
     document.getElementById("end-phase")!.onclick = () => this.endPhase();
   }
@@ -363,6 +390,12 @@ export class Play {
     const transfer = (this.transfer?.hexes ?? []).map(([col, row]) => ({ col, row }));
     drawOverlays(this.overlay, this.size, this.transfer ? [] : (sel?.reach ?? []), targetHexes, sel ? sel.unit : null, transfer);
     setGridActive(this.world, !!sel);
+    // R-UI-03: the tokens draw the selection and target halos.
+    const key = `${sel?.unit.id ?? ""}|${(sel?.targets ?? []).map((t) => t.target).join(",")}`;
+    if (key !== this.haloKey) {
+      this.haloKey = key;
+      void this.drawUnits();
+    }
   }
 
   /** Orders of the selected unit (top left); its numbers are in the attack window's card. */
@@ -378,16 +411,36 @@ export class Play {
   private card(u: LiveUnit): CardData {
     const tech = this.state.sides.find((x) => x.id === u.side)?.tech ?? {};
     const base = pickSprite(this.sprites, u.class, u.nation, tech);
-    const ref = base ? styledSprite(base, this.ctx.style, this.sprites, this.ctx.minis) : null;
-    const nation = u.nation ? this.t(`nation.${u.nation}`, "") : "";
+    const ref = base ? styledSprite(base, "miniature", this.sprites, this.ctx.minis) : null;
+    const nation = (u.nation ? this.t(`nation.${u.nation}`, "") : "") || this.sideName(u.side);
+    // «Страна · модель (или ПТУР ур. N у пехоты) · штаб».
+    const parts = [nation];
+    const model = base ? this.ru[`model.${base.id}`] : undefined;
+    if (model) parts.push(model);
+    else if ((tech.antitank ?? 1) > 1 && u.class === "infantry") parts.push(fill(this.t("ui.atgm_level"), { n: tech.antitank ?? 1 }));
+    const hq = this.state.units.find((h) => h.id === u.attached_hq);
+    if (u.hq_rating !== null) parts.push(fill(this.t("ui.hq_rating"), { r: u.hq_rating }));
+    else parts.push(hq ? fill(this.t("ui.under_hq"), { r: hq.hq_rating ?? "" }) : this.t("ui.not_attached"));
+    const facing = this.facing.get(u.id) ?? this.ctx.sideFacing[u.side] ?? "left";
+    const portrait = tokenHtml({
+      w: 84,
+      color: this.colors[u.side] ?? 0xb08d57,
+      flag: this.ctx.flags[u.side] ?? null,
+      label: u.hq_rating !== null ? `★${u.hq_rating}` : String(u.strength),
+      model: ref?.style === "miniature" ? ref.url : (base?.url ?? null),
+      anchor: ref?.style === "miniature" ? ref.anchor : [0.5, 0.7],
+      mirrored: facing === "right",
+    });
     return {
       unit: u,
-      title: `${this.t(`unit.${u.class}`, u.class)} (${nation || this.sideName(u.side)})`,
-      portrait: ref?.url ?? null,
-      mirrored: (this.facing.get(u.id) ?? this.ctx.sideFacing[u.side] ?? "left") === "right",
+      title: this.t(`unit.${u.class}`, u.class),
+      subtitle: parts.join(" · "),
+      portrait,
       stars: expStars(u.exp),
+      apMax: this.ctx.classAp.get(u.class) ?? null,
       maxEntrench: this.ctx.maxEntrench.get(u.terrain) ?? null,
       terrainName: this.t(`terrain.${u.terrain}`, u.terrain),
+      fireName: this.t(`fire.${u.class}`, this.t(`unit.${u.class}`, u.class)),
     };
   }
 
@@ -570,7 +623,7 @@ export class Play {
   private key(e: KeyboardEvent) {
     if (e.target instanceof HTMLInputElement || e.target instanceof HTMLSelectElement || this.state?.outcome) return;
     const k = e.key.toLowerCase();
-    if (k === "n" || k === "т") this.nextUnit();
+    if (k === "n" || k === "т") this.nextUnit(e.shiftKey ? -1 : 1);
     else if (e.key === "Enter") this.endPhase();
     else if (k === "z" && (e.ctrlKey || e.metaKey)) void this.undo();
     else if (k === "u" || k === "г") {
@@ -589,11 +642,14 @@ export class Play {
   }
 
   /** R-UI-05: N — the next unit that has not acted, in id order, cycling. */
-  private nextUnit() {
+  private nextUnit(dir: 1 | -1 = 1) {
     const ready = this.ready();
     if (!ready.length) return;
-    const cur = this.selection?.unit.id ?? -1;
-    const next = ready.find((u) => u.id > cur) ?? ready[0]!;
+    const cur = this.selection?.unit.id ?? (dir > 0 ? -1 : Infinity);
+    const next =
+      dir > 0
+        ? (ready.find((u) => u.id > cur) ?? ready[0]!)
+        : ([...ready].reverse().find((u) => u.id < cur) ?? ready[ready.length - 1]!);
     this.select(next);
     const c = hexCenter(offsetToAxial({ col: next.col, row: next.row }), this.size);
     this.camera.centerOn(c.x, c.y);

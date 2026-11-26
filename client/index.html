@@ -4,6 +4,8 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
     <title>Ceasefire Line</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600&family=PT+Sans:wght@400;700&display=swap" />
     <link rel="icon" href="data:," />
     <style>
       :root { --panel: #1c1a17; --bronze: #b08d57; --text: #e8e1d3; --muted: #a49a88; --good: #9bc28a; --bad: #e08a7a; }
@@ -46,35 +48,40 @@
       .tip { border-bottom: 1px dotted var(--muted); cursor: help; }
       #modal .menu { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
       .caps { font-family: Georgia, "Times New Roman", serif; font-variant: small-caps; letter-spacing: 0.04em; }
-      /* R-UI-04 attack window, after Strategic Command (own art) */
-      #toolbar { bottom: 186px; left: 50%; transform: translateX(-50%); display: none; gap: 14px; padding: 4px 8px; align-items: center; }
-      #toolbar .group { display: flex; gap: 4px; }
-      #toolbar button.icon { min-width: 34px; padding: 4px 8px; }
-      #attack { position: fixed; bottom: 8px; left: 50%; transform: translateX(-50%); display: none; max-width: calc(100vw - 16px); }
-      .aw { display: flex; align-items: stretch; gap: 0; background: #26241f; border: 2px solid var(--bronze); border-radius: 6px; box-shadow: 0 4px 16px rgba(0,0,0,0.6); overflow: hidden; }
-      .aw-card { display: flex; gap: 8px; padding: 8px 10px; width: 300px; background: linear-gradient(#2e2b25, #222019); }
-      .aw-card.right { flex-direction: row-reverse; text-align: right; }
-      .aw-portrait { width: 92px; height: 92px; flex: none; border: 2px solid var(--bronze); border-radius: 4px; background: radial-gradient(#5a5446, #2b2822); display: flex; align-items: center; justify-content: center; overflow: hidden; }
-      .aw-portrait img { width: 118%; height: 118%; object-fit: contain; }
-      .aw-portrait img.mirror { transform: scaleX(-1); }
-      .aw-info { flex: 1; min-width: 0; }
-      .aw-title { font-family: Georgia, "Times New Roman", serif; font-variant: small-caps; letter-spacing: 0.03em; color: #f0d9a8; font-size: 15px; line-height: 1.15; }
-      .aw-stars { color: #e8c25a; font-size: 13px; letter-spacing: 1px; }
-      .aw-cols { display: flex; gap: 12px; margin-top: 4px; }
-      .aw-card.right .aw-cols { flex-direction: row-reverse; }
-      .aw-cols dl { margin: 0; display: grid; grid-template-columns: auto auto; column-gap: 6px; row-gap: 1px; font-size: 12px; }
-      .aw-cols dt { color: var(--muted); }
-      .aw-cols dd { margin: 0; font-weight: 700; text-align: right; }
-      .aw-center { width: 210px; padding: 6px 10px; background: linear-gradient(#7a2219, #4d140f); border-left: 2px solid var(--bronze); border-right: 2px solid var(--bronze); text-align: center; position: relative; }
-      .aw-center.result { display: flex; flex-direction: column; justify-content: center; }
-      .aw-head { font-family: Georgia, serif; font-variant: small-caps; color: #f0d9a8; }
-      .aw-big { font-size: 26px; font-weight: 800; color: #fff; letter-spacing: 1px; }
-      .aw-ad { font-size: 12px; color: #f3dccf; }
-      .aw-mod { color: #f0c090; }
-      .aw-range { font-size: 11px; color: #e0b8a8; margin-top: 2px; }
-      .aw-arrow { position: absolute; top: 4px; left: 8px; font-size: 18px; color: #f0d9a8; }
-      .aw-actions { margin-top: 6px; display: flex; gap: 6px; justify-content: center; }
-      @media (max-width: 860px) { .aw { flex-wrap: wrap; } .aw-card, .aw-center { width: 100%; } #toolbar { bottom: auto; top: 110px; } #combat { bottom: auto; top: 160px; } }
+      /* R-UI-04 attack window and icon strip, as on the approved mock */
+      #toolbar { bottom: 186px; left: 50%; transform: translateX(-50%); display: none; gap: 6px; padding: 0; align-items: center; background: none; border: none; opacity: 1; }
+      #toolbar .tb { width: 38px; height: 38px; padding: 0; display: flex; align-items: center; justify-content: center; background: #24272b; border: 1px solid #8c6d3f; border-radius: 4px; color: #e6d3a8; cursor: pointer; }
+      #toolbar .tb.on { background: #3d3426; border-color: #c9a46a; color: #ffe8b0; }
+      #toolbar .tb:disabled { opacity: 0.4; }
+      #toolbar .tb-sep { width: 1px; height: 38px; margin: 0 8px; background: #5a4a30; }
+      #toolbar .tb-end { height: 38px; padding: 0 16px; background: #6b4a1f; border: 1px solid #c9a46a; border-radius: 4px; color: #f6ead0; font-family: 'Oswald', sans-serif; font-size: 14px; letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer; }
+      #attack { position: fixed; bottom: 8px; left: 50%; transform: translateX(-50%); display: none; width: min(1200px, calc(100vw - 16px)); }
+      .aw { height: 170px; box-sizing: border-box; display: grid; grid-template-columns: 430px 1fr 430px; background: #24272b; border: 2px solid #8c6d3f; border-radius: 6px; box-shadow: 0 6px 18px rgba(0,0,0,0.55); overflow: hidden; font-family: 'PT Sans', sans-serif; color: #e8e2d6; }
+      .aw.single { grid-template-columns: 430px; width: 430px; margin: 0 auto 0 0; }
+      .aw-card { display: flex; gap: 14px; padding: 12px 14px; align-items: flex-start; min-width: 0; }
+      .aw-card.right { flex-direction: row-reverse; }
+      .aw-card.right .aw-info { align-items: flex-end; }
+      .aw-portrait { width: 104px; height: 124px; flex: none; box-sizing: border-box; border: 2px solid #c9a46a; border-radius: 4px; background: #2f3236; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+      .aw-info { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+      .aw-title { font-family: 'Oswald', sans-serif; font-size: 15px; font-weight: 500; letter-spacing: 0.05em; text-transform: uppercase; color: #f1e6cc; }
+      .aw-sub { font-size: 12px; color: #b3aa98; }
+      .aw-stars { font-size: 14px; color: #e6c46a; letter-spacing: 2px; }
+      .aw-star-off { color: #5d5647; }
+      .aw-grid { display: grid; grid-template-columns: auto auto auto auto; column-gap: 12px; row-gap: 1px; font-size: 13px; }
+      .aw-l { color: #b3aa98; }
+      .aw-v { font-weight: 700; }
+      .aw-center { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 8px 16px 8px 44px; background: #7a221c; border-left: 2px solid #8c6d3f; border-right: 2px solid #8c6d3f; min-width: 0; }
+      .aw-arrow { position: absolute; left: 6px; top: 50%; margin-top: -17px; }
+      .aw-kicker { font-family: 'Oswald', sans-serif; font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: #f1d2cc; }
+      .aw-pair { display: flex; align-items: stretch; gap: 18px; }
+      .aw-col { display: flex; flex-direction: column; align-items: center; }
+      .aw-big { font-family: 'Oswald', sans-serif; font-size: 44px; font-weight: 600; line-height: 1; color: #ffffff; }
+      .aw-cap { font-size: 11px; color: #f1d2cc; }
+      .aw-div { width: 2px; background: rgba(255,255,255,0.35); }
+      .aw-lines { font-size: 10.5px; line-height: 1.35; color: #f6e2dc; text-align: center; white-space: nowrap; }
+      .aw-actions { margin-top: 2px; display: flex; gap: 6px; justify-content: center; }
+      .aw-actions button { padding: 2px 12px; font-family: 'Oswald', sans-serif; letter-spacing: 0.06em; text-transform: uppercase; font-size: 12px; }
+      @media (max-width: 1240px) { .aw { grid-template-columns: 1fr; height: auto; } .aw-center { border: none; border-top: 2px solid #8c6d3f; border-bottom: 2px solid #8c6d3f; } #toolbar { bottom: auto; top: 110px; flex-wrap: wrap; } #combat { bottom: auto; top: 160px; } }
       #toast { top: 64px; left: 50%; transform: translateX(-50%); padding: 8px 14px; max-width: min(520px, calc(100vw - 24px)); display: none; text-align: center; }
     </style>
   </head>

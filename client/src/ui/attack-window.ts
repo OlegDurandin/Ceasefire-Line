@@ -1,6 +1,6 @@
-// R-UI-04: the attack window at the bottom centre, after Strategic Command
-// (same layout and information, own art): attacker card | red centre with
-// the forecast | defender card (mirrored). States: a unit selected and no
+// R-UI-04: the attack window at the bottom centre, as on the approved mock
+// (board «Окно атаки в контексте карты»): attacker card | red centre
+// «Прогноз потерь» | defender card, mirrored. States: a unit selected and no
 // target — the left card only; a target hovered or aimed — centre and right
 // card; after a combat the centre shows the actual losses for a moment.
 // Every number has a tooltip with its formula (the core's own inputs).
@@ -13,14 +13,18 @@ type Locale = Record<string, string>;
 
 export interface CardData {
   unit: LiveUnit;
-  /** «Название (страна)». */
+  /** Class name (the mock's upper-case title). */
   title: string;
-  portrait: string | null;
-  /** Mirror the portrait (the unit faces right). */
-  mirrored: boolean;
+  /** «Страна · модель · штаб». */
+  subtitle: string;
+  /** The token as HTML (ui/token-svg.ts). */
+  portrait: string;
   stars: number;
+  apMax: number | null;
   maxEntrench: number | null;
   terrainName: string;
+  /** Genitive name for the fire lines («Огонь танков»). */
+  fireName: string;
 }
 
 /** Game.explain(): the core's fire inputs and their parameters. */
@@ -29,6 +33,8 @@ export interface Explained {
   inputs: FireInput[];
   params: FireParams[];
 }
+
+const MAX_STARS = 3;
 
 export class AttackWindow {
   private resultTimer: number | undefined;
@@ -52,28 +58,28 @@ export class AttackWindow {
   /** A unit selected, no target: the left card only. */
   showUnit(u: CardData) {
     window.clearTimeout(this.resultTimer);
-    this.el.innerHTML = `<div class="aw">${this.card(u, "left")}</div>`;
+    this.el.innerHTML = `<div class="aw single">${this.card(u, "left")}</div>`;
     this.el.style.display = "block";
   }
 
-  /**
-   * Forecast against a target (hover or aim). `arrowDeg` is the direction of
-   * the attack on the map (0° = east, clockwise); `actions` is HTML for the
-   * buttons (aimed only).
-   */
+  /** Forecast against a target (hover or aim); `arrowDeg`: the attack's direction on the map, clockwise from east. */
   showTarget(att: CardData, def: CardData, f: Forecast, ex: Explained, arrowDeg: number, actions: string) {
     window.clearTimeout(this.resultTimer);
-    this.el.innerHTML = `<div class="aw">${this.card(att, "left")}${this.center(f, ex, def, arrowDeg, actions)}${this.card(def, "right")}</div>`;
+    this.el.innerHTML = `<div class="aw">${this.card(att, "left")}${this.center(att, def, f, ex, arrowDeg, actions)}${this.card(def, "right")}</div>`;
     this.el.style.display = "block";
   }
 
   /** The actual losses in the centre for `ms`, then `after()`. */
   showResult(att: CardData | null, def: CardData | null, attackerLoss: number, defenderLoss: number, ms: number, after: () => void) {
     window.clearTimeout(this.resultTimer);
-    const center = `<div class="aw-center result">
-      <div class="aw-head">${this.t("ui.result")}</div>
-      <div class="aw-big">−${attackerLoss} | −${defenderLoss}</div></div>`;
-    this.el.innerHTML = `<div class="aw">${att ? this.card(att, "left") : ""}${center}${def ? this.card(def, "right") : ""}</div>`;
+    const center = `<div class="aw-center">
+      <div class="aw-kicker">${this.t("ui.result")}</div>
+      <div class="aw-pair">
+        <div class="aw-col"><div class="aw-big">−${attackerLoss}</div><div class="aw-cap">${this.t("ui.attacker_l")}</div></div>
+        <div class="aw-div" aria-hidden="true"></div>
+        <div class="aw-col"><div class="aw-big">−${defenderLoss}</div><div class="aw-cap">${this.t("ui.defender_l")}</div></div>
+      </div></div>`;
+    this.el.innerHTML = `<div class="aw">${att ? this.card(att, "left") : "<div></div>"}${center}${def ? this.card(def, "right") : "<div></div>"}</div>`;
     this.el.style.display = "block";
     this.resultTimer = window.setTimeout(after, ms);
   }
@@ -82,84 +88,91 @@ export class AttackWindow {
     const u = c.unit;
     const r = this.rules;
     const tip = (s: string) => `class="tip" title="${attrText(s)}"`;
-    const row = (label: string, value: string, title: string) => `<dt>${label}</dt><dd ${tip(title)}>${value}</dd>`;
+    const pair = (label: string, value: string, title: string) => `<span class="aw-l">${label}</span><span class="aw-v" ${tip(title)}>${value}</span>`;
+    const empty = `<span class="aw-l"></span><span></span>`;
     const expTip = fill(this.t("ui.exp_tip"), {
       atk: num(r.combat.exp_attack_bonus * 100, 0),
       def: num(r.combat.exp_defense_bonus * 100, 0),
       rdy: num(r.readiness.exp_bonus * 100, 0),
     });
-    const stars = c.stars ? `<div class="aw-stars" ${tip(expTip)}>${"★".repeat(c.stars)}</div>` : "";
-    const left = [
-      row(this.t("ui.col.strength"), String(u.strength), fill(this.t("ui.strength_tip"), { n: u.strength })),
-      row(this.t("ui.col.supply"), String(u.supply), supplyTip(u.supply, r, this.ru)),
-      row("AP", num(u.ap_halves / 2, 1), fill(this.t("ui.ap_tip"), { night: r.movement.night_ap_penalty, low: r.supply.low_supply_max, supply: r.movement.low_supply_ap_penalty })),
+    const stars = `<div class="aw-stars" ${tip(expTip)} aria-label="${attrText(fill(this.t("ui.stars_label"), { n: c.stars, max: MAX_STARS }))}">${"★".repeat(c.stars)}<span class="aw-star-off">${"★".repeat(Math.max(0, MAX_STARS - c.stars))}</span></div>`;
+    const ap = `${num(u.ap_halves / 2, 1)}${c.apMax !== null ? ` / ${num(c.apMax, 1)}` : ""}`;
+    const apTip = fill(this.t("ui.ap_tip"), { night: r.movement.night_ap_penalty, low: r.supply.low_supply_max, supply: r.movement.low_supply_ap_penalty });
+    const entrTip = fill(this.t("ui.entrench_tip"), { terrain: c.terrainName, max: c.maxEntrench ?? "—", min: r.supply.entrench_min_supply });
+    const grid = [
+      pair(this.t("ui.col.strength"), String(u.strength), fill(this.t("ui.strength_tip"), { n: u.strength })),
+      pair(this.t("ui.col.strikes"), String(u.strikes_left), this.t("ui.strikes_tip")),
+      pair(this.t("ui.col.supply"), String(u.supply), supplyTip(u.supply, r, this.ru)),
+      pair(this.t("ui.col.readiness"), `${u.readiness_pct}%`, readinessTip(u, r, this.ru)),
+      pair("AP", ap, apTip),
+      pair(this.t("ui.col.morale"), `${u.morale_pct}%`, this.t("ui.morale_tip")),
+      pair(this.t("ui.col.entrench"), `${u.entrenchment} / ${c.maxEntrench ?? "—"}`, entrTip),
+      side === "right" ? pair(this.t("ui.col.terrain"), c.terrainName.toLowerCase(), this.t("ui.terrain_tip")) : empty,
     ].join("");
-    const right = [
-      row(this.t("ui.col.strikes"), String(u.strikes_left), this.t("ui.strikes_tip")),
-      row(this.t("ui.col.readiness"), `${u.readiness_pct}%`, readinessTip(u, r, this.ru)),
-      row(this.t("ui.col.morale"), `${u.morale_pct}%`, this.t("ui.morale_tip")),
-      row(
-        this.t("ui.col.entrench"),
-        `${u.entrenchment}/${c.maxEntrench ?? "—"}`,
-        fill(this.t("ui.entrench_tip"), { terrain: c.terrainName, max: c.maxEntrench ?? "—", min: r.supply.entrench_min_supply }),
-      ),
-    ].join("");
-    const portrait = c.portrait
-      ? `<div class="aw-portrait"><img src="${c.portrait}" alt=""${c.mirrored ? ' class="mirror"' : ""}></div>`
-      : `<div class="aw-portrait"></div>`;
-    return `<div class="aw-card ${side}">${portrait}<div class="aw-info">
-      <div class="aw-title">${c.title}</div>${stars}
-      <div class="aw-cols"><dl>${left}</dl><dl>${right}</dl></div></div></div>`;
+    return `<div class="aw-card ${side}">
+      <div class="aw-portrait">${c.portrait}</div>
+      <div class="aw-info">
+        <div class="aw-title">${c.title}</div>
+        <div class="aw-sub">${c.subtitle}</div>
+        ${stars}
+        <div class="aw-grid">${grid}</div>
+      </div></div>`;
   }
 
-  /** The biggest factor of A or D besides the base value, with its name. */
-  private mainModifier(i: FireInput, which: "a" | "d", terrainName: string): string {
+  /** The biggest factor of A or D besides the base value: «(окопы 2: +30%)». */
+  private modifier(i: FireInput, which: "a" | "d", terrainName: string): string {
     const c = this.rules.combat;
     const cand: [number, string][] =
       which === "a"
         ? [
             [i.attack_mult, this.t("ui.night_mult")],
-            [1 + c.exp_attack_bonus * i.shooter_exp, this.t("ui.exp")],
+            [1 + c.exp_attack_bonus * i.shooter_exp, `${this.t("ui.exp")} ${i.shooter_exp}`],
           ]
         : [
-            [i.terrain_mult, terrainName],
-            [1 + c.entrench_defense_bonus * i.entrenchment, this.t("ui.entrench")],
+            [i.terrain_mult, terrainName.toLowerCase()],
+            [1 + c.entrench_defense_bonus * i.entrenchment, `${this.t("ui.entrench")} ${i.entrenchment}`],
             [i.defense_mult, this.t("ui.canal_mult")],
-            [1 + c.exp_defense_bonus * i.target_exp, this.t("ui.exp")],
+            [1 + c.exp_defense_bonus * i.target_exp, `${this.t("ui.exp")} ${i.target_exp}`],
           ];
     const [k, name] = cand.reduce((m, x) => (Math.abs(x[0] - 1) > Math.abs(m[0] - 1) ? x : m), [1, ""] as [number, string]);
-    return k === 1 ? "" : ` <span class="aw-mod">(${name} ×${num(k)})</span>`;
+    if (k === 1) return "";
+    const pct = Math.round((k - 1) * 100);
+    return ` (${name}: ${pct > 0 ? "+" : "−"}${Math.abs(pct)}%)`;
   }
 
-  private center(f: Forecast, ex: Explained, def: CardData, arrowDeg: number, actions: string): string {
+  /** «Огонь танков: A 5,5 против D 5,2 (окопы 2: +30%) → p 0,32». */
+  private fireLine(head: string, i: FireInput, p: FireParams, terrainName: string): string {
+    const full = fireLines(i, p, this.rules, this.ru).join("\n");
+    return `<span class="tip" title="${attrText(full)}">${head}: A ${num(p.a, 1)}${this.modifier(i, "a", terrainName)} ${this.t("ui.versus")} D ${num(p.d, 1)}${this.modifier(i, "d", terrainName)} → p ${num(p.p, 2)}</span>`;
+  }
+
+  private center(att: CardData, def: CardData, f: Forecast, ex: Explained, arrowDeg: number, actions: string): string {
     const tip = (s: string) => `class="tip" title="${attrText(s)}"`;
     const range = (l: { low: number; high: number }) => `${l.low}–${l.high}`;
-    const arrow = `<div class="aw-arrow" style="transform: rotate(${Math.round(arrowDeg)}deg)" title="${attrText(this.t("ui.attack_dir"))}">➜</div>`;
-    let big: string;
-    let ad: string;
-    let spread: string;
+    const big = (x: number) => `−${num(x, 1)}`;
+    // An arrow (the mock's colours) turned to the attack's direction on the map.
+    const arrow = `<svg class="aw-arrow" width="34" height="34" viewBox="0 0 34 34" style="transform: rotate(${Math.round(arrowDeg)}deg)" role="img" aria-label="${attrText(this.t("ui.attack_dir"))}"><path d="M3 13 H19 V6 L31 17 L19 28 V21 H3 Z" fill="#c4401e" stroke="#f0b8a8" stroke-width="1.5" stroke-linejoin="round"></path></svg>`;
+    let aLoss: string;
+    let dLoss: string;
+    let lines: string;
     if (f.kind === "attack") {
       const x = f.forecast;
-      const toDef = x.exchange.vs_defender;
-      const toAtt = x.exchange.vs_attacker;
-      const lines = (i: FireInput, p: FireParams) => fireLines(i, p, this.rules, this.ru).join("\n");
-      const fwd = lines(ex.inputs[0]!, toDef);
-      const back = lines(ex.inputs[1]!, toAtt);
-      big = `<span ${tip(`${this.t("ui.return_fire")}:\n${back}`)}>−${num(x.attacker_losses.expected, 1)}</span> | <span ${tip(`${this.t("ui.attacker")} → ${this.t("ui.defender")}:\n${fwd}`)}>−${num(x.defender_losses.expected, 1)}</span>`;
-      ad = `<span ${tip(fwd)}>A ${num(toDef.a, 1)}${this.mainModifier(ex.inputs[0]!, "a", def.terrainName)}</span> · <span ${tip(fwd)}>D ${num(toDef.d, 1)}${this.mainModifier(ex.inputs[0]!, "d", def.terrainName)}</span>`;
-      spread = `<span ${tip(this.t("ui.range_tip"))}>${range(x.attacker_losses)} | ${range(x.defender_losses)}</span>`;
+      aLoss = `<div class="aw-big" ${tip(this.t("ui.expected_tip"))}>${big(x.attacker_losses.expected)}</div><div class="aw-cap" ${tip(this.t("ui.range_tip"))}>${this.t("ui.attacker_l")} · ${range(x.attacker_losses)}</div>`;
+      dLoss = `<div class="aw-big" ${tip(this.t("ui.expected_tip"))}>${big(x.defender_losses.expected)}</div><div class="aw-cap" ${tip(this.t("ui.range_tip"))}>${this.t("ui.defender_l")} · ${range(x.defender_losses)}</div>`;
+      lines =
+        this.fireLine(`${this.t("ui.fire_of")} ${att.fireName}`, ex.inputs[0]!, x.exchange.vs_defender, def.terrainName) +
+        "<br>" +
+        this.fireLine(`${this.t("ui.reply_of")} ${def.fireName}`, ex.inputs[1]!, x.exchange.vs_attacker, att.terrainName);
     } else {
       const d = f.defender_losses;
-      const i = ex.inputs[0]!;
-      const text = fireLines(i, ex.params[0]!, this.rules, this.ru).join("\n");
-      big = `−0 | <span ${tip(this.t("ui.bombardment"))}>−${num(d.expected, 1)}</span>`;
-      ad = `<span ${tip(text)}>${this.t("ui.bombardment")}${this.mainModifier(i, "d", def.terrainName)}</span>`;
-      spread = `<span ${tip(this.t("ui.range_tip"))}>0 | ${range(d)}</span>`;
+      aLoss = `<div class="aw-big">−0</div><div class="aw-cap">${this.t("ui.attacker_l")} · 0–0</div>`;
+      dLoss = `<div class="aw-big" ${tip(this.t("ui.expected_tip"))}>${big(d.expected)}</div><div class="aw-cap" ${tip(this.t("ui.range_tip"))}>${this.t("ui.defender_l")} · ${range(d)}</div>`;
+      lines = this.fireLine(`${this.t("ui.bombardment")} ${att.fireName}`, ex.inputs[0]!, ex.params[0]!, def.terrainName);
     }
     return `<div class="aw-center">${arrow}
-      <div class="aw-big">${big}</div>
-      <div class="aw-ad">${ad}</div>
-      <div class="aw-range">${spread}</div>
+      <div class="aw-kicker">${this.t("ui.loss_forecast")}</div>
+      <div class="aw-pair"><div class="aw-col">${aLoss}</div><div class="aw-div" aria-hidden="true"></div><div class="aw-col">${dLoss}</div></div>
+      <div class="aw-lines">${lines}</div>
       ${actions ? `<div class="aw-actions">${actions}</div>` : ""}</div>`;
   }
 }
