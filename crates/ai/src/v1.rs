@@ -34,6 +34,9 @@ pub struct AiV1 {
     plan: Option<Plan>,
 }
 
+/// A chokepoint and the unit sent to it (`None`: an own unit already holds it).
+type Role = (Hex, Option<UnitId>);
+
 /// R-AI-01 «поиск котлов»: the phase's pocket operations and unit roles.
 #[derive(Debug, Clone, Default)]
 pub struct Plan {
@@ -178,10 +181,10 @@ impl AiV1 {
         // «Охват»: an operation only if every chokepoint gets a unit that can
         // get there (or already holds it); utility V × Π reach − losses.
         let mut busy: BTreeSet<UnitId> = BTreeSet::new();
-        let mut chosen: Vec<(f64, Pocket, Vec<(Hex, Option<UnitId>)>)> = Vec::new();
+        let mut chosen: Vec<(f64, Pocket, Vec<Role>)> = Vec::new();
         for p in pockets {
             let mut taken = busy.clone();
-            let mut roles: Vec<(Hex, Option<UnitId>)> = Vec::new();
+            let mut roles: Vec<Role> = Vec::new();
             let mut reach = 1.0;
             let mut losses = 0.0;
             for &c in &p.hexes {
