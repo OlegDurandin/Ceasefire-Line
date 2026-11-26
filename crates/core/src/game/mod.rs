@@ -896,6 +896,27 @@ impl GameState {
         events.push(Event::HexCaptured { hex, side, from });
     }
 
+    /// R-NM-01: NM a side loses for a destroyed unit: −2 / −3 encircled, or
+    /// with the `nm_by_cost` variant −ceil(price / 40), encircled × 1.5
+    /// rounded up (infantry 70 → 2, tanks 105 → 3, encircled tanks → 5).
+    pub fn unit_nm_loss(&self, class: &str, encircled: bool) -> u32 {
+        let nm = &self.data.rules.national_morale;
+        if !self.variants.nm_by_cost {
+            return u32::from(if encircled {
+                nm.unit_destroyed_encircled
+            } else {
+                nm.unit_destroyed
+            });
+        }
+        let cost = self.data.units.get(class).map_or(0, |c| c.cost_mpp);
+        let base = cost.div_ceil(nm.unit_cost_divisor);
+        if encircled {
+            (base * nm.encircled_pct).div_ceil(100)
+        } else {
+            base
+        }
+    }
+
     /// Removes units at strength 0. R-NM-01: −2 NM per unit, −3 if its hex
     /// had no supply path (encircled); R-HQ-02 for HQs.
     fn remove_destroyed(&mut self, events: &mut Vec<Event>) -> Result<(), RuleError> {
@@ -912,16 +933,14 @@ impl GameState {
         for side in dead.iter().map(|u| u.side).collect::<BTreeSet<_>>() {
             supply.insert(side, self.hex_supply(side)?);
         }
-        let nm = &self.data.rules.national_morale;
-        let (normal, encircled_loss) = (nm.unit_destroyed, nm.unit_destroyed_encircled);
         for unit in dead {
             self.units.remove(&unit.id);
             events.push(Event::UnitDestroyed { unit: unit.id });
             let encircled = supply.get(&unit.side).is_none_or(|m| m.get(unit.hex) == 0);
-            let loss = if encircled { encircled_loss } else { normal };
+            let loss = self.unit_nm_loss(&unit.class, encircled);
             self.change_nm(
                 unit.side,
-                -i32::from(loss),
+                -i32::try_from(loss).unwrap_or(i32::MAX),
                 NmReason::UnitDestroyed {
                     unit: unit.id,
                     encircled,

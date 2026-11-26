@@ -314,3 +314,26 @@ fn r_eco_02_reinforcement_locks_the_unit() {
         Err(RuleError::IllegalEconomy(EconomyError::UnitActed))
     );
 }
+
+/// П9: −ceil(price / 40) NM for a destroyed unit, encircled × 1.5 rounded up.
+#[test]
+fn r_nm_01_unit_loss_by_price() {
+    let (map, control) = board();
+    let sc = setup(map, control, vec![unit("infantry", A, Hex::new(0, 0))]);
+    let on = start(with("nm_by_cost", sc.clone()));
+    let off = start(sc);
+    assert_eq!(on.unit_nm_loss("infantry", false), 2, "70 → 2");
+    assert_eq!(on.unit_nm_loss("tank", false), 3, "105 → 3");
+    assert_eq!(on.unit_nm_loss("tank", true), 5, "3 × 1.5 = 4.5 → 5");
+    assert_eq!(on.unit_nm_loss("infantry", true), 3, "2 × 1.5 = 3");
+    assert_eq!(on.unit_nm_loss("artillery", false), 2, "50 → 2");
+    // HQ 120 → 3 (and −3 more by R-HQ-02 on top, unchanged).
+    assert_eq!(on.unit_nm_loss("hq", false), 3);
+    assert_eq!(
+        (
+            off.unit_nm_loss("tank", false),
+            off.unit_nm_loss("tank", true)
+        ),
+        (2, 3)
+    );
+}

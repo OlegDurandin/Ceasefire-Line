@@ -198,6 +198,11 @@ pub struct TacticalRules {
 pub struct NationalMoraleRules {
     pub unit_destroyed: u8,
     pub unit_destroyed_encircled: u8,
+    /// R-NM-01 variant `nm_by_cost`: a destroyed unit costs
+    /// ceil(price / `unit_cost_divisor`) NM, encircled × `encircled_pct`%
+    /// (rounded up) instead of the fixed values above.
+    pub unit_cost_divisor: u32,
+    pub encircled_pct: u32,
     /// NM drops by the side's sensitivity for every this many steps lost.
     pub steps_per_loss: u32,
     /// Sudden death at NM at or below this.
@@ -396,6 +401,11 @@ impl Rules {
         }) {
             return Err(RuleError::InvalidData(
                 "tactical: every outcome needs a quantile in [0, 1]".into(),
+            ));
+        }
+        if self.national_morale.unit_cost_divisor == 0 {
+            return Err(RuleError::InvalidData(
+                "national_morale: unit_cost_divisor must be > 0".into(),
             ));
         }
         if self.national_morale.steps_per_loss == 0 {

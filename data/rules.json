@@ -121,6 +121,8 @@
   "national_morale": {
     "unit_destroyed": 2,
     "unit_destroyed_encircled": 3,
+    "unit_cost_divisor": 40,
+    "encircled_pct": 150,
     "steps_per_loss": 10,
     "sudden_death_pct": 20,
     "objective_taken_share_pct": 50
