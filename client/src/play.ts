@@ -14,7 +14,7 @@ import { drawControl } from "./render/control";
 import { drawBridges, setGridActive, type MapTextures } from "./render/map";
 import { drawOverlays } from "./render/overlays";
 import { drawUnits, expStars, type Token } from "./render/units";
-import { pickSprite, type SpritesFile } from "./sprites";
+import { pickSprite, styledSprite, type MiniIndex, type SpritesFile, type UnitStyle } from "./sprites";
 import type { Game } from "./wasm/ceasefire_wasm.js";
 
 type Locale = Record<string, string>;
@@ -37,6 +37,9 @@ export interface PlayContext {
   startDate?: string;
   startTurn: number;
   suddenDeathPct: number;
+  /** R-UI-03: unit pictures — miniatures (default) or medallions. */
+  style: UnitStyle;
+  minis: MiniIndex;
 }
 
 const NIGHT_TINT = 0x8796c4;
@@ -78,6 +81,12 @@ export class Play {
     world.addChild(this.overlay);
     world.addChild(this.unitsLayer);
     camera.onTap = (x, y) => this.tap(x, y);
+    // R-UI-03: switch miniatures ↔ medallions.
+    window.addEventListener("keydown", (e) => {
+      if (e.key.toLowerCase() !== "u" || e.target instanceof HTMLInputElement) return;
+      this.ctx.style = this.ctx.style === "miniature" ? "medallion" : "miniature";
+      void this.drawUnits();
+    });
   }
 
   private t(key: string, fallback = key): string {
@@ -114,7 +123,8 @@ export class Play {
     const tex = new Map<number, Texture | null>();
     for (const u of this.state.units) {
       const tech = this.state.sides.find((s) => s.id === u.side)?.tech ?? {};
-      const ref = pickSprite(this.sprites, u.class, u.nation, tech);
+      const base = pickSprite(this.sprites, u.class, u.nation, tech);
+      const ref = base ? styledSprite(base, this.ctx.style, this.sprites, this.ctx.minis) : null;
       if (ref && !this.textures.has(ref.url)) this.textures.set(ref.url, await Assets.load<Texture>(ref.url));
       tex.set(u.id, ref ? (this.textures.get(ref.url) ?? null) : null);
       const mine = u.side === this.state.active_side;
@@ -127,6 +137,8 @@ export class Play {
         label: u.hq_rating !== null ? `★${u.hq_rating}` : String(u.strength),
         stars: expStars(u.exp),
         dim: mine && spent,
+        style: ref?.style ?? "medallion",
+        anchor: ref?.anchor ?? [0.5, 0.5],
       });
     }
     this.unitsLayer.removeChildren().forEach((c) => c.destroy({ children: true }));

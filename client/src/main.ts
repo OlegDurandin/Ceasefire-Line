@@ -14,7 +14,7 @@ import { drawControl } from "./render/control";
 import { drawMap, setGridActive } from "./render/map";
 import { BakedMap, pickLevel, type TilesMeta } from "./render/tiles";
 import { drawUnits, expStars, sideColors, type Token } from "./render/units";
-import { pickSprite, terrainTextureUrl, type SpritesFile } from "./sprites";
+import { miniIndex, pickSprite, styledSprite, terrainTextureUrl, type MiniIndex, type SpritesFile, type UnitStyle } from "./sprites";
 import type { ScenarioView } from "./view";
 import init, { Core, Game } from "./wasm/ceasefire_wasm.js";
 
@@ -51,6 +51,13 @@ async function main() {
     text("/data/locale/ru.json"),
   ]);
   const sprites = JSON.parse(spritesText) as SpritesFile;
+  // R-UI-03: miniatures by default (sprites.json), medallions with ?units=medallion or the U key.
+  const unitParam = PARAMS.get("units");
+  const unitStyle: UnitStyle = unitParam === "medallion" || unitParam === "miniature" ? unitParam : (sprites.default_style ?? "medallion");
+  const miniManifest = sprites.styles?.miniature?.manifest;
+  const minis: MiniIndex = miniManifest
+    ? miniIndex(JSON.parse((await optionalText(`/assets/${miniManifest}`)) ?? "[]") as { id: string; side: string; anchor: [number, number] }[])
+    : new Map();
   const ru = JSON.parse(ruText) as Record<string, string>;
   const base = `/data/scenarios/${SCENARIO}`;
   const [scenario, map, events] = await Promise.all([
@@ -165,10 +172,11 @@ async function main() {
       const tex = new Map<number, Texture | null>();
       const tokens: Token[] = [];
       for (const u of v.units) {
-        const ref = pickSprite(sprites, u.class, u.nation, v.sides.find((x) => x.id === u.side)?.tech ?? {});
+        const base = pickSprite(sprites, u.class, u.nation, v.sides.find((x) => x.id === u.side)?.tech ?? {});
+        const ref = base ? styledSprite(base, unitStyle, sprites, minis) : null;
         if (ref && !unitTextures.has(ref.url)) unitTextures.set(ref.url, await load(ref.url));
         tex.set(u.index, ref ? (unitTextures.get(ref.url) ?? null) : null);
-        tokens.push({ key: u.index, side: u.side, col: u.col, row: u.row, label: u.hq_rating !== null ? `★${u.hq_rating}` : String(u.strength), stars: expStars(u.exp), dim: false });
+        tokens.push({ key: u.index, side: u.side, col: u.col, row: u.row, label: u.hq_rating !== null ? `★${u.hq_rating}` : String(u.strength), stars: expStars(u.exp), dim: false, style: ref?.style ?? "medallion", anchor: ref?.anchor ?? [0.5, 0.5] });
       }
       world.addChild(drawUnits(tokens, tex, HEX_SIZE, colors));
     };
@@ -204,6 +212,8 @@ async function main() {
       startDate: scenarioMeta.start_date,
       startTurn: scenarioMeta.start_turn ?? 1,
       suddenDeathPct: (JSON.parse(rules) as { national_morale: { sudden_death_pct: number } }).national_morale.sudden_death_pct,
+      style: unitStyle,
+      minis,
     });
     await play.refresh();
     if (!view.issues.length) panel.style.display = "none";

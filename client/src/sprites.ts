@@ -12,8 +12,45 @@ export interface SpriteClass {
   egy_syr: SpriteTier[];
 }
 
+/** A unit picture style (data/sprites.json `styles`). */
+export interface StyleDef {
+  dir: string;
+  anchor: [number, number];
+  manifest?: string;
+}
+
+export type UnitStyle = "miniature" | "medallion";
+
+/** `side/id` → anchor of the miniatures that exist (assets/units_minis/manifest.json). */
+export type MiniIndex = Map<string, [number, number]>;
+
+export function miniIndex(manifest: { id: string; side: string; anchor: [number, number] }[]): MiniIndex {
+  return new Map(manifest.map((e) => [`${e.side}/${e.id}`, e.anchor] as const));
+}
+
+export interface StyledSprite extends SpriteRef {
+  style: UnitStyle;
+  /** Contact point of the picture, as a share of its size. */
+  anchor: [number, number];
+}
+
+/**
+ * R-UI-03, R-UI-06: the picture in the wanted style; a sprite without a
+ * miniature falls back to its medallion.
+ */
+export function styledSprite(ref: SpriteRef, style: UnitStyle, sprites: SpritesFile, minis: MiniIndex): StyledSprite {
+  const def = sprites.styles?.miniature;
+  const anchor = minis.get(`${ref.side}/${ref.id}`);
+  if (style === "miniature" && def && anchor) {
+    return { ...ref, url: `/assets/${def.dir}/${ref.side}/${ref.id}.png`, style, anchor };
+  }
+  return { ...ref, style: "medallion", anchor: sprites.styles?.medallion?.anchor ?? [0.5, 0.5] };
+}
+
 export interface SpritesFile {
   sprite_sides: Record<string, { nations: string[] }>;
+  styles?: Record<string, StyleDef>;
+  default_style?: UnitStyle;
   terrain: Record<string, string>;
   units: Record<string, SpriteClass>;
   helicopter_transfer: Record<string, string>;
