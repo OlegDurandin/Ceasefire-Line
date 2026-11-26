@@ -15,7 +15,7 @@ import { parseFlag } from "./render/token-geom";
 import { Play } from "./play";
 import { drawControl } from "./render/control";
 import { drawMap, setGridActive } from "./render/map";
-import { BakedMap, pickLevel, type TilesMeta } from "./render/tiles";
+import { BakedMap, pickLevel, worldPerBakePx, type TilesMeta } from "./render/tiles";
 import { drawUnits, expStars, sideColors, type Token } from "./render/units";
 import { miniIndex, pickSprite, styledSprite, terrainTextureUrl, type MiniIndex, type SpritesFile, type UnitStyle } from "./sprites";
 import type { ScenarioView } from "./view";
@@ -43,6 +43,7 @@ async function main() {
   const stage = (msg: string) => {
     console.info(`[client] ${msg}`);
     panel.textContent = msg;
+    panel.style.display = "block";
   };
   stage("Загрузка данных…");
   const [rules, terrain, units, tech, spritesText, ruText] = await Promise.all([
@@ -55,7 +56,15 @@ async function main() {
   ]);
   const sprites = JSON.parse(spritesText) as SpritesFile;
   // R-UI-03: miniatures by default (sprites.json), medallions with ?units=medallion or the U key.
-  const unitParam = PARAMS.get("units");
+  // The settings (gear button) remember the choice per browser.
+  const settingsKey = "cl.settings";
+  let storedStyle: unknown;
+  try {
+    storedStyle = (JSON.parse(localStorage.getItem(settingsKey) ?? "{}") as { units?: unknown }).units;
+  } catch {
+    storedStyle = undefined;
+  }
+  const unitParam = PARAMS.get("units") ?? storedStyle;
   const unitStyle: UnitStyle = unitParam === "medallion" || unitParam === "miniature" ? unitParam : (sprites.default_style ?? "medallion");
   const miniManifest = sprites.styles?.miniature?.manifest;
   const minis: MiniIndex = miniManifest
@@ -84,6 +93,11 @@ async function main() {
   stage("Загрузка ядра…");
   await init();
   const core = new Core(rules, terrain, units, tech);
+  const terrainData = JSON.parse(terrain) as {
+    road_ap: number;
+    track_ap: number;
+    terrain: { id: string; ap: number; defense_mult: number; max_entrench: number }[];
+  };
   const view = JSON.parse(core.scenarioView(scenario, map, events)) as ScenarioView;
 
   const app = new Application();
@@ -162,6 +176,23 @@ async function main() {
     await baked.show(level(scale));
     camera.onChange = (v) => void baked.show(level(v.scale));
   }
+  // R-UI-04 minimap: the map's hexes, and the coarsest baked level (one tile) as its picture.
+  const minX = Math.min(...xs.map((p) => p.x)) - HEX_SIZE;
+  const minY = Math.min(...xs.map((p) => p.y)) - HEX_SIZE;
+  const mapRect = { x: minX, y: minY, w: Math.max(...xs.map((p) => p.x)) + HEX_SIZE - minX, h: Math.max(...xs.map((p) => p.y)) + HEX_SIZE - minY };
+  const top = tilesMeta?.levels[tilesMeta.levels.length - 1];
+  const overview =
+    tilesMeta && top && top.cols === 1 && top.rows === 1
+      ? {
+          url: `${base}/tiles/${top.z}/0_0.${tilesMeta.format}`,
+          rect: {
+            x: (tilesMeta.top_left_from_hex00_km[0] * HEX_SIZE) / tilesMeta.hex_radius_km,
+            y: (tilesMeta.top_left_from_hex00_km[1] * HEX_SIZE) / tilesMeta.hex_radius_km,
+            w: tilesMeta.width_px * worldPerBakePx(tilesMeta, HEX_SIZE),
+            h: tilesMeta.height_px * worldPerBakePx(tilesMeta, HEX_SIZE),
+          },
+        }
+      : null;
 
   let devGame: Game | null = null;
   if (EDIT) {
@@ -259,14 +290,28 @@ async function main() {
       style: unitStyle,
       minis,
       saveKey,
+      settingsKey,
       sideFacing,
       savedFacing,
+      hexes: new Map(view.hexes.map((h) => [`${h.col},${h.row}`, h] as const)),
+      roadHexes: new Set(view.roads.flatMap((e) => [e.a.join(","), e.b.join(",")])),
+      trackHexes: new Set(view.tracks.flatMap((e) => [e.a.join(","), e.b.join(",")])),
+      terrain: new Map(terrainData.terrain.map((t) => [t.id, t] as const)),
+      roadAp: terrainData.road_ap,
+      trackAp: terrainData.track_ap,
+      terrainTexture: (t: string) => terrainTextureUrl(sprites, t),
+      minimap: { world: mapRect, image: overview },
       flags: scenarioSides.reduce<ReturnType<typeof parseFlag>[]>((acc, s) => {
         acc[s.id] = parseFlag((s as { flag?: unknown }).flag);
         return acc;
       }, []),
       classAp: new Map((JSON.parse(units) as { units: { id: string; ap?: number }[] }).units.filter((u) => u.ap !== undefined).map((u) => [u.id, u.ap!] as const)),
     });
+    const onCamera = camera.onChange;
+    camera.onChange = (v) => {
+      onCamera?.(v);
+      play.onCamera();
+    };
     await play.refresh();
     if (!view.issues.length) panel.style.display = "none";
   }

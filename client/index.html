@@ -12,22 +12,19 @@
       html, body { margin: 0; height: 100%; background: #12110f; color: var(--text); font: 14px/1.4 system-ui, sans-serif; overflow: hidden; }
       #app { position: fixed; inset: 0; touch-action: none; }
       .panel { position: fixed; background: var(--panel); border: 1px solid var(--bronze); border-radius: 6px; opacity: 0.96; }
-      #top { top: 8px; left: 50%; transform: translateX(-50%); display: flex; gap: 14px; align-items: center; padding: 6px 12px;
-             max-width: calc(100vw - 24px); flex-wrap: wrap; justify-content: center; }
-      #top b { color: var(--bronze); }
-      #top .muted { color: var(--muted); }
       button { background: #2a2620; color: var(--text); border: 1px solid var(--bronze); border-radius: 4px; padding: 5px 12px; font: inherit; cursor: pointer; }
       button:hover { background: #3a342a; }
       /* Bottom HUD: messages, the icon strip and the attack window stack upwards, so the strip always sits right above the window. */
-      #hud-bottom { position: fixed; left: 50%; bottom: 8px; transform: translateX(-50%); width: min(1200px, calc(100vw - 16px)); display: flex; flex-direction: column; align-items: center; gap: 10px; pointer-events: none; }
+      #hud-bottom { position: fixed; left: 0; right: 0; margin: 0 auto; bottom: 8px; width: min(1200px, calc(100vw - 16px)); display: flex; flex-direction: column; align-items: center; gap: 0; pointer-events: none; }
       #hud-bottom > * { pointer-events: auto; }
-      #combat { position: static; padding: 8px 14px; min-width: min(420px, calc(100vw - 24px)); display: none; text-align: center; }
+      #combat { position: static; margin-bottom: 8px; padding: 8px 14px; min-width: min(420px, calc(100vw - 24px)); display: none; text-align: center; }
+      #combat .pop-title { font-family: 'Oswald', sans-serif; letter-spacing: 0.08em; text-transform: uppercase; font-size: 13px; color: #f1e6cc; margin-bottom: 6px; }
+      #combat .pop-list { display: flex; flex-direction: column; gap: 4px; max-height: 30vh; overflow: auto; }
       #combat .big { font-size: 22px; font-weight: 700; letter-spacing: 1px; }
       #combat .row { display: flex; justify-content: space-between; gap: 18px; }
       #combat .detail { color: var(--muted); font-size: 12px; }
       #combat .actions { margin-top: 6px; display: flex; gap: 8px; justify-content: center; }
-      #info { top: 60px; left: 10px; padding: 6px 10px; max-width: min(300px, calc(100vw - 24px)); display: none; font-size: 13px; }
-      #panel { top: 60px; right: 10px; padding: 6px 10px; max-width: min(320px, calc(100vw - 24px)); }
+      #panel { top: 72px; left: 50%; transform: translateX(-50%); padding: 6px 12px; width: max-content; max-width: min(420px, calc(100vw - 24px)); display: none; }
       #panel ul { margin: 4px 0 0; padding-left: 18px; max-height: 30vh; overflow: auto; }
       .ok { color: var(--good); } .bad { color: var(--bad); }
       #modal { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(0,0,0,0.55); }
@@ -35,9 +32,7 @@
       #modal h2 { margin: 0 0 8px; color: var(--bronze); }
       button:disabled { opacity: 0.45; cursor: default; }
       button.on { background: #4a3f2c; }
-      #top .tabs { display: flex; gap: 4px; }
-      #info .actions > div { margin-top: 6px; }
-      #info select, #panel select { background: #2a2620; color: var(--text); border: 1px solid var(--bronze); border-radius: 4px; }
+      #panel select { background: #2a2620; color: var(--text); border: 1px solid var(--bronze); border-radius: 4px; }
       #panel { max-height: calc(100vh - 140px); overflow: auto; }
       #panel table { border-collapse: collapse; margin: 4px 0; }
       #panel td { padding: 3px 6px; vertical-align: middle; }
@@ -51,13 +46,53 @@
       .tip { border-bottom: 1px dotted var(--muted); cursor: help; }
       #modal .menu { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
       .caps { font-family: Georgia, "Times New Roman", serif; font-variant: small-caps; letter-spacing: 0.04em; }
-      /* R-UI-04 attack window and icon strip, as on the approved mock */
-      #toolbar { display: none; gap: 6px; align-items: center; flex-wrap: wrap; justify-content: center; }
-      #toolbar .tb { width: 38px; height: 38px; padding: 0; display: flex; align-items: center; justify-content: center; background: #24272b; border: 1px solid #8c6d3f; border-radius: 4px; color: #e6d3a8; cursor: pointer; }
-      #toolbar .tb.on { background: #3d3426; border-color: #c9a46a; color: #ffe8b0; }
-      #toolbar .tb:disabled { opacity: 0.4; }
-      #toolbar .tb-sep { width: 1px; height: 38px; margin: 0 8px; background: #5a4a30; }
-      #toolbar .tb-end { height: 38px; padding: 0 16px; background: #6b4a1f; border: 1px solid #c9a46a; border-radius: 4px; color: #f6ead0; font-family: 'Oswald', sans-serif; font-size: 14px; letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer; }
+      /* R-UI-04 top bar (component «Верхняя панель» of the approved mock) */
+      #top { position: fixed; left: 0; right: 0; top: 0; height: 0; z-index: 2; font-family: 'PT Sans', sans-serif; color: #e8e2d6; }
+      #top > * { pointer-events: auto; }
+      #top button { font-family: inherit; }
+      .tb-left, .tb-right { position: absolute; top: 0; height: 46px; box-sizing: border-box; display: flex; background: linear-gradient(#2c2f33, #1d1f22); border: 2px solid #8c6d3f; border-top: none; }
+      .tb-left { left: 0; padding: 0 18px 0 58px; align-items: center; gap: 14px; border-left: none; border-radius: 0 0 10px 0; }
+      .tb-emblem { position: absolute; left: 4px; top: 4px; width: 50px; height: 50px; box-sizing: border-box; border-radius: 50%; background: #1d1f22; border: 2px solid #c9a46a; display: flex; align-items: center; justify-content: center; }
+      .tb-emblem span { display: block; width: 30px; height: 20px; }
+      .tb-side { font-family: 'Oswald', sans-serif; font-size: 16px; letter-spacing: 0.14em; text-transform: uppercase; color: #f1e6cc; white-space: nowrap; }
+      .tb-mpp { font-family: 'Oswald', sans-serif; font-size: 16px; letter-spacing: 0.06em; color: #e6b04a; white-space: nowrap; }
+      .tb-nm { font-size: 13px; color: #b3aa98; white-space: nowrap; }
+      .tb-center { position: absolute; left: 50%; top: 0; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 4px; }
+      .tb-bars { display: flex; gap: 10px; padding: 4px 10px; background: #1d1f22; border: 2px solid #8c6d3f; border-top: none; border-radius: 0 0 6px 6px; }
+      .tb-bar { display: flex; align-items: center; gap: 6px; }
+      .tb-flag { display: block; width: 18px; height: 12px; }
+      .tb-meter { width: 110px; height: 8px; background: #3a3d42; border: 1px solid #5a4a30; }
+      .tb-meter > div { height: 100%; }
+      .tb-tabs { display: flex; gap: 6px; }
+      .tb-tab { display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 2px 14px 5px; background: linear-gradient(#34373c, #24272b); border: 1px solid #8c6d3f; border-top: none; border-radius: 0 0 6px 6px; font-family: 'Oswald', sans-serif !important; font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: #f1e6cc; white-space: nowrap; }
+      .tb-tab span { color: #e6a33a; font-size: 10px; }
+      .tb-tab.on { background: linear-gradient(#4a3f2c, #2e2a22); border-color: #c9a46a; color: #ffe8b0; }
+      .tb-right { right: 0; padding: 0 70px 0 18px; flex-direction: column; justify-content: center; align-items: flex-end; border-right: none; border-radius: 0 0 0 10px; }
+      .tb-date { font-family: 'Oswald', sans-serif; font-size: 15px; letter-spacing: 0.14em; text-transform: uppercase; color: #f1e6cc; white-space: nowrap; }
+      .tb-turn { font-size: 12px; color: #b3aa98; white-space: nowrap; }
+      .tb-end { position: absolute; right: 4px; top: 2px; width: 58px; height: 58px; padding: 0; border-radius: 50%; border: 2px solid #c9a46a; background: radial-gradient(circle at 40% 35%, #e05a3a, #9b2116 70%); box-shadow: 0 3px 8px rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; color: #ffffff; }
+      .tb-end:hover { background: radial-gradient(circle at 40% 35%, #f06a48, #ab2a1c 70%); }
+      .tb-tools { position: absolute; right: 10px; top: 72px; display: flex; flex-direction: column; gap: 6px; }
+      .tb-sep { height: 1px; margin: 2px 6px; background: #5a4a30; }
+      .hud-round { width: 36px; height: 36px; padding: 0; border-radius: 50%; background: #24272b; border: 1px solid #8c6d3f; display: flex; align-items: center; justify-content: center; color: #e6d3a8; }
+      .hud-round[data-on] { background: #3d3426; border-color: #e6c46a; color: #ffe8b0; box-shadow: 0 0 0 2px rgba(230,196,106,0.35); }
+      /* R-UI-04 action bar (component «Панель действий») and the pointer line */
+      #hud-row { position: relative; width: 100%; display: flex; justify-content: center; }
+      #actionbar { display: none; }
+      .ab { display: flex; align-items: center; gap: 6px; padding: 4px 12px; background: linear-gradient(#2c2f33, #1d1f22); border: 2px solid #8c6d3f; border-bottom: none; border-radius: 8px 8px 0 0; flex-wrap: wrap; justify-content: center; }
+      .ab-round { width: 40px; height: 40px; padding: 0; border-radius: 50%; background: #3a3d42; border: 1px solid #8c6d3f; display: flex; align-items: center; justify-content: center; color: #e6d3a8; }
+      .ab-round.info { background: #3e5566; border: 2px solid #9fb3bf; color: #ffffff; }
+      .ab-round.info.on { background: #5b7a8f; box-shadow: 0 0 0 2px rgba(159,179,191,0.45); }
+      .ab-sep { width: 1px; height: 32px; margin: 0 6px; background: #5a4a30; }
+      .ab-hex { width: 46px; height: 40px; padding: 0; border: none; border-radius: 0; background: #6b5330; clip-path: polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%); cursor: pointer; }
+      .ab-hex:hover { background: #c9a46a; }
+      .ab-hex span { display: flex; align-items: center; justify-content: center; width: 42px; height: 36px; margin: 2px; background: linear-gradient(#f2b54a, #c47a1e); color: #2a1a08; clip-path: polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%); }
+      .ab-hex.on span { background: linear-gradient(#ffe7a0, #f0b648); }
+      .ab-hex.off { cursor: default; }
+      .ab-hex.off:hover { background: #6b5330; }
+      .ab-hex.off span { background: #5c5c5c; color: #8e8e8e; }
+      #hover-line { position: absolute; bottom: 4px; left: calc(12px - (100vw - min(1200px, 100vw - 16px)) / 2); padding: 4px 10px; background: rgba(28,30,33,0.9); border: 1px solid #8c6d3f; border-radius: 4px; font-size: 12px; line-height: 1.35; color: #d8cfbd; display: none; pointer-events: none; white-space: nowrap; }
+      /* R-UI-04 attack window, as on the approved mock */
       #attack { display: none; width: 100%; }
       .aw { height: 170px; box-sizing: border-box; display: grid; grid-template-columns: 430px 1fr 430px; background: #24272b; border: 2px solid #8c6d3f; border-radius: 6px; box-shadow: 0 6px 18px rgba(0,0,0,0.55); overflow: hidden; font-family: 'PT Sans', sans-serif; color: #e8e2d6; }
       .aw.single { grid-template-columns: 430px; width: 430px; margin: 0 auto 0 0; }
@@ -84,6 +119,19 @@
       .aw-lines { font-size: 10.5px; line-height: 1.35; color: #f6e2dc; text-align: center; white-space: nowrap; }
       .aw-actions { margin-top: 2px; display: flex; gap: 6px; justify-content: center; }
       .aw-actions button { padding: 2px 12px; font-family: 'Oswald', sans-serif; letter-spacing: 0.06em; text-transform: uppercase; font-size: 12px; }
+      /* R-UI-04 hex mode (board «Режим гекса») */
+      .aw.hexmode .hx-center { background: #1c1e21; padding: 10px; gap: 6px; }
+      .aw.hexmode .aw-card { padding: 14px; }
+      .hx-portrait { width: 104px; height: 90px; flex: none; background: #8c6d3f; clip-path: polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%); display: flex; align-items: center; justify-content: center; }
+      .hx-portrait > div { width: 98px; height: 84px; background: #c9a978 center / 180% auto; clip-path: polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%); }
+      .hx-grid { margin-top: 4px; }
+      .hx-occ { font-size: 12px; color: #d8cfbd; }
+      .hx-empty { align-items: center; justify-content: center; }
+      .mm { display: block; border: 1px solid #5a4a30; cursor: pointer; }
+      .mm-hint { font-size: 11px; color: #b3aa98; }
+      #modal fieldset.settings { border: 1px solid #5a4a30; border-radius: 4px; text-align: left; margin: 8px 0; }
+      #modal .opt { display: block; margin: 4px 0; }
+      #modal ul.help, #modal p.help { text-align: left; font-size: 13px; }
       /* Medium screens: the same three columns, tighter. */
       @media (max-width: 1240px) {
         .aw { grid-template-columns: minmax(0, 1fr) minmax(250px, 1.05fr) minmax(0, 1fr); height: auto; min-height: 140px; }
@@ -96,15 +144,17 @@
         .aw-big { font-size: 36px; }
         .aw-lines { white-space: normal; }
         /* The defender's terrain on a row of its own: the long name no longer widens the card. */
-        .aw-card.right .aw-grid > :nth-last-child(2) { grid-column: 1; }
-        .aw-card.right .aw-grid > :nth-last-child(1) { grid-column: 2 / span 3; }
+        .aw:not(.hexmode) .aw-card.right .aw-grid > :nth-last-child(2) { grid-column: 1; }
+        .aw:not(.hexmode) .aw-card.right .aw-grid > :nth-last-child(1) { grid-column: 2 / span 3; }
+        .hx-portrait { width: 80px; height: 70px; }
+        .hx-portrait > div { width: 74px; height: 64px; }
+        /* The tabs go under the side and date blocks. */
+        .tb-center { top: 48px; }
+        #panel { top: 120px; }
       }
       /* Phones: the forecast as a strip on top, the two cards side by side, at most 40% of the screen. */
       @media (max-width: 760px) {
         #hud-bottom { bottom: 4px; gap: 6px; width: calc(100vw - 8px); }
-        #toolbar .tb { width: 32px; height: 32px; }
-        #toolbar .tb-sep { height: 32px; margin: 0 2px; }
-        #toolbar .tb-end { height: 32px; padding: 0 10px; font-size: 12px; }
         #attack { max-height: 40vh; overflow-y: auto; }
         .aw { grid-template-columns: 1fr 1fr; grid-template-areas: "center center" "left right"; min-height: 0; }
         .aw.single { grid-template-columns: 1fr; grid-template-areas: "left"; }
@@ -124,23 +174,46 @@
         .aw-title { font-size: 12px; }
         .aw-sub, .aw-stars { display: none; }
         .aw-grid { font-size: 10.5px; column-gap: 6px; }
-        .aw-card.right .aw-grid > :nth-last-child(-n+2) { display: none; }
-        #top { left: 4px; right: 4px; transform: none; max-width: none; gap: 4px 8px; padding: 4px 6px; font-size: 12px; }
-        #top button { padding: 3px 8px; font-size: 12px; }
-        #info { top: auto; bottom: calc(40vh + 70px); font-size: 12px; max-width: 60vw; }
+        .aw:not(.hexmode) .aw-card.right .aw-grid > :nth-last-child(-n+2) { display: none; }
+        .aw.hexmode { grid-template-areas: "left right"; }
+        .aw.hexmode .hx-center, .hx-portrait { display: none; }
+        .aw.hexmode .aw-card { padding: 6px 8px; }
+        .hx-occ { font-size: 10.5px; }
+        /* Phones: the top bar keeps the essentials, the tabs scroll. */
+        .tb-left { padding: 0 10px 0 46px; height: 40px; gap: 8px; }
+        .tb-emblem { width: 38px; height: 38px; left: 3px; top: 3px; }
+        .tb-emblem span { width: 22px; height: 15px; }
+        .tb-side, .tb-nm, .tb-bars { display: none; }
+        .tb-mpp { font-size: 14px; }
+        .tb-right { height: 40px; padding: 0 54px 0 10px; }
+        .tb-date { font-size: 12px; letter-spacing: 0.06em; }
+        .tb-turn { font-size: 11px; }
+        .tb-end { width: 46px; height: 46px; }
+        .tb-center { top: 42px; max-width: calc(100vw - 56px); left: 4px; transform: none; align-items: flex-start; }
+        .tb-tabs { overflow-x: auto; max-width: calc(100vw - 56px); }
+        .tb-tab { padding: 2px 8px 4px; font-size: 11px; letter-spacing: 0.06em; }
+        .tb-tools { top: 56px; right: 4px; gap: 4px; }
+        .hud-round { width: 32px; height: 32px; }
+        #panel { top: 84px; }
+        .ab { padding: 3px 6px; gap: 4px; }
+        .ab-round { width: 32px; height: 32px; }
+        .ab-hex { width: 38px; height: 33px; }
+        .ab-hex span { width: 34px; height: 29px; }
+        .ab-sep { height: 26px; margin: 0 2px; }
       }
       @media (max-width: 600px) { .aw-portrait { display: none; } }
+      /* The pointer line would run into the action bar. */
+      @media (max-width: 1080px) { #hover-line { display: none !important; } }
       #toast { top: 64px; left: 50%; transform: translateX(-50%); padding: 8px 14px; max-width: min(520px, calc(100vw - 24px)); display: none; text-align: center; }
     </style>
   </head>
   <body>
     <div id="app"></div>
     <div id="top" class="panel"></div>
-    <div id="info" class="panel"></div>
     <div id="panel" class="panel"></div>
     <div id="hud-bottom">
       <div id="combat" class="panel"></div>
-      <div id="toolbar"></div>
+      <div id="hud-row"><div id="hover-line"></div><div id="actionbar"></div></div>
       <div id="attack"></div>
     </div>
     <div id="modal"><div class="panel"></div></div>
