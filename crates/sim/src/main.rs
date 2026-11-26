@@ -3,6 +3,7 @@
 mod ai_vs_ai;
 mod assets_check;
 mod balance;
+mod check_data;
 mod combat_matrix;
 mod supply_reach;
 
@@ -13,7 +14,8 @@ fn usage() -> String {
      sim assets-check [--assets DIR] [--data DIR] [--report FILE] [--fix]\n  \
      sim balance [--data DIR] [--runs N] [--seed S] [--report FILE]\n  \
      sim ai-vs-ai [--data DIR] [--scenario ID] [--runs N] [--seed S] [--report FILE] [--json FILE]\n    [--players v1,v1] [--variant NAME,..] [--set section.key=JSON] [--variance binomial|sc]\n  \
-     sim supply-reach [--data DIR] [--scenario ID] [--side N] [--min S]"
+     sim supply-reach [--data DIR] [--scenario ID] [--side N] [--min S]\n  \
+     sim check-data [--data DIR]"
         .to_owned()
 }
 
@@ -25,6 +27,9 @@ fn main() -> ExitCode {
         }
         Some("balance") => balance::parse_options(&args[1..]).and_then(|o| balance::run(&o)),
         Some("ai-vs-ai") => ai_vs_ai::parse_options(&args[1..]).and_then(|o| ai_vs_ai::run(&o)),
+        Some("check-data") => {
+            check_data::parse_options(&args[1..]).and_then(|o| check_data::run(&o))
+        }
         Some("supply-reach") => {
             supply_reach::parse_options(&args[1..]).and_then(|o| supply_reach::run(&o))
         }
