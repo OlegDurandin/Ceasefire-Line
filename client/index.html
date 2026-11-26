@@ -18,7 +18,10 @@
       #top .muted { color: var(--muted); }
       button { background: #2a2620; color: var(--text); border: 1px solid var(--bronze); border-radius: 4px; padding: 5px 12px; font: inherit; cursor: pointer; }
       button:hover { background: #3a342a; }
-      #combat { bottom: 236px; left: 50%; transform: translateX(-50%); padding: 8px 14px; min-width: min(420px, calc(100vw - 24px)); display: none; text-align: center; }
+      /* Bottom HUD: messages, the icon strip and the attack window stack upwards, so the strip always sits right above the window. */
+      #hud-bottom { position: fixed; left: 50%; bottom: 8px; transform: translateX(-50%); width: min(1200px, calc(100vw - 16px)); display: flex; flex-direction: column; align-items: center; gap: 10px; pointer-events: none; }
+      #hud-bottom > * { pointer-events: auto; }
+      #combat { position: static; padding: 8px 14px; min-width: min(420px, calc(100vw - 24px)); display: none; text-align: center; }
       #combat .big { font-size: 22px; font-weight: 700; letter-spacing: 1px; }
       #combat .row { display: flex; justify-content: space-between; gap: 18px; }
       #combat .detail { color: var(--muted); font-size: 12px; }
@@ -49,13 +52,13 @@
       #modal .menu { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
       .caps { font-family: Georgia, "Times New Roman", serif; font-variant: small-caps; letter-spacing: 0.04em; }
       /* R-UI-04 attack window and icon strip, as on the approved mock */
-      #toolbar { bottom: 186px; left: 50%; transform: translateX(-50%); display: none; gap: 6px; padding: 0; align-items: center; background: none; border: none; opacity: 1; }
+      #toolbar { display: none; gap: 6px; align-items: center; flex-wrap: wrap; justify-content: center; }
       #toolbar .tb { width: 38px; height: 38px; padding: 0; display: flex; align-items: center; justify-content: center; background: #24272b; border: 1px solid #8c6d3f; border-radius: 4px; color: #e6d3a8; cursor: pointer; }
       #toolbar .tb.on { background: #3d3426; border-color: #c9a46a; color: #ffe8b0; }
       #toolbar .tb:disabled { opacity: 0.4; }
       #toolbar .tb-sep { width: 1px; height: 38px; margin: 0 8px; background: #5a4a30; }
       #toolbar .tb-end { height: 38px; padding: 0 16px; background: #6b4a1f; border: 1px solid #c9a46a; border-radius: 4px; color: #f6ead0; font-family: 'Oswald', sans-serif; font-size: 14px; letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer; }
-      #attack { position: fixed; bottom: 8px; left: 50%; transform: translateX(-50%); display: none; width: min(1200px, calc(100vw - 16px)); }
+      #attack { display: none; width: 100%; }
       .aw { height: 170px; box-sizing: border-box; display: grid; grid-template-columns: 430px 1fr 430px; background: #24272b; border: 2px solid #8c6d3f; border-radius: 6px; box-shadow: 0 6px 18px rgba(0,0,0,0.55); overflow: hidden; font-family: 'PT Sans', sans-serif; color: #e8e2d6; }
       .aw.single { grid-template-columns: 430px; width: 430px; margin: 0 auto 0 0; }
       .aw-card { display: flex; gap: 14px; padding: 12px 14px; align-items: flex-start; min-width: 0; }
@@ -69,7 +72,7 @@
       .aw-star-off { color: #5d5647; }
       .aw-grid { display: grid; grid-template-columns: auto auto auto auto; column-gap: 12px; row-gap: 1px; font-size: 13px; }
       .aw-l { color: #b3aa98; }
-      .aw-v { font-weight: 700; }
+      .aw-v { font-weight: 700; white-space: nowrap; }
       .aw-center { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 8px 16px 8px 44px; background: #7a221c; border-left: 2px solid #8c6d3f; border-right: 2px solid #8c6d3f; min-width: 0; }
       .aw-arrow { position: absolute; left: 6px; top: 50%; margin-top: -17px; }
       .aw-kicker { font-family: 'Oswald', sans-serif; font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: #f1d2cc; }
@@ -81,7 +84,52 @@
       .aw-lines { font-size: 10.5px; line-height: 1.35; color: #f6e2dc; text-align: center; white-space: nowrap; }
       .aw-actions { margin-top: 2px; display: flex; gap: 6px; justify-content: center; }
       .aw-actions button { padding: 2px 12px; font-family: 'Oswald', sans-serif; letter-spacing: 0.06em; text-transform: uppercase; font-size: 12px; }
-      @media (max-width: 1240px) { .aw { grid-template-columns: 1fr; height: auto; } .aw-center { border: none; border-top: 2px solid #8c6d3f; border-bottom: 2px solid #8c6d3f; } #toolbar { bottom: auto; top: 110px; flex-wrap: wrap; } #combat { bottom: auto; top: 160px; } }
+      /* Medium screens: the same three columns, tighter. */
+      @media (max-width: 1240px) {
+        .aw { grid-template-columns: minmax(0, 1fr) minmax(250px, 1.05fr) minmax(0, 1fr); height: auto; min-height: 140px; }
+        .aw.single { grid-template-columns: minmax(0, 430px); }
+        .aw-card { gap: 10px; padding: 10px; }
+        .aw-portrait { width: 80px; height: 96px; }
+        .aw-portrait .tk { transform: scale(0.78); }
+        .aw-grid { column-gap: 8px; font-size: 12px; }
+        .aw-sub { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+        .aw-big { font-size: 36px; }
+        .aw-lines { white-space: normal; }
+        /* The defender's terrain on a row of its own: the long name no longer widens the card. */
+        .aw-card.right .aw-grid > :nth-last-child(2) { grid-column: 1; }
+        .aw-card.right .aw-grid > :nth-last-child(1) { grid-column: 2 / span 3; }
+      }
+      /* Phones: the forecast as a strip on top, the two cards side by side, at most 40% of the screen. */
+      @media (max-width: 760px) {
+        #hud-bottom { bottom: 4px; gap: 6px; width: calc(100vw - 8px); }
+        #toolbar .tb { width: 32px; height: 32px; }
+        #toolbar .tb-sep { height: 32px; margin: 0 2px; }
+        #toolbar .tb-end { height: 32px; padding: 0 10px; font-size: 12px; }
+        #attack { max-height: 40vh; overflow-y: auto; }
+        .aw { grid-template-columns: 1fr 1fr; grid-template-areas: "center center" "left right"; min-height: 0; }
+        .aw.single { grid-template-columns: 1fr; grid-template-areas: "left"; }
+        .aw-card.left { grid-area: left; }
+        .aw-card.right { grid-area: right; }
+        .aw-center { grid-area: center; border: none; border-bottom: 2px solid #8c6d3f; padding: 4px 8px 4px 36px; gap: 2px; }
+        .aw-center .aw-kicker { display: none; }
+        .aw-arrow { width: 26px; height: 26px; margin-top: -13px; }
+        .aw-big { font-size: 26px; }
+        .aw-cap { font-size: 10px; }
+        .aw-lines { font-size: 10px; }
+        .aw-card { padding: 6px 8px; gap: 8px; }
+        .aw-card.right .aw-info { align-items: flex-start; }
+        .aw-card.right { flex-direction: row; }
+        .aw-portrait { width: 56px; height: 66px; }
+        .aw-portrait .tk { transform: scale(0.54); }
+        .aw-title { font-size: 12px; }
+        .aw-sub, .aw-stars { display: none; }
+        .aw-grid { font-size: 10.5px; column-gap: 6px; }
+        .aw-card.right .aw-grid > :nth-last-child(-n+2) { display: none; }
+        #top { left: 4px; right: 4px; transform: none; max-width: none; gap: 4px 8px; padding: 4px 6px; font-size: 12px; }
+        #top button { padding: 3px 8px; font-size: 12px; }
+        #info { top: auto; bottom: calc(40vh + 70px); font-size: 12px; max-width: 60vw; }
+      }
+      @media (max-width: 600px) { .aw-portrait { display: none; } }
       #toast { top: 64px; left: 50%; transform: translateX(-50%); padding: 8px 14px; max-width: min(520px, calc(100vw - 24px)); display: none; text-align: center; }
     </style>
   </head>
@@ -90,9 +138,11 @@
     <div id="top" class="panel"></div>
     <div id="info" class="panel"></div>
     <div id="panel" class="panel"></div>
-    <div id="combat" class="panel"></div>
-    <div id="toolbar" class="panel"></div>
-    <div id="attack"></div>
+    <div id="hud-bottom">
+      <div id="combat" class="panel"></div>
+      <div id="toolbar"></div>
+      <div id="attack"></div>
+    </div>
     <div id="modal"><div class="panel"></div></div>
     <script type="module" src="/src/main.ts"></script>
   </body>
