@@ -34,7 +34,7 @@ use crate::movement::{Occupancy, Occupant};
 use crate::rng::Pcg32;
 use crate::side::SideId;
 use crate::supply::{
-    compute_supply, HqPosition, SupplyInput, SupplyMap, SupplyParams, SupplySource,
+    compute_supply, supply_tree, HqPosition, SupplyInput, SupplyMap, SupplyParams, SupplySource,
 };
 use crate::tech::TechLevels;
 use crate::unit::{fatigue_pct, readiness_pct};
@@ -806,25 +806,35 @@ impl GameState {
     /// R-SUP-02 / R-SUP-04: current hex supply map of `side`.
     pub fn hex_supply(&self, side: SideId) -> Result<SupplyMap, RuleError> {
         let max = self.supply_params.max;
-        // R-SUP-01 variant `source_isolation`: own hexes linked to an own source of max.
-        let linked = self.variants.source_isolation.then(|| {
-            let start: Vec<Hex> = self
+        let occupancy = self.occupancy();
+        // R-SUP-01 variant `source_isolation`: hexes a supply path (R-SUP-02,
+        // any cost) reaches from the side's sources of max.
+        let linked = if self.variants.source_isolation {
+            let main: Vec<SupplySource> = self
                 .sources
                 .iter()
                 .filter(|(h, s)| self.control.get(h) == Some(&side) && s.base >= max)
-                .map(|(h, _)| *h)
+                .map(|(&hex, _)| SupplySource { hex, value: max })
                 .collect();
-            let mut seen: BTreeSet<Hex> = start.iter().copied().collect();
-            let mut queue: std::collections::VecDeque<Hex> = start.into_iter().collect();
-            while let Some(h) = queue.pop_front() {
-                for n in h.neighbors() {
-                    if self.control.get(&n) == Some(&side) && seen.insert(n) {
-                        queue.push_back(n);
-                    }
-                }
-            }
-            seen
-        });
+            let input = SupplyInput {
+                map: &self.map,
+                terrain: &self.data.terrain,
+                params: &self.supply_params,
+                side,
+                sources: &main,
+                occupancy: &occupancy,
+                control: &self.control,
+                hqs: &[],
+            };
+            Some(
+                supply_tree(&input, &main, None)?
+                    .cost
+                    .into_keys()
+                    .collect::<BTreeSet<Hex>>(),
+            )
+        } else {
+            None
+        };
         let cap = self.data.rules.supply.isolated_source_cap;
         let sources: Vec<SupplySource> = self
             .sources
@@ -856,7 +866,7 @@ impl GameState {
             params: &self.supply_params,
             side,
             sources: &sources,
-            occupancy: &self.occupancy(),
+            occupancy: &occupancy,
             control: &self.control,
             hqs: &hqs,
         })

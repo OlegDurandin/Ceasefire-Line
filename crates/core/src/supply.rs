@@ -146,18 +146,45 @@ pub fn hq_node_value(p: &SupplyParams, s: u8, strength: u8) -> Option<u8> {
     (v > 0).then_some(v)
 }
 
-/// Dijkstra from `sources`: each source starts with offset `(max − value)·decay`,
-/// so `max − floor(cost / decay)` equals the per-source formula exactly.
+/// R-SUP-02 paths from `sources`: for every reached hex its path cost in
+/// half-AP (with each source's offset `(max − value)·decay`, so
+/// `max − floor(cost / decay)` is the per-source formula) and its
+/// predecessor on the best path (`None` at a source).
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct SupplyTree {
+    pub cost: BTreeMap<Hex, u32>,
+    pub pred: BTreeMap<Hex, Option<Hex>>,
+}
+
+impl SupplyTree {
+    /// The best path from its source to `hex`, source first.
+    pub fn path_to(&self, hex: Hex) -> Vec<Hex> {
+        let mut out = Vec::new();
+        let mut cur = Some(hex);
+        while let Some(h) = cur {
+            if !self.cost.contains_key(&h) || out.len() > self.cost.len() {
+                break;
+            }
+            out.push(h);
+            cur = self.pred.get(&h).copied().flatten();
+        }
+        out.reverse();
+        out
+    }
+}
+
+/// Dijkstra over the R-SUP-02 rules, without a cost limit.
 /// A bridge adds `bridge_penalty·decay`, i.e. −`bridge_penalty` supply.
 /// Paths run only through hexes controlled by `side` (R-MOVE-06) and never
 /// enter enemy-occupied hexes; a hex in enemy ZOC is reached
-/// but passed through only if a friendly unit stands in it. `within` keeps
+/// but passed through only if a friendly unit stands in it; canals only by
+/// bridge, closed neutral hexes never (`entry_cost_halves`). `within` keeps
 /// the spread inside a radius of a hex (R-SUP-06 nodes).
-fn spread(
+pub fn supply_tree(
     input: &SupplyInput<'_>,
     sources: &[SupplySource],
     within: Option<(Hex, u32)>,
-) -> Result<BTreeMap<Hex, u8>, RuleError> {
+) -> Result<SupplyTree, RuleError> {
     let p = input.params;
     let side = input.side;
     let zoc = enemy_zoc(input.map, input.occupancy, side);
@@ -166,7 +193,7 @@ fn spread(
     let own = |h: Hex| input.control.get(&h) == Some(&side);
     let inside = |h: Hex| within.is_none_or(|(c, r)| h.distance(c) <= r);
 
-    let mut best: BTreeMap<Hex, u32> = BTreeMap::new();
+    let mut tree = SupplyTree::default();
     let mut heap = BinaryHeap::new();
     for source in sources {
         if source.value > p.max {
@@ -179,14 +206,15 @@ fn spread(
             continue;
         }
         let cost = u32::from(p.max - source.value) * p.decay_halves;
-        if best.get(&source.hex).is_none_or(|&b| cost < b) {
-            best.insert(source.hex, cost);
+        if tree.cost.get(&source.hex).is_none_or(|&b| cost < b) {
+            tree.cost.insert(source.hex, cost);
+            tree.pred.insert(source.hex, None);
             heap.push(Reverse((cost, source.hex)));
         }
     }
 
     while let Some(Reverse((cost, hex))) = heap.pop() {
-        if best.get(&hex).is_some_and(|&b| cost > b) {
+        if tree.cost.get(&hex).is_some_and(|&b| cost > b) {
             continue;
         }
         if zoc.contains(&hex) && !friendly_at(hex) {
@@ -213,14 +241,25 @@ fn spread(
                 0
             };
             let next_cost = cost.saturating_add(step).saturating_add(bridge);
-            if best.get(&next).is_none_or(|&b| next_cost < b) {
-                best.insert(next, next_cost);
+            if tree.cost.get(&next).is_none_or(|&b| next_cost < b) {
+                tree.cost.insert(next, next_cost);
+                tree.pred.insert(next, Some(hex));
                 heap.push(Reverse((next_cost, next)));
             }
         }
     }
+    Ok(tree)
+}
 
-    Ok(best
+/// Supply levels from `sources` (levels ≤ 0 dropped).
+fn spread(
+    input: &SupplyInput<'_>,
+    sources: &[SupplySource],
+    within: Option<(Hex, u32)>,
+) -> Result<BTreeMap<Hex, u8>, RuleError> {
+    let p = input.params;
+    Ok(supply_tree(input, sources, within)?
+        .cost
         .into_iter()
         .map(|(h, cost)| {
             let level = u32::from(p.max).saturating_sub(cost / p.decay_halves);

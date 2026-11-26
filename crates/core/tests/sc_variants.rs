@@ -694,3 +694,32 @@ fn r_sup_01_isolated_and_besieged_sources() {
     );
     assert_eq!(besieged(false), (Some(8), Some(8)));
 }
+
+/// R-SUP-01 `source_isolation` (designer amendment): the link to a source of
+/// 10 follows the R-SUP-02 path rules — a canal only by a bridge.
+#[test]
+fn r_sup_01_isolation_follows_supply_paths_across_a_canal() {
+    use ceasefire_core::supply::SupplySource;
+    let east_bank = |bridge: bool| {
+        let (mut map, mut control) = board();
+        // Own hexes (3,0), (4,0) behind a canal on the sides (2,0)|(3,0) and (2,1)|(3,0).
+        control.insert(Hex::new(3, 0), A);
+        control.insert(Hex::new(4, 0), A);
+        map.add_canal(Hex::new(2, 0), Hex::new(3, 0)).unwrap();
+        map.add_canal(Hex::new(2, 1), Hex::new(3, 0)).unwrap();
+        if bridge {
+            map.add_bridge(Hex::new(2, 0), Hex::new(3, 0)).unwrap();
+        }
+        let mut sc = setup(map, control, vec![]);
+        sc.sources.push(SupplySource {
+            hex: Hex::new(4, 0),
+            value: 8,
+        });
+        start(with("source_isolation", sc))
+            .hex_supply(A)
+            .unwrap()
+            .get(Hex::new(4, 0))
+    };
+    assert_eq!(east_bank(false), 3, "no bridge: cut off");
+    assert_eq!(east_bank(true), 8, "a bridge links it");
+}
