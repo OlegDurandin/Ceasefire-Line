@@ -1,0 +1,9 @@
+#!/bin/bash
+# Every commit builds on its own (AGENTS.md): format, build, data loads.
+# Do not bypass with --no-verify; fix the problem before committing.
+set -euo pipefail
+cd "$(git rev-parse --show-toplevel)"
+echo "pre-commit: cargo fmt --check, cargo check, sim check-data"
+cargo fmt --all --check
+cargo check --workspace --quiet
+cargo run --quiet -p sim -- check-data

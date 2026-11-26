@@ -1,0 +1,8 @@
+#!/bin/bash
+# Before a push: the pre-commit checks plus the whole test suite (AGENTS.md).
+# Do not bypass with --no-verify; fix the problem before pushing.
+set -euo pipefail
+cd "$(git rev-parse --show-toplevel)"
+scripts/hooks/pre-commit
+echo "pre-push: cargo test --workspace"
+cargo test --workspace --quiet
