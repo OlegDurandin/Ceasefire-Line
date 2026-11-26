@@ -66,6 +66,21 @@ pub struct OsmConfig {
     /// (OSM populations are present-day: historical cities are fixed in the editor).
     pub city_min_population: u64,
     pub water_exclude: Vec<WaterExclude>,
+    /// If not empty, a `waterway=canal` way is kept only when its name (any
+    /// language) contains one of these (the Suez Canal, not irrigation canals).
+    #[serde(default)]
+    pub canal_names: Vec<String>,
+}
+
+/// Sea from the DEM: extracts carry coastlines, not sea polygons.
+#[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct SeaConfig {
+    pub terrain: String,
+    /// Samples at or below this elevation (or without data) count as sea.
+    pub max_elevation_m: f64,
+    /// Share of such samples that makes the hex sea.
+    pub min_share: f64,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -85,6 +100,13 @@ pub struct Config {
     /// Character for a mountain hex with a pass.
     pub pass_char: char,
     pub osm: OsmConfig,
+    /// Optional: sea by elevation, checked before the OSM areas.
+    #[serde(default)]
+    pub sea: Option<SeaConfig>,
+    /// A road over a canal or river side makes a bridge (false: crossings
+    /// stay open, e.g. the Suez Canal in 1967 had ferries only).
+    #[serde(default = "yes")]
+    pub auto_bridges: bool,
     pub hillshade: HillshadeConfig,
     pub bake: BakeConfig,
 }
@@ -202,4 +224,8 @@ impl Config {
         }
         Ok(c)
     }
+}
+
+fn yes() -> bool {
+    true
 }

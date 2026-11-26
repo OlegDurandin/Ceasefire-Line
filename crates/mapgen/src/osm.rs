@@ -205,6 +205,16 @@ pub fn read(
             });
         }
         if let Some(kind) = tag(&wr.tags, "waterway").filter(|v| river_kinds.contains(v)) {
+            // Only named canals when a list is given (Suez, not irrigation).
+            let named = |names: &[String]| {
+                wr.tags
+                    .iter()
+                    .filter(|(k, _)| k == "name" || k.starts_with("name:"))
+                    .any(|(_, v)| names.iter().any(|n| v.contains(n.as_str())))
+            };
+            if kind == "canal" && !cfg.canal_names.is_empty() && !named(&cfg.canal_names) {
+                continue;
+            }
             data.rivers.push(Line {
                 kind: kind.to_owned(),
                 pts: pts.clone(),

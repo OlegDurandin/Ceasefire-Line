@@ -17,7 +17,7 @@ mod output;
 mod relief;
 mod roads_layer;
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
@@ -131,7 +131,22 @@ pub fn generate(
     let mut terrain = vec![vec![String::new(); cols]; rows];
     for row in 0..grid.rows {
         for col in 0..grid.cols {
-            // OSM areas first (in config order), then relief.
+            // Sea by elevation first, then OSM areas (in config order), then relief.
+            if let Some(sea) = &cfg.sea {
+                if relief::low_share(
+                    dem,
+                    &proj,
+                    &grid,
+                    col,
+                    row,
+                    cfg.samples_per_hex_side,
+                    sea.max_elevation_m,
+                ) >= sea.min_share
+                {
+                    terrain[row as usize][col as usize] = sea.terrain.clone();
+                    continue;
+                }
+            }
             let shares = features::area_shares(&grid, &areas, col, row, cfg.samples_per_hex_side);
             let by_area = cfg
                 .osm
@@ -174,7 +189,11 @@ pub fn generate(
         cfg.osm.river_line_weight,
     );
     // A road over a river has a bridge (Bnot Ya'akov and the like).
-    let bridges: Vec<[[i32; 2]; 2]> = roads.intersection(&canals).copied().collect();
+    let bridges: Vec<[[i32; 2]; 2]> = if cfg.auto_bridges {
+        roads.intersection(&canals).copied().collect()
+    } else {
+        Vec::new()
+    };
     // A mountain hex with a road is a pass.
     let mut pass = vec![vec![false; cols]; rows];
     for [a, b] in &roads {
@@ -280,6 +299,9 @@ fn run(args: &[String]) -> Result<(), String> {
     }
     if args.first().map(String::as_str) == Some("roads") {
         return run_roads(&args[1..]);
+    }
+    if args.first().map(String::as_str) == Some("airfields") {
+        return run_airfields(&args[1..]);
     }
     let a = parse(args)?;
     let cfg = Config::from_json(
@@ -448,10 +470,80 @@ fn run_roads(args: &[String]) -> Result<(), String> {
     let mut map = read_json(&path)?;
     let (_, proj, grid) = map_geometry(&map, &cfg)?;
     let year = year.or_else(|| scenario_year(&dir));
-    let msg = roads_layer::apply(&mut map, &grid, &proj, &action, cfg.pass_char, year)?;
+    let msg = roads_layer::apply(
+        &mut map,
+        &grid,
+        &proj,
+        &action,
+        cfg.pass_char,
+        year,
+        cfg.auto_bridges,
+    )?;
     let text = serde_json::to_string_pretty(&map).map_err(|e| e.to_string())? + "\n";
     fs::write(&path, text).map_err(|e| format!("{}: {e}", path.display()))?;
     eprintln!("{msg} → {}", path.display());
+    Ok(())
+}
+
+/// `mapgen airfields --map DIR --from FILE [--config …]`: airfields given as
+/// lon/lat with sources (R-AIR-01) → `airfields` hexes of map.json; the list
+/// itself is kept as `airfield_sources`. Points off the map are skipped.
+fn run_airfields(args: &[String]) -> Result<(), String> {
+    let usage = "usage: mapgen airfields --map DIR --from FILE.json [--config data/mapgen.json]";
+    let (mut dir, mut from, mut config) = (None, None, PathBuf::from("data/mapgen.json"));
+    let mut it = args.iter();
+    while let Some(flag) = it.next() {
+        let v = it
+            .next()
+            .ok_or_else(|| format!("missing value for {flag}\n{usage}"))?;
+        match flag.as_str() {
+            "--map" => dir = Some(PathBuf::from(v)),
+            "--from" => from = Some(PathBuf::from(v)),
+            "--config" => config = PathBuf::from(v),
+            _ => return Err(format!("bad option {flag}\n{usage}")),
+        }
+    }
+    let (dir, from) = (dir.ok_or(usage)?, from.ok_or(usage)?);
+    let cfg = Config::from_json(
+        &fs::read_to_string(&config).map_err(|e| format!("{}: {e}", config.display()))?,
+    )?;
+    let list = read_json(&from)?;
+    let path = dir.join("map.json");
+    let mut map = read_json(&path)?;
+    let (bbox, proj, grid) = map_geometry(&map, &cfg)?;
+    let mut hexes: BTreeSet<[i32; 2]> = BTreeSet::new();
+    let mut kept = Vec::new();
+    for a in list.as_array().ok_or("airfields: a JSON array")? {
+        let (Some(lon), Some(lat)) = (a["lon"].as_f64(), a["lat"].as_f64()) else {
+            return Err(format!("airfield without lon/lat: {a}"));
+        };
+        if lon < bbox.west || lon > bbox.east || lat < bbox.south || lat > bbox.north {
+            continue;
+        }
+        let p = proj.to_km(lon, lat);
+        let mut best: Option<(f64, [i32; 2])> = None;
+        for row in 0..grid.rows {
+            for col in 0..grid.cols {
+                let c = grid.center(col, row);
+                let d = (c.x - p.x).hypot(c.y - p.y);
+                if best.is_none_or(|(b, _)| d < b) {
+                    best = Some((d, [col as i32, row as i32]));
+                }
+            }
+        }
+        if let Some((_, h)) = best {
+            hexes.insert(h);
+            let mut a = a.clone();
+            a["hex"] = serde_json::json!(h);
+            kept.push(a);
+        }
+    }
+    let obj = map.as_object_mut().ok_or("map.json is not an object")?;
+    obj.insert("airfields".into(), serde_json::json!(hexes));
+    obj.insert("airfield_sources".into(), serde_json::Value::Array(kept));
+    let text = serde_json::to_string_pretty(&map).map_err(|e| e.to_string())? + "\n";
+    fs::write(&path, text).map_err(|e| format!("{}: {e}", path.display()))?;
+    eprintln!("airfields: {} hexes → {}", hexes.len(), path.display());
     Ok(())
 }
 

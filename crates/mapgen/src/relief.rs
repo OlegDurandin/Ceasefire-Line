@@ -63,6 +63,31 @@ pub fn hex_stats(
     })
 }
 
+/// Share of the hex's samples at or below `max_m`, or without elevation data.
+pub fn low_share(
+    dem: &dyn Elevation,
+    proj: &Projection,
+    grid: &Grid,
+    col: u32,
+    row: u32,
+    samples: u32,
+    max_m: f64,
+) -> f64 {
+    let (mut low, mut n) = (0usize, 0usize);
+    for p in grid.samples(col, row, samples) {
+        let (lon, lat) = proj.to_lonlat(p);
+        n += 1;
+        if dem.elevation(lon, lat).is_none_or(|z| z <= max_m) {
+            low += 1;
+        }
+    }
+    if n == 0 {
+        0.0
+    } else {
+        low as f64 / n as f64
+    }
+}
+
 /// First rule whose relief or slope threshold is reached; else the default.
 pub fn classify(stats: Option<ReliefStats>, cfg: &Config) -> String {
     let Some(s) = stats else {

@@ -1,0 +1,81 @@
+{
+  "_comment": "Синай-67, 5–8 июня 1967 (этап 4). Заготовка шага 5: карта и стороны; силы, события, цели и победа — шаг 6 (по источникам).",
+  "id": "sinai67",
+  "hex_km": 10,
+  "supply_decay_ap": 4,
+  "seed": 1967,
+  "start_turn": 1,
+  "start_date": "1967-06-05",
+  "last_turn": 8,
+  "sides": [
+    {
+      "id": 0,
+      "key": "isr",
+      "color": "#9fb3bf",
+      "facing": "right",
+      "flag": [
+        [
+          "#ffffff",
+          0.22
+        ],
+        [
+          "#2b59c3",
+          0.14
+        ],
+        [
+          "#ffffff",
+          0.28
+        ],
+        [
+          "#2b59c3",
+          0.14
+        ],
+        [
+          "#ffffff",
+          0.22
+        ]
+      ],
+      "tech": {},
+      "national_morale_pct": 85,
+      "mpp": 40,
+      "base_income": 20,
+      "loss_sensitivity": 2,
+      "purchase_limits": {}
+    },
+    {
+      "id": 1,
+      "key": "egy",
+      "color": "#b59c63",
+      "facing": "left",
+      "flag": [
+        [
+          "#ce1126",
+          0.34
+        ],
+        [
+          "#ffffff",
+          0.32
+        ],
+        [
+          "#111111",
+          0.34
+        ]
+      ],
+      "tech": {},
+      "national_morale_pct": 70,
+      "mpp": 30,
+      "base_income": 15,
+      "loss_sensitivity": 1,
+      "purchase_limits": {}
+    }
+  ],
+  "sources": [],
+  "cities": [],
+  "objectives": [],
+  "key_hexes": [],
+  "victory": [],
+  "scheduled_income": [],
+  "tech_boosts": [],
+  "neutral": [],
+  "units": []
+}

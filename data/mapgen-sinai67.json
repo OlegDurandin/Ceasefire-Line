@@ -1,0 +1,234 @@
+{
+  "_comment": "mapgen settings for «Синай-67» (R-UI-01): data/mapgen.json with the sea taken from the DEM, only the Suez Canal on hex sides (Sinai wadis are tagged waterway=river in OSM but are dry), and relief thresholds for the 10 km hexes of central Sinai (mountains from 400 m). No automatic bridges: in 1967 the Suez Canal had ferries, not road bridges. Baked at half the Golan resolution: a 10 km hex shows as large as a 5 km one.",
+  "earth_radius_km": 6371.0,
+  "samples_per_hex_side": 9,
+  "slope_step_m": 90,
+  "relief_rules": [
+    {
+      "terrain": "mountains",
+      "min_relief_m": 400,
+      "min_slope_deg": 14
+    },
+    {
+      "terrain": "hills",
+      "min_relief_m": 220,
+      "min_slope_deg": 6
+    }
+  ],
+  "default_terrain": "plain",
+  "legend": {
+    "plain": "p",
+    "dunes": "d",
+    "hills": "h",
+    "mountains": "m",
+    "marsh": "s",
+    "city": "c",
+    "fortified": "f",
+    "water": "w"
+  },
+  "pass_char": "P",
+  "osm": {
+    "margin_deg": 0.1,
+    "roads": [
+      "trunk",
+      "primary"
+    ],
+    "secondary_roads": [
+      "secondary"
+    ],
+    "rivers": [
+      "canal"
+    ],
+    "river_min_length_km": 8,
+    "river_line_weight": 20,
+    "areas": [
+      {
+        "terrain": "water",
+        "tags": [
+          [
+            "natural",
+            "water"
+          ]
+        ],
+        "min_share": 0.5
+      },
+      {
+        "terrain": "city",
+        "tags": [
+          [
+            "landuse",
+            "residential"
+          ]
+        ],
+        "min_share": 0.35
+      },
+      {
+        "terrain": "marsh",
+        "tags": [
+          [
+            "natural",
+            "wetland"
+          ]
+        ],
+        "min_share": 0.4
+      },
+      {
+        "terrain": "dunes",
+        "tags": [
+          [
+            "natural",
+            "sand"
+          ]
+        ],
+        "min_share": 0.4
+      }
+    ],
+    "places": [
+      "city",
+      "town"
+    ],
+    "city_kinds": [
+      "city"
+    ],
+    "city_min_population": 25000,
+    "water_exclude": [],
+    "canal_names": [
+      "Suez Canal",
+      "قناة السويس",
+      "Canal de Suez"
+    ]
+  },
+  "hillshade": {
+    "px_per_km": 20,
+    "azimuth_deg": 315,
+    "altitude_deg": 45,
+    "z_factor": 1.0
+  },
+  "bake": {
+    "px_per_km": 12,
+    "tile_px": 512,
+    "texture_km_per_px": 0.015,
+    "blend_blur_hex": 0.25,
+    "shade_strength": 0.75,
+    "tint": [
+      {
+        "elevation_m": -250,
+        "color": "#6f8f5a",
+        "alpha": 0.14
+      },
+      {
+        "elevation_m": 200,
+        "color": "#8a9a5a",
+        "alpha": 0.06
+      },
+      {
+        "elevation_m": 700,
+        "color": "#b59a6a",
+        "alpha": 0.0
+      },
+      {
+        "elevation_m": 1400,
+        "color": "#a08f80",
+        "alpha": 0.12
+      },
+      {
+        "elevation_m": 2400,
+        "color": "#f2f0ea",
+        "alpha": 0.35
+      }
+    ],
+    "water": {
+      "color": "#4f7f95",
+      "edge_color": "#2c4a58",
+      "edge_km": 0.08,
+      "min_lake_km2": 0.5,
+      "river_km": {
+        "river": 0.14,
+        "canal": 0.07
+      }
+    },
+    "vegetation": [
+      {
+        "kind": "forest",
+        "tags": [
+          [
+            "landuse",
+            "forest"
+          ],
+          [
+            "natural",
+            "wood"
+          ]
+        ],
+        "ground_color": "#4d5f36",
+        "ground_alpha": 0.22,
+        "spacing_km": 0.16,
+        "jitter": 0.8,
+        "crown_km": 0.09,
+        "crown_color": "#3c5229",
+        "highlight_color": "#6f8b4a"
+      },
+      {
+        "kind": "orchard",
+        "tags": [
+          [
+            "landuse",
+            "orchard"
+          ]
+        ],
+        "ground_color": "#6a7440",
+        "ground_alpha": 0.15,
+        "spacing_km": 0.18,
+        "jitter": 0.15,
+        "crown_km": 0.065,
+        "crown_color": "#4a6230",
+        "highlight_color": "#7f9a55"
+      }
+    ],
+    "roads": [
+      {
+        "kind": "primary",
+        "width_km": 0.2
+      },
+      {
+        "kind": "trunk",
+        "width_km": 0.26
+      },
+      {
+        "kind": "motorway",
+        "width_km": 0.3
+      }
+    ],
+    "road_color": "#e3d3a8",
+    "road_edge_color": "#4a3a28",
+    "road_edge_km": 0.05,
+    "city": {
+      "size_km": 1.8,
+      "roof_color": "#e8dcc0",
+      "edge_color": "#3a2e22"
+    },
+    "seed": 1967,
+    "historical_roads": [
+      {
+        "kind": "track",
+        "width_km": 0.12,
+        "color": "#d9c08a",
+        "dash_km": 0.45
+      },
+      {
+        "kind": "secondary",
+        "width_km": 0.16
+      },
+      {
+        "kind": "primary",
+        "width_km": 0.22
+      }
+    ]
+  },
+  "sea": {
+    "terrain": "water",
+    "max_elevation_m": 0.5,
+    "min_share": 0.5
+  },
+  "auto_bridges": false
+}

@@ -90,6 +90,10 @@ struct MapFile {
     #[serde(default)]
     #[allow(dead_code)]
     osm_backup: Option<serde_json::Value>,
+    /// R-AIR-01: the airfields' lon/lat and sources behind `airfields` (mapgen).
+    #[serde(default)]
+    #[allow(dead_code)]
+    airfield_sources: Option<serde_json::Value>,
 }
 
 #[derive(Debug, Deserialize)]

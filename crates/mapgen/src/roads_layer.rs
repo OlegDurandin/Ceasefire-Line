@@ -92,6 +92,7 @@ pub fn apply(
     action: &str,
     pass_char: char,
     year: Option<i64>,
+    auto_bridges: bool,
 ) -> Result<String, String> {
     let using_hist = map["roads_from"].as_str() == Some(FROM_HISTORICAL);
     let obj = map.as_object_mut().ok_or("map.json is not an object")?;
@@ -147,7 +148,12 @@ pub fn apply(
             // Canal sides are pairs of hexes: the same parser as polylines.
             let canal_pairs = edge_list(obj.get("canals").unwrap_or(&json!([])));
             let crossings: BTreeSet<[Off; 2]> = roads.union(&tracks).copied().collect();
-            let bridges: Vec<[Off; 2]> = crossings.intersection(&canal_pairs).copied().collect();
+            // Without auto bridges (Suez 1967: ferries) the crossings stay open water.
+            let bridges: Vec<[Off; 2]> = if auto_bridges {
+                crossings.intersection(&canal_pairs).copied().collect()
+            } else {
+                Vec::new()
+            };
             // Passes: a mountain hex with a historical road (existing passes stay).
             let legend = obj.get("legend").cloned().unwrap_or(json!({}));
             let mountain: BTreeSet<char> = legend
@@ -237,17 +243,17 @@ mod tests {
         let (g, p) = grid();
         let mut m = map();
         let before = m.clone();
-        let msg = apply(&mut m, &g, &p, "historical", 'P', None).unwrap();
+        let msg = apply(&mut m, &g, &p, "historical", 'P', None, true).unwrap();
         assert!(msg.contains("2 roads"), "{msg}");
         assert_eq!(m["roads_from"], FROM_HISTORICAL);
         assert_ne!(m["roads"], before["roads"]);
-        apply(&mut m, &g, &p, "osm", 'P', None).unwrap();
+        apply(&mut m, &g, &p, "osm", 'P', None, true).unwrap();
         assert_eq!(m["roads"], before["roads"]);
         assert_eq!(m["terrain"], before["terrain"]);
         assert!(m.get("osm_backup").is_none() && m.get("roads_from").is_none());
         assert!(m["historical_roads"].is_array(), "the layer itself stays");
-        apply(&mut m, &g, &p, "historical", 'P', None).unwrap();
-        apply(&mut m, &g, &p, "remove", 'P', None).unwrap();
+        apply(&mut m, &g, &p, "historical", 'P', None, true).unwrap();
+        apply(&mut m, &g, &p, "remove", 'P', None, true).unwrap();
         assert_eq!(
             m,
             before
@@ -281,15 +287,15 @@ mod tests {
         assert_eq!(kinds(1967), ["primary", "track"]);
         assert_eq!(kinds(1973), ["primary", "secondary"]);
         let mut y67 = m.clone();
-        apply(&mut y67, &g, &p, "historical", 'P', Some(1967)).unwrap();
+        apply(&mut y67, &g, &p, "historical", 'P', Some(1967), true).unwrap();
         assert!(
             !y67["tracks"].as_array().unwrap().is_empty(),
             "1967: the dirt road is a track"
         );
         let mut y73 = m.clone();
-        apply(&mut y73, &g, &p, "historical", 'P', Some(1973)).unwrap();
+        apply(&mut y73, &g, &p, "historical", 'P', Some(1973), true).unwrap();
         assert!(y73["tracks"].as_array().unwrap().is_empty(), "1973: paved");
-        apply(&mut y73, &g, &p, "osm", 'P', None).unwrap();
+        apply(&mut y73, &g, &p, "osm", 'P', None, true).unwrap();
         assert!(y73["tracks"].as_array().is_none_or(Vec::is_empty));
     }
 
