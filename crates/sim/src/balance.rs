@@ -28,6 +28,10 @@ const COST_SPREAD: f64 = 0.35;
 const UMBRELLA_ONE_RANGE: (f64, f64) = (0.8, 1.2);
 const UMBRELLA_ONE_EW_MAX: f64 = 0.8;
 const UMBRELLA_TWO_MIN: f64 = 1.5;
+/// Designer decision: the umbrella check prices the target infantry at this
+/// reference value, not `units.json` — it tests how lethal the air defence is,
+/// not the economy, so it does not move with infantry's price.
+const UMBRELLA_TARGET_MPP: f64 = 60.0;
 const STRENGTH: u8 = 10;
 const READINESS: u8 = 80;
 
@@ -582,8 +586,8 @@ fn check_umbrellas(data: &GameData) -> Result<Check, String> {
                 / f64::from(STRENGTH),
         )
     };
-    let (jet_step, target_step) = (step("strike")?, step("infantry")?);
-    let mut body = String::from("Ударная авиация ур. 2 (сила 10, 90%) бьёт пехоту (сила 10, 80%) под зонтиками мобильных ЗРК ур. 2 (сила 8, 90%). Обмен в MPP: потерянные шаги × цена шага.\n\n| зонтиков | РЭБ | потери самолётов, шагов | потери цели, шагов | потеряно MPP | уничтожено MPP | потеряно / уничтожено |\n| --- | --- | --- | --- | --- | --- | --- |\n");
+    let (jet_step, target_step) = (step("strike")?, UMBRELLA_TARGET_MPP / f64::from(STRENGTH));
+    let mut body = format!("Ударная авиация ур. 2 (сила 10, 90%) бьёт пехоту (сила 10, 80%) под зонтиками мобильных ЗРК ур. 2 (сила 8, 90%). Обмен в MPP: потерянные шаги × цена шага. Пехота-цель — по эталонной цене {UMBRELLA_TARGET_MPP:.0} MPP (параметр проверки, не данные юнитов: проверка смертоносности ПВО, а не экономики).\n\n| зонтиков | РЭБ | потери самолётов, шагов | потери цели, шагов | потеряно MPP | уничтожено MPP | потеряно / уничтожено |\n| --- | --- | --- | --- | --- | --- | --- |\n");
     let mut results = std::collections::BTreeMap::new();
     for sams in [0usize, 1, 2] {
         for ew in [1u8, 2, 3] {
