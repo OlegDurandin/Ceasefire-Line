@@ -8,3 +8,6 @@
 
 # Raw DEM / OSM downloads and editor underlays (not in Git)
 /data/raw/
+
+# Third-party reference material (manuals): local only, never committed.
+docs/*.pdf
