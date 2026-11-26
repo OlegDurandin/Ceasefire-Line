@@ -267,18 +267,27 @@ impl AiV1 {
                 goals.insert(u.id, *hex);
             }
         }
-        // Attack: the most valuable objective not held, weighted by distance.
+        // Attack: the next objective of the side's sequence (operation «следующая
+        // цель»: after taking one, the attack moves on), else the most valuable
+        // objective not held, weighted by distance.
         let attack = self.aggressiveness(b.side) >= m.attack_from_aggressiveness;
-        let target = b
-            .objectives
-            .iter()
-            .filter(|(h, _)| b.s.controller(**h) != Some(b.side))
-            .map(|(h, v)| {
-                let d = movers.iter().map(|u| u.hex.distance(*h)).min().unwrap_or(0);
-                (v / f64::from(1 + d), *h)
-            })
-            .max_by(|a, c| a.0.total_cmp(&c.0).then(c.1.cmp(&a.1)))
-            .map(|(_, h)| h);
+        let next = self.hints.sides.get(&b.side).and_then(|h| {
+            h.sequence
+                .iter()
+                .find(|hex| b.s.controller(**hex) != Some(b.side))
+                .copied()
+        });
+        let target = next.or_else(|| {
+            b.objectives
+                .iter()
+                .filter(|(h, _)| b.s.controller(**h) != Some(b.side))
+                .map(|(h, v)| {
+                    let d = movers.iter().map(|u| u.hex.distance(*h)).min().unwrap_or(0);
+                    (v / f64::from(1 + d), *h)
+                })
+                .max_by(|a, c| a.0.total_cmp(&c.0).then(c.1.cmp(&a.1)))
+                .map(|(_, h)| h)
+        });
         for u in movers {
             if taken.contains(&u.id) {
                 continue;

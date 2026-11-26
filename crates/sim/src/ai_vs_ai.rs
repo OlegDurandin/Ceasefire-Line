@@ -37,6 +37,8 @@ pub struct Options {
     /// ± spread of each side's aggressiveness per game (seeded), so AI-vs-AI
     /// games sample different plans, not only different dice.
     jitter: f64,
+    /// Print a phase-by-phase trace of the game with this seed (stderr).
+    trace: Option<u64>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -71,6 +73,7 @@ struct Shared {
     players: Vec<Player>,
     jitter: f64,
     default_aggressiveness: f64,
+    trace: Option<u64>,
 }
 
 pub fn parse_options(args: &[String]) -> Result<Options, String> {
@@ -82,6 +85,7 @@ pub fn parse_options(args: &[String]) -> Result<Options, String> {
         report: None,
         players: vec![Player::Greedy, Player::Greedy],
         jitter: 0.0,
+        trace: None,
     };
     let mut it = args.iter();
     while let Some(flag) = it.next() {
@@ -95,6 +99,7 @@ pub fn parse_options(args: &[String]) -> Result<Options, String> {
             "--seed" => o.seed = value.parse().map_err(|e| format!("--seed: {e}"))?,
             "--report" => o.report = Some(PathBuf::from(value)),
             "--jitter" => o.jitter = value.parse().map_err(|e| format!("--jitter: {e}"))?,
+            "--trace" => o.trace = Some(value.parse().map_err(|e| format!("--trace: {e}"))?),
             "--players" => {
                 o.players = value
                     .split(',')
@@ -168,6 +173,64 @@ fn play_one(sh: &Shared, seed: u64) -> Result<Game, String> {
         }
         .map_err(|e| e.to_string())?;
         g.phases += 1;
+        if sh.trace == Some(seed) {
+            let holders: Vec<String> = s
+                .objectives()
+                .iter()
+                .map(|o| {
+                    format!(
+                        "{:?}:{:?}",
+                        ceasefire_core::scenario::axial_to_offset(o.hex),
+                        s.controller(o.hex).map(|c| c.0)
+                    )
+                })
+                .collect();
+            let near: Vec<String> = s
+                .objectives()
+                .iter()
+                .map(|o| {
+                    let mut d: Vec<(u32, String, u8, u8)> = s
+                        .units()
+                        .map(|u| (u.hex.distance(o.hex), u.class.clone(), u.side.0, u.strength))
+                        .filter(|x| x.0 <= 3)
+                        .collect();
+                    d.sort();
+                    format!(
+                        "{:?}: {}",
+                        ceasefire_core::scenario::axial_to_offset(o.hex),
+                        d.iter()
+                            .map(|x| format!(
+                                "{}{}@{}({})",
+                                if x.2 == 0 { "I" } else { "S" },
+                                x.1.get(..3).unwrap_or(&x.1),
+                                x.0,
+                                x.3
+                            ))
+                            .collect::<Vec<_>>()
+                            .join(" ")
+                    )
+                })
+                .collect();
+            let cmds: Vec<String> = r
+                .commands
+                .iter()
+                .map(|c| {
+                    format!("{c:?}")
+                        .split_whitespace()
+                        .next()
+                        .unwrap_or("")
+                        .to_owned()
+                })
+                .collect();
+            eprintln!(
+                "turn {} side {} | {} | cmds {:?}\n    {}",
+                s.turn(),
+                s.active_side().0,
+                holders.join(" "),
+                cmds,
+                near.join("\n    ")
+            );
+        }
         g.commands += r.commands.len() as u32;
         g.refused += r.refused;
         for e in &r.events {
@@ -226,6 +289,7 @@ pub fn run(o: &Options) -> Result<(), String> {
         players: o.players.clone(),
         jitter: o.jitter,
         default_aggressiveness,
+        trace: o.trace,
     });
     let started = Instant::now();
     let threads = std::thread::available_parallelism()

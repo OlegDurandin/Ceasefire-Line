@@ -82,6 +82,9 @@ struct SideHintFile {
     aggressiveness: Option<f64>,
     #[serde(default)]
     priorities: Vec<PriorityFile>,
+    /// Objectives in the order the side takes them (operation «следующая цель»).
+    #[serde(default)]
+    sequence: Vec<[i32; 2]>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -98,6 +101,9 @@ pub struct SideHints {
     pub aggressiveness: Option<f64>,
     /// Extra weight of a hex as a goal (objectives default to their VP).
     pub priorities: BTreeMap<Hex, f64>,
+    /// R-AI-01 operation «следующая цель»: objectives in order; the attack
+    /// goes to the first one the side does not hold, then on to the next.
+    pub sequence: Vec<Hex>,
 }
 
 /// `scenario.json` → `ai` (R-AI-01 «подсказки сценария»).
@@ -127,6 +133,7 @@ impl AiHints {
                         .into_iter()
                         .map(|p| (offset_to_axial(p.hex), p.weight))
                         .collect(),
+                    sequence: s.sequence.into_iter().map(offset_to_axial).collect(),
                 };
                 (SideId(s.side), hints)
             })
