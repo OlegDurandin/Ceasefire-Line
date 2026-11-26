@@ -41,4 +41,6 @@ export interface ScenarioView {
   units: UnitView[];
   /** `validate()` output: `{kind, ...fields}`, hexes in offset coordinates. */
   issues: Record<string, unknown>[];
+  /** R-MOVE-06: neutral closed territory. */
+  neutral: [number, number][];
 }

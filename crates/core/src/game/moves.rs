@@ -66,6 +66,7 @@ impl<'a> MoveView<'a> {
                 .ok_or_else(|| self.illegal(MoveError::Impassable))?;
             let terrain = self.state.data.terrain.get(&cell.terrain)?;
             if !class.has_tag(UnitTag::BoatCrossing)
+                || map.is_closed(to)
                 || terrain.def.impassable
                 || (terrain.def.requires_pass && !cell.pass)
             {

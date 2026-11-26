@@ -85,7 +85,7 @@ export class Play {
     this.bridges.addChild(drawBridges(this.state.bridges, this.mapTex, this.size));
     await this.drawUnits();
     const owners = new Map(this.state.control.map(([[c, r], s]) => [`${c},${r}`, s] as const));
-    drawControl(this.control, this.size, owners, this.colors);
+    drawControl(this.control, this.size, owners, this.colors, this.state.neutral);
     this.drawTop();
     this.world.tint = this.state.night ? NIGHT_TINT : 0xffffff;
     if (this.selection) {

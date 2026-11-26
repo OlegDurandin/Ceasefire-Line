@@ -158,7 +158,7 @@ async function main() {
       const owners = new Map<string, number>();
       for (const h of v.hexes) if (h.owner !== null) owners.set(`${h.col},${h.row}`, h.owner);
       const control = new Graphics();
-      drawControl(control, HEX_SIZE, owners, colors);
+      drawControl(control, HEX_SIZE, owners, colors, v.neutral);
       world.addChild(control);
       const tex = new Map<number, Texture | null>();
       const tokens: Token[] = [];

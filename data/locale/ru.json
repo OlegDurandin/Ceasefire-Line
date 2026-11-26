@@ -146,5 +146,6 @@
   "log.boost_bought": "{side}: куплено «{boost}», готово на ходу {turn}",
   "log.tech": "{side}: {branch} — уровень {level}",
   "log.setup_warning": "{side}: предупреждение сценария ({warning})",
-  "log.game_over": "Игра окончена"
+  "log.game_over": "Игра окончена",
+  "issue.neutral": "На нейтральной территории"
 }

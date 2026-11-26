@@ -242,6 +242,7 @@ mod tests {
             victory: vec![],
             events: vec![],
             tech_boosts: vec![],
+            neutral: vec![],
         };
         GameState::new(Arc::new(data), setup).unwrap().0
     }

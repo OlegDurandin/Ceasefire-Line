@@ -35,6 +35,9 @@ pub struct HexMap {
     roads: BTreeSet<HexEdge>,
     canals: BTreeSet<HexEdge>,
     bridges: BTreeMap<HexEdge, BridgeState>,
+    /// R-MOVE-06: neutral closed territory of the scenario (no ground units,
+    /// no supply); set by `GameState::new` from `ScenarioSetup::neutral`.
+    closed: BTreeSet<Hex>,
 }
 
 fn edge(a: Hex, b: Hex) -> Result<HexEdge, RuleError> {
@@ -74,6 +77,19 @@ impl HexMap {
     pub fn destroy_bridge(&mut self, a: Hex, b: Hex) -> Result<(), RuleError> {
         self.bridges.insert(edge(a, b)?, BridgeState::Destroyed);
         Ok(())
+    }
+
+    /// R-MOVE-06: closes a hex of neutral territory.
+    pub fn close(&mut self, h: Hex) {
+        self.closed.insert(h);
+    }
+
+    pub fn is_closed(&self, h: Hex) -> bool {
+        self.closed.contains(&h)
+    }
+
+    pub fn closed(&self) -> impl Iterator<Item = Hex> + '_ {
+        self.closed.iter().copied()
     }
 
     pub fn bridge_state(&self, a: Hex, b: Hex) -> Option<BridgeState> {

@@ -43,6 +43,8 @@ export interface GameStateView {
   pending_advance: [number, [number, number]] | null;
   outcome: Outcome | null;
   bridges: { a: [number, number]; b: [number, number]; state: "built" | "destroyed" }[];
+  /** R-MOVE-06: neutral closed territory. */
+  neutral: [number, number][];
 }
 
 /** Game.economy(): what the active side can buy (R-ECO-02, R-ECO-03, R-TECH-02). */

@@ -111,6 +111,7 @@ pub mod scenario {
             victory: vec![],
             events: vec![],
             tech_boosts: vec![],
+            neutral: vec![],
         }
     }
 

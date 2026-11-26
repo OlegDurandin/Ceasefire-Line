@@ -291,6 +291,16 @@ pub struct ScenarioSetup {
     pub events: Vec<ScenarioEvent>,
     /// R-TECH-02.
     pub tech_boosts: Vec<TechBoost>,
+    /// R-MOVE-06: neutral closed territory (by country): ground units do not
+    /// enter, supply does not pass; air is not restricted.
+    pub neutral: Vec<NeutralZone>,
+}
+
+/// R-MOVE-06: a neutral country's hexes in a scenario.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct NeutralZone {
+    pub id: String,
+    pub hexes: Vec<Hex>,
 }
 
 /// AP rules in half-points.
@@ -448,7 +458,13 @@ impl GameState {
             hex_km,
             supply_params,
             ap,
-            map: setup.map,
+            map: {
+                let mut map = setup.map;
+                for h in setup.neutral.iter().flat_map(|z| &z.hexes) {
+                    map.close(*h);
+                }
+                map
+            },
             control: setup.control,
             sources,
             sides: setup.sides,

@@ -72,6 +72,8 @@ struct ScenarioView {
     units: Vec<UnitView>,
     /// `validate()` output: `{kind, ...fields}`, hexes in offset coordinates.
     issues: Vec<ScenarioIssue>,
+    /// R-MOVE-06: neutral closed territory, offset hexes.
+    neutral: Vec<[i32; 2]>,
 }
 
 fn edge(e: HexEdge) -> EdgeView {
@@ -172,6 +174,11 @@ impl Core {
                 })
                 .collect(),
             issues,
+            neutral: setup
+                .neutral
+                .iter()
+                .flat_map(|z| z.hexes.iter().map(|&h| axial_to_offset(h)))
+                .collect(),
         };
         serde_json::to_string(&view).map_err(|e| JsError::new(&e.to_string()))
     }
@@ -228,6 +235,8 @@ struct GameView<'a> {
     outcome: Option<&'a Outcome>,
     /// R-MOVE-02: bridge states change in play.
     bridges: Vec<BridgeView>,
+    /// R-MOVE-06: neutral closed territory, offset hexes.
+    neutral: Vec<[i32; 2]>,
 }
 
 #[derive(Serialize)]
@@ -370,6 +379,7 @@ impl Game {
                     BridgeView { a, b, state }
                 })
                 .collect(),
+            neutral: s.map().closed().map(axial_to_offset).collect(),
         };
         to_json(&view)
     }

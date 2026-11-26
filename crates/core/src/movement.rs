@@ -41,7 +41,8 @@ pub fn enemy_zoc(map: &HexMap, occupancy: &Occupancy, side: SideId) -> BTreeSet<
 
 /// R-MOVE-01, R-MOVE-02: AP (in half-points) to enter `to` from adjacent
 /// `from`. `Ok(None)` means impassable: off-map, canal without bridge,
-/// mountain without a pass. Roads do not work into enemy ZOC.
+/// mountain without a pass, neutral closed territory (R-MOVE-06). Roads do
+/// not work into enemy ZOC.
 pub fn entry_cost_halves(
     map: &HexMap,
     terrain: &TerrainCatalog,
@@ -56,6 +57,9 @@ pub fn entry_cost_halves(
     let Some(cell) = map.cell(to) else {
         return Ok(None);
     };
+    if map.is_closed(to) {
+        return Ok(None);
+    }
     if map.has_canal(from, to) && !map.has_bridge(from, to) {
         return Ok(None);
     }

@@ -11,8 +11,8 @@ use serde::Deserialize;
 use crate::data::{GameData, TargetClass, UnitTag};
 use crate::error::RuleError;
 use crate::game::{
-    CityValue, Effect, KeyHex, Objective, Predicate, ScenarioEvent, ScenarioSetup, ScheduledIncome,
-    SideState, TechBoost, UnitSetup, VictoryThreshold,
+    CityValue, Effect, KeyHex, NeutralZone, Objective, Predicate, ScenarioEvent, ScenarioSetup,
+    ScheduledIncome, SideState, TechBoost, UnitSetup, VictoryThreshold,
 };
 use crate::hex::Hex;
 use crate::map::{HexCell, HexMap};
@@ -230,7 +230,17 @@ struct ScenarioFile {
     scheduled_income: Vec<IncomeFile>,
     #[serde(default)]
     tech_boosts: Vec<BoostFile>,
+    /// R-MOVE-06: neutral closed territory by country, offset hexes.
+    #[serde(default)]
+    neutral: Vec<NeutralFile>,
     units: Vec<UnitFile>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct NeutralFile {
+    id: String,
+    hexes: Vec<[i32; 2]>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -524,6 +534,14 @@ pub fn load_scenario(
                 turns: b.turns,
             })
             .collect(),
+        neutral: file
+            .neutral
+            .into_iter()
+            .map(|n| NeutralZone {
+                id: n.id,
+                hexes: n.hexes.into_iter().map(offset_to_axial).collect(),
+            })
+            .collect(),
     })
 }
 
@@ -569,6 +587,13 @@ pub enum ScenarioIssue {
     },
     /// R-MOVE-01: water belongs to nobody.
     ControlledWater {
+        hex: [i32; 2],
+    },
+    /// R-MOVE-06: neutral closed territory holds no units, control or
+    /// scenario markers (`what`: unit, control, source, city, objective,
+    /// key hex, event).
+    Neutral {
+        what: &'static str,
         hex: [i32; 2],
     },
     /// R-TECH-02.
@@ -707,7 +732,60 @@ pub fn validate(data: &GameData, setup: &ScenarioSetup) -> Vec<ScenarioIssue> {
         }
     }
     validate_events(data, setup, &sides, &mut issues);
+    validate_neutral(setup, &mut issues);
     issues
+}
+
+/// R-MOVE-06: nothing of the scenario inside neutral territory.
+fn validate_neutral(setup: &ScenarioSetup, issues: &mut Vec<ScenarioIssue>) {
+    let closed: BTreeSet<Hex> = setup
+        .neutral
+        .iter()
+        .flat_map(|z| z.hexes.iter().copied())
+        .collect();
+    for h in &closed {
+        if setup.map.cell(*h).is_none() {
+            issues.push(ScenarioIssue::MarkerOffMap {
+                what: "neutral",
+                hex: axial_to_offset(*h),
+            });
+        }
+    }
+    let mut hit = |what: &'static str, hex: Hex| {
+        if closed.contains(&hex) {
+            issues.push(ScenarioIssue::Neutral {
+                what,
+                hex: axial_to_offset(hex),
+            });
+        }
+    };
+    for u in &setup.units {
+        hit("unit", u.hex);
+    }
+    for h in setup.control.keys() {
+        hit("control", *h);
+    }
+    for s in &setup.sources {
+        hit("source", s.hex);
+    }
+    for c in &setup.cities {
+        hit("city", c.hex);
+    }
+    for o in &setup.objectives {
+        hit("objective", o.hex);
+    }
+    for k in &setup.key_hexes {
+        hit("key hex", k.hex);
+    }
+    for e in &setup.events {
+        for effect in &e.effects {
+            if let Effect::Reinforcements { units } = effect {
+                for u in units {
+                    hit("event", u.hex);
+                }
+            }
+        }
+    }
 }
 
 /// R-EVT-01: unique ids, known sides and classes, hexes on the map.
