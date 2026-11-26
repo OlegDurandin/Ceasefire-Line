@@ -315,6 +315,8 @@ enum PredicateFile {
     HexControl { hex: [i32; 2], side: u8 },
     NmAtMost { side: u8, pct: u8 },
     LossesAtLeast { side: u8, steps: u32 },
+    AnyOf { of: Vec<PredicateFile> },
+    AllOf { of: Vec<PredicateFile> },
 }
 
 impl From<PredicateFile> for Predicate {
@@ -333,6 +335,12 @@ impl From<PredicateFile> for Predicate {
                 side: SideId(side),
                 steps,
             },
+            PredicateFile::AnyOf { of } => Predicate::AnyOf {
+                of: of.into_iter().map(Into::into).collect(),
+            },
+            PredicateFile::AllOf { of } => Predicate::AllOf {
+                of: of.into_iter().map(Into::into).collect(),
+            },
         }
     }
 }
@@ -346,6 +354,8 @@ enum EffectFile {
     ShiftLastTurn { turns: i32 },
     SetLastTurn { turn: u32 },
     Message { key: String },
+    UnitsMorale { side: u8, change: i32 },
+    UnitsEntrenchment { side: u8, change: i32 },
 }
 
 impl From<EffectFile> for Effect {
@@ -365,6 +375,14 @@ impl From<EffectFile> for Effect {
             EffectFile::ShiftLastTurn { turns } => Effect::ShiftLastTurn { turns },
             EffectFile::SetLastTurn { turn } => Effect::SetLastTurn { turn },
             EffectFile::Message { key } => Effect::Message { key },
+            EffectFile::UnitsMorale { side, change } => Effect::UnitsMorale {
+                side: SideId(side),
+                change,
+            },
+            EffectFile::UnitsEntrenchment { side, change } => Effect::UnitsEntrenchment {
+                side: SideId(side),
+                change,
+            },
         }
     }
 }
@@ -373,6 +391,9 @@ impl From<EffectFile> for Effect {
 #[serde(deny_unknown_fields)]
 struct EventFile {
     id: String,
+    /// A note for designers; ignored.
+    #[serde(default, rename = "_comment")]
+    _comment: Option<String>,
     #[serde(default)]
     phase_of: Option<u8>,
     trigger: PredicateFile,
@@ -846,7 +867,9 @@ fn validate_events(
         }
         let mut side_refs: Vec<SideId> = e.phase_of.into_iter().collect();
         let mut hexes = Vec::new();
-        for p in std::iter::once(&e.trigger).chain(&e.conditions) {
+        // Nested any_of / all_of: every leaf is checked.
+        let mut stack: Vec<&Predicate> = std::iter::once(&e.trigger).chain(&e.conditions).collect();
+        while let Some(p) = stack.pop() {
             match p {
                 Predicate::HexControl { hex, side } => {
                     side_refs.push(*side);
@@ -856,6 +879,7 @@ fn validate_events(
                     side_refs.push(*side)
                 }
                 Predicate::Turn { .. } => {}
+                Predicate::AnyOf { of } | Predicate::AllOf { of } => stack.extend(of),
             }
         }
         for effect in &e.effects {
@@ -872,7 +896,10 @@ fn validate_events(
                         }
                     }
                 }
-                Effect::Mpp { side, .. } | Effect::Nm { side, .. } => side_refs.push(*side),
+                Effect::Mpp { side, .. }
+                | Effect::Nm { side, .. }
+                | Effect::UnitsMorale { side, .. }
+                | Effect::UnitsEntrenchment { side, .. } => side_refs.push(*side),
                 _ => {}
             }
         }

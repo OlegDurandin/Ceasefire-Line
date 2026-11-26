@@ -21,6 +21,10 @@ pub enum Predicate {
     NmAtMost { side: SideId, pct: u8 },
     /// Steps lost by `side` so far.
     LossesAtLeast { side: SideId, steps: u32 },
+    /// Any of the predicates holds.
+    AnyOf { of: Vec<Predicate> },
+    /// All of the predicates hold.
+    AllOf { of: Vec<Predicate> },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -49,6 +53,16 @@ pub enum Effect {
     Message {
         key: String,
     },
+    /// Morale of every ground unit of `side` changes, within 0 and the side's NM.
+    UnitsMorale {
+        side: SideId,
+        change: i32,
+    },
+    /// Entrenchment of every ground unit of `side` changes, within 0 and the terrain's maximum.
+    UnitsEntrenchment {
+        side: SideId,
+        change: i32,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -72,6 +86,8 @@ impl GameState {
             Predicate::LossesAtLeast { side, steps } => {
                 self.side(*side).is_some_and(|s| s.steps_lost >= *steps)
             }
+            Predicate::AnyOf { of } => of.iter().any(|p| self.holds(p)),
+            Predicate::AllOf { of } => of.iter().all(|p| self.holds(p)),
         }
     }
 
@@ -136,8 +152,53 @@ impl GameState {
             }
             Effect::SetLastTurn { turn } => self.set_last_turn((*turn).max(self.turn), events),
             Effect::Message { key } => events.push(Event::Message { key: key.clone() }),
+            Effect::UnitsMorale { side, change } => {
+                let cap = i32::from(self.side(*side).map_or(100, |s| s.national_morale_pct));
+                for unit in self.ground_units_mut(*side)? {
+                    unit.morale_pct = (i32::from(unit.morale_pct) + change).clamp(0, cap) as u8;
+                }
+                events.push(Event::UnitsMoraleChanged {
+                    side: *side,
+                    change: *change,
+                });
+            }
+            Effect::UnitsEntrenchment { side, change } => {
+                let ids: Vec<UnitId> = self.ground_units_mut(*side)?.iter().map(|u| u.id).collect();
+                for id in ids {
+                    let Some(hex) = self.units.get(&id).map(|u| u.hex) else {
+                        continue;
+                    };
+                    let max = i32::from(
+                        self.data
+                            .terrain
+                            .get(&self.map_terrain(hex)?)?
+                            .def
+                            .max_entrench,
+                    );
+                    if let Some(unit) = self.units.get_mut(&id) {
+                        unit.entrenchment =
+                            (i32::from(unit.entrenchment) + change).clamp(0, max) as u8;
+                    }
+                }
+                events.push(Event::UnitsEntrenchmentChanged {
+                    side: *side,
+                    change: *change,
+                });
+            }
         }
         Ok(())
+    }
+
+    /// Ground units of `side` (R-EVT-01 effects on units).
+    fn ground_units_mut(&mut self, side: SideId) -> Result<Vec<&mut Unit>, RuleError> {
+        let data = self.data.clone();
+        let mut out = Vec::new();
+        for unit in self.units.values_mut().filter(|u| u.side == side) {
+            if data.units.get(&unit.class)?.target_class.is_ground() {
+                out.push(unit);
+            }
+        }
+        Ok(out)
     }
 
     fn set_last_turn(&mut self, turn: u32, events: &mut Vec<Event>) {

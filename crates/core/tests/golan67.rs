@@ -31,7 +31,7 @@ fn golan67_loads_and_validates() {
     assert_eq!(setup.hex_km, Some(5.0));
     assert_eq!(setup.map.hexes().count(), 22 * 18);
     assert_eq!(validate(&data, &setup), vec![]);
-    assert_eq!(setup.events.len(), 3);
+    assert_eq!(setup.events.len(), 4);
     assert_eq!(setup.tech_boosts.len(), 2);
     // Every message key used by the scenario has a Russian string.
     let ru: std::collections::BTreeMap<String, String> = serde_json::from_str(LOCALE_RU).unwrap();
@@ -286,4 +286,43 @@ fn r_ui_04_formation_names_from_the_scenario() {
     }
     let artillery = setup.units.iter().find(|u| u.class == "artillery").unwrap();
     assert_eq!(artillery.name, None);
+}
+
+/// Scenario victory thresholds (R-NM-02): the historical outcome — Israel on
+/// the heights with Quneitra (both objectives) — is an Israeli victory; a
+/// passive Israel loses to the Syrian hold. No combat is played: the end
+/// states are set up directly, with the NM changes the captures would bring
+/// (objective lost −nm_value, taken +half) and a moderate toll of losses.
+#[test]
+fn golan67_victory_thresholds_historical_and_passive() {
+    use ceasefire_core::game::VictoryLevel;
+    use ceasefire_core::scenario::offset_to_axial;
+    let play_out = |setup: ceasefire_core::game::ScenarioSetup| {
+        let (mut s, _) = GameState::new(Arc::new(common::data()), setup).unwrap();
+        for _ in 0..16 {
+            if s.outcome().is_some() {
+                break;
+            }
+            s.apply(Command::EndPhase).unwrap();
+        }
+        s.outcome().cloned().expect("the date ends the game")
+    };
+    // Passive: nothing moves. Syria keeps both objectives.
+    let (_, passive) = load();
+    let o = play_out(passive);
+    assert_eq!(o.winner, Some(ceasefire_core::side::SideId(1)), "{o:?}");
+    // Historical: Quneitra [7, 6] and Mas'ade [6, 4] Israeli; NM after the
+    // captures (Israel 85 + 5 + 2, Syria 70 − 10 − 5) and losses (−2 Israel,
+    // −6 Syria); the «Quneitra falls» event takes Syria's further −5 itself.
+    let (_, mut hist) = load();
+    for hex in [[7, 6], [6, 4]] {
+        hist.control
+            .insert(offset_to_axial(hex), ceasefire_core::side::SideId(0));
+    }
+    hist.sides[0].national_morale_pct = 85 + 5 + 2 - 2;
+    hist.sides[1].national_morale_pct = 70 - 10 - 5 - 6;
+    let o = play_out(hist);
+    assert_eq!(o.winner, Some(ceasefire_core::side::SideId(0)), "{o:?}");
+    assert_eq!(o.level, VictoryLevel::Decisive, "{o:?}");
+    assert_eq!(o.reason, EndReason::Date);
 }

@@ -304,6 +304,16 @@ pub enum Event {
     Message {
         key: String,
     },
+    /// R-EVT-01: morale of a side's ground units changed by `change` points.
+    UnitsMoraleChanged {
+        side: SideId,
+        change: i32,
+    },
+    /// R-EVT-01: entrenchment of a side's ground units changed by `change` levels.
+    UnitsEntrenchmentChanged {
+        side: SideId,
+        change: i32,
+    },
     /// R-TECH-02.
     TechBoostBought {
         id: String,

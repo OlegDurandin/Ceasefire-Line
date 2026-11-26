@@ -22,6 +22,23 @@
       ]
     },
     {
+      "id": "withdrawal_order",
+      "_comment": "Приказ об отходе (R-EVT-01): Израиль держит обе цели на высотах (Кунейтра и Масада) или NM Сирии опустилась ниже стартовых 70%. Срабатывает в фазу Израиля, чтобы −2 окопа действовали при его атаках.",
+      "phase_of": 0,
+      "trigger": { "kind": "any_of", "of": [
+        { "kind": "all_of", "of": [
+          { "kind": "hex_control", "hex": [7, 6], "side": 0 },
+          { "kind": "hex_control", "hex": [6, 4], "side": 0 }
+        ] },
+        { "kind": "nm_at_most", "side": 1, "pct": 69 }
+      ] },
+      "effects": [
+        { "kind": "units_morale", "side": 1, "change": -20 },
+        { "kind": "units_entrenchment", "side": 1, "change": -2 },
+        { "kind": "message", "key": "event.golan67.withdrawal_order" }
+      ]
+    },
+    {
       "id": "superpower_pressure",
       "trigger": { "kind": "losses_at_least", "side": 1, "steps": 15 },
       "conditions": [ { "kind": "turn", "turn": 2 } ],

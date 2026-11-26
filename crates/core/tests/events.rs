@@ -197,3 +197,85 @@ fn r_evt_01_losses_trigger() {
     assert!(all.iter().any(|e| matches!(e, Event::Attrition { .. })));
     assert!(fired(&all, "bleeding"));
 }
+
+/// R-EVT-01: composite triggers and effects on a side's units («приказ об
+/// отходе» in «Голанах-67»): morale −20 (not below 0) and entrenchment −2
+/// (not below 0) for every ground unit of the side.
+#[test]
+fn r_evt_01_any_of_trigger_morale_and_entrenchment_effects() {
+    let order = ScenarioEvent {
+        id: "withdrawal".into(),
+        phase_of: Some(A),
+        trigger: Predicate::AnyOf {
+            of: vec![
+                Predicate::NmAtMost { side: B, pct: 50 },
+                Predicate::Turn { turn: 2 },
+            ],
+        },
+        conditions: vec![],
+        effects: vec![
+            Effect::UnitsMorale {
+                side: B,
+                change: -20,
+            },
+            Effect::UnitsEntrenchment {
+                side: B,
+                change: -2,
+            },
+        ],
+    };
+    let never = ScenarioEvent {
+        id: "never".into(),
+        phase_of: None,
+        trigger: Predicate::AllOf {
+            of: vec![
+                Predicate::Turn { turn: 2 },
+                Predicate::NmAtMost { side: B, pct: 50 },
+            ],
+        },
+        conditions: vec![],
+        effects: vec![Effect::Message { key: "x".into() }],
+    };
+    let (map, control) = board();
+    let mut dug_in = unit("infantry", B, Hex::new(4, 0));
+    dug_in.entrenchment = 2;
+    let mut shaken = unit("infantry", B, Hex::new(5, 0));
+    shaken.morale_pct = 5; // +10 rest in B's phase, then −20: clamped at 0
+    let mut sc = setup(
+        map,
+        control,
+        vec![unit("infantry", A, Hex::new(0, 0)), dug_in, shaken],
+    );
+    sc.events = vec![order, never];
+    let mut s = start(sc);
+    end_phase(&mut s); // B's phase of turn 1
+    let before = s.unit_at(Hex::new(4, 0)).unwrap().clone();
+    let own_before = s.unit_at(Hex::new(0, 0)).unwrap().morale_pct;
+    let events = end_phase(&mut s); // A's phase of turn 2: the order fires
+    assert!(fired(&events, "withdrawal"));
+    assert!(!fired(&events, "never"), "all_of needs every predicate");
+    assert!(events.contains(&Event::UnitsMoraleChanged {
+        side: B,
+        change: -20
+    }));
+    assert!(events.contains(&Event::UnitsEntrenchmentChanged {
+        side: B,
+        change: -2
+    }));
+    let after = s.unit_at(Hex::new(4, 0)).unwrap();
+    assert_eq!(
+        i32::from(after.morale_pct),
+        i32::from(before.morale_pct) - 20
+    );
+    assert_eq!(
+        i32::from(after.entrenchment),
+        (i32::from(before.entrenchment) - 2).max(0)
+    );
+    assert_eq!(
+        s.unit_at(Hex::new(5, 0)).unwrap().morale_pct,
+        0,
+        "not below 0"
+    );
+    let own = s.unit_at(Hex::new(0, 0)).unwrap();
+    assert!(own.morale_pct >= own_before, "the other side is untouched");
+}
