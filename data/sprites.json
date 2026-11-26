@@ -12,6 +12,24 @@
       ]
     }
   },
+  "styles": {
+    "medallion": {
+      "dir": "units",
+      "anchor": [
+        0.5,
+        0.5
+      ]
+    },
+    "miniature": {
+      "dir": "units_minis",
+      "anchor": [
+        0.5,
+        0.88
+      ],
+      "manifest": "units_minis/manifest.json"
+    }
+  },
+  "default_style": "miniature",
   "terrain": {
     "plain": "terrain_desert_flat",
     "dunes": "terrain_dunes",
@@ -30,115 +48,218 @@
     "tank": {
       "tech_branch": "armor",
       "isr": [
-        { "tech_min": 1, "sprite": "isr_centurion", "variants": ["isr_m48", "isr_super_sherman"] },
-        { "tech_min": 2, "sprite": "isr_m60" }
+        {
+          "tech_min": 1,
+          "sprite": "isr_centurion",
+          "variants": [
+            "isr_m48",
+            "isr_super_sherman"
+          ]
+        },
+        {
+          "tech_min": 2,
+          "sprite": "isr_m60"
+        }
       ],
       "egy_syr": [
-        { "tech_min": 1, "sprite": "egy_t55" },
-        { "tech_min": 2, "sprite": "egy_t62" }
+        {
+          "tech_min": 1,
+          "sprite": "egy_t55"
+        },
+        {
+          "tech_min": 2,
+          "sprite": "egy_t62"
+        }
       ]
     },
     "mech": {
       "tech_branch": "armor",
       "isr": [
-        { "tech_min": 1, "sprite": "isr_m3_halftrack" },
-        { "tech_min": 2, "sprite": "isr_m113" }
+        {
+          "tech_min": 1,
+          "sprite": "isr_m3_halftrack"
+        },
+        {
+          "tech_min": 2,
+          "sprite": "isr_m113"
+        }
       ],
       "egy_syr": [
-        { "tech_min": 1, "sprite": "egy_btr152", "variants": ["egy_btr50"] },
-        { "tech_min": 2, "sprite": "egy_bmp1" }
+        {
+          "tech_min": 1,
+          "sprite": "egy_btr152",
+          "variants": [
+            "egy_btr50"
+          ]
+        },
+        {
+          "tech_min": 2,
+          "sprite": "egy_bmp1"
+        }
       ]
     },
     "infantry": {
       "tech_branch": "antitank",
       "isr": [
-        { "tech_min": 1, "sprite": "isr_infantry" },
-        { "tech_min": 2, "sprite": "isr_atgm_team" }
+        {
+          "tech_min": 1,
+          "sprite": "isr_infantry"
+        },
+        {
+          "tech_min": 2,
+          "sprite": "isr_atgm_team"
+        }
       ],
       "egy_syr": [
-        { "tech_min": 1, "sprite": "egy_infantry" },
-        { "tech_min": 2, "sprite": "egy_atgm_team" }
+        {
+          "tech_min": 1,
+          "sprite": "egy_infantry"
+        },
+        {
+          "tech_min": 2,
+          "sprite": "egy_atgm_team"
+        }
       ]
     },
     "commando": {
       "tech_branch": null,
       "isr": [
-        { "tech_min": 1, "sprite": "isr_paratroopers" }
+        {
+          "tech_min": 1,
+          "sprite": "isr_paratroopers"
+        }
       ],
       "egy_syr": [
-        { "tech_min": 1, "sprite": "egy_saiqa" }
+        {
+          "tech_min": 1,
+          "sprite": "egy_saiqa"
+        }
       ]
     },
     "artillery": {
       "tech_branch": null,
       "isr": [
-        { "tech_min": 1, "sprite": "isr_m109" }
+        {
+          "tech_min": 1,
+          "sprite": "isr_m109"
+        }
       ],
       "egy_syr": [
-        { "tech_min": 1, "sprite": "egy_m46" }
+        {
+          "tech_min": 1,
+          "sprite": "egy_m46"
+        }
       ]
     },
     "engineer": {
       "tech_branch": null,
       "isr": [
-        { "tech_min": 1, "sprite": "isr_bridging" }
+        {
+          "tech_min": 1,
+          "sprite": "isr_bridging"
+        }
       ],
       "egy_syr": [
-        { "tech_min": 1, "sprite": "egy_pmp" }
+        {
+          "tech_min": 1,
+          "sprite": "egy_pmp"
+        }
       ]
     },
     "hq": {
       "tech_branch": null,
       "isr": [
-        { "tech_min": 1, "sprite": "isr_hq" }
+        {
+          "tech_min": 1,
+          "sprite": "isr_hq"
+        }
       ],
       "egy_syr": [
-        { "tech_min": 1, "sprite": "egy_hq" }
+        {
+          "tech_min": 1,
+          "sprite": "egy_hq"
+        }
       ]
     },
     "sam_static": {
       "tech_branch": "air_defense",
       "isr": [
-        { "tech_min": 1, "sprite": "isr_hawk" }
+        {
+          "tech_min": 1,
+          "sprite": "isr_hawk"
+        }
       ],
       "egy_syr": [
-        { "tech_min": 1, "sprite": "egy_sa2" }
+        {
+          "tech_min": 1,
+          "sprite": "egy_sa2"
+        }
       ]
     },
     "sam_mobile": {
       "tech_branch": "air_defense",
       "isr": [],
       "egy_syr": [
-        { "tech_min": 1, "sprite": "egy_sa6", "variants": ["egy_zsu23"] }
+        {
+          "tech_min": 1,
+          "sprite": "egy_sa6",
+          "variants": [
+            "egy_zsu23"
+          ]
+        }
       ]
     },
     "fighter": {
       "tech_branch": "aviation",
       "isr": [
-        { "tech_min": 1, "sprite": "isr_mirage3" },
-        { "tech_min": 2, "sprite": "isr_f4" }
+        {
+          "tech_min": 1,
+          "sprite": "isr_mirage3"
+        },
+        {
+          "tech_min": 2,
+          "sprite": "isr_f4"
+        }
       ],
       "egy_syr": [
-        { "tech_min": 1, "sprite": "egy_mig21" }
+        {
+          "tech_min": 1,
+          "sprite": "egy_mig21"
+        }
       ]
     },
     "strike": {
       "tech_branch": "aviation",
       "isr": [
-        { "tech_min": 1, "sprite": "isr_a4" }
+        {
+          "tech_min": 1,
+          "sprite": "isr_a4"
+        }
       ],
       "egy_syr": [
-        { "tech_min": 1, "sprite": "egy_mig17" },
-        { "tech_min": 2, "sprite": "egy_su7" }
+        {
+          "tech_min": 1,
+          "sprite": "egy_mig17"
+        },
+        {
+          "tech_min": 2,
+          "sprite": "egy_su7"
+        }
       ]
     },
     "missile_boat": {
       "tech_branch": null,
       "isr": [
-        { "tech_min": 1, "sprite": "isr_saar3" }
+        {
+          "tech_min": 1,
+          "sprite": "isr_saar3"
+        }
       ],
       "egy_syr": [
-        { "tech_min": 1, "sprite": "egy_osa" }
+        {
+          "tech_min": 1,
+          "sprite": "egy_osa"
+        }
       ]
     }
   },

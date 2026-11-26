@@ -27,6 +27,13 @@ const EXPECTED_TERRAIN: usize = 10;
 const EXPECTED_UNITS: usize = 37;
 const EXPECTED_OBJECTS: usize = 2;
 const SPRITE_SIDES: [&str; 2] = ["isr", "egy_syr"];
+/// Miniatures pack (style `miniature`): `assets/units_minis/<side>/<id>.png`.
+const MINIS_DIR: &str = "units_minis";
+const EXPECTED_MINIS: usize = 32;
+/// The model's lowest opaque row must sit at the manifest anchor ± this share.
+const ANCHOR_TOLERANCE: f64 = 0.06;
+/// Alpha from which a pixel counts as part of the model (soft shadows are lighter).
+const MODEL_ALPHA: u8 = 128;
 
 pub struct Options {
     assets: PathBuf,
@@ -83,10 +90,33 @@ pub struct SpriteClass {
     pub egy_syr: Vec<SpriteTier>,
 }
 
+/// A unit picture style: folder under `assets/` and the anchor (contact point).
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct StyleDef {
+    pub dir: String,
+    pub anchor: [f64; 2],
+    /// Per-picture anchors; pictures missing here fall back to the medallion.
+    #[serde(default)]
+    pub manifest: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+struct MiniEntry {
+    id: String,
+    side: String,
+    style: String,
+    anchor: [f64; 2],
+}
+
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct SpritesFile {
     pub sprite_sides: BTreeMap<String, serde_json::Value>,
+    #[serde(default)]
+    pub styles: BTreeMap<String, StyleDef>,
+    #[serde(default)]
+    pub default_style: Option<String>,
     /// Terrain id from data/terrain.json → texture id in assets/terrain.
     pub terrain: BTreeMap<String, String>,
     /// Textures kept for later terrain types or variants.
@@ -219,6 +249,8 @@ enum Status {
     TouchesEdge,
     Seam(f64, f64),
     Unreadable(String),
+    /// Miniature: the model's bottom is not at the manifest anchor.
+    AnchorOff(f64, f64),
 }
 
 impl Status {
@@ -231,6 +263,9 @@ impl Status {
             Status::TouchesEdge => "касается края".into(),
             Status::Seam(h, v) => format!("шов (отношение л–п {h:.2}, в–н {v:.2})"),
             Status::Unreadable(e) => format!("не читается ({e})"),
+            Status::AnchorOff(bottom, anchor) => {
+                format!("низ модели {bottom:.2}, а якорь {anchor:.2}")
+            }
         }
     }
 }
@@ -387,6 +422,107 @@ fn png_bytes(dir: &Path) -> u64 {
         .sum()
 }
 
+/// Lowest opaque row (share of the height, bottom edge) and the horizontal
+/// centre of the opaque box (share of the width).
+fn model_contact(img: &DynamicImage) -> Option<(f64, f64)> {
+    let rgba = img.to_rgba8();
+    let (w, h) = rgba.dimensions();
+    let (mut x0, mut x1, mut y1) = (w, 0, None);
+    for (x, y, p) in rgba.enumerate_pixels() {
+        if p[3] >= MODEL_ALPHA {
+            x0 = x0.min(x);
+            x1 = x1.max(x);
+            y1 = Some(y1.map_or(y, |v: u32| v.max(y)));
+        }
+    }
+    let y1 = y1?;
+    Some((
+        f64::from(y1 + 1) / f64::from(h),
+        f64::from(x0 + x1 + 1) / 2.0 / f64::from(w),
+    ))
+}
+
+/// The miniatures pack: format, transparent border, anchor against the model;
+/// plus the sprites that will fall back to the medallion.
+/// Rows, problems, and sprites that fall back to the medallion.
+type MinisCheck = (Vec<Row>, Vec<String>, Vec<String>);
+
+fn check_minis(o: &Options, sprites: &SpritesFile) -> Result<MinisCheck, String> {
+    let path = o.assets.join(MINIS_DIR).join("manifest.json");
+    let manifest: Vec<MiniEntry> = serde_json::from_str(
+        &fs::read_to_string(&path).map_err(|e| format!("{}: {e}", path.display()))?,
+    )
+    .map_err(|e| format!("{MINIS_DIR}/manifest.json: {e}"))?;
+    let mut rows = Vec::new();
+    let mut problems = Vec::new();
+    for e in &manifest {
+        let rel = format!("{MINIS_DIR}/{}/{}.png", e.side, e.id);
+        let mut notes = Vec::new();
+        let mut statuses = check_file(&o.assets.join(&rel), UNIT_SIZE, false, o.fix, &mut notes);
+        if !SPRITE_SIDES.contains(&e.side.as_str()) || e.style != "miniature" {
+            statuses.push(Status::Unreadable(format!(
+                "сторона `{}`, стиль `{}`",
+                e.side, e.style
+            )));
+        }
+        if let Ok(img) = image::open(o.assets.join(&rel)) {
+            if let Some((bottom, cx)) = model_contact(&img) {
+                notes.push(format!(
+                    "низ {bottom:.2} (якорь {:.2}), центр {cx:.2}",
+                    e.anchor[1]
+                ));
+                if (bottom - e.anchor[1]).abs() > ANCHOR_TOLERANCE {
+                    statuses.retain(|s| *s != Status::Ok);
+                    statuses.push(Status::AnchorOff(bottom, e.anchor[1]));
+                }
+            }
+        }
+        rows.push(Row {
+            id: e.id.clone(),
+            path: rel,
+            statuses,
+            notes,
+        });
+    }
+    if manifest.len() != EXPECTED_MINIS {
+        problems.push(format!(
+            "{MINIS_DIR}/manifest.json: {} entries, expected {EXPECTED_MINIS}",
+            manifest.len()
+        ));
+    }
+    for (name, style) in &sprites.styles {
+        if !o.assets.join(&style.dir).is_dir() {
+            problems.push(format!(
+                "style `{name}`: folder assets/{} missing",
+                style.dir
+            ));
+        }
+        if style.anchor.iter().any(|v| !(0.0..=1.0).contains(v)) {
+            problems.push(format!("style `{name}`: anchor must be within 0..1"));
+        }
+        if let Some(m) = &style.manifest {
+            if !o.assets.join(m).is_file() {
+                problems.push(format!("style `{name}`: manifest assets/{m} missing"));
+            }
+        }
+    }
+    if let Some(d) = &sprites.default_style {
+        if !sprites.styles.contains_key(d) {
+            problems.push(format!("default_style `{d}` is not in styles"));
+        }
+    }
+    let have: BTreeSet<(String, String)> = manifest
+        .iter()
+        .map(|e| (e.side.clone(), e.id.clone()))
+        .collect();
+    let fallback = referenced_sprites(sprites)
+        .into_iter()
+        .filter(|k| !have.contains(k))
+        .map(|(side, id)| format!("{side}/{id}"))
+        .collect();
+    Ok((rows, problems, fallback))
+}
+
 pub fn run(o: &Options) -> Result<(), String> {
     let manifest_path = o.assets.join("manifest.json");
     let manifest: Vec<ManifestEntry> = serde_json::from_str(
@@ -448,20 +584,34 @@ pub fn run(o: &Options) -> Result<(), String> {
         ));
     }
     problems.extend(check_sprites(&o.data, &o.assets)?);
+    let sprites_path = o.data.join("sprites.json");
+    let sprites: SpritesFile = serde_json::from_str(
+        &fs::read_to_string(&sprites_path)
+            .map_err(|e| format!("{}: {e}", sprites_path.display()))?,
+    )
+    .map_err(|e| format!("sprites.json: {e}"))?;
+    let (minis, mini_problems, fallback) = check_minis(o, &sprites)?;
+    problems.extend(mini_problems);
 
     let total = png_bytes(&o.assets);
     let game = png_bytes(&o.assets.join("terrain"))
         + png_bytes(&o.assets.join("units"))
+        + png_bytes(&o.assets.join(MINIS_DIR))
         + png_bytes(&o.assets.join("objects"));
-    let bad = rows.iter().filter(|r| r.statuses != [Status::Ok]).count();
-    let report = render(&rows, &problems, total, game);
+    let bad = rows
+        .iter()
+        .chain(&minis)
+        .filter(|r| r.statuses != [Status::Ok])
+        .count();
+    let mut report = render(&rows, &problems, total, game);
+    report.push_str(&render_minis(&minis, &fallback));
     if let Some(dir) = o.report.parent() {
         fs::create_dir_all(dir).map_err(|e| e.to_string())?;
     }
     fs::write(&o.report, report).map_err(|e| format!("{}: {e}", o.report.display()))?;
     eprintln!(
         "{} files, {bad} with problems, {} other problems; report: {}",
-        rows.len(),
+        rows.len() + minis.len(),
         problems.len(),
         o.report.display()
     );
@@ -473,6 +623,46 @@ pub fn run(o: &Options) -> Result<(), String> {
 
 fn mb(bytes: u64) -> String {
     format!("{:.1} МБ", bytes as f64 / (1024.0 * 1024.0))
+}
+
+fn render_minis(rows: &[Row], fallback: &[String]) -> String {
+    let mut s = String::new();
+    let ok = rows.iter().filter(|r| r.statuses == [Status::Ok]).count();
+    let _ = writeln!(s, "\n## Миниатюры (стиль `miniature`)\n");
+    let _ = writeln!(
+        s,
+        "Папка `assets/{MINIS_DIR}/`, файлов по манифесту: {}, в порядке: {ok}. Проверки как у медальонов (512 × 512, RGBA, прозрачная рамка) и якорь: самая нижняя строка модели (альфа ≥ {MODEL_ALPHA}) должна быть на `anchor[1]` из манифеста ± {ANCHOR_TOLERANCE}.\n",
+        rows.len()
+    );
+    if fallback.is_empty() {
+        let _ = writeln!(s, "У всех спрайтов из `sprites.json` есть миниатюра.\n");
+    } else {
+        let _ = writeln!(
+            s,
+            "Нет миниатюры — показывается медальон (запасной режим): {}.\n",
+            fallback
+                .iter()
+                .map(|f| format!("`{f}`"))
+                .collect::<Vec<_>>()
+                .join(", ")
+        );
+    }
+    let _ = writeln!(
+        s,
+        "| id | файл | статус | детали |\n| --- | --- | --- | --- |"
+    );
+    for r in rows {
+        let status: Vec<String> = r.statuses.iter().map(Status::label).collect();
+        let _ = writeln!(
+            s,
+            "| {} | `{}` | {} | {} |",
+            r.id,
+            r.path,
+            status.join("; "),
+            r.notes.join("; ")
+        );
+    }
+    s
 }
 
 fn render(rows: &[Row], problems: &[String], total: u64, game: u64) -> String {

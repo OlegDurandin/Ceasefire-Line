@@ -1,0 +1,450 @@
+[
+  {
+    "id": "isr_centurion",
+    "file": "isr/isr_centurion.png",
+    "side": "isr",
+    "template": "ground",
+    "style": "miniature",
+    "width": 512,
+    "height": 512,
+    "anchor": [
+      0.5,
+      0.88
+    ],
+    "prompt": "Photo of a painted tabletop wargame miniature (15 mm scale), hand-painted matte model, crisp edge highlights, light dry-brush weathering, slightly chunky proportions; soft studio lighting from upper-left, entire model sharp; isolated, transparent background, small soft contact shadow, no base, ground or scenery except specified sculpted water for naval units; historically accurate 1967–1973 equipment; no text, numbers, flags, insignia, markings or watermarks. One model or specified figure group, square image. Subject: Israeli Centurion tank. Three-quarter view from above (camera about 40 degrees above the table), facing lower-left, centered, filling about 75% of the frame."
+  },
+  {
+    "id": "isr_m48",
+    "file": "isr/isr_m48.png",
+    "side": "isr",
+    "template": "ground",
+    "style": "miniature",
+    "width": 512,
+    "height": 512,
+    "anchor": [
+      0.5,
+      0.88
+    ],
+    "prompt": "Photo of a painted tabletop wargame miniature (15 mm scale), hand-painted matte model, crisp edge highlights, light dry-brush weathering, slightly chunky proportions; soft studio lighting from upper-left, entire model sharp; isolated, transparent background, small soft contact shadow, no base, ground or scenery except specified sculpted water for naval units; historically accurate 1967–1973 equipment; no text, numbers, flags, insignia, markings or watermarks. One model or specified figure group, square image. Subject: Israeli M48 Patton tank. Three-quarter view from above (camera about 40 degrees above the table), facing lower-left, centered, filling about 75% of the frame."
+  },
+  {
+    "id": "isr_m60",
+    "file": "isr/isr_m60.png",
+    "side": "isr",
+    "template": "ground",
+    "style": "miniature",
+    "width": 512,
+    "height": 512,
+    "anchor": [
+      0.5,
+      0.88
+    ],
+    "prompt": "Photo of a painted tabletop wargame miniature (15 mm scale), hand-painted matte model, crisp edge highlights, light dry-brush weathering, slightly chunky proportions; soft studio lighting from upper-left, entire model sharp; isolated, transparent background, small soft contact shadow, no base, ground or scenery except specified sculpted water for naval units; historically accurate 1967–1973 equipment; no text, numbers, flags, insignia, markings or watermarks. One model or specified figure group, square image. Subject: Israeli M60 tank. Three-quarter view from above (camera about 40 degrees above the table), facing lower-left, centered, filling about 75% of the frame."
+  },
+  {
+    "id": "isr_super_sherman",
+    "file": "isr/isr_super_sherman.png",
+    "side": "isr",
+    "template": "ground",
+    "style": "miniature",
+    "width": 512,
+    "height": 512,
+    "anchor": [
+      0.5,
+      0.88
+    ],
+    "prompt": "Photo of a painted tabletop wargame miniature (15 mm scale), hand-painted matte model, crisp edge highlights, light dry-brush weathering, slightly chunky proportions; soft studio lighting from upper-left, entire model sharp; isolated, transparent background, small soft contact shadow, no base, ground or scenery except specified sculpted water for naval units; historically accurate 1967–1973 equipment; no text, numbers, flags, insignia, markings or watermarks. One model or specified figure group, square image. Subject: Israeli M51 Super Sherman tank. Three-quarter view from above (camera about 40 degrees above the table), facing lower-left, centered, filling about 75% of the frame."
+  },
+  {
+    "id": "isr_m3_halftrack",
+    "file": "isr/isr_m3_halftrack.png",
+    "side": "isr",
+    "template": "ground",
+    "style": "miniature",
+    "width": 512,
+    "height": 512,
+    "anchor": [
+      0.5,
+      0.88
+    ],
+    "prompt": "Photo of a painted tabletop wargame miniature (15 mm scale), hand-painted matte model, crisp edge highlights, light dry-brush weathering, slightly chunky proportions; soft studio lighting from upper-left, entire model sharp; isolated, transparent background, small soft contact shadow, no base, ground or scenery except specified sculpted water for naval units; historically accurate 1967–1973 equipment; no text, numbers, flags, insignia, markings or watermarks. One model or specified figure group, square image. Subject: Israeli M3 half-track carrying infantry. Three-quarter view from above (camera about 40 degrees above the table), facing lower-left, centered, filling about 75% of the frame."
+  },
+  {
+    "id": "isr_m113",
+    "file": "isr/isr_m113.png",
+    "side": "isr",
+    "template": "ground",
+    "style": "miniature",
+    "width": 512,
+    "height": 512,
+    "anchor": [
+      0.5,
+      0.88
+    ],
+    "prompt": "Photo of a painted tabletop wargame miniature (15 mm scale), hand-painted matte model, crisp edge highlights, light dry-brush weathering, slightly chunky proportions; soft studio lighting from upper-left, entire model sharp; isolated, transparent background, small soft contact shadow, no base, ground or scenery except specified sculpted water for naval units; historically accurate 1967–1973 equipment; no text, numbers, flags, insignia, markings or watermarks. One model or specified figure group, square image. Subject: Israeli M113 armored personnel carrier. Three-quarter view from above (camera about 40 degrees above the table), facing lower-left, centered, filling about 75% of the frame."
+  },
+  {
+    "id": "isr_infantry",
+    "file": "isr/isr_infantry.png",
+    "side": "isr",
+    "template": "ground",
+    "style": "miniature",
+    "width": 512,
+    "height": 512,
+    "anchor": [
+      0.5,
+      0.88
+    ],
+    "prompt": "Photo of a painted tabletop wargame miniature (15 mm scale), hand-painted matte model, crisp edge highlights, light dry-brush weathering, slightly chunky proportions; soft studio lighting from upper-left, entire model sharp; isolated, transparent background, small soft contact shadow, no base, ground or scenery except specified sculpted water for naval units; historically accurate 1967–1973 equipment; no text, numbers, flags, insignia, markings or watermarks. One model or specified figure group, square image. Subject: Israeli three infantrymen in olive-drab fatigues advancing with rifles. Three-quarter view from above (camera about 40 degrees above the table), facing lower-left, centered, filling about 75% of the frame."
+  },
+  {
+    "id": "isr_m109",
+    "file": "isr/isr_m109.png",
+    "side": "isr",
+    "template": "ground",
+    "style": "miniature",
+    "width": 512,
+    "height": 512,
+    "anchor": [
+      0.5,
+      0.88
+    ],
+    "prompt": "Photo of a painted tabletop wargame miniature (15 mm scale), hand-painted matte model, crisp edge highlights, light dry-brush weathering, slightly chunky proportions; soft studio lighting from upper-left, entire model sharp; isolated, transparent background, small soft contact shadow, no base, ground or scenery except specified sculpted water for naval units; historically accurate 1967–1973 equipment; no text, numbers, flags, insignia, markings or watermarks. One model or specified figure group, square image. Subject: Israeli M109 self-propelled howitzer. Three-quarter view from above (camera about 40 degrees above the table), facing lower-left, centered, filling about 75% of the frame."
+  },
+  {
+    "id": "isr_bridging",
+    "file": "isr/isr_bridging.png",
+    "side": "isr",
+    "template": "ground",
+    "style": "miniature",
+    "width": 512,
+    "height": 512,
+    "anchor": [
+      0.5,
+      0.88
+    ],
+    "prompt": "Photo of a painted tabletop wargame miniature (15 mm scale), hand-painted matte model, crisp edge highlights, light dry-brush weathering, slightly chunky proportions; soft studio lighting from upper-left, entire model sharp; isolated, transparent background, small soft contact shadow, no base, ground or scenery except specified sculpted water for naval units; historically accurate 1967–1973 equipment; no text, numbers, flags, insignia, markings or watermarks. One model or specified figure group, square image. Subject: Israeli military bridging vehicle carrying a pontoon section. Three-quarter view from above (camera about 40 degrees above the table), facing lower-left, centered, filling about 75% of the frame."
+  },
+  {
+    "id": "isr_hq",
+    "file": "isr/isr_hq.png",
+    "side": "isr",
+    "template": "ground",
+    "style": "miniature",
+    "width": 512,
+    "height": 512,
+    "anchor": [
+      0.5,
+      0.88
+    ],
+    "prompt": "Photo of a painted tabletop wargame miniature (15 mm scale), hand-painted matte model, crisp edge highlights, light dry-brush weathering, slightly chunky proportions; soft studio lighting from upper-left, entire model sharp; isolated, transparent background, small soft contact shadow, no base, ground or scenery except specified sculpted water for naval units; historically accurate 1967–1973 equipment; no text, numbers, flags, insignia, markings or watermarks. One model or specified figure group, square image. Subject: Israeli command half-track with several tall radio antennas. Three-quarter view from above (camera about 40 degrees above the table), facing lower-left, centered, filling about 75% of the frame."
+  },
+  {
+    "id": "isr_mirage3",
+    "file": "isr/isr_mirage3.png",
+    "side": "isr",
+    "template": "air",
+    "style": "miniature",
+    "width": 512,
+    "height": 512,
+    "anchor": [
+      0.5,
+      0.88
+    ],
+    "prompt": "Photo of a painted tabletop wargame miniature (15 mm scale), hand-painted matte model, crisp edge highlights, light dry-brush weathering, slightly chunky proportions; soft studio lighting from upper-left, entire model sharp; isolated, transparent background, small soft contact shadow, no base, ground or scenery except specified sculpted water for naval units; historically accurate 1967–1973 equipment; no text, numbers, flags, insignia, markings or watermarks. One model or specified figure group, square image. Subject: Israeli Mirage III fighter jet. In flight on an invisible stand, seen from above at a slight angle, heading toward upper-left, centered, filling about 75% of the frame."
+  },
+  {
+    "id": "isr_a4",
+    "file": "isr/isr_a4.png",
+    "side": "isr",
+    "template": "air",
+    "style": "miniature",
+    "width": 512,
+    "height": 512,
+    "anchor": [
+      0.5,
+      0.88
+    ],
+    "prompt": "Photo of a painted tabletop wargame miniature (15 mm scale), hand-painted matte model, crisp edge highlights, light dry-brush weathering, slightly chunky proportions; soft studio lighting from upper-left, entire model sharp; isolated, transparent background, small soft contact shadow, no base, ground or scenery except specified sculpted water for naval units; historically accurate 1967–1973 equipment; no text, numbers, flags, insignia, markings or watermarks. One model or specified figure group, square image. Subject: Israeli A-4 Skyhawk attack jet. In flight on an invisible stand, seen from above at a slight angle, heading toward upper-left, centered, filling about 75% of the frame."
+  },
+  {
+    "id": "isr_f4",
+    "file": "isr/isr_f4.png",
+    "side": "isr",
+    "template": "air",
+    "style": "miniature",
+    "width": 512,
+    "height": 512,
+    "anchor": [
+      0.5,
+      0.88
+    ],
+    "prompt": "Photo of a painted tabletop wargame miniature (15 mm scale), hand-painted matte model, crisp edge highlights, light dry-brush weathering, slightly chunky proportions; soft studio lighting from upper-left, entire model sharp; isolated, transparent background, small soft contact shadow, no base, ground or scenery except specified sculpted water for naval units; historically accurate 1967–1973 equipment; no text, numbers, flags, insignia, markings or watermarks. One model or specified figure group, square image. Subject: Israeli F-4 Phantom II jet. In flight on an invisible stand, seen from above at a slight angle, heading toward upper-left, centered, filling about 75% of the frame."
+  },
+  {
+    "id": "isr_super_frelon",
+    "file": "isr/isr_super_frelon.png",
+    "side": "isr",
+    "template": "air",
+    "style": "miniature",
+    "width": 512,
+    "height": 512,
+    "anchor": [
+      0.5,
+      0.88
+    ],
+    "prompt": "Photo of a painted tabletop wargame miniature (15 mm scale), hand-painted matte model, crisp edge highlights, light dry-brush weathering, slightly chunky proportions; soft studio lighting from upper-left, entire model sharp; isolated, transparent background, small soft contact shadow, no base, ground or scenery except specified sculpted water for naval units; historically accurate 1967–1973 equipment; no text, numbers, flags, insignia, markings or watermarks. One model or specified figure group, square image. Subject: Israeli Super Frelon heavy transport helicopter. In flight on an invisible stand, seen from above at a slight angle, heading toward upper-left, centered, filling about 75% of the frame."
+  },
+  {
+    "id": "isr_saar3",
+    "file": "isr/isr_saar3.png",
+    "side": "isr",
+    "template": "ground",
+    "style": "miniature",
+    "width": 512,
+    "height": 512,
+    "anchor": [
+      0.5,
+      0.88
+    ],
+    "prompt": "Photo of a painted tabletop wargame miniature (15 mm scale), hand-painted matte model, crisp edge highlights, light dry-brush weathering, slightly chunky proportions; soft studio lighting from upper-left, entire model sharp; isolated, transparent background, small soft contact shadow, no base, ground or scenery except specified sculpted water for naval units; historically accurate 1967–1973 equipment; no text, numbers, flags, insignia, markings or watermarks. One model or specified figure group, square image. Subject: Israeli Sa'ar 3 class missile boat on a small patch of sculpted water. Three-quarter view from above (camera about 40 degrees above the table), facing lower-left, centered, filling about 75% of the frame."
+  },
+  {
+    "id": "egy_t55",
+    "file": "egy_syr/egy_t55.png",
+    "side": "egy_syr",
+    "template": "ground",
+    "style": "miniature",
+    "width": 512,
+    "height": 512,
+    "anchor": [
+      0.5,
+      0.88
+    ],
+    "prompt": "Photo of a painted tabletop wargame miniature (15 mm scale), hand-painted matte model, crisp edge highlights, light dry-brush weathering, slightly chunky proportions; soft studio lighting from upper-left, entire model sharp; isolated, transparent background, small soft contact shadow, no base, ground or scenery except specified sculpted water for naval units; historically accurate 1967–1973 equipment; no text, numbers, flags, insignia, markings or watermarks. One model or specified figure group, square image. Subject: Egyptian T-55 tank. Three-quarter view from above (camera about 40 degrees above the table), facing lower-left, centered, filling about 75% of the frame."
+  },
+  {
+    "id": "egy_t62",
+    "file": "egy_syr/egy_t62.png",
+    "side": "egy_syr",
+    "template": "ground",
+    "style": "miniature",
+    "width": 512,
+    "height": 512,
+    "anchor": [
+      0.5,
+      0.88
+    ],
+    "prompt": "Photo of a painted tabletop wargame miniature (15 mm scale), hand-painted matte model, crisp edge highlights, light dry-brush weathering, slightly chunky proportions; soft studio lighting from upper-left, entire model sharp; isolated, transparent background, small soft contact shadow, no base, ground or scenery except specified sculpted water for naval units; historically accurate 1967–1973 equipment; no text, numbers, flags, insignia, markings or watermarks. One model or specified figure group, square image. Subject: Egyptian T-62 tank. Three-quarter view from above (camera about 40 degrees above the table), facing lower-left, centered, filling about 75% of the frame."
+  },
+  {
+    "id": "egy_btr152",
+    "file": "egy_syr/egy_btr152.png",
+    "side": "egy_syr",
+    "template": "ground",
+    "style": "miniature",
+    "width": 512,
+    "height": 512,
+    "anchor": [
+      0.5,
+      0.88
+    ],
+    "prompt": "Photo of a painted tabletop wargame miniature (15 mm scale), hand-painted matte model, crisp edge highlights, light dry-brush weathering, slightly chunky proportions; soft studio lighting from upper-left, entire model sharp; isolated, transparent background, small soft contact shadow, no base, ground or scenery except specified sculpted water for naval units; historically accurate 1967–1973 equipment; no text, numbers, flags, insignia, markings or watermarks. One model or specified figure group, square image. Subject: Egyptian BTR-152 wheeled armored personnel carrier. Three-quarter view from above (camera about 40 degrees above the table), facing lower-left, centered, filling about 75% of the frame."
+  },
+  {
+    "id": "egy_btr50",
+    "file": "egy_syr/egy_btr50.png",
+    "side": "egy_syr",
+    "template": "ground",
+    "style": "miniature",
+    "width": 512,
+    "height": 512,
+    "anchor": [
+      0.5,
+      0.88
+    ],
+    "prompt": "Photo of a painted tabletop wargame miniature (15 mm scale), hand-painted matte model, crisp edge highlights, light dry-brush weathering, slightly chunky proportions; soft studio lighting from upper-left, entire model sharp; isolated, transparent background, small soft contact shadow, no base, ground or scenery except specified sculpted water for naval units; historically accurate 1967–1973 equipment; no text, numbers, flags, insignia, markings or watermarks. One model or specified figure group, square image. Subject: Egyptian BTR-50 tracked armored personnel carrier. Three-quarter view from above (camera about 40 degrees above the table), facing lower-left, centered, filling about 75% of the frame."
+  },
+  {
+    "id": "egy_bmp1",
+    "file": "egy_syr/egy_bmp1.png",
+    "side": "egy_syr",
+    "template": "ground",
+    "style": "miniature",
+    "width": 512,
+    "height": 512,
+    "anchor": [
+      0.5,
+      0.88
+    ],
+    "prompt": "Photo of a painted tabletop wargame miniature (15 mm scale), hand-painted matte model, crisp edge highlights, light dry-brush weathering, slightly chunky proportions; soft studio lighting from upper-left, entire model sharp; isolated, transparent background, small soft contact shadow, no base, ground or scenery except specified sculpted water for naval units; historically accurate 1967–1973 equipment; no text, numbers, flags, insignia, markings or watermarks. One model or specified figure group, square image. Subject: Egyptian BMP-1 infantry fighting vehicle. Three-quarter view from above (camera about 40 degrees above the table), facing lower-left, centered, filling about 75% of the frame."
+  },
+  {
+    "id": "egy_infantry",
+    "file": "egy_syr/egy_infantry.png",
+    "side": "egy_syr",
+    "template": "ground",
+    "style": "miniature",
+    "width": 512,
+    "height": 512,
+    "anchor": [
+      0.5,
+      0.88
+    ],
+    "prompt": "Photo of a painted tabletop wargame miniature (15 mm scale), hand-painted matte model, crisp edge highlights, light dry-brush weathering, slightly chunky proportions; soft studio lighting from upper-left, entire model sharp; isolated, transparent background, small soft contact shadow, no base, ground or scenery except specified sculpted water for naval units; historically accurate 1967–1973 equipment; no text, numbers, flags, insignia, markings or watermarks. One model or specified figure group, square image. Subject: Egyptian three infantrymen in khaki uniforms advancing with rifles. Three-quarter view from above (camera about 40 degrees above the table), facing lower-left, centered, filling about 75% of the frame."
+  },
+  {
+    "id": "egy_atgm_team",
+    "file": "egy_syr/egy_atgm_team.png",
+    "side": "egy_syr",
+    "template": "ground",
+    "style": "miniature",
+    "width": 512,
+    "height": 512,
+    "anchor": [
+      0.5,
+      0.88
+    ],
+    "prompt": "Photo of a painted tabletop wargame miniature (15 mm scale), hand-painted matte model, crisp edge highlights, light dry-brush weathering, slightly chunky proportions; soft studio lighting from upper-left, entire model sharp; isolated, transparent background, small soft contact shadow, no base, ground or scenery except specified sculpted water for naval units; historically accurate 1967–1973 equipment; no text, numbers, flags, insignia, markings or watermarks. One model or specified figure group, square image. Subject: Egyptian three-man anti-tank team: one with an RPG-7, two with a small wire-guided anti-tank missile launcher on the ground. Three-quarter view from above (camera about 40 degrees above the table), facing lower-left, centered, filling about 75% of the frame."
+  },
+  {
+    "id": "egy_m46",
+    "file": "egy_syr/egy_m46.png",
+    "side": "egy_syr",
+    "template": "ground",
+    "style": "miniature",
+    "width": 512,
+    "height": 512,
+    "anchor": [
+      0.5,
+      0.88
+    ],
+    "prompt": "Photo of a painted tabletop wargame miniature (15 mm scale), hand-painted matte model, crisp edge highlights, light dry-brush weathering, slightly chunky proportions; soft studio lighting from upper-left, entire model sharp; isolated, transparent background, small soft contact shadow, no base, ground or scenery except specified sculpted water for naval units; historically accurate 1967–1973 equipment; no text, numbers, flags, insignia, markings or watermarks. One model or specified figure group, square image. Subject: Egyptian M-46 130 mm towed field gun with two crew figures. Three-quarter view from above (camera about 40 degrees above the table), facing lower-left, centered, filling about 75% of the frame."
+  },
+  {
+    "id": "egy_sa2",
+    "file": "egy_syr/egy_sa2.png",
+    "side": "egy_syr",
+    "template": "ground",
+    "style": "miniature",
+    "width": 512,
+    "height": 512,
+    "anchor": [
+      0.5,
+      0.88
+    ],
+    "prompt": "Photo of a painted tabletop wargame miniature (15 mm scale), hand-painted matte model, crisp edge highlights, light dry-brush weathering, slightly chunky proportions; soft studio lighting from upper-left, entire model sharp; isolated, transparent background, small soft contact shadow, no base, ground or scenery except specified sculpted water for naval units; historically accurate 1967–1973 equipment; no text, numbers, flags, insignia, markings or watermarks. One model or specified figure group, square image. Subject: Egyptian SA-2 surface-to-air missile on its launcher. Three-quarter view from above (camera about 40 degrees above the table), facing lower-left, centered, filling about 75% of the frame."
+  },
+  {
+    "id": "egy_sa6",
+    "file": "egy_syr/egy_sa6.png",
+    "side": "egy_syr",
+    "template": "ground",
+    "style": "miniature",
+    "width": 512,
+    "height": 512,
+    "anchor": [
+      0.5,
+      0.88
+    ],
+    "prompt": "Photo of a painted tabletop wargame miniature (15 mm scale), hand-painted matte model, crisp edge highlights, light dry-brush weathering, slightly chunky proportions; soft studio lighting from upper-left, entire model sharp; isolated, transparent background, small soft contact shadow, no base, ground or scenery except specified sculpted water for naval units; historically accurate 1967–1973 equipment; no text, numbers, flags, insignia, markings or watermarks. One model or specified figure group, square image. Subject: Egyptian SA-6 (2K12 Kub) tracked launcher with three missiles. Three-quarter view from above (camera about 40 degrees above the table), facing lower-left, centered, filling about 75% of the frame."
+  },
+  {
+    "id": "egy_zsu23",
+    "file": "egy_syr/egy_zsu23.png",
+    "side": "egy_syr",
+    "template": "ground",
+    "style": "miniature",
+    "width": 512,
+    "height": 512,
+    "anchor": [
+      0.5,
+      0.88
+    ],
+    "prompt": "Photo of a painted tabletop wargame miniature (15 mm scale), hand-painted matte model, crisp edge highlights, light dry-brush weathering, slightly chunky proportions; soft studio lighting from upper-left, entire model sharp; isolated, transparent background, small soft contact shadow, no base, ground or scenery except specified sculpted water for naval units; historically accurate 1967–1973 equipment; no text, numbers, flags, insignia, markings or watermarks. One model or specified figure group, square image. Subject: Egyptian ZSU-23-4 Shilka self-propelled anti-aircraft gun. Three-quarter view from above (camera about 40 degrees above the table), facing lower-left, centered, filling about 75% of the frame."
+  },
+  {
+    "id": "egy_pmp",
+    "file": "egy_syr/egy_pmp.png",
+    "side": "egy_syr",
+    "template": "ground",
+    "style": "miniature",
+    "width": 512,
+    "height": 512,
+    "anchor": [
+      0.5,
+      0.88
+    ],
+    "prompt": "Photo of a painted tabletop wargame miniature (15 mm scale), hand-painted matte model, crisp edge highlights, light dry-brush weathering, slightly chunky proportions; soft studio lighting from upper-left, entire model sharp; isolated, transparent background, small soft contact shadow, no base, ground or scenery except specified sculpted water for naval units; historically accurate 1967–1973 equipment; no text, numbers, flags, insignia, markings or watermarks. One model or specified figure group, square image. Subject: Egyptian military truck carrying a folded PMP pontoon bridge section. Three-quarter view from above (camera about 40 degrees above the table), facing lower-left, centered, filling about 75% of the frame."
+  },
+  {
+    "id": "egy_hq",
+    "file": "egy_syr/egy_hq.png",
+    "side": "egy_syr",
+    "template": "ground",
+    "style": "miniature",
+    "width": 512,
+    "height": 512,
+    "anchor": [
+      0.5,
+      0.88
+    ],
+    "prompt": "Photo of a painted tabletop wargame miniature (15 mm scale), hand-painted matte model, crisp edge highlights, light dry-brush weathering, slightly chunky proportions; soft studio lighting from upper-left, entire model sharp; isolated, transparent background, small soft contact shadow, no base, ground or scenery except specified sculpted water for naval units; historically accurate 1967–1973 equipment; no text, numbers, flags, insignia, markings or watermarks. One model or specified figure group, square image. Subject: Egyptian command truck with several tall radio antennas. Three-quarter view from above (camera about 40 degrees above the table), facing lower-left, centered, filling about 75% of the frame."
+  },
+  {
+    "id": "egy_mig21",
+    "file": "egy_syr/egy_mig21.png",
+    "side": "egy_syr",
+    "template": "air",
+    "style": "miniature",
+    "width": 512,
+    "height": 512,
+    "anchor": [
+      0.5,
+      0.88
+    ],
+    "prompt": "Photo of a painted tabletop wargame miniature (15 mm scale), hand-painted matte model, crisp edge highlights, light dry-brush weathering, slightly chunky proportions; soft studio lighting from upper-left, entire model sharp; isolated, transparent background, small soft contact shadow, no base, ground or scenery except specified sculpted water for naval units; historically accurate 1967–1973 equipment; no text, numbers, flags, insignia, markings or watermarks. One model or specified figure group, square image. Subject: Egyptian MiG-21 fighter jet. In flight on an invisible stand, seen from above at a slight angle, heading toward upper-left, centered, filling about 75% of the frame."
+  },
+  {
+    "id": "egy_su7",
+    "file": "egy_syr/egy_su7.png",
+    "side": "egy_syr",
+    "template": "air",
+    "style": "miniature",
+    "width": 512,
+    "height": 512,
+    "anchor": [
+      0.5,
+      0.88
+    ],
+    "prompt": "Photo of a painted tabletop wargame miniature (15 mm scale), hand-painted matte model, crisp edge highlights, light dry-brush weathering, slightly chunky proportions; soft studio lighting from upper-left, entire model sharp; isolated, transparent background, small soft contact shadow, no base, ground or scenery except specified sculpted water for naval units; historically accurate 1967–1973 equipment; no text, numbers, flags, insignia, markings or watermarks. One model or specified figure group, square image. Subject: Egyptian Su-7 attack jet. In flight on an invisible stand, seen from above at a slight angle, heading toward upper-left, centered, filling about 75% of the frame."
+  },
+  {
+    "id": "egy_mi8",
+    "file": "egy_syr/egy_mi8.png",
+    "side": "egy_syr",
+    "template": "air",
+    "style": "miniature",
+    "width": 512,
+    "height": 512,
+    "anchor": [
+      0.5,
+      0.88
+    ],
+    "prompt": "Photo of a painted tabletop wargame miniature (15 mm scale), hand-painted matte model, crisp edge highlights, light dry-brush weathering, slightly chunky proportions; soft studio lighting from upper-left, entire model sharp; isolated, transparent background, small soft contact shadow, no base, ground or scenery except specified sculpted water for naval units; historically accurate 1967–1973 equipment; no text, numbers, flags, insignia, markings or watermarks. One model or specified figure group, square image. Subject: Egyptian Mi-8 transport helicopter. In flight on an invisible stand, seen from above at a slight angle, heading toward upper-left, centered, filling about 75% of the frame."
+  },
+  {
+    "id": "egy_osa",
+    "file": "egy_syr/egy_osa.png",
+    "side": "egy_syr",
+    "template": "ground",
+    "style": "miniature",
+    "width": 512,
+    "height": 512,
+    "anchor": [
+      0.5,
+      0.88
+    ],
+    "prompt": "Photo of a painted tabletop wargame miniature (15 mm scale), hand-painted matte model, crisp edge highlights, light dry-brush weathering, slightly chunky proportions; soft studio lighting from upper-left, entire model sharp; isolated, transparent background, small soft contact shadow, no base, ground or scenery except specified sculpted water for naval units; historically accurate 1967–1973 equipment; no text, numbers, flags, insignia, markings or watermarks. One model or specified figure group, square image. Subject: Egyptian Osa class missile boat on a small patch of sculpted water. Three-quarter view from above (camera about 40 degrees above the table), facing lower-left, centered, filling about 75% of the frame."
+  }
+]

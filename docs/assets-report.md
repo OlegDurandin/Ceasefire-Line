@@ -1,6 +1,6 @@
 # Отчёт по ассетам
 
-Сгенерирован `sim assets-check`. Файлов по манифесту: 49, в порядке: 49. PNG всего: 29.9 МБ, из них игровые (terrain + units + objects): 27.8 МБ.
+Сгенерирован `sim assets-check`. Файлов по манифесту: 49, в порядке: 49. PNG всего: 38.0 МБ, из них игровые (terrain + units + objects): 35.9 МБ.
 
 Пороги: шов — отношение средней разницы RGB противоположных краёв к средней разнице соседних пикселей внутри > 1.5; у юнитов и объектов карты прозрачная рамка 1 px. Модели техники визуально не оценивались.
 
@@ -57,3 +57,44 @@
 | isr_paratroopers | `units/isr/isr_paratroopers.png` | ок |  |
 | egy_saiqa | `units/egy_syr/egy_saiqa.png` | ок |  |
 | egy_mig17 | `units/egy_syr/egy_mig17.png` | ок |  |
+
+## Миниатюры (стиль `miniature`)
+
+Папка `assets/units_minis/`, файлов по манифесту: 32, в порядке: 32. Проверки как у медальонов (512 × 512, RGBA, прозрачная рамка) и якорь: самая нижняя строка модели (альфа ≥ 128) должна быть на `anchor[1]` из манифеста ± 0.06.
+
+Нет миниатюры — показывается медальон (запасной режим): `egy_syr/egy_mig17`, `egy_syr/egy_saiqa`, `isr/isr_atgm_team`, `isr/isr_hawk`, `isr/isr_paratroopers`.
+
+| id | файл | статус | детали |
+| --- | --- | --- | --- |
+| isr_centurion | `units_minis/isr/isr_centurion.png` | ок | низ 0.86 (якорь 0.88), центр 0.50 |
+| isr_m48 | `units_minis/isr/isr_m48.png` | ок | низ 0.86 (якорь 0.88), центр 0.50 |
+| isr_m60 | `units_minis/isr/isr_m60.png` | ок | низ 0.86 (якорь 0.88), центр 0.50 |
+| isr_super_sherman | `units_minis/isr/isr_super_sherman.png` | ок | низ 0.86 (якорь 0.88), центр 0.50 |
+| isr_m3_halftrack | `units_minis/isr/isr_m3_halftrack.png` | ок | низ 0.86 (якорь 0.88), центр 0.50 |
+| isr_m113 | `units_minis/isr/isr_m113.png` | ок | низ 0.86 (якорь 0.88), центр 0.50 |
+| isr_infantry | `units_minis/isr/isr_infantry.png` | ок | низ 0.87 (якорь 0.88), центр 0.50 |
+| isr_m109 | `units_minis/isr/isr_m109.png` | ок | низ 0.87 (якорь 0.88), центр 0.50 |
+| isr_bridging | `units_minis/isr/isr_bridging.png` | ок | низ 0.87 (якорь 0.88), центр 0.50 |
+| isr_hq | `units_minis/isr/isr_hq.png` | ок | низ 0.87 (якорь 0.88), центр 0.50 |
+| isr_mirage3 | `units_minis/isr/isr_mirage3.png` | ок | низ 0.88 (якорь 0.88), центр 0.50 |
+| isr_a4 | `units_minis/isr/isr_a4.png` | ок | низ 0.83 (якорь 0.88), центр 0.50 |
+| isr_f4 | `units_minis/isr/isr_f4.png` | ок | низ 0.85 (якорь 0.88), центр 0.50 |
+| isr_super_frelon | `units_minis/isr/isr_super_frelon.png` | ок | низ 0.86 (якорь 0.88), центр 0.50 |
+| isr_saar3 | `units_minis/isr/isr_saar3.png` | ок | низ 0.88 (якорь 0.88), центр 0.50 |
+| egy_t55 | `units_minis/egy_syr/egy_t55.png` | ок | низ 0.86 (якорь 0.88), центр 0.50 |
+| egy_t62 | `units_minis/egy_syr/egy_t62.png` | ок | низ 0.87 (якорь 0.88), центр 0.50 |
+| egy_btr152 | `units_minis/egy_syr/egy_btr152.png` | ок | низ 0.87 (якорь 0.88), центр 0.50 |
+| egy_btr50 | `units_minis/egy_syr/egy_btr50.png` | ок | низ 0.86 (якорь 0.88), центр 0.50 |
+| egy_bmp1 | `units_minis/egy_syr/egy_bmp1.png` | ок | низ 0.86 (якорь 0.88), центр 0.50 |
+| egy_infantry | `units_minis/egy_syr/egy_infantry.png` | ок | низ 0.87 (якорь 0.88), центр 0.50 |
+| egy_atgm_team | `units_minis/egy_syr/egy_atgm_team.png` | ок | низ 0.88 (якорь 0.88), центр 0.50 |
+| egy_m46 | `units_minis/egy_syr/egy_m46.png` | ок | низ 0.88 (якорь 0.88), центр 0.50 |
+| egy_sa2 | `units_minis/egy_syr/egy_sa2.png` | ок | низ 0.88 (якорь 0.88), центр 0.50 |
+| egy_sa6 | `units_minis/egy_syr/egy_sa6.png` | ок | низ 0.87 (якорь 0.88), центр 0.50 |
+| egy_zsu23 | `units_minis/egy_syr/egy_zsu23.png` | ок | низ 0.87 (якорь 0.88), центр 0.50 |
+| egy_pmp | `units_minis/egy_syr/egy_pmp.png` | ок | низ 0.87 (якорь 0.88), центр 0.50 |
+| egy_hq | `units_minis/egy_syr/egy_hq.png` | ок | низ 0.87 (якорь 0.88), центр 0.50 |
+| egy_mig21 | `units_minis/egy_syr/egy_mig21.png` | ок | низ 0.88 (якорь 0.88), центр 0.50 |
+| egy_su7 | `units_minis/egy_syr/egy_su7.png` | ок | низ 0.88 (якорь 0.88), центр 0.50 |
+| egy_mi8 | `units_minis/egy_syr/egy_mi8.png` | ок | низ 0.88 (якорь 0.88), центр 0.50 |
+| egy_osa | `units_minis/egy_syr/egy_osa.png` | ок | низ 0.88 (якорь 0.88), центр 0.50 |
