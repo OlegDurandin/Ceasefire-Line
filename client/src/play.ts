@@ -82,7 +82,9 @@ const NIGHT_TINT = 0x8796c4;
 const LOG_LIMIT = 300;
 /** R-UI-04: how long the actual losses stay in the attack window. */
 const RESULT_MS = 1100;
-const TOAST_MS = 7000;
+/** Short notices («Партия сохранена») and scenario messages (story text, longer to read). */
+const NOTICE_MS = 2500;
+const MESSAGE_MS = 7000;
 /** Facing snapshots kept for «Отменить» (only movements are undone, so a few suffice). */
 const FACING_UNDO_LIMIT = 50;
 /** Minimap size in CSS px (fits the window's centre column). */
@@ -1066,10 +1068,10 @@ export class Play {
       if (e.type === "message") messages.push(line);
     }
     if (this.log.length > LOG_LIMIT) this.log.splice(0, this.log.length - LOG_LIMIT);
-    if (messages.length) this.toast(messages.join("<br>"));
+    if (messages.length) this.toast(messages.join("<br>"), MESSAGE_MS);
   }
 
-  private toast(html: string) {
+  private toast(html: string, ms = NOTICE_MS) {
     let el = document.getElementById("toast");
     if (!el) {
       el = document.createElement("div");
@@ -1082,7 +1084,7 @@ export class Play {
     const shown = el;
     window.setTimeout(() => {
       if (shown.innerHTML === html) shown.style.display = "none";
-    }, TOAST_MS);
+    }, ms);
   }
 
   private showOutcome() {
