@@ -152,6 +152,7 @@ fn r_sup_02_el_arish_example() {
     let hq = HqPosition {
         hex: Hex::new(7, 0),
         rating: 6,
+        strength: 10,
     };
     assert_eq!(supply(&[hq]), 7);
 }

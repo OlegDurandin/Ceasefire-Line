@@ -397,8 +397,10 @@ impl GameState {
         if hex_km <= 0.0 {
             return Err(invalid("hex_km must be > 0"));
         }
-        let supply_params =
+        let variants = data.rules.variants.with_overrides(&setup.variants)?;
+        let mut supply_params =
             SupplyParams::for_scale(&data.rules.supply, hex_km, setup.supply_decay_ap)?;
+        supply_params.hq_node = variants.hq_supply_node;
         let m = &data.rules.movement;
         let ap = ApParams {
             zoc_exit: ap_to_halves(m.zoc_exit_ap)?,
@@ -538,7 +540,6 @@ impl GameState {
         }
         // Ids follow the scenario's unit list, aircraft included.
         let next_unit_id = setup.units.len() as u32 + 1;
-        let variants = data.rules.variants.with_overrides(&setup.variants)?;
         let mut state = Self {
             variants,
             air,
@@ -793,7 +794,13 @@ impl GameState {
             .units
             .values()
             .filter(|u| u.side == side)
-            .filter_map(|u| u.hq_rating.map(|rating| HqPosition { hex: u.hex, rating }))
+            .filter_map(|u| {
+                u.hq_rating.map(|rating| HqPosition {
+                    hex: u.hex,
+                    rating,
+                    strength: u.strength,
+                })
+            })
             .collect();
         compute_supply(&SupplyInput {
             map: &self.map,

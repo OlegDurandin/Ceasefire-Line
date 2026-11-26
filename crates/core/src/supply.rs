@@ -23,6 +23,13 @@ pub struct SupplyParams {
     pub hq_bonus: u8,
     pub hq_bonus_high: u8,
     pub hq_high_rating: u8,
+    /// R-SUP-06: HQs work as supply nodes instead of the R-SUP-02 bonus.
+    pub hq_node: bool,
+    pub hq_node_min_supply: u8,
+    pub hq_node_bonus: u8,
+    pub hq_node_max: u8,
+    pub hq_node_full_strength: u8,
+    pub hq_node_strength_divisor: u8,
 }
 
 impl SupplyParams {
@@ -45,6 +52,12 @@ impl SupplyParams {
             hq_bonus: rules.hq_bonus,
             hq_bonus_high: rules.hq_bonus_high,
             hq_high_rating: rules.hq_high_rating,
+            hq_node: false,
+            hq_node_min_supply: rules.hq_node_min_supply,
+            hq_node_bonus: rules.hq_node_bonus,
+            hq_node_max: rules.hq_node_max,
+            hq_node_full_strength: rules.hq_node_full_strength,
+            hq_node_strength_divisor: rules.hq_node_strength_divisor,
         })
     }
 }
@@ -60,6 +73,8 @@ pub struct SupplySource {
 pub struct HqPosition {
     pub hex: Hex,
     pub rating: u8,
+    /// R-SUP-06: a weak HQ is a weaker node.
+    pub strength: u8,
 }
 
 pub struct SupplyInput<'a> {
@@ -90,25 +105,69 @@ impl SupplyMap {
     }
 }
 
-/// R-SUP-02: `Supply = max over sources (Source − floor(path AP / decay)) + HQ bonus`.
-///
-/// One Dijkstra run: each source starts with offset `(max − value)·decay`,
+/// R-SUP-02: `Supply = max over sources (Source − floor(path AP / decay)) + HQ bonus`;
+/// with `hq_node` (R-SUP-06) HQs are nodes instead of the bonus.
+pub fn compute_supply(input: &SupplyInput<'_>) -> Result<SupplyMap, RuleError> {
+    let p = input.params;
+    let base = spread(input, input.sources, None)?;
+    if !p.hq_node {
+        return Ok(SupplyMap(apply_hq_bonus(&base, p, input.hqs)));
+    }
+    let mut out = base.clone();
+    for hq in input.hqs {
+        let Some(value) = hq_node_value(p, base.get(&hq.hex).copied().unwrap_or(0), hq.strength)
+        else {
+            continue;
+        };
+        let node = [SupplySource { hex: hq.hex, value }];
+        for (h, level) in spread(input, &node, Some((hq.hex, p.hq_radius)))? {
+            let e = out.entry(h).or_insert(0);
+            *e = (*e).max(level);
+        }
+    }
+    Ok(SupplyMap(out))
+}
+
+/// R-SUP-06: the value of an HQ node from the HQ's own supply `s` (without
+/// any HQ's contribution, so nodes do not chain) and its strength; `None`
+/// when the HQ is not a node.
+pub fn hq_node_value(p: &SupplyParams, s: u8, strength: u8) -> Option<u8> {
+    if s < p.hq_node_min_supply {
+        return None;
+    }
+    let mut v = s
+        .saturating_add(p.hq_node_bonus)
+        .min(p.hq_node_max)
+        .min(p.max);
+    if strength < p.hq_node_full_strength {
+        v = (u16::from(v) * u16::from(strength) / u16::from(p.hq_node_strength_divisor)) as u8;
+    }
+    (v > 0).then_some(v)
+}
+
+/// Dijkstra from `sources`: each source starts with offset `(max − value)·decay`,
 /// so `max − floor(cost / decay)` equals the per-source formula exactly.
 /// A bridge adds `bridge_penalty·decay`, i.e. −`bridge_penalty` supply.
 /// Paths run only through hexes controlled by `side` (R-MOVE-06) and never
 /// enter enemy-occupied hexes; a hex in enemy ZOC is reached
-/// but passed through only if a friendly unit stands in it.
-pub fn compute_supply(input: &SupplyInput<'_>) -> Result<SupplyMap, RuleError> {
+/// but passed through only if a friendly unit stands in it. `within` keeps
+/// the spread inside a radius of a hex (R-SUP-06 nodes).
+fn spread(
+    input: &SupplyInput<'_>,
+    sources: &[SupplySource],
+    within: Option<(Hex, u32)>,
+) -> Result<BTreeMap<Hex, u8>, RuleError> {
     let p = input.params;
     let side = input.side;
     let zoc = enemy_zoc(input.map, input.occupancy, side);
     let enemy_at = |h: Hex| input.occupancy.get(&h).is_some_and(|o| o.side != side);
     let friendly_at = |h: Hex| input.occupancy.get(&h).is_some_and(|o| o.side == side);
     let own = |h: Hex| input.control.get(&h) == Some(&side);
+    let inside = |h: Hex| within.is_none_or(|(c, r)| h.distance(c) <= r);
 
     let mut best: BTreeMap<Hex, u32> = BTreeMap::new();
     let mut heap = BinaryHeap::new();
-    for source in input.sources {
+    for source in sources {
         if source.value > p.max {
             return Err(RuleError::InvalidData(format!(
                 "supply source {:?} value {} exceeds max {}",
@@ -133,7 +192,7 @@ pub fn compute_supply(input: &SupplyInput<'_>) -> Result<SupplyMap, RuleError> {
             continue;
         }
         for next in hex.neighbors() {
-            if enemy_at(next) || !own(next) {
+            if enemy_at(next) || !own(next) || !inside(next) {
                 continue;
             }
             let Some(step) = entry_cost_halves(
@@ -160,16 +219,14 @@ pub fn compute_supply(input: &SupplyInput<'_>) -> Result<SupplyMap, RuleError> {
         }
     }
 
-    let base: BTreeMap<Hex, u8> = best
+    Ok(best
         .into_iter()
         .map(|(h, cost)| {
             let level = u32::from(p.max).saturating_sub(cost / p.decay_halves);
             (h, level as u8)
         })
         .filter(|&(_, level)| level > 0)
-        .collect();
-
-    Ok(SupplyMap(apply_hq_bonus(&base, p, input.hqs)))
+        .collect())
 }
 
 /// R-SUP-02: +bonus within the HQ radius if the HQ itself has enough supply.
@@ -403,6 +460,7 @@ mod tests {
         let hq = |q, rating| HqPosition {
             hex: Hex::new(q, 0),
             rating,
+            strength: 10,
         };
         // (6,0) base 7; HQ at (4,0) base 8 ≥ 5, within radius 2.
         assert_eq!(at(&[hq(4, 6)], Hex::new(6, 0)), 8);
@@ -412,5 +470,62 @@ mod tests {
         // HQ at (12,0) has base 4 < 5: no bonus.
         assert_eq!(at(&[hq(12, 9)], Hex::new(12, 0)), 4);
         assert_eq!(at(&[hq(1, 9)], Hex::new(0, 0)), 10, "capped at max");
+    }
+
+    /// R-SUP-06 (variant `hq_supply_node`): an HQ with supply S ≥ 4 is a source
+    /// of min(8, S + 2) within 20 km; several HQs do not stack; a weak HQ
+    /// gives × strength / 10; nodes are computed from S without any HQ.
+    #[test]
+    fn r_sup_06_hq_as_a_supply_node() {
+        let map = line("plain", 14);
+        let mut p = params(None);
+        p.hq_node = true;
+        let t = terrain();
+        let control = all_ours(&map);
+        let at = |hqs: &[HqPosition], q: i32| {
+            compute_supply(&SupplyInput {
+                map: &map,
+                terrain: &t,
+                params: &p,
+                side: US,
+                sources: &[SupplySource {
+                    hex: Hex::new(0, 0),
+                    value: 10,
+                }],
+                occupancy: &Occupancy::new(),
+                control: &control,
+                hqs,
+            })
+            .unwrap()
+            .get(Hex::new(q, 0))
+        };
+        let hq = |q, strength| HqPosition {
+            hex: Hex::new(q, 0),
+            rating: 5,
+            strength,
+        };
+        // Plain: base 10 − floor(q / 2). HQ at (8,0): S = 6 → node 8.
+        assert_eq!(at(&[], 8), 6);
+        assert_eq!(at(&[hq(8, 10)], 8), 8);
+        assert_eq!(at(&[hq(8, 10)], 10), 7, "radius 2 hexes, normal decay");
+        assert_eq!(at(&[hq(8, 10)], 11), 5, "outside the radius: base");
+        assert_eq!(at(&[hq(8, 10)], 4), 8, "max(base, node)");
+        // Two HQs: the maximum; the second node counts from its base 5 → 7.
+        assert_eq!(
+            at(&[hq(8, 10), hq(10, 10)], 10),
+            7,
+            "no stacking, no chaining"
+        );
+        assert_eq!(at(&[hq(8, 10), hq(10, 10)], 12), 6);
+        // Weak HQ: 8 × 4 / 10 = 3 < base — no gain.
+        assert_eq!(at(&[hq(8, 4)], 8), 6);
+        assert_eq!(hq_node_value(&p, 6, 4), Some(3));
+        assert_eq!(hq_node_value(&p, 6, 5), Some(8));
+        // S < 4: not a node.
+        assert_eq!(hq_node_value(&p, 3, 10), None);
+        assert_eq!(at(&[hq(14, 10)], 14), 3);
+        // The R-SUP-02 bonus is off with the variant.
+        // Node 8 at (4,0) reaches (6,0) at 7 = base: no gain (the bonus would give 8).
+        assert_eq!(at(&[hq(4, 10)], 6), 7);
     }
 }

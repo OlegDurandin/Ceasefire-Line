@@ -4,6 +4,7 @@ mod ai_vs_ai;
 mod assets_check;
 mod balance;
 mod combat_matrix;
+mod supply_reach;
 
 use std::process::ExitCode;
 
@@ -11,7 +12,8 @@ fn usage() -> String {
     "usage:\n  sim combat-matrix [--data DIR] [--runs N] [--seed S] [--strength N] [--readiness PCT]\n  \
      sim assets-check [--assets DIR] [--data DIR] [--report FILE] [--fix]\n  \
      sim balance [--data DIR] [--runs N] [--seed S] [--report FILE]\n  \
-     sim ai-vs-ai [--data DIR] [--scenario ID] [--runs N] [--seed S] [--report FILE]"
+     sim ai-vs-ai [--data DIR] [--scenario ID] [--runs N] [--seed S] [--report FILE]\n  \
+     sim supply-reach [--data DIR] [--scenario ID] [--side N] [--min S]"
         .to_owned()
 }
 
@@ -23,6 +25,9 @@ fn main() -> ExitCode {
         }
         Some("balance") => balance::parse_options(&args[1..]).and_then(|o| balance::run(&o)),
         Some("ai-vs-ai") => ai_vs_ai::parse_options(&args[1..]).and_then(|o| ai_vs_ai::run(&o)),
+        Some("supply-reach") => {
+            supply_reach::parse_options(&args[1..]).and_then(|o| supply_reach::run(&o))
+        }
         Some("assets-check") => {
             assets_check::parse_options(&args[1..]).and_then(|o| assets_check::run(&o))
         }
