@@ -9,6 +9,7 @@ import { Camera } from "./camera";
 import { hexCenter, hexCorners, offsetToAxial } from "./hex";
 import { hillshadePlacement, type HillshadeMeta } from "./hillshade";
 import type { Rules } from "./explain";
+import type { Facing } from "./facing";
 import { Play } from "./play";
 import { drawControl } from "./render/control";
 import { drawMap, setGridActive } from "./render/map";
@@ -71,6 +72,11 @@ async function main() {
     return acc;
   }, []);
   const colors = sideColors(scenarioSides);
+  // R-UI-03: default facing of each side's models, towards the enemy.
+  const sideFacing = scenarioSides.reduce<Facing[]>((acc, s) => {
+    acc[s.id] = (s as { facing?: string }).facing === "right" ? "right" : "left";
+    return acc;
+  }, []);
   const scenarioMeta = JSON.parse(scenario) as { start_date?: string; start_turn?: number };
 
   stage("Загрузка ядра…");
@@ -176,7 +182,7 @@ async function main() {
         const ref = base ? styledSprite(base, unitStyle, sprites, minis) : null;
         if (ref && !unitTextures.has(ref.url)) unitTextures.set(ref.url, await load(ref.url));
         tex.set(u.index, ref ? (unitTextures.get(ref.url) ?? null) : null);
-        tokens.push({ key: u.index, side: u.side, col: u.col, row: u.row, label: u.hq_rating !== null ? `★${u.hq_rating}` : String(u.strength), stars: expStars(u.exp), dim: false, style: ref?.style ?? "medallion", anchor: ref?.anchor ?? [0.5, 0.5] });
+        tokens.push({ key: u.index, side: u.side, col: u.col, row: u.row, label: u.hq_rating !== null ? `★${u.hq_rating}` : String(u.strength), stars: expStars(u.exp), dim: false, style: ref?.style ?? "medallion", anchor: ref?.anchor ?? [0.5, 0.5], facing: sideFacing[u.side] ?? "left" });
       }
       world.addChild(drawUnits(tokens, tex, HEX_SIZE, colors));
     };
@@ -235,6 +241,7 @@ async function main() {
       style: unitStyle,
       minis,
       saveKey,
+      sideFacing,
     });
     await play.refresh();
     if (!view.issues.length) panel.style.display = "none";

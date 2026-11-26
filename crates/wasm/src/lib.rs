@@ -315,9 +315,10 @@ struct Target {
 
 /// A running game (hotseat): the client calls commands and re-reads `state()`.
 /// Every accepted command goes to a log: with the deterministic core the log
-/// replays the game exactly (saves). R-UI-05 undo keeps the states before
-/// the last undoable commands; combat, bombardment and the end of a phase
-/// (dice, or the turn passing) clear it.
+/// replays the game exactly (saves). R-UI-05 undo takes back the last
+/// movements (moves and strategic transfers) while nothing else has happened
+/// since: any other command — a combat, the end of a phase, but also
+/// reinforcement or purchases — clears it.
 #[wasm_bindgen]
 pub struct Game {
     state: GameState,
@@ -325,17 +326,9 @@ pub struct Game {
     undo: Vec<(GameState, usize)>,
 }
 
-/// R-UI-05: commands with no dice and no handover can be taken back.
+/// R-UI-05: only movement can be taken back.
 fn undoable(c: &Command) -> bool {
-    !matches!(
-        c,
-        Command::Attack { .. }
-            | Command::Bombard { .. }
-            | Command::BombardBridge { .. }
-            | Command::DeclareAttack { .. }
-            | Command::ResolveCombat { .. }
-            | Command::EndPhase
-    )
+    matches!(c, Command::Move { .. } | Command::Transfer { .. })
 }
 
 #[wasm_bindgen]

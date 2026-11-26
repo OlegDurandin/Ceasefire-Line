@@ -142,6 +142,11 @@ struct SideFile {
     #[serde(default)]
     #[allow(dead_code)]
     color: Option<String>,
+    /// R-UI-03: default facing of the side's models ("left" | "right", towards
+    /// the enemy); client data, the rules ignore it.
+    #[serde(default)]
+    #[allow(dead_code)]
+    facing: Option<String>,
 }
 
 fn one() -> u8 {

@@ -9,6 +9,7 @@ import type { Camera } from "./camera";
 import type { BridgeTarget, EconomyView, Forecast, GameStateView, LiveUnit, Reach, Target, TransferTargets } from "./game-view";
 import { axialToOffset, hexCenter, offsetToAxial, pixelToAxial } from "./hex";
 import { attrText, fireLines, num, readinessTip, supplyTip, turnDate, type FireInput, type Rules } from "./explain";
+import { applyFacing, type Facing } from "./facing";
 import { fill, formatEvent, type UnitRef } from "./log";
 import { drawControl } from "./render/control";
 import { drawHqLinks, drawObjectives, drawSupply, drawZoc } from "./render/layers";
@@ -42,6 +43,8 @@ export interface PlayContext {
   style: UnitStyle;
   /** Key of the autosave in localStorage. */
   saveKey: string;
+  /** R-UI-03: default facing per side id (scenario.json `sides[].facing`). */
+  sideFacing: Facing[];
   minis: MiniIndex;
 }
 
@@ -66,6 +69,8 @@ export class Play {
   private panel: Panel = null;
   /** R-MOVE-05: transfer mode for the selected unit. */
   private transfer: TransferTargets | null = null;
+  /** R-UI-03: where each unit faces after its last move or attack. */
+  private facing = new Map<number, Facing>();
   /** R-UI-02 map layers the player switched on. */
   private layers = new Set<"supply" | "zoc" | "hq">();
   private layerBox = new Container();
@@ -140,6 +145,7 @@ export class Play {
         label: u.hq_rating !== null ? `★${u.hq_rating}` : String(u.strength),
         stars: expStars(u.exp),
         dim: mine && spent,
+        facing: this.facing.get(u.id) ?? this.ctx.sideFacing[u.side] ?? "left",
         lowSupply: u.supply <= this.ctx.rules.supply.low_supply_max,
         encircled: u.hex_supply === 0,
         style: ref?.style ?? "medallion",
@@ -170,9 +176,11 @@ export class Play {
       <span class="tabs">${(["supply", "zoc", "hq"] as const)
         .map((l) => `<button data-layer="${l}" class="${this.layers.has(l) ? "on" : ""}">${this.t(`ui.layer.${l}`)}</button>`)
         .join("")}</span>
-      <button id="undo" title="${attrText(this.t("ui.undo_tip"))}"${this.game.canUndo() ? "" : " disabled"}>↶</button>
+      <button id="undo" title="${attrText(this.t("ui.undo_tip"))}"${this.game.canUndo() ? "" : " disabled"}>${this.t("ui.undo")}</button>
+      <button id="to-menu" title="${attrText(this.t("ui.menu_tip"))}">${this.t("ui.menu")}</button>
       <button id="end-phase" title="Enter">${this.t("ui.end_phase")}</button>`;
     document.getElementById("undo")!.onclick = () => void this.undo();
+    document.getElementById("to-menu")!.onclick = () => this.menu();
     for (const b of top.querySelectorAll<HTMLButtonElement>("[data-layer]")) {
       b.onclick = () => {
         const l = b.dataset.layer as "supply" | "zoc" | "hq";
@@ -581,7 +589,33 @@ export class Play {
     document.getElementById("end-back")!.onclick = () => this.showAdvanceOrHide();
   }
 
-  /** R-UI-05: take back the last command (until a combat or the end of a phase). */
+  /** «В меню»: the game is saved (it saves after every command anyway), then the menu. */
+  private menu() {
+    this.save();
+    const modal = document.getElementById("modal")!;
+    const box = modal.querySelector(".panel")!;
+    box.innerHTML = `<h2>${this.t("ui.menu")}</h2><p class="muted">${this.t("ui.menu_saved")}</p>
+      <div class="menu"><button id="m-continue">${this.t("ui.continue")}</button>
+      <button id="m-new">${this.t("ui.new_game")}</button>
+      <button id="m-editor">${this.t("ui.open_editor")}</button></div>`;
+    modal.style.display = "flex";
+    document.getElementById("m-continue")!.onclick = () => (modal.style.display = "none");
+    document.getElementById("m-new")!.onclick = () => {
+      try {
+        localStorage.removeItem(this.ctx.saveKey);
+      } catch {
+        // no storage: nothing to clear
+      }
+      location.reload();
+    };
+    document.getElementById("m-editor")!.onclick = () => {
+      const p = new URLSearchParams(location.search);
+      p.set("mode", "edit");
+      location.search = p.toString();
+    };
+  }
+
+  /** R-UI-05: take back the last movement (until anything else happens). */
   private async undo() {
     if (!this.game.undoLast()) return;
     this.log.push(this.t("ui.undone"));
@@ -603,7 +637,15 @@ export class Play {
   /** Runs a core command; on success refreshes the view and returns its events. */
   private async run(command: () => string, endPhase = false): Promise<unknown[]> {
     try {
+      const colBefore = new Map(this.state.units.map((u) => [u.id, u.col] as const));
+      const sideOf = new Map(this.state.units.map((u) => [u.id, u.side] as const));
       const events = JSON.parse(command()) as unknown[];
+      applyFacing(
+        this.facing,
+        events as ({ type: string } & Record<string, unknown>)[],
+        (id) => colBefore.get(id),
+        (id) => this.ctx.sideFacing[sideOf.get(id) ?? 0] ?? "left",
+      );
       this.record(events);
       if (endPhase) this.deselect();
       await this.refresh();

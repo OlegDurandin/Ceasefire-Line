@@ -28,6 +28,8 @@ export interface Token {
   /** R-UI-03: supply ≤ 3 (R-SUP-03) and encircled (no supply in the hex, R-NM-01). */
   lowSupply?: boolean;
   encircled?: boolean;
+  /** R-UI-03: the pictures face left; `right` mirrors the model (not its shadow). */
+  facing?: "left" | "right";
 }
 
 /** Ring colour when a scenario gives none for the side. */
@@ -164,6 +166,7 @@ function drawMiniature(u: Token, tex: Texture | null, size: number, color: numbe
     model.anchor.set(u.anchor[0], u.anchor[1]);
     model.width = MODEL_SIZE * size;
     model.height = MODEL_SIZE * size;
+    if (u.facing === "right") model.scale.x = -Math.abs(model.scale.x);
     // Contact point a little behind the base's centre, so the model stands on the ground.
     model.position.set(0, ry * 0.25);
     body.addChild(model);
@@ -198,6 +201,7 @@ function drawMedallion(u: Token, tex: Texture | null, size: number, color: numbe
     pic.anchor.set(0.5);
     pic.width = radius * 2.2;
     pic.height = radius * 2.2;
+    if (u.facing === "right") pic.scale.x = -Math.abs(pic.scale.x);
     const mask = new Graphics().circle(0, 0, radius).fill(0xffffff);
     token.addChild(mask);
     pic.mask = mask;
