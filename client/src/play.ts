@@ -10,6 +10,7 @@ import type { BridgeTarget, EconomyView, Forecast, GameStateView, LiveUnit, Reac
 import { axialToOffset, hexCenter, offsetToAxial, pixelToAxial } from "./hex";
 import { attrText, turnDate, type Rules } from "./explain";
 import { applyFacing, type Facing } from "./facing";
+import { encodeSave } from "./save";
 import { fill, formatEvent, type UnitRef } from "./log";
 import { drawControl } from "./render/control";
 import { drawHqLinks, drawObjectives, drawSupply, drawUmbrellas, drawZoc } from "./render/layers";
@@ -49,6 +50,8 @@ export interface PlayContext {
   saveKey: string;
   /** R-UI-03: default facing per side id (scenario.json `sides[].facing`). */
   sideFacing: Facing[];
+  /** R-UI-03: facing restored from the save (unit id → facing). */
+  savedFacing: Map<number, Facing>;
   /** R-UI-03: flag stripes per side id (scenario.json `sides[].flag`). */
   flags: (FlagStripes | null)[];
   /** Class → full AP (data/units.json), for «AP тек. / макс.». */
@@ -61,6 +64,8 @@ const LOG_LIMIT = 300;
 /** R-UI-04: how long the actual losses stay in the attack window. */
 const RESULT_MS = 1100;
 const TOAST_MS = 7000;
+/** Facing snapshots kept for «Отменить» (only movements are undone, so a few suffice). */
+const FACING_UNDO_LIMIT = 50;
 /** Command JSON for the core: hexes are axial. */
 const hex = ([col, row]: [number, number]) => offsetToAxial({ col, row });
 const attr = (v: unknown) => encodeURIComponent(JSON.stringify(v));
@@ -81,6 +86,8 @@ export class Play {
   private transfer: TransferTargets | null = null;
   /** R-UI-03: where each unit faces after its last move or attack. */
   private facing = new Map<number, Facing>();
+  /** Facing before each command, so «Отменить» turns the unit back too. */
+  private facingUndo: Map<number, Facing>[] = [];
   /** R-UI-02 map layers the player switched on. */
   private layers = new Set<Layer>(["objectives"]);
   private aw: AttackWindow;
@@ -107,6 +114,7 @@ export class Play {
     world.addChild(this.layerBox);
     world.addChild(this.overlay);
     world.addChild(this.unitsLayer);
+    this.facing = new Map(ctx.savedFacing);
     camera.onTap = (x, y) => this.tap(x, y);
     window.addEventListener("keydown", (e) => this.key(e));
     this.aw = new AttackWindow(document.getElementById("attack")!, ru, ctx.rules);
@@ -702,6 +710,7 @@ export class Play {
   /** R-UI-05: take back the last movement (until anything else happens). */
   private async undo() {
     if (!this.game.undoLast()) return;
+    this.facing = this.facingUndo.pop() ?? this.facing;
     this.log.push(this.t("ui.undone"));
     this.save();
     await this.refresh();
@@ -712,7 +721,7 @@ export class Play {
   private save() {
     try {
       if (this.state?.outcome) localStorage.removeItem(this.ctx.saveKey);
-      else localStorage.setItem(this.ctx.saveKey, this.game.commands());
+      else localStorage.setItem(this.ctx.saveKey, encodeSave(this.game.commands(), this.facing));
     } catch {
       // Storage may be unavailable (private mode); the game goes on without saves.
     }
@@ -724,6 +733,8 @@ export class Play {
       const colBefore = new Map(this.state.units.map((u) => [u.id, u.col] as const));
       const sideOf = new Map(this.state.units.map((u) => [u.id, u.side] as const));
       const events = JSON.parse(command()) as unknown[];
+      this.facingUndo.push(new Map(this.facing));
+      if (this.facingUndo.length > FACING_UNDO_LIMIT) this.facingUndo.shift();
       applyFacing(
         this.facing,
         events as ({ type: string } & Record<string, unknown>)[],

@@ -10,6 +10,7 @@ import { hexCenter, hexCorners, offsetToAxial } from "./hex";
 import { hillshadePlacement, type HillshadeMeta } from "./hillshade";
 import type { Rules } from "./explain";
 import type { Facing } from "./facing";
+import { decodeSave } from "./save";
 import { parseFlag } from "./render/token-geom";
 import { Play } from "./play";
 import { drawControl } from "./render/control";
@@ -229,12 +230,17 @@ async function main() {
       saved = null;
     }
     let game = new Game(core, scenario, map, events);
-    if (saved && saved !== "[]") {
+    let savedFacing = new Map<number, Facing>();
+    const save = saved ? decodeSave(saved) : null;
+    if (save && save.commands.length) {
       try {
-        const resumed = Game.replay(core, scenario, map, events, saved);
+        const resumed = Game.replay(core, scenario, map, events, JSON.stringify(save.commands));
         const st = JSON.parse(resumed.state()) as { turn: number; active_side: number; outcome: unknown };
         const side = ru[`side.${sideKeys[st.active_side] ?? ""}`] ?? String(st.active_side);
-        if (!st.outcome && (await askContinue(ru, st.turn, side))) game = resumed;
+        if (!st.outcome && (await askContinue(ru, st.turn, side))) {
+          game = resumed;
+          savedFacing = save.facing;
+        }
       } catch (e) {
         console.warn("[client] save does not replay:", e);
         panel.style.display = "block";
@@ -254,6 +260,7 @@ async function main() {
       minis,
       saveKey,
       sideFacing,
+      savedFacing,
       flags: scenarioSides.reduce<ReturnType<typeof parseFlag>[]>((acc, s) => {
         acc[s.id] = parseFlag((s as { flag?: unknown }).flag);
         return acc;
