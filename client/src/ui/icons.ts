@@ -6,6 +6,7 @@ const PATHS: Record<string, string> = {
   zoc: '<path d="M7 3h10l5 9-5 9H7l-5-9z"></path>',
   hq: '<path d="M5 21V4h12l-3 4 3 4H5"></path>',
   umbrella: '<path d="M3 13a9 9 0 0118 0z"></path><path d="M12 13v7"></path>',
+  trail: '<path d="M4 18c3 0 4-4 7-4s3 3 6 3"></path><path d="M15 6l4 2-2 4"></path><circle cx="4" cy="18" r="1.6"></circle>',
   objectives: '<path d="M12 3l2.6 5.6 6.1.6-4.6 4.1 1.3 6-5.4-3.1-5.4 3.1 1.3-6L3.3 9.2l6.1-.6z"></path>',
   settings: '<circle cx="12" cy="12" r="3.2"></circle><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M5 19l2-2M17 7l2-2"></path>',
   help: '<circle cx="12" cy="12" r="9"></circle><path d="M9.5 9.5a2.5 2.5 0 015 0c0 2-2.5 2-2.5 4M12 17h.01"></path>',

@@ -12,8 +12,8 @@ type Locale = Record<string, string>;
 
 export type Tab = "map" | "purchases" | "reinforcements" | "tech" | "reports";
 export const TABS: Tab[] = ["map", "purchases", "reinforcements", "tech", "reports"];
-export type Layer = "supply" | "zoc" | "hq" | "umbrella" | "objectives";
-export const LAYERS: Layer[] = ["supply", "zoc", "hq", "umbrella", "objectives"];
+export type Layer = "supply" | "zoc" | "hq" | "umbrella" | "objectives" | "trail";
+export const LAYERS: Layer[] = ["supply", "zoc", "hq", "umbrella", "objectives", "trail"];
 
 export interface TopBarData {
   side: string;

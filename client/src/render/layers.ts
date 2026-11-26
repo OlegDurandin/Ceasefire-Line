@@ -4,6 +4,7 @@
 import { Container, Graphics, Text } from "pixi.js";
 
 import { axialToOffset, hexCenter, hexCorners, offsetToAxial, sharedSide, type Point } from "../hex";
+import type { TrailMark } from "../trail";
 
 const flat = (pts: Point[]) => pts.flatMap((p) => [p.x, p.y]);
 const center = (col: number, row: number, size: number) => hexCenter(offsetToAxial({ col, row }), size);
@@ -123,6 +124,52 @@ export function drawUmbrellas(
     const c = center(u.col, u.row, size);
     const color = colors[u.side] ?? 0xb08d57;
     g.circle(c.x, c.y, u.sam_radius_hexes * perHex).fill({ color, alpha: 0.1 }).stroke({ width: size * 0.06, color, alpha: 0.9 });
+  }
+  return g;
+}
+
+/** R-UI-05 «следы хода»: moves (lines with a dot at the end), attacks (red
+ * arrows) and retreats (dashed) of the last phase, in the side's colour. */
+export function drawTrail(size: number, marks: TrailMark[], colors: number[]): Graphics {
+  const g = new Graphics();
+  const pt = ([c, r]: [number, number]) => center(c, r, size);
+  for (const m of marks) {
+    const color = colors[m.side] ?? 0xb08d57;
+    if (m.kind === "attack") {
+      const a = pt(m.from);
+      const b = pt(m.to);
+      const k = 0.62; // stop short of the target's centre
+      const tip = { x: a.x + (b.x - a.x) * k, y: a.y + (b.y - a.y) * k };
+      g.moveTo(a.x, a.y).lineTo(tip.x, tip.y).stroke({ width: size * 0.1, color: 0x1c1a17, alpha: 0.6, cap: "round" });
+      g.moveTo(a.x, a.y).lineTo(tip.x, tip.y).stroke({ width: size * 0.06, color: 0xc4401e, cap: "round" });
+      const ang = Math.atan2(b.y - a.y, b.x - a.x);
+      const h = size * 0.22;
+      g.poly([
+        tip.x + Math.cos(ang) * h, tip.y + Math.sin(ang) * h,
+        tip.x + Math.cos(ang + 2.4) * h, tip.y + Math.sin(ang + 2.4) * h,
+        tip.x + Math.cos(ang - 2.4) * h, tip.y + Math.sin(ang - 2.4) * h,
+      ]).fill(0xc4401e);
+      continue;
+    }
+    const pts = m.path.map(pt);
+    if (pts.length < 2) continue;
+    const dashed = m.kind === "retreat";
+    for (let i = 1; i < pts.length; i++) {
+      const a = pts[i - 1]!;
+      const b = pts[i]!;
+      if (dashed) {
+        for (let t = 0; t < 1; t += 0.25) {
+          const u = Math.min(1, t + 0.14);
+          g.moveTo(a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t).lineTo(a.x + (b.x - a.x) * u, a.y + (b.y - a.y) * u);
+        }
+        g.stroke({ width: size * 0.06, color, alpha: 0.9, cap: "round" });
+      } else {
+        g.moveTo(a.x, a.y).lineTo(b.x, b.y).stroke({ width: size * 0.09, color: 0x1c1a17, alpha: 0.5, cap: "round" });
+        g.moveTo(a.x, a.y).lineTo(b.x, b.y).stroke({ width: size * 0.05, color, alpha: 0.95, cap: "round" });
+      }
+    }
+    const end = pts[pts.length - 1]!;
+    g.circle(end.x, end.y, size * 0.09).fill(color);
   }
   return g;
 }

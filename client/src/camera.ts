@@ -188,6 +188,19 @@ export class Camera {
     this.apply();
   }
 
+  /** R-UI-05: recentres on a world point only if it is outside the free area
+   * shrunk by `margin` of its size (following the AI without jerking). */
+  ensureVisible(x: number, y: number, margin = 0.15) {
+    const a = this.area();
+    const sx = this.view.x + x * this.view.scale;
+    const sy = this.view.y + y * this.view.scale;
+    const inside = sx >= a.x + a.w * margin && sx <= a.x + a.w * (1 - margin) && sy >= a.y + a.h * margin && sy <= a.y + a.h * (1 - margin);
+    if (inside) return;
+    this.view = { ...this.view, x: a.x + a.w / 2 - x * this.view.scale, y: a.y + a.h / 2 - y * this.view.scale };
+    if (this.bounds) this.view = clampView(this.view, this.bounds, a);
+    this.apply();
+  }
+
   /** Screen → world coordinates. */
   toWorld(x: number, y: number): { x: number; y: number } {
     return { x: (x - this.view.x) / this.view.scale, y: (y - this.view.y) / this.view.scale };

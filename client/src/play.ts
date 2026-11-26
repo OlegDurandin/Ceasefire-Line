@@ -14,7 +14,9 @@ import { applyFacing, type Facing } from "./facing";
 import { encodeSave } from "./save";
 import { fill, formatEvent, type UnitRef } from "./log";
 import { drawControl } from "./render/control";
-import { drawHqLinks, drawObjectives, drawSupply, drawUmbrellas, drawZoc } from "./render/layers";
+import { drawHqLinks, drawObjectives, drawSupply, drawTrail, drawUmbrellas, drawZoc } from "./render/layers";
+import { AI_SPEEDS, aiTiming, storeSetting, type AiSpeed } from "./settings";
+import { focusOf, trailOf, type TrailMark } from "./trail";
 import { AttackWindow, type AirCardData, type CardData, type Explained } from "./ui/attack-window";
 import { ACTIONS, actionBarHtml, type ActionId, type ActionState } from "./ui/action-bar";
 import { hexCardHtml, type HexFacts, type TerrainInfo } from "./ui/hex-info";
@@ -56,6 +58,8 @@ export interface PlayContext {
   saveKey: string;
   /** Key of the client settings in localStorage. */
   settingsKey: string;
+  /** R-UI-05: speed of the AI's phase on screen. */
+  aiSpeed: AiSpeed;
   /** R-UI-03: default facing per side id (scenario.json `sides[].facing`). */
   sideFacing: Facing[];
   /** R-UI-03: facing restored from the save (unit id → facing). */
@@ -88,8 +92,6 @@ const LOG_LIMIT = 300;
 const RESULT_MS = 1100;
 /** Short notices («Партия сохранена») and scenario messages (story text, longer to read). */
 const NOTICE_MS = 2500;
-/** R-AI-01: pause between the AI's commands, so the player sees its moves. */
-const AI_STEP_MS = 250;
 const MESSAGE_MS = 7000;
 /** Facing snapshots kept for «Отменить» (only movements are undone, so a few suffice). */
 const FACING_UNDO_LIMIT = 50;
@@ -129,6 +131,9 @@ export class Play {
   private facingUndo: Map<number, Facing>[] = [];
   /** R-UI-02 map layers the player switched on. */
   private layers = new Set<Layer>(["objectives"]);
+  /** R-UI-05 «следы хода»: marks of the phase going on and of the previous one. */
+  private trailNow: TrailMark[] = [];
+  private trailLast: TrailMark[] = [];
   private aw: AttackWindow;
   /** The target the pointer is over (preview without aiming). */
   private hovered: number | null = null;
@@ -177,6 +182,8 @@ export class Play {
     world.addChild(this.airRing);
     world.addChild(this.airLayer);
     this.facing = new Map(ctx.savedFacing);
+    // Against the AI its moves are traced on the map by default.
+    if (ctx.aiSide !== null) this.layers.add("trail");
     camera.onTap = (x, y) => this.tap(x, y);
     window.addEventListener("keydown", (e) => this.key(e));
     this.aw = new AttackWindow(document.getElementById("attack")!, ru, ctx.rules);
@@ -234,18 +241,31 @@ export class Play {
     return this.ctx.aiSide !== null && this.state?.active_side === this.ctx.aiSide;
   }
 
-  /** R-AI-01: the AI plays its phase one command at a time, with a pause between. */
+  /** R-AI-01, R-UI-05: the AI plays its phase one command at a time; at
+   * ×1/×2/×4 the camera follows the action and combats show their result. */
   private async playAi() {
     if (this.aiRunning) return;
     this.aiRunning = true;
     this.deselect();
     this.toast(`${this.t("ui.ai_turn")}: ${this.sideName(this.state.active_side)}`);
+    const timing = aiTiming(this.ctx.aiSpeed);
+    const wait = (ms: number) => (ms > 0 ? new Promise((r) => window.setTimeout(r, ms)) : Promise.resolve());
     try {
       const max = this.game.aiMaxCommands();
       for (let k = 0; k < max && this.aiTurn() && !this.state.outcome; k++) {
         const json = this.game.aiNext();
-        const end = (JSON.parse(json) as { type: string }).type === "end_phase";
-        await new Promise((r) => window.setTimeout(r, AI_STEP_MS));
+        const cmd = JSON.parse(json) as { type: string } & Record<string, unknown>;
+        const end = cmd.type === "end_phase";
+        const focus = timing.follow ? focusOf(cmd, this.state.units) : null;
+        if (focus) {
+          const p = hexCenter(offsetToAxial({ col: focus[0], row: focus[1] }), this.size);
+          this.camera.ensureVisible(p.x, p.y);
+        }
+        await wait(timing.stepMs);
+        const fight = cmd.type === "attack" || cmd.type === "bombard";
+        const att = fight ? this.state.units.find((u) => u.id === cmd.unit) : undefined;
+        const def = fight ? this.state.units.find((u) => u.id === cmd.target) : undefined;
+        const cards = att && def ? [this.card(att), this.card(def)] : null;
         const events = await this.run(() => this.game.apply(json), end);
         if (end) break;
         // A refused command (it should not happen) ends the AI's phase.
@@ -253,12 +273,32 @@ export class Play {
           await this.run(() => this.game.endPhase(), true);
           break;
         }
+        if (cards && timing.resultMs > 0) await this.showAiResult(events, cards[0]!, cards[1]!, timing.resultMs);
       }
       if (this.aiTurn() && !this.state.outcome) await this.run(() => this.game.endPhase(), true);
     } finally {
       this.aiRunning = false;
     }
     if (this.aiTurn() && !this.state.outcome) void this.playAi();
+  }
+
+  /** R-UI-05: the AI's combat result in the attack window for `ms`. */
+  private showAiResult(events: unknown[], att: CardData, def: CardData, ms: number): Promise<void> {
+    const combat = events.find((e) => (e as { type: string }).type === "combat_resolved") as
+      | { attacker_losses: number; defender_losses: number }
+      | undefined;
+    const bombard = events.find((e) => (e as { type: string }).type === "bombarded") as { losses: number } | undefined;
+    if (!combat && !bombard) return Promise.resolve();
+    const now = (c: CardData) => {
+      const u = this.state.units.find((x) => x.id === c.unit.id);
+      return u ? this.card(u) : c;
+    };
+    return new Promise((done) =>
+      this.aw.showResult(now(att), now(def), combat?.attacker_losses ?? 0, combat?.defender_losses ?? bombard!.losses, ms, () => {
+        this.showWindow();
+        done();
+      }),
+    );
   }
 
   /** The camera moved: the minimap's frame follows. */
@@ -372,6 +412,8 @@ export class Play {
     if (this.layers.has("hq")) this.layerBox.addChild(drawHqLinks(this.size, this.state.units, this.colors));
     if (this.layers.has("umbrella")) this.layerBox.addChild(drawUmbrellas(this.size, this.state.units, this.colors));
     if (this.layers.has("objectives")) this.layerBox.addChild(drawObjectives(this.size, this.state.objectives, this.colors));
+    // During the AI's phase its moves so far; otherwise the previous phase (the opponent's).
+    if (this.layers.has("trail")) this.layerBox.addChild(drawTrail(this.size, this.aiTurn() ? this.trailNow : this.trailLast, this.colors));
   }
 
   /** R-UI-04 panels under the tabs: purchases, reinforcements on the way, technologies, reports. */
@@ -1033,11 +1075,7 @@ export class Play {
   /** R-UI-03: miniatures ↔ medallions; remembered in the settings. */
   private setStyle(style: UnitStyle) {
     this.ctx.style = style;
-    try {
-      localStorage.setItem(this.ctx.settingsKey, JSON.stringify({ units: style }));
-    } catch {
-      // no storage: the choice lasts for this session
-    }
+    storeSetting(this.ctx.settingsKey, { units: style });
     void this.drawUnits();
   }
 
@@ -1348,9 +1386,20 @@ export class Play {
   private settings() {
     const opt = (s: UnitStyle) =>
       `<label class="opt"><input type="radio" name="units" value="${s}"${this.ctx.style === s ? " checked" : ""}> ${this.t(`ui.settings.${s}`)}</label>`;
-    this.modal(`<h2>${this.t("ui.settings")}</h2><fieldset class="settings"><legend>${this.t("ui.settings.units")} (U)</legend>${opt("miniature")}${opt("medallion")}</fieldset>`);
+    const speed = (s: AiSpeed) =>
+      `<label class="opt"><input type="radio" name="ai-speed" value="${s}"${this.ctx.aiSpeed === s ? " checked" : ""}> ${this.t(`ui.settings.ai.${s}`)}</label>`;
+    this.modal(
+      `<h2>${this.t("ui.settings")}</h2><fieldset class="settings"><legend>${this.t("ui.settings.units")} (U)</legend>${opt("miniature")}${opt("medallion")}</fieldset>` +
+        `<fieldset class="settings"><legend>${this.t("ui.settings.ai")}</legend>${AI_SPEEDS.map(speed).join("")}</fieldset>`,
+    );
     for (const r of document.querySelectorAll<HTMLInputElement>('#modal input[name="units"]')) {
       r.onchange = () => this.setStyle(r.value as UnitStyle);
+    }
+    for (const r of document.querySelectorAll<HTMLInputElement>('#modal input[name="ai-speed"]')) {
+      r.onchange = () => {
+        this.ctx.aiSpeed = r.value as AiSpeed;
+        storeSetting(this.ctx.settingsKey, { aiSpeed: this.ctx.aiSpeed });
+      };
     }
   }
 
@@ -1409,6 +1458,7 @@ export class Play {
   private async run(command: () => string, endPhase = false): Promise<unknown[]> {
     try {
       const colBefore = new Map(this.state.units.map((u) => [u.id, u.col] as const));
+      const posBefore = this.state.units.map((u) => ({ id: u.id, side: u.side, col: u.col, row: u.row }));
       const sideOf = new Map(this.state.units.map((u) => [u.id, u.side] as const));
       const events = JSON.parse(command()) as unknown[];
       this.facingUndo.push(new Map(this.facing));
@@ -1420,6 +1470,7 @@ export class Play {
         (id) => this.ctx.sideFacing[sideOf.get(id) ?? 0] ?? "left",
       );
       this.record(events);
+      this.trace(events as ({ type: string } & Record<string, unknown>)[], posBefore);
       if (endPhase) {
         this.picked = null;
         this.deselect();
@@ -1434,6 +1485,17 @@ export class Play {
       box.innerHTML = `<div class="bad">${refusalText(String(e).replace(/^Error: /, ""), this.ru)}</div>`;
       box.style.display = "block";
       return [];
+    }
+  }
+
+  /** R-UI-05 «следы хода»: a new phase keeps the finished one's marks. */
+  private trace(events: ({ type: string } & Record<string, unknown>)[], before: { id: number; side: number; col: number; row: number }[]) {
+    const marks = trailOf(events, before);
+    if (events.some((e) => e.type === "phase_started")) {
+      this.trailLast = [...this.trailNow, ...marks];
+      this.trailNow = [];
+    } else {
+      this.trailNow.push(...marks);
     }
   }
 

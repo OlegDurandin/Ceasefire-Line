@@ -1,5 +1,6 @@
 // Stage 2: the client plays (hotseat) or edits (?mode=edit) a scenario on the rules core (WASM).
 
+import { parseSettings, type Settings } from "./settings";
 import { Application, Assets, Container, Graphics, Sprite, type Texture } from "pixi.js";
 
 import { Editor } from "./editor/editor";
@@ -59,12 +60,13 @@ async function main() {
   // R-UI-03: miniatures by default (sprites.json), medallions with ?units=medallion or the U key.
   // The settings (gear button) remember the choice per browser.
   const settingsKey = "cl.settings";
-  let storedStyle: unknown;
+  let stored: Settings = {};
   try {
-    storedStyle = (JSON.parse(localStorage.getItem(settingsKey) ?? "{}") as { units?: unknown }).units;
+    stored = parseSettings(localStorage.getItem(settingsKey));
   } catch {
-    storedStyle = undefined;
+    stored = {};
   }
+  const storedStyle = stored.units;
   const unitParam = PARAMS.get("units") ?? storedStyle;
   const unitStyle: UnitStyle = unitParam === "medallion" || unitParam === "miniature" ? unitParam : (sprites.default_style ?? "medallion");
   const miniManifest = sprites.styles?.miniature?.manifest;
@@ -302,6 +304,7 @@ async function main() {
       minis,
       saveKey,
       settingsKey,
+      aiSpeed: stored.aiSpeed ?? "x1",
       sideFacing,
       savedFacing,
       aiSide,
