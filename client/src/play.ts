@@ -60,6 +60,8 @@ export interface PlayContext {
   sideFacing: Facing[];
   /** R-UI-03: facing restored from the save (unit id → facing). */
   savedFacing: Map<number, Facing>;
+  /** R-AI-01: the side the computer plays, or null for hotseat. */
+  aiSide: number | null;
   /** R-UI-03: flag stripes per side id (scenario.json `sides[].flag`). */
   flags: (FlagStripes | null)[];
   /** Class → full AP (data/units.json), for «AP тек. / макс.». */
@@ -84,6 +86,8 @@ const LOG_LIMIT = 300;
 const RESULT_MS = 1100;
 /** Short notices («Партия сохранена») and scenario messages (story text, longer to read). */
 const NOTICE_MS = 2500;
+/** R-AI-01: pause between the AI's commands, so the player sees its moves. */
+const AI_STEP_MS = 250;
 const MESSAGE_MS = 7000;
 /** Facing snapshots kept for «Отменить» (only movements are undone, so a few suffice). */
 const FACING_UNDO_LIMIT = 50;
@@ -140,6 +144,8 @@ export class Play {
   private minimap: Minimap;
   /** A result is on show in the attack window (the window stays in attack mode). */
   private showingResult = false;
+  /** R-AI-01: the AI is playing its phase. */
+  private aiRunning = false;
 
   constructor(
     private game: Game,
@@ -204,6 +210,39 @@ export class Play {
     }
     this.drawPanel();
     if (this.state.outcome) this.showOutcome();
+    else if (this.aiTurn()) void this.playAi();
+  }
+
+  /** R-AI-01: it is the computer's phase (input is blocked). */
+  private aiTurn(): boolean {
+    return this.ctx.aiSide !== null && this.state?.active_side === this.ctx.aiSide;
+  }
+
+  /** R-AI-01: the AI plays its phase one command at a time, with a pause between. */
+  private async playAi() {
+    if (this.aiRunning) return;
+    this.aiRunning = true;
+    this.deselect();
+    this.toast(`${this.t("ui.ai_turn")}: ${this.sideName(this.state.active_side)}`);
+    try {
+      const max = this.game.aiMaxCommands();
+      for (let k = 0; k < max && this.aiTurn() && !this.state.outcome; k++) {
+        const json = this.game.aiNext();
+        const end = (JSON.parse(json) as { type: string }).type === "end_phase";
+        await new Promise((r) => window.setTimeout(r, AI_STEP_MS));
+        const events = await this.run(() => this.game.apply(json), end);
+        if (end) break;
+        // A refused command (it should not happen) ends the AI's phase.
+        if (!events.length) {
+          await this.run(() => this.game.endPhase(), true);
+          break;
+        }
+      }
+      if (this.aiTurn() && !this.state.outcome) await this.run(() => this.game.endPhase(), true);
+    } finally {
+      this.aiRunning = false;
+    }
+    if (this.aiTurn() && !this.state.outcome) void this.playAi();
   }
 
   /** The camera moved: the minimap's frame follows. */
@@ -256,7 +295,7 @@ export class Play {
     const top = document.getElementById("top")!;
     top.innerHTML = topBarHtml(
       {
-        side: this.sideName(s.active_side),
+        side: this.aiTurn() ? `${this.sideName(s.active_side)} · ${this.t("ui.ai_suffix")}` : this.sideName(s.active_side),
         flag: this.flag(s.active_side),
         mpp: side?.mpp ?? 0,
         mppTip: tip("ui.mpp_tip", { income: income.base_income }),
@@ -388,7 +427,7 @@ export class Play {
   }
 
   private tap(x: number, y: number) {
-    if (this.state.outcome) return;
+    if (this.state.outcome || this.aiTurn() || this.aiRunning) return;
     const { col, row } = this.cellAt(x, y);
     if (this.ctx.hexes.has(key(col, row))) {
       this.lineCell = { col, row };
@@ -763,7 +802,7 @@ export class Play {
     for (const b of el.querySelectorAll<HTMLButtonElement>("[data-action]")) {
       const a = b.dataset.action as ActionId;
       b.onclick = () => {
-        if (states[a].enabled) this.act(a);
+        if (states[a].enabled && !this.aiTurn() && !this.aiRunning) this.act(a);
       };
     }
   }
@@ -908,7 +947,7 @@ export class Play {
 
   /** R-UI-05 keys: N next unit, Enter end of phase, Ctrl/Cmd+Z undo, U unit pictures, I unit / hex, Esc deselect. */
   private key(e: KeyboardEvent) {
-    if (e.target instanceof HTMLInputElement || e.target instanceof HTMLSelectElement || this.state?.outcome) return;
+    if (e.target instanceof HTMLInputElement || e.target instanceof HTMLSelectElement || this.state?.outcome || this.aiTurn() || this.aiRunning) return;
     if (document.getElementById("modal")!.style.display === "flex") return;
     const k = e.key.toLowerCase();
     if (k === "n" || k === "т") this.nextUnit(e.shiftKey ? -1 : 1);
@@ -957,7 +996,7 @@ export class Play {
 
   /** R-UI-05: warn before ending the phase with strikes left on units that have a target. */
   private endPhase() {
-    if (this.state.outcome) return;
+    if (this.state.outcome || this.aiTurn() || this.aiRunning) return;
     const unused = this.state.units.filter(
       (u) => u.side === this.state.active_side && u.strikes_left > 0 && (JSON.parse(this.game.targets(u.id)) as Target[]).length > 0,
     );
@@ -1036,7 +1075,7 @@ export class Play {
   private save() {
     try {
       if (this.state?.outcome) localStorage.removeItem(this.ctx.saveKey);
-      else localStorage.setItem(this.ctx.saveKey, encodeSave(this.game.commands(), this.facing));
+      else localStorage.setItem(this.ctx.saveKey, encodeSave(this.game.commands(), this.facing, this.ctx.aiSide));
     } catch {
       // Storage may be unavailable (private mode); the game goes on without saves.
     }

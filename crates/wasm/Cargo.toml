@@ -10,6 +10,7 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 ceasefire-core.workspace = true
+ceasefire-ai.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 # Browser bridge; the only crate that depends on it.

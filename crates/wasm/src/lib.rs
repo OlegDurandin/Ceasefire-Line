@@ -329,6 +329,8 @@ pub struct Game {
     state: GameState,
     log: Vec<Command>,
     undo: Vec<(GameState, usize)>,
+    /// R-AI-01: the computer opponent, once `setAi` gave it weights and hints.
+    ai: Option<ceasefire_ai::AiV1>,
 }
 
 /// R-UI-05: only movement can be taken back.
@@ -351,7 +353,36 @@ impl Game {
             state,
             log: Vec::new(),
             undo: Vec::new(),
+            ai: None,
         })
+    }
+
+    /// R-AI-01: the AI's weights (`data/ai.json`) and the scenario's hints
+    /// (`scenario.json` → `ai`).
+    #[wasm_bindgen(js_name = setAi)]
+    pub fn set_ai(&mut self, params: &str, scenario: &str) -> Result<(), JsError> {
+        let params = ceasefire_ai::AiParams::from_json(params).map_err(|e| JsError::new(&e))?;
+        let hints =
+            ceasefire_ai::AiHints::from_scenario_json(scenario).map_err(|e| JsError::new(&e))?;
+        self.ai = Some(ceasefire_ai::AiV1::new(params, hints));
+        Ok(())
+    }
+
+    /// R-AI-01: the AI's next command for the active side (JSON), not applied.
+    #[wasm_bindgen(js_name = aiNext)]
+    pub fn ai_next(&mut self) -> Result<String, JsError> {
+        let ai = self
+            .ai
+            .as_mut()
+            .ok_or_else(|| JsError::new("setAi first"))?;
+        let cmd = ai.next(&self.state);
+        serde_json::to_string(&cmd).map_err(|e| JsError::new(&e.to_string()))
+    }
+
+    /// R-AI-02: the AI's command budget per phase.
+    #[wasm_bindgen(js_name = aiMaxCommands)]
+    pub fn ai_max_commands(&self) -> u32 {
+        self.ai.as_ref().map_or(0, |a| a.max_commands())
     }
 
     /// Replays a saved command log (`commands()` JSON) on the scenario.

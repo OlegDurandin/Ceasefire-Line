@@ -46,13 +46,14 @@ async function main() {
     panel.style.display = "block";
   };
   stage("Загрузка данных…");
-  const [rules, terrain, units, tech, spritesText, ruText] = await Promise.all([
+  const [rules, terrain, units, tech, spritesText, ruText, aiText] = await Promise.all([
     text("/data/rules.json"),
     text("/data/terrain.json"),
     text("/data/units.json"),
     text("/data/tech.json"),
     text("/data/sprites.json"),
     text("/data/locale/ru.json"),
+    text("/data/ai.json"),
   ]);
   const sprites = JSON.parse(spritesText) as SpritesFile;
   // R-UI-03: miniatures by default (sprites.json), medallions with ?units=medallion or the U key.
@@ -263,6 +264,7 @@ async function main() {
     }
     let game = new Game(core, scenario, map, events);
     let savedFacing = new Map<number, Facing>();
+    let aiSide: number | null | undefined;
     const save = saved ? decodeSave(saved) : null;
     if (save && save.commands.length) {
       try {
@@ -272,6 +274,7 @@ async function main() {
         if (!st.outcome && (await askContinue(ru, st.turn, side))) {
           game = resumed;
           savedFacing = save.facing;
+          aiSide = save.ai;
         }
       } catch (e) {
         console.warn("[client] save does not replay:", e);
@@ -279,6 +282,9 @@ async function main() {
         panel.textContent = ru["ui.saved_broken"] ?? "save ignored";
       }
     }
+    // R-AI-01: a new game asks who plays (or `?vs=hotseat|<side key>`).
+    if (aiSide === undefined) aiSide = await chooseMode(ru, sideKeys, PARAMS.get("vs"));
+    game.setAi(aiText, scenario);
     devGame = game;
     const play = new Play(game, world, camera, sprites, ru, sideKeys, colors, HEX_SIZE, { terrain: terrainTex, bridge, bridgeDestroyed }, {
       rules: JSON.parse(rules) as Rules,
@@ -294,6 +300,7 @@ async function main() {
       settingsKey,
       sideFacing,
       savedFacing,
+      aiSide,
       hexes: new Map(view.hexes.map((h) => [`${h.col},${h.row}`, h] as const)),
       roadHexes: new Set(view.roads.flatMap((e) => [e.a.join(","), e.b.join(",")])),
       trackHexes: new Set(view.tracks.flatMap((e) => [e.a.join(","), e.b.join(",")])),
@@ -344,6 +351,35 @@ async function main() {
       },
     };
   }
+}
+
+/**
+ * R-AI-01: hotseat, or against the AI for one side. `vs` from the URL skips
+ * the question: `hotseat`, or the key of the side the player takes.
+ */
+function chooseMode(ru: Record<string, string>, sideKeys: string[], vs: string | null): Promise<number | null> {
+  const human = (key: string) => sideKeys.indexOf(key);
+  if (vs === "hotseat") return Promise.resolve(null);
+  if (vs && human(vs) >= 0 && sideKeys.length === 2) return Promise.resolve(1 - human(vs));
+  const modal = document.getElementById("modal")!;
+  const box = modal.querySelector(".panel")!;
+  const sideName = (k: string) => ru[`side.${k}`] ?? k;
+  box.innerHTML = `<h2>${ru["ui.mode.title"] ?? "New game"}</h2><div class="menu">
+    <button id="mode-hotseat">${ru["ui.mode.hotseat"] ?? "Hotseat"}</button>
+    ${sideKeys
+      .map((k, i) => `<button id="mode-play-${k}" data-ai="${sideKeys.length === 2 ? 1 - i : ""}">${(ru["ui.mode.vs_ai"] ?? "{side}").replace("{side}", sideName(k))}</button>`)
+      .join("")}</div>`;
+  modal.style.display = "flex";
+  return new Promise((resolve) => {
+    const done = (v: number | null) => {
+      modal.style.display = "none";
+      resolve(v);
+    };
+    document.getElementById("mode-hotseat")!.onclick = () => done(null);
+    for (const b of box.querySelectorAll<HTMLButtonElement>("[data-ai]")) {
+      b.onclick = () => done(b.dataset.ai === "" ? null : Number(b.dataset.ai));
+    }
+  });
 }
 
 /** «Continue the saved game?» in the modal; resolves with the choice. */

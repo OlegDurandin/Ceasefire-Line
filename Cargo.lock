@@ -76,6 +76,8 @@ name = "ceasefire-ai"
 version = "0.1.0"
 dependencies = [
  "ceasefire-core",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -91,6 +93,7 @@ dependencies = [
 name = "ceasefire-wasm"
 version = "0.1.0"
 dependencies = [
+ "ceasefire-ai",
  "ceasefire-core",
  "serde",
  "serde_json",

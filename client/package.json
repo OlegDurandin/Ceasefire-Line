@@ -8,7 +8,8 @@
     "build": "tsc --noEmit && vite build",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "e2e": "node e2e/fullgame.mjs"
+    "e2e": "node e2e/fullgame.mjs",
+    "e2e:ai": "node e2e/vs-ai.mjs"
   },
   "dependencies": {
     "pixi.js": "8.23.0"

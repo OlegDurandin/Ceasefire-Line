@@ -8,6 +8,12 @@ describe("save (R-UI-05, R-UI-03 facing)", () => {
     const s = decodeSave(text)!;
     expect(s.commands).toEqual([{ type: "end_phase" }]);
     expect([...s.facing]).toEqual([[3, "right"], [7, "left"]]);
+    expect(s.ai).toBeNull();
+  });
+
+  it("keeps the side the AI plays (R-AI-01)", () => {
+    expect(decodeSave(encodeSave("[]", new Map(), 1))!.ai).toBe(1);
+    expect(decodeSave('{"commands":[],"ai":"x"}')!.ai).toBeNull();
   });
 
   it("loads an old save (bare command array) with default facing", () => {

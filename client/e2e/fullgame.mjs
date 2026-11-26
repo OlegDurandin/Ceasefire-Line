@@ -21,6 +21,9 @@ await page.setViewport({ width: 1600, height: 1400 });
 await page.goto(URL, { waitUntil: "networkidle0", timeout: 60000 });
 await page.evaluate(() => localStorage.clear());
 await page.reload({ waitUntil: "networkidle0" });
+// A new game asks for the mode (R-AI-01): hotseat here, `npm run e2e:ai` plays the AI.
+await page.waitForSelector("#mode-hotseat", { visible: true, timeout: 60000 });
+await page.click("#mode-hotseat");
 await page.waitForFunction(() => document.getElementById("top")?.textContent?.includes("Ход"));
 await new Promise(r => setTimeout(r, 600));
 const wait = (ms) => new Promise(r => setTimeout(r, ms));
