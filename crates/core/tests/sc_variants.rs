@@ -8,11 +8,48 @@ use std::collections::BTreeMap;
 use ceasefire_core::game::{Command, GameState, ScenarioSetup, UnitId, UnitSetup};
 use ceasefire_core::hex::Hex;
 
-use common::scenario::{board, setup, start, unit, A, B};
+use common::scenario::{board, start, unit, A, B};
 
-fn with(variant: &str, mut sc: ScenarioSetup) -> ScenarioSetup {
-    sc.variants = BTreeMap::from([(variant.to_owned(), true)]);
+/// Every boolean variant, so each test states its own rules.
+const VARIANTS: [&str; 8] = [
+    "attack_strips_entrenchment",
+    "prepared_attack",
+    "unsupplied_target",
+    "hq_supply_node",
+    "transfer_morale",
+    "zero_supply_ap",
+    "reinforce_locks",
+    "nm_by_cost",
+];
+
+/// The common test scenario with every variant switched off.
+fn setup(
+    map: ceasefire_core::map::HexMap,
+    control: BTreeMap<Hex, ceasefire_core::side::SideId>,
+    units: Vec<UnitSetup>,
+) -> ScenarioSetup {
+    let mut sc = common::scenario::setup(map, control, units);
+    sc.variants = VARIANTS.iter().map(|v| ((*v).to_owned(), false)).collect();
     sc
+}
+
+/// One variant on over the all-off base.
+fn with(variant: &str, mut sc: ScenarioSetup) -> ScenarioSetup {
+    sc.variants.insert(variant.to_owned(), true);
+    sc
+}
+
+/// Designer decision 2026-11-26: П1, П2, П3, П7, П9 on by default, ZOC from
+/// strength 5 (П6); П4, П5, П8 off until step 7.
+#[test]
+fn sc_alignment_defaults() {
+    let (map, control) = board();
+    let s = start(common::scenario::setup(map, control, vec![]));
+    let v = s.variants();
+    assert!(v.attack_strips_entrenchment && v.prepared_attack && v.unsupplied_target);
+    assert!(v.zero_supply_ap && v.nm_by_cost);
+    assert!(!v.hq_supply_node && !v.transfer_morale && !v.reinforce_locks);
+    assert_eq!(s.data().rules.movement.zoc_min_strength, 5);
 }
 
 /// B's dug-in infantry at (3, 0) and three A infantry brigades next to it.
@@ -51,7 +88,7 @@ fn three_attacks(mut s: GameState) -> (Vec<f64>, Vec<u8>) {
 }
 
 #[test]
-fn r_combat_02_variant_is_off_by_default() {
+fn r_combat_02_without_the_variant_only_bombardment_strips() {
     let s = start(three_on_one());
     assert!(!s.variants().attack_strips_entrenchment);
     let (_, entr) = three_attacks(s);

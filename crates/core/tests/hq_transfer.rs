@@ -186,8 +186,8 @@ fn r_hq_02_destroyed_hq_costs_nm_and_one_phase_unattached() {
     assert!(events.contains(&Event::HqDestroyed { hq: UnitId(2) }));
     assert_eq!(
         s.side(A).unwrap().national_morale_pct,
-        95,
-        "−2 unit destroyed, −3 HQ destroyed"
+        94,
+        "R-NM-01 by price: HQ 120 → −3, then −3 by R-HQ-02"
     );
     s.apply(Command::EndPhase).unwrap();
     assert_eq!(attached(&s, 1), None, "one phase without an HQ");

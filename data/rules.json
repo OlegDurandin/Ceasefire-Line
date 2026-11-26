@@ -49,7 +49,7 @@
     "default_hex_km": 10
   },
   "movement": {
-    "zoc_min_strength": 3,
+    "zoc_min_strength": 5,
     "zoc_exit_ap": 1,
     "attack_ap": 1,
     "exploit_min_ap": 2,
@@ -157,13 +157,13 @@
     "snapshot_format": 1
   },
   "variants": {
-    "attack_strips_entrenchment": false,
-    "prepared_attack": false,
-    "unsupplied_target": false,
+    "attack_strips_entrenchment": true,
+    "prepared_attack": true,
+    "unsupplied_target": true,
     "hq_supply_node": false,
     "transfer_morale": false,
-    "zero_supply_ap": false,
+    "zero_supply_ap": true,
     "reinforce_locks": false,
-    "nm_by_cost": false
+    "nm_by_cost": true
   }
 }
