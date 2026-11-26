@@ -28,7 +28,6 @@ pub struct SupplyParams {
     pub hq_node_min_supply: u8,
     pub hq_node_bonus: u8,
     pub hq_node_max: u8,
-    pub hq_node_full_strength: u8,
     pub hq_node_strength_divisor: u8,
 }
 
@@ -56,7 +55,6 @@ impl SupplyParams {
             hq_node_min_supply: rules.hq_node_min_supply,
             hq_node_bonus: rules.hq_node_bonus,
             hq_node_max: rules.hq_node_max,
-            hq_node_full_strength: rules.hq_node_full_strength,
             hq_node_strength_divisor: rules.hq_node_strength_divisor,
         })
     }
@@ -135,13 +133,13 @@ pub fn hq_node_value(p: &SupplyParams, s: u8, strength: u8) -> Option<u8> {
     if s < p.hq_node_min_supply {
         return None;
     }
-    let mut v = s
+    let full = s
         .saturating_add(p.hq_node_bonus)
         .min(p.hq_node_max)
         .min(p.max);
-    if strength < p.hq_node_full_strength {
-        v = (u16::from(v) * u16::from(strength) / u16::from(p.hq_node_strength_divisor)) as u8;
-    }
+    // floor(min(8, S + 2) × strength / 10), at any strength (designer 2026-11-26).
+    let v = (u16::from(full) * u16::from(strength) / u16::from(p.hq_node_strength_divisor))
+        .min(u16::from(p.max)) as u8;
     (v > 0).then_some(v)
 }
 
@@ -473,8 +471,8 @@ mod tests {
     }
 
     /// R-SUP-06 (variant `hq_supply_node`): an HQ with supply S ≥ 4 is a source
-    /// of min(8, S + 2) within 20 km; several HQs do not stack; a weak HQ
-    /// gives × strength / 10; nodes are computed from S without any HQ.
+    /// of floor(min(8, S + 2) × strength / 10) within 20 km; several HQs do
+    /// not stack; nodes are computed from S without any HQ.
     #[test]
     fn r_sup_06_hq_as_a_supply_node() {
         let map = line("plain", 14);
@@ -519,8 +517,10 @@ mod tests {
         assert_eq!(at(&[hq(8, 10), hq(10, 10)], 12), 6);
         // Weak HQ: 8 × 4 / 10 = 3 < base — no gain.
         assert_eq!(at(&[hq(8, 4)], 8), 6);
+        // S = 6: strength 10 → 8, 5 → 4, 4 → 3.
+        assert_eq!(hq_node_value(&p, 6, 10), Some(8));
+        assert_eq!(hq_node_value(&p, 6, 5), Some(4));
         assert_eq!(hq_node_value(&p, 6, 4), Some(3));
-        assert_eq!(hq_node_value(&p, 6, 5), Some(8));
         // S < 4: not a node.
         assert_eq!(hq_node_value(&p, 3, 10), None);
         assert_eq!(at(&[hq(14, 10)], 14), 3);
