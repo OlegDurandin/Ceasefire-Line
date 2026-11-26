@@ -219,6 +219,8 @@ struct LiveUnitView {
     hq_rating: Option<u8>,
     nation: Option<String>,
     formation: Option<String>,
+    /// R-UI-04: the formation's name, a locale key.
+    name: Option<String>,
     /// R-HQ-01: HQ the unit is attached to (set at the start of its phase).
     attached_hq: Option<u32>,
     /// R-HQ-01: manual pin, applied from the next own phase.
@@ -448,6 +450,7 @@ impl Game {
                         hq_rating: u.hq_rating,
                         nation: u.nation.clone(),
                         formation: u.formation.clone(),
+                        name: u.name.clone(),
                         attached_hq: u.attached_hq.map(|h| h.0),
                         pinned_hq: u.pinned_hq.map(|h| h.0),
                         base_readiness_pct: u.base_readiness_pct,

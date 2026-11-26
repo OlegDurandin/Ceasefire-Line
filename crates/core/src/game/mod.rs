@@ -88,6 +88,8 @@ pub struct Unit {
     pub formation: Option<String>,
     /// R-HQ-01: units attach only to HQs of the same nation.
     pub nation: Option<String>,
+    /// R-UI-04: the formation's name (a locale key); the rules ignore it.
+    pub name: Option<String>,
     /// R-HQ-01: optional manual pin.
     pub pinned_hq: Option<UnitId>,
     /// R-HQ-01: set at the start of each own phase.
@@ -130,6 +132,7 @@ impl Unit {
             hq_rating: u.hq_rating,
             formation: u.formation.clone(),
             nation: u.nation.clone(),
+            name: u.name.clone(),
             pinned_hq: None,
             attached_hq: None,
             hq_lost: false,
@@ -274,6 +277,8 @@ pub struct UnitSetup {
     pub hq_rating: Option<u8>,
     pub formation: Option<String>,
     pub nation: Option<String>,
+    /// R-UI-04: the formation's name (a locale key).
+    pub name: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq)]

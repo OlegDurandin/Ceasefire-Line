@@ -550,7 +550,7 @@ export class Play {
       supply: this.supplyHere.get(k) ?? null,
       road: this.ctx.roadHexes.has(k) ? "road" : this.ctx.trackHexes.has(k) ? "track" : null,
       enemyZoc: this.zocHere.has(k),
-      occupant: u ? `${this.t(`unit.${u.class}`, u.class)}${u.hq_rating !== null ? ` ★${u.hq_rating}` : ""} (${this.sideName(u.side)})` : null,
+      occupant: u ? `${this.unitName(u)}${u.hq_rating !== null ? ` ★${u.hq_rating}` : ""} (${this.sideName(u.side)})` : null,
     };
   }
 
@@ -586,7 +586,8 @@ export class Play {
     else if ((tech.antitank ?? 1) > 1 && u.class === "infantry") parts.push(fill(this.t("ui.atgm_level"), { n: tech.antitank ?? 1 }));
     const hq = this.state.units.find((h) => h.id === u.attached_hq);
     if (u.hq_rating !== null) parts.push(fill(this.t("ui.hq_rating"), { r: u.hq_rating }));
-    else parts.push(hq ? fill(this.t("ui.under_hq"), { r: hq.hq_rating ?? "" }) : this.t("ui.not_attached"));
+    else if (!hq) parts.push(this.t("ui.not_attached"));
+    else parts.push(hq.name ? this.unitName(hq).replace(/^./, (c) => c.toLowerCase()) : fill(this.t("ui.under_hq"), { r: hq.hq_rating ?? "" }));
     const facing = this.facing.get(u.id) ?? this.ctx.sideFacing[u.side] ?? "left";
     const portrait = tokenHtml({
       w: 84,
@@ -599,7 +600,7 @@ export class Play {
     });
     return {
       unit: u,
-      title: this.t(`unit.${u.class}`, u.class),
+      title: this.unitName(u),
       subtitle: parts.join(" · "),
       portrait,
       stars: expStars(u.exp),
@@ -659,9 +660,15 @@ export class Play {
     else this.showWindow();
   }
 
-  /** Unit name with its hex, for HQ lists. */
+  /** R-UI-04: the formation's name from the scenario, or the class when it has none. */
+  private unitName(u: LiveUnit): string {
+    const cls = this.t(`unit.${u.class}`, u.class);
+    return u.name ? this.t(u.name, cls) : cls;
+  }
+
+  /** Unit name with its hex, for HQ and target lists. */
   private unitLabel(u: LiveUnit): string {
-    return `${this.t(`unit.${u.class}`, u.class)}${u.hq_rating !== null ? ` ★${u.hq_rating}` : ""} [${u.col}, ${u.row}]`;
+    return `${this.unitName(u)}${u.hq_rating !== null ? ` ★${u.hq_rating}` : ""} [${u.col}, ${u.row}]`;
   }
 
   /** The core's refusal of a command, in Russian; null if it would be accepted. */

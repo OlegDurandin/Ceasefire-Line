@@ -267,3 +267,23 @@ fn golan67_replay_is_deterministic() {
     let (_, e3) = play(8);
     assert_ne!(e1, e3, "another seed plays differently");
 }
+
+/// R-UI-04: formation names come from the scenario (locale keys); a unit
+/// without one keeps `None` and the interface shows its class.
+#[test]
+fn r_ui_04_formation_names_from_the_scenario() {
+    let (_, setup) = load();
+    let ru: std::collections::BTreeMap<String, String> = serde_json::from_str(LOCALE_RU).unwrap();
+    let named: Vec<&str> = setup
+        .units
+        .iter()
+        .filter_map(|u| u.name.as_deref())
+        .collect();
+    assert_eq!(named.len(), 10);
+    for key in named {
+        assert!(key.starts_with("formation."), "{key}");
+        assert!(ru.contains_key(key), "no Russian name for {key}");
+    }
+    let artillery = setup.units.iter().find(|u| u.class == "artillery").unwrap();
+    assert_eq!(artillery.name, None);
+}

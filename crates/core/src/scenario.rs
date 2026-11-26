@@ -183,6 +183,9 @@ struct UnitFile {
     formation: Option<String>,
     #[serde(default)]
     nation: Option<String>,
+    /// R-UI-04: the formation's name, a locale key (`formation.*`).
+    #[serde(default)]
+    name: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -301,6 +304,7 @@ fn unit_setup(u: UnitFile) -> UnitSetup {
         hq_rating: u.hq_rating,
         formation: u.formation,
         nation: u.nation,
+        name: u.name,
     }
 }
 

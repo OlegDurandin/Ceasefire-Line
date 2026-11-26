@@ -119,7 +119,7 @@ export class AttackWindow {
       <div class="aw-portrait">${c.portrait}</div>
       <div class="aw-info">
         <div class="aw-title">${c.title}</div>
-        <div class="aw-sub">${c.subtitle}</div>
+        <div class="aw-sub" title="${attrText(c.subtitle)}">${c.subtitle}</div>
         ${stars}
         <div class="aw-grid">${grid}</div>
       </div></div>`;

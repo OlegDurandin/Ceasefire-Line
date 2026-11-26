@@ -194,6 +194,7 @@ impl GameState {
                 hq_rating: None,
                 formation: None,
                 nation: None,
+                name: None,
             };
             self.units.insert(id, Unit::from_setup(id, &setup, hex));
             events.push(Event::UnitArrived {

@@ -19,6 +19,8 @@ export interface LiveUnit {
   hq_rating: number | null;
   nation: string | null;
   formation: string | null;
+  /** R-UI-04: the formation's name, a locale key (`formation.*`); null — show the class. */
+  name: string | null;
   /** R-HQ-01: HQ the unit is attached to (set at the start of its phase). */
   attached_hq: number | null;
   /** R-HQ-01: manual pin, applied from the next own phase. */

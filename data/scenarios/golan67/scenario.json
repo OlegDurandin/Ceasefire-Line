@@ -366,7 +366,8 @@
       "exp": 100,
       "formation": "armored_div",
       "morale_pct": 85,
-      "nation": "israel"
+      "nation": "israel",
+      "name": "formation.isr_8_armored"
     },
     {
       "class": "tank",
@@ -377,7 +378,8 @@
       ],
       "formation": "armored_div",
       "morale_pct": 85,
-      "nation": "israel"
+      "nation": "israel",
+      "name": "formation.isr_37_armored"
     },
     {
       "class": "mech",
@@ -388,7 +390,8 @@
       ],
       "formation": "armored_div",
       "morale_pct": 85,
-      "nation": "israel"
+      "nation": "israel",
+      "name": "formation.isr_45_armored"
     },
     {
       "class": "infantry",
@@ -400,7 +403,8 @@
       "exp": 100,
       "formation": "infantry_bde",
       "morale_pct": 85,
-      "nation": "israel"
+      "nation": "israel",
+      "name": "formation.isr_1_golani"
     },
     {
       "class": "commando",
@@ -410,7 +414,8 @@
         9
       ],
       "morale_pct": 85,
-      "nation": "israel"
+      "nation": "israel",
+      "name": "formation.isr_55_para"
     },
     {
       "class": "hq",
@@ -422,7 +427,8 @@
       "hq_rating": 7,
       "formation": "armored_div",
       "morale_pct": 85,
-      "nation": "israel"
+      "nation": "israel",
+      "name": "formation.isr_northern_command"
     },
     {
       "class": "infantry",
@@ -433,7 +439,8 @@
       ],
       "entrenchment": 4,
       "morale_pct": 70,
-      "nation": "syria"
+      "nation": "syria",
+      "name": "formation.syr_11_inf"
     },
     {
       "class": "infantry",
@@ -444,7 +451,8 @@
       ],
       "entrenchment": 4,
       "morale_pct": 70,
-      "nation": "syria"
+      "nation": "syria",
+      "name": "formation.syr_8_inf"
     },
     {
       "class": "infantry",
@@ -455,7 +463,8 @@
       ],
       "entrenchment": 4,
       "morale_pct": 70,
-      "nation": "syria"
+      "nation": "syria",
+      "name": "formation.syr_19_inf"
     },
     {
       "class": "tank",
@@ -465,7 +474,8 @@
         5
       ],
       "morale_pct": 70,
-      "nation": "syria"
+      "nation": "syria",
+      "name": "formation.syr_44_armored"
     },
     {
       "class": "artillery",
