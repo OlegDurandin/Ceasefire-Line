@@ -196,6 +196,21 @@ struct UnitFile {
     /// R-AIR-01: aircraft based off the map (an `offmap_bases` id); `hex` is ignored then.
     #[serde(default)]
     offmap_base: Option<String>,
+    /// The unit exists only when every listed scenario option has this value
+    /// (e.g. `{"first_strike": "free"}`).
+    #[serde(default)]
+    when: BTreeMap<String, String>,
+    /// Where the unit and its position come from, and whether a source
+    /// confirms it (section 14: unconfirmed data is marked); the rules ignore them.
+    #[serde(default)]
+    #[allow(dead_code)]
+    source: Option<String>,
+    #[serde(default)]
+    #[allow(dead_code)]
+    confirmed: Option<bool>,
+    #[serde(default, rename = "_comment")]
+    #[allow(dead_code)]
+    comment: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -285,6 +300,10 @@ struct ScenarioFile {
     /// R-AIR-01: bases off the map.
     #[serde(default)]
     offmap_bases: Vec<OffMapBaseFile>,
+    /// Scenario options and their chosen values (e.g. `first_strike`:
+    /// `historical` | `free`); units carry `when` conditions on them.
+    #[serde(default)]
+    options: BTreeMap<String, String>,
     units: Vec<UnitFile>,
 }
 
@@ -575,7 +594,13 @@ pub fn load_scenario(
                 })
             })
             .collect::<Result<_, RuleError>>()?,
-        units: file.units.into_iter().map(unit_setup).collect(),
+        // Units of the chosen scenario options only (`when`).
+        units: file
+            .units
+            .into_iter()
+            .filter(|u| u.when.iter().all(|(k, v)| file.options.get(k) == Some(v)))
+            .map(unit_setup)
+            .collect(),
         cities: file
             .cities
             .iter()

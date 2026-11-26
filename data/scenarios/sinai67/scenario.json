@@ -1,5 +1,5 @@
 {
-  "_comment": "Синай-67, 5–8 июня 1967 (этап 4). Заготовка шага 5: карта и стороны; силы, события, цели и победа — шаг 6 (по источникам).",
+  "_comment": "Синай-67, 5–8 июня 1967 (этап 4). Составы и расстановка — docs/reports/2026-11-26-sinai67-scenario.md (у каждого юнита source и confirmed). Пороги победы предварительные: подстройка — шаг 7.",
   "id": "sinai67",
   "hex_km": 10,
   "supply_decay_ap": 4,
@@ -7,6 +7,9 @@
   "start_turn": 1,
   "start_date": "1967-06-05",
   "last_turn": 8,
+  "options": {
+    "first_strike": "historical"
+  },
   "sides": [
     {
       "id": 0,
@@ -37,8 +40,8 @@
       ],
       "tech": {},
       "national_morale_pct": 85,
-      "mpp": 40,
-      "base_income": 20,
+      "mpp": 60,
+      "base_income": 30,
       "loss_sensitivity": 2,
       "purchase_limits": {}
     },
@@ -62,20 +65,1323 @@
         ]
       ],
       "tech": {},
-      "national_morale_pct": 70,
-      "mpp": 30,
-      "base_income": 15,
+      "national_morale_pct": 75,
+      "mpp": 60,
+      "base_income": 30,
       "loss_sensitivity": 1,
       "purchase_limits": {}
     }
   ],
-  "sources": [],
-  "cities": [],
-  "objectives": [],
+  "sources": [
+    {
+      "hex": [
+        28,
+        3
+      ],
+      "value": 10
+    },
+    {
+      "hex": [
+        28,
+        16
+      ],
+      "value": 8
+    },
+    {
+      "hex": [
+        0,
+        11
+      ],
+      "value": 10
+    },
+    {
+      "hex": [
+        1,
+        7
+      ],
+      "value": 8
+    },
+    {
+      "hex": [
+        3,
+        17
+      ],
+      "value": 10
+    },
+    {
+      "hex": [
+        17,
+        4
+      ],
+      "value": 6
+    }
+  ],
+  "cities": [
+    {
+      "hex": [
+        28,
+        3
+      ],
+      "value": 5
+    },
+    {
+      "hex": [
+        26,
+        3
+      ],
+      "value": 1
+    },
+    {
+      "hex": [
+        26,
+        0
+      ],
+      "value": 1
+    },
+    {
+      "hex": [
+        24,
+        1
+      ],
+      "value": 2
+    },
+    {
+      "hex": [
+        17,
+        4
+      ],
+      "value": 3
+    },
+    {
+      "hex": [
+        20,
+        4
+      ],
+      "value": 1
+    },
+    {
+      "hex": [
+        8,
+        6
+      ],
+      "value": 1
+    },
+    {
+      "hex": [
+        1,
+        7
+      ],
+      "value": 2
+    },
+    {
+      "hex": [
+        0,
+        11
+      ],
+      "value": 3
+    },
+    {
+      "hex": [
+        3,
+        17
+      ],
+      "value": 3
+    },
+    {
+      "hex": [
+        16,
+        18
+      ],
+      "value": 1
+    }
+  ],
+  "objectives": [
+    {
+      "hex": [
+        21,
+        7
+      ],
+      "nm_value": 10,
+      "vp": 15
+    },
+    {
+      "hex": [
+        17,
+        4
+      ],
+      "nm_value": 10,
+      "vp": 15
+    },
+    {
+      "hex": [
+        10,
+        13
+      ],
+      "nm_value": 5,
+      "vp": 10
+    },
+    {
+      "hex": [
+        8,
+        15
+      ],
+      "nm_value": 10,
+      "vp": 20
+    },
+    {
+      "hex": [
+        8,
+        17
+      ],
+      "nm_value": 10,
+      "vp": 20
+    },
+    {
+      "hex": [
+        24,
+        1
+      ],
+      "nm_value": 5,
+      "vp": 5
+    },
+    {
+      "hex": [
+        16,
+        18
+      ],
+      "nm_value": 3,
+      "vp": 5
+    }
+  ],
   "key_hexes": [],
-  "victory": [],
+  "victory": [
+    {
+      "side": 0,
+      "decisive": 80,
+      "victory": 40
+    },
+    {
+      "side": 1,
+      "decisive": 30,
+      "victory": 1
+    }
+  ],
   "scheduled_income": [],
   "tech_boosts": [],
   "neutral": [],
-  "units": []
+  "offmap_bases": [
+    {
+      "id": "isr_central",
+      "side": 0,
+      "edge": "north",
+      "distance_km": 30
+    },
+    {
+      "id": "egy_delta",
+      "side": 1,
+      "edge": "west",
+      "distance_km": 60
+    }
+  ],
+  "ai": {
+    "_comment": "R-AI-01: подсказки ИИ. Израиль наступает по трём осям; порядок целей — Абу-Агейла, Эль-Ариш, Бир-Гифгафа, Гидди, Митла. Египет обороняет укрепрайоны.",
+    "sides": [
+      {
+        "side": 0,
+        "aggressiveness": 0.75,
+        "sequence": [
+          [
+            21,
+            7
+          ],
+          [
+            17,
+            4
+          ],
+          [
+            10,
+            13
+          ],
+          [
+            8,
+            15
+          ],
+          [
+            8,
+            17
+          ]
+        ]
+      },
+      {
+        "side": 1,
+        "aggressiveness": 0.4
+      }
+    ]
+  },
+  "units": [
+    {
+      "class": "hq",
+      "side": 0,
+      "hex": [
+        28,
+        3
+      ],
+      "hq_rating": 8,
+      "morale_pct": 85,
+      "formation": "isr_southern_command",
+      "nation": "israel",
+      "name": "formation.isr_southern_command_hq",
+      "confirmed": true,
+      "source": "Israel MoD archive, 'The Egyptian Front' https://archives.mod.gov.il/sites/English/Exhibitions/The_Six-Day_War/Pages/The-Egyptian-Front.aspx; Wikipedia 'Six-Day War order of battle' (cites S. Dunstan, The Six Day War 1967: Sinai, Osprey 2009, no pages) https://en.wikipedia.org/wiki/Six-Day_War_order_of_battle",
+      "_comment": "Front command over three ugdot plus independent brigades."
+    },
+    {
+      "class": "hq",
+      "side": 0,
+      "hex": [
+        23,
+        3
+      ],
+      "hq_rating": 9,
+      "morale_pct": 85,
+      "formation": "isr_84th_armored_division",
+      "nation": "israel",
+      "name": "formation.isr_84th_armored_division_hq",
+      "confirmed": true,
+      "source": "Wikipedia 'Six-Day War order of battle' (cites S. Dunstan, The Six Day War 1967: Sinai, Osprey 2009, no pages) https://en.wikipedia.org/wiki/Six-Day_War_order_of_battle; Israel MoD archive, 'The Egyptian Front' https://archives.mod.gov.il/sites/English/Exhibitions/The_Six-Day_War/Pages/The-Egyptian-Front.aspx; he.wikipedia 'קרב רפיח (1967)' (Carta Atlas maps 62-64; A. Zohar, Shiryon 35, 2010) https://he.wikipedia.org/wiki/קרב_רפיח_(1967)",
+      "_comment": "Main effort, regular units; ~227-300 tanks. HQ also acted as corps HQ (HERAFAH)."
+    },
+    {
+      "class": "tank",
+      "side": 0,
+      "hex": [
+        24,
+        3
+      ],
+      "exp": 100,
+      "morale_pct": 85,
+      "formation": "isr_84th_armored_division",
+      "nation": "israel",
+      "name": "formation.isr_7th_armored_brigade",
+      "confirmed": true,
+      "source": "Wikipedia 'Six-Day War order of battle' (cites S. Dunstan, The Six Day War 1967: Sinai, Osprey 2009, no pages) https://en.wikipedia.org/wiki/Six-Day_War_order_of_battle; he.wikipedia 'קרב רפיח (1967)' (Carta Atlas maps 62-64; A. Zohar, Shiryon 35, 2010) https://he.wikipedia.org/wiki/קרב_רפיח_(1967); WarHistory.org 'The Sinai Campaign of 1967 Part I' (tank counts per formation; source not stated) https://warhistory.org/article/the-sinai-campaign-of-1967-part-i",
+      "_comment": "Broke into the Gaza Strip at Khan Yunis 08:45 on 5 June. Avalanche gives 'Tank Bn 77' for the Pattons; Hebrew sources give 79 – chose 79 (HERAFAH)."
+    },
+    {
+      "class": "tank",
+      "side": 0,
+      "hex": [
+        23,
+        4
+      ],
+      "morale_pct": 85,
+      "formation": "isr_84th_armored_division",
+      "nation": "israel",
+      "name": "formation.isr_60th_armored_brigade_reserve",
+      "confirmed": true,
+      "source": "Wikipedia 'Six-Day War order of battle' (cites S. Dunstan, The Six Day War 1967: Sinai, Osprey 2009, no pages) https://en.wikipedia.org/wiki/Six-Day_War_order_of_battle; he.wikipedia 'קרב רפיח (1967)' (Carta Atlas maps 62-64; A. Zohar, Shiryon 35, 2010) https://he.wikipedia.org/wiki/קרב_רפיח_(1967); WarHistory.org 'The Sinai Campaign of 1967 Part I' (tank counts per formation; source not stated) https://warhistory.org/article/the-sinai-campaign-of-1967-part-i",
+      "_comment": "Reserve brigade; bogged in dunes on 5 June on the way to Jiradi. hewiki link points to 'Brigade 27' – number 60 used by Dunstan/MoD."
+    },
+    {
+      "class": "commando",
+      "side": 0,
+      "hex": [
+        24,
+        4
+      ],
+      "exp": 100,
+      "morale_pct": 85,
+      "formation": "isr_84th_armored_division",
+      "nation": "israel",
+      "name": "formation.isr_35th_202nd_paratroop_brigade_mechanized",
+      "confirmed": true,
+      "source": "Wikipedia 'Six-Day War order of battle' (cites S. Dunstan, The Six Day War 1967: Sinai, Osprey 2009, no pages) https://en.wikipedia.org/wiki/Six-Day_War_order_of_battle; Israel MoD archive, 'The Egyptian Front' https://archives.mod.gov.il/sites/English/Exhibitions/The_Six-Day_War/Pages/The-Egyptian-Front.aspx; he.wikipedia 'קרב רפיח (1967)' (Carta Atlas maps 62-64; A. Zohar, Shiryon 35, 2010) https://he.wikipedia.org/wiki/קרב_רפיח_(1967)",
+      "_comment": "Regular paratroopers fighting in M3 halftracks. Dunstan/Wikipedia call it the 202nd, the MoD archive '35'; same formation (202 was its earlier number; its 202nd Bn went to the Gaza force). Class: commando per units.json; it fought as mech infantry – designer may prefer 'mech'. Also absorbs Granit re"
+    },
+    {
+      "class": "artillery",
+      "side": 0,
+      "hex": [
+        25,
+        2
+      ],
+      "morale_pct": 85,
+      "formation": "isr_84th_armored_division",
+      "nation": "israel",
+      "name": "formation.isr_215th_artillery_group",
+      "confirmed": false,
+      "source": "Wikipedia 'Six-Day War order of battle' (cites S. Dunstan, The Six Day War 1967: Sinai, Osprey 2009, no pages) https://en.wikipedia.org/wiki/Six-Day_War_order_of_battle",
+      "_comment": "Number from Wikipedia (via Dunstan) only; composition not found. Divisional artillery folded into one unit."
+    },
+    {
+      "class": "hq",
+      "side": 0,
+      "hex": [
+        24,
+        7
+      ],
+      "hq_rating": 7,
+      "morale_pct": 85,
+      "formation": "isr_31st_armored_division",
+      "nation": "israel",
+      "name": "formation.isr_31st_armored_division_hq",
+      "confirmed": true,
+      "source": "Israel MoD archive, 'The Egyptian Front' https://archives.mod.gov.il/sites/English/Exhibitions/The_Six-Day_War/Pages/The-Egyptian-Front.aspx; Wikipedia 'Six-Day War order of battle' (cites S. Dunstan, The Six Day War 1967: Sinai, Osprey 2009, no pages) https://en.wikipedia.org/wiki/Six-Day_War_order_of_battle; he.wikipedia 'עוצבת עמוד האש' (D. Asher, Maarachot 471, May 2017, pp. 36-43) https://www.hamichlol.org.il/עוצבת_עמוד_האש",
+      "_comment": "All-reserve division, two Centurion brigades; responsible for the gap between Rafah and Umm Katef."
+    },
+    {
+      "class": "tank",
+      "side": 0,
+      "hex": [
+        24,
+        6
+      ],
+      "morale_pct": 85,
+      "formation": "isr_31st_armored_division",
+      "nation": "israel",
+      "name": "formation.isr_200th_armored_brigade",
+      "confirmed": true,
+      "source": "Israel MoD archive, 'The Egyptian Front' https://archives.mod.gov.il/sites/English/Exhibitions/The_Six-Day_War/Pages/The-Egyptian-Front.aspx; Wikipedia 'Six-Day War order of battle' (cites S. Dunstan, The Six Day War 1967: Sinai, Osprey 2009, no pages) https://en.wikipedia.org/wiki/Six-Day_War_order_of_battle; he.wikipedia 'עוצבת עמוד האש' (D. Asher, Maarachot 471, May 2017, pp. 36-43) https://www.hamichlol.org.il/עוצבת_עמוד_האש; WarHistory.org 'The Sinai Campaign of 1967 Part I' (tank counts per formation; source not stated) https://warhistory.org/article/the-sinai-campaign-of-1967-part-i",
+      "_comment": "Crossed the dunes via Wadi Haridin to Bir Lahfan on 5 June; Self-Propelled Artillery Bn 822 attached (HE31). Exact start point unconfirmed."
+    },
+    {
+      "class": "tank",
+      "side": 0,
+      "hex": [
+        25,
+        7
+      ],
+      "morale_pct": 85,
+      "formation": "isr_31st_armored_division",
+      "nation": "israel",
+      "name": "formation.isr_520th_armored_brigade",
+      "confirmed": true,
+      "source": "Israel MoD archive, 'The Egyptian Front' https://archives.mod.gov.il/sites/English/Exhibitions/The_Six-Day_War/Pages/The-Egyptian-Front.aspx; Wikipedia 'Six-Day War order of battle' (cites S. Dunstan, The Six Day War 1967: Sinai, Osprey 2009, no pages) https://en.wikipedia.org/wiki/Six-Day_War_order_of_battle; he.wikipedia 'עוצבת עמוד האש' (D. Asher, Maarachot 471, May 2017, pp. 36-43) https://www.hamichlol.org.il/עוצבת_עמוד_האש",
+      "_comment": "Division reserve on 5 June; moved through Abu Ageila to Jebel Libni after it fell. Start position unconfirmed (near Nitzana)."
+    },
+    {
+      "class": "hq",
+      "side": 0,
+      "hex": [
+        24,
+        8
+      ],
+      "hq_rating": 8,
+      "morale_pct": 85,
+      "formation": "isr_38th_armored_division",
+      "nation": "israel",
+      "name": "formation.isr_38th_armored_division_hq",
+      "confirmed": true,
+      "source": "Israel MoD archive, 'The Egyptian Front' https://archives.mod.gov.il/sites/English/Exhibitions/The_Six-Day_War/Pages/The-Egyptian-Front.aspx; Wikipedia 'Six-Day War order of battle' (cites S. Dunstan, The Six Day War 1967: Sinai, Osprey 2009, no pages) https://en.wikipedia.org/wiki/Six-Day_War_order_of_battle; Wikipedia 'Battle of Abu-Ageila (1967)' (G. Gawrych, Key to the Sinai, CSI 1990; Y. Gavish, Red Flag p.183) https://en.wikipedia.org/wiki/Battle_of_Abu-Ageila",
+      "_comment": "Mixed division of ~14,000 men, ~150 tanks, six artillery battalions (ABU, WFHN)."
+    },
+    {
+      "class": "tank",
+      "side": 0,
+      "hex": [
+        25,
+        8
+      ],
+      "morale_pct": 85,
+      "formation": "isr_38th_armored_division",
+      "nation": "israel",
+      "name": "formation.isr_14th_armored_brigade",
+      "confirmed": true,
+      "source": "Wikipedia 'Six-Day War order of battle' (cites S. Dunstan, The Six Day War 1967: Sinai, Osprey 2009, no pages) https://en.wikipedia.org/wiki/Six-Day_War_order_of_battle; Wikipedia 'Battle of Abu-Ageila (1967)' (G. Gawrych, Key to the Sinai, CSI 1990; Y. Gavish, Red Flag p.183) https://en.wikipedia.org/wiki/Battle_of_Abu-Ageila; Warfare History Network, 'The Six Day War: Outfoxed in the Sinai' https://warfarehistorynetwork.com/article/outfoxed-in-the-sinai/; WarHistory.org 'The Sinai Campaign of 1967 Part I' (tank counts per formation; source not stated) https://warhistory.org/article/the-sinai-campaign-of-1967-part-i",
+      "_comment": "Centurion battalion is numbered 63rd (ABU), 226th (WOOB/AVAL); folded into the brigade."
+    },
+    {
+      "class": "infantry",
+      "side": 0,
+      "hex": [
+        25,
+        6
+      ],
+      "morale_pct": 85,
+      "formation": "isr_38th_armored_division",
+      "nation": "israel",
+      "name": "formation.isr_99th_infantry_brigade",
+      "confirmed": true,
+      "source": "Wikipedia 'Six-Day War order of battle' (cites S. Dunstan, The Six Day War 1967: Sinai, Osprey 2009, no pages) https://en.wikipedia.org/wiki/Six-Day_War_order_of_battle; Israel MoD archive, 'The Egyptian Front' https://archives.mod.gov.il/sites/English/Exhibitions/The_Six-Day_War/Pages/The-Egyptian-Front.aspx; Wikipedia 'Battle of Abu-Ageila (1967)' (G. Gawrych, Key to the Sinai, CSI 1990; Y. Gavish, Red Flag p.183) https://en.wikipedia.org/wiki/Battle_of_Abu-Ageila; WarHistory.org 'The Sinai Campaign of 1967 Part I' (tank counts per formation; source not stated) https://warhistory.org/article/the-sinai-campaign-of-1967-part-i",
+      "_comment": "Reserve infantry brigade; walked through the dunes and assaulted the trenches at 22:30 on 5 June."
+    },
+    {
+      "class": "commando",
+      "side": 0,
+      "hex": [
+        26,
+        7
+      ],
+      "exp": 100,
+      "morale_pct": 85,
+      "formation": "isr_38th_armored_division",
+      "nation": "israel",
+      "name": "formation.isr_80th_paratroop_brigade",
+      "confirmed": true,
+      "source": "Wikipedia 'Six-Day War order of battle' (cites S. Dunstan, The Six Day War 1967: Sinai, Osprey 2009, no pages) https://en.wikipedia.org/wiki/Six-Day_War_order_of_battle; Israel MoD archive, 'The Egyptian Front' https://archives.mod.gov.il/sites/English/Exhibitions/The_Six-Day_War/Pages/The-Egyptian-Front.aspx; Wikipedia 'Battle of Abu-Ageila (1967)' (G. Gawrych, Key to the Sinai, CSI 1990; Y. Gavish, Red Flag p.183) https://en.wikipedia.org/wiki/Battle_of_Abu-Ageila",
+      "_comment": "Reserve paratroopers; a battalion was helicopter-landed behind the Umm Katef artillery on the night of 5–6 June."
+    },
+    {
+      "class": "artillery",
+      "side": 0,
+      "hex": [
+        25,
+        9
+      ],
+      "morale_pct": 85,
+      "formation": "isr_38th_armored_division",
+      "nation": "israel",
+      "name": "formation.isr_38th_division_artillery_group",
+      "confirmed": true,
+      "source": "Wikipedia 'Battle of Abu-Ageila (1967)' (G. Gawrych, Key to the Sinai, CSI 1990; Y. Gavish, Red Flag p.183) https://en.wikipedia.org/wiki/Battle_of_Abu-Ageila; Avalanche Press, Panzer Grenadier Modern '1967: Sword of Israel' scenario book (2013, wargame) https://gamers-hq.de/media/pdf/64/eb/7d/NEW_1967_book.pdf",
+      "_comment": "Six artillery battalions (105 mm, 155 mm); Avalanche: 96 guns. Wikipedia lists a '214th Artillery Regiment' under the 38th, but the Hebrew 31st-division article puts Artillery Group 214 in the 31st – number left out."
+    },
+    {
+      "class": "tank",
+      "side": 0,
+      "hex": [
+        28,
+        17
+      ],
+      "morale_pct": 85,
+      "formation": "isr_southern_command",
+      "nation": "israel",
+      "name": "formation.isr_8th_armored_brigade",
+      "confirmed": true,
+      "source": "Israel MoD archive, 'The Egyptian Front' https://archives.mod.gov.il/sites/English/Exhibitions/The_Six-Day_War/Pages/The-Egyptian-Front.aspx; C. B. Long, Analysis of the Six Day War, ACSC Report 84-1595 (1984), App. A/B, DTIC ADA146294 https://archive.org/stream/DTIC_ADA146294/DTIC_ADA146294_djvu.txt; WarHistory.org 'The Sinai Campaign of 1967 Part II' (quotes S. Teveth, The Tanks of Tammuz) https://warhistory.org/2021/07/12/the-sinai-campaign-of-1967-part-ii/; H. Barasch, 'The Arab-Israeli 67 War: the history as the game', Moves #15 (SPI, 1974) http://russgifford.net/MovesScans/Moves15/sinaifl.pdf",
+      "_comment": "Guarded the Eilat approaches; deception opposite Kuntilla; crossed near Kuntilla, joined the 38th and fought at Nakhl on 8 June. MoD lists 'formations from Regiment 8' under the 38th."
+    },
+    {
+      "class": "mech",
+      "side": 0,
+      "hex": [
+        25,
+        1
+      ],
+      "morale_pct": 85,
+      "formation": "isr_southern_command",
+      "nation": "israel",
+      "name": "formation.isr_11th_infantry_brigade_gaza_force",
+      "confirmed": true,
+      "source": "Wikipedia 'Six-Day War order of battle' (cites S. Dunstan, The Six Day War 1967: Sinai, Osprey 2009, no pages) https://en.wikipedia.org/wiki/Six-Day_War_order_of_battle; he.wikipedia 'החזית המצרית במלחמת ששת הימים' (Gawrych 1991 JCH; Zalmanovich 2024) https://he.wikipedia.org/wiki/החזית_המצרית_במלחמת_ששת_הימים; Avalanche Press, Panzer Grenadier Modern '1967: Sword of Israel' scenario book (2013, wargame) https://gamers-hq.de/media/pdf/64/eb/7d/NEW_1967_book.pdf; H. Barasch, 'The Arab-Israeli 67 War: the history as the game', Moves #15 (SPI, 1974) http://russgifford.net/MovesScans/Moves15/sinaifl.pdf",
+      "_comment": "Reserve infantry brigade (Yiftah) reinforced with halftracks; took Gaza 6–7 June. Class mech because of halftracks/AMX (designer may use infantry)."
+    },
+    {
+      "class": "hq",
+      "side": 1,
+      "hex": [
+        0,
+        11
+      ],
+      "hq_rating": 5,
+      "morale_pct": 75,
+      "formation": "egy_front",
+      "nation": "egypt",
+      "name": "formation.egy_sinai_front_field_army_hq",
+      "confirmed": false,
+      "source": "Wikipedia 'Six-Day War order of battle' (cites S. Dunstan, The Six Day War 1967: Sinai, Osprey 2009, no pages) https://en.wikipedia.org/wiki/Six-Day_War_order_of_battle; C. B. Long, Analysis of the Six Day War, ACSC Report 84-1595 (1984), App. A/B, DTIC ADA146294 https://archive.org/stream/DTIC_ADA146294/DTIC_ADA146294_djvu.txt",
+      "_comment": "Two command layers (front commander and field army commander) over ~7 divisions, ~930 tanks, 100,000 men. Location of HQs not confirmed."
+    },
+    {
+      "class": "hq",
+      "side": 1,
+      "hex": [
+        24,
+        1
+      ],
+      "hq_rating": 5,
+      "morale_pct": 75,
+      "formation": "egy_20th_palestinian_division",
+      "nation": "egypt",
+      "name": "formation.egy_20th_pla_division_hq",
+      "confirmed": true,
+      "source": "Wikipedia 'Six-Day War order of battle' (cites S. Dunstan, The Six Day War 1967: Sinai, Osprey 2009, no pages) https://en.wikipedia.org/wiki/Six-Day_War_order_of_battle; Modern Spearhead 'Egyptian Army 1967' (compiled from Dunstan 2009, Oren 2003, Zaloga 1981) https://modernspearhead.wordpress.com/wp-content/uploads/2013/06/egypt_1967.pdf; C. B. Long, Analysis of the Six Day War, ACSC Report 84-1595 (1984), App. A/B, DTIC ADA146294 https://archive.org/stream/DTIC_ADA146294/DTIC_ADA146294_djvu.txt",
+      "_comment": "~50 Sherman incl. one company of M4/FL-10 (MODSP, WH1)."
+    },
+    {
+      "class": "infantry",
+      "side": 1,
+      "hex": [
+        25,
+        0
+      ],
+      "entrenchment": 4,
+      "morale_pct": 75,
+      "formation": "egy_20th_palestinian_division",
+      "nation": "egypt",
+      "name": "formation.egy_107th_pla_brigade",
+      "confirmed": true,
+      "source": "H. Barasch, 'The Arab-Israeli 67 War: the history as the game', Moves #15 (SPI, 1974) http://russgifford.net/MovesScans/Moves15/sinaifl.pdf; Avalanche Press, Panzer Grenadier Modern '1967: Sword of Israel' scenario book (2013, wargame) https://gamers-hq.de/media/pdf/64/eb/7d/NEW_1967_book.pdf",
+      "_comment": "Number from Moves #15; placement in Gaza City is our reading."
+    },
+    {
+      "class": "infantry",
+      "side": 1,
+      "hex": [
+        23,
+        2
+      ],
+      "entrenchment": 4,
+      "morale_pct": 75,
+      "formation": "egy_20th_palestinian_division",
+      "nation": "egypt",
+      "name": "formation.egy_108th_pla_brigade",
+      "confirmed": true,
+      "source": "he.wikipedia 'קרב רפיח (1967)' (Carta Atlas maps 62-64; A. Zohar, Shiryon 35, 2010) https://he.wikipedia.org/wiki/קרב_רפיח_(1967); Avalanche Press, Panzer Grenadier Modern '1967: Sword of Israel' scenario book (2013, wargame) https://gamers-hq.de/media/pdf/64/eb/7d/NEW_1967_book.pdf",
+      "_comment": "Met the 7th Armored Brigade at Khan Yunis 5 June 08:45."
+    },
+    {
+      "class": "hq",
+      "side": 1,
+      "hex": [
+        20,
+        4
+      ],
+      "hq_rating": 5,
+      "morale_pct": 75,
+      "formation": "egy_7th_infantry_division",
+      "nation": "egypt",
+      "name": "formation.egy_7th_infantry_division_hq",
+      "confirmed": true,
+      "source": "he.wikipedia 'קרב רפיח (1967)' (Carta Atlas maps 62-64; A. Zohar, Shiryon 35, 2010) https://he.wikipedia.org/wiki/קרב_רפיח_(1967); Wikipedia 'Six-Day War order of battle' (cites S. Dunstan, The Six Day War 1967: Sinai, Osprey 2009, no pages) https://en.wikipedia.org/wiki/Six-Day_War_order_of_battle; Modern Spearhead 'Egyptian Army 1967' (compiled from Dunstan 2009, Oren 2003, Zaloga 1981) https://modernspearhead.wordpress.com/wp-content/uploads/2013/06/egypt_1967.pdf",
+      "_comment": "Newly formed division (brigades taken from other divisions). ~82-100 tanks: one T-34/85 bn and one IS-3 bn."
+    },
+    {
+      "class": "infantry",
+      "side": 1,
+      "hex": [
+        22,
+        3
+      ],
+      "entrenchment": 4,
+      "morale_pct": 75,
+      "formation": "egy_7th_infantry_division",
+      "nation": "egypt",
+      "name": "formation.egy_16th_infantry_brigade",
+      "confirmed": true,
+      "source": "he.wikipedia 'קרב רפיח (1967)' (Carta Atlas maps 62-64; A. Zohar, Shiryon 35, 2010) https://he.wikipedia.org/wiki/קרב_רפיח_(1967); H. Barasch, 'The Arab-Israeli 67 War: the history as the game', Moves #15 (SPI, 1974) http://russgifford.net/MovesScans/Moves15/sinaifl.pdf; he.wikipedia 'החזית המצרית במלחמת ששת הימים' (Gawrych 1991 JCH; Zalmanovich 2024) https://he.wikipedia.org/wiki/החזית_המצרית_במלחמת_ששת_הימים",
+      "_comment": "Hewiki calls it mechanized; Moves calls it infantry; Avalanche 'mechanized'. Chose infantry (dug in)."
+    },
+    {
+      "class": "infantry",
+      "side": 1,
+      "hex": [
+        22,
+        4
+      ],
+      "entrenchment": 4,
+      "morale_pct": 75,
+      "formation": "egy_7th_infantry_division",
+      "nation": "egypt",
+      "name": "formation.egy_11th_infantry_brigade",
+      "confirmed": true,
+      "source": "he.wikipedia 'קרב רפיח (1967)' (Carta Atlas maps 62-64; A. Zohar, Shiryon 35, 2010) https://he.wikipedia.org/wiki/קרב_רפיח_(1967); H. Barasch, 'The Arab-Israeli 67 War: the history as the game', Moves #15 (SPI, 1974) http://russgifford.net/MovesScans/Moves15/sinaifl.pdf; Avalanche Press, Panzer Grenadier Modern '1967: Sword of Israel' scenario book (2013, wargame) https://gamers-hq.de/media/pdf/64/eb/7d/NEW_1967_book.pdf",
+      "_comment": "Reduced brigade (hewiki)."
+    },
+    {
+      "class": "infantry",
+      "side": 1,
+      "hex": [
+        18,
+        5
+      ],
+      "entrenchment": 4,
+      "morale_pct": 75,
+      "formation": "egy_7th_infantry_division",
+      "nation": "egypt",
+      "name": "formation.egy_112th_infantry_brigade",
+      "confirmed": true,
+      "source": "Wikipedia 'Six-Day War' (cites M. Oren, Six Days of War, 2002, pp. 180-181, 202) https://en.wikipedia.org/wiki/Six-Day_War; H. Barasch, 'The Arab-Israeli 67 War: the history as the game', Moves #15 (SPI, 1974) http://russgifford.net/MovesScans/Moves15/sinaifl.pdf",
+      "_comment": "Oren p.181 (via Wikipedia) names the 112th at Jiradi. Avalanche puts the '112th National Guard Bde' at Bir Lahfan and a '6th Inf Bde' at Jiradi; WaW gives '28th'. Chose Oren."
+    },
+    {
+      "class": "infantry",
+      "side": 1,
+      "hex": [
+        17,
+        5
+      ],
+      "entrenchment": 2,
+      "morale_pct": 75,
+      "formation": "egy_7th_infantry_division",
+      "nation": "egypt",
+      "name": "formation.egy_19th_national_guard_brigade",
+      "confirmed": false,
+      "source": "H. Barasch, 'The Arab-Israeli 67 War: the history as the game', Moves #15 (SPI, 1974) http://russgifford.net/MovesScans/Moves15/sinaifl.pdf",
+      "_comment": "Only source: Moves #15 (1974). Low-quality garrison; designer may drop it or fold into 112th."
+    },
+    {
+      "class": "tank",
+      "side": 1,
+      "hex": [
+        21,
+        3
+      ],
+      "morale_pct": 75,
+      "formation": "egy_7th_infantry_division",
+      "nation": "egypt",
+      "name": "formation.egy_7th_division_tank_group",
+      "confirmed": true,
+      "source": "Modern Spearhead 'Egyptian Army 1967' (compiled from Dunstan 2009, Oren 2003, Zaloga 1981) https://modernspearhead.wordpress.com/wp-content/uploads/2013/06/egypt_1967.pdf; WarHistory.org 'The Sinai Campaign of 1967 Part I' (tank counts per formation; source not stated) https://warhistory.org/article/the-sinai-campaign-of-1967-part-i; he.wikipedia 'קרב רפיח (1967)' (Carta Atlas maps 62-64; A. Zohar, Shiryon 35, 2010) https://he.wikipedia.org/wiki/קרב_רפיח_(1967)",
+      "_comment": "Two battalions folded into one unit (one game unit ≈ brigade)."
+    },
+    {
+      "class": "artillery",
+      "side": 1,
+      "hex": [
+        21,
+        4
+      ],
+      "entrenchment": 2,
+      "morale_pct": 75,
+      "formation": "egy_7th_infantry_division",
+      "nation": "egypt",
+      "name": "formation.egy_49th_field_artillery_brigade_and_57th_ar",
+      "confirmed": false,
+      "source": "H. Barasch, 'The Arab-Israeli 67 War: the history as the game', Moves #15 (SPI, 1974) http://russgifford.net/MovesScans/Moves15/sinaifl.pdf; he.wikipedia 'קרב רפיח (1967)' (Carta Atlas maps 62-64; A. Zohar, Shiryon 35, 2010) https://he.wikipedia.org/wiki/קרב_רפיח_(1967)",
+      "_comment": "Moves: 49th FA Bde (36×122 mm + 1 bn 100 mm) behind Rafah, 57th Arty Bde at Jiradi. Hewiki: 'an artillery brigade between the positions'. Numbers unconfirmed; folded into one unit."
+    },
+    {
+      "class": "hq",
+      "side": 1,
+      "hex": [
+        21,
+        8
+      ],
+      "hq_rating": 5,
+      "morale_pct": 75,
+      "formation": "egy_2nd_infantry_division",
+      "nation": "egypt",
+      "name": "formation.egy_2nd_infantry_division_hq",
+      "confirmed": true,
+      "source": "Wikipedia 'Six-Day War order of battle' (cites S. Dunstan, The Six Day War 1967: Sinai, Osprey 2009, no pages) https://en.wikipedia.org/wiki/Six-Day_War_order_of_battle; Wikipedia 'Battle of Abu-Ageila (1967)' (G. Gawrych, Key to the Sinai, CSI 1990; Y. Gavish, Red Flag p.183) https://en.wikipedia.org/wiki/Battle_of_Abu-Ageila; Modern Spearhead 'Egyptian Army 1967' (compiled from Dunstan 2009, Oren 2003, Zaloga 1981) https://modernspearhead.wordpress.com/wp-content/uploads/2013/06/egypt_1967.pdf",
+      "_comment": "~8,000 men, 88-100 tanks mostly T-34/85."
+    },
+    {
+      "class": "infantry",
+      "side": 1,
+      "hex": [
+        21,
+        7
+      ],
+      "entrenchment": 4,
+      "morale_pct": 75,
+      "formation": "egy_2nd_infantry_division",
+      "nation": "egypt",
+      "name": "formation.egy_12th_infantry_brigade",
+      "confirmed": true,
+      "source": "Wikipedia 'Battle of Abu-Ageila (1967)' (G. Gawrych, Key to the Sinai, CSI 1990; Y. Gavish, Red Flag p.183) https://en.wikipedia.org/wiki/Battle_of_Abu-Ageila; Avalanche Press, Panzer Grenadier Modern '1967: Sword of Israel' scenario book (2013, wargame) https://gamers-hq.de/media/pdf/64/eb/7d/NEW_1967_book.pdf",
+      "_comment": "37th, 38th, 39th Inf Bns in three trench lines; 352nd Bn at Ruafa Dam. Moves calls it the '125th' – Gawrych (via Wikipedia) preferred. Candidate for 'fortified'."
+    },
+    {
+      "class": "infantry",
+      "side": 1,
+      "hex": [
+        23,
+        9
+      ],
+      "entrenchment": 4,
+      "morale_pct": 75,
+      "formation": "egy_2nd_infantry_division",
+      "nation": "egypt",
+      "name": "formation.egy_10th_infantry_brigade",
+      "confirmed": true,
+      "source": "Wikipedia 'Battle of Abu-Ageila (1967)' (G. Gawrych, Key to the Sinai, CSI 1990; Y. Gavish, Red Flag p.183) https://en.wikipedia.org/wiki/Battle_of_Abu-Ageila",
+      "_comment": "Evacuated Kusseima on night 6–7 June (Moves)."
+    },
+    {
+      "class": "tank",
+      "side": 1,
+      "hex": [
+        20,
+        8
+      ],
+      "morale_pct": 75,
+      "formation": "egy_2nd_infantry_division",
+      "nation": "egypt",
+      "name": "formation.egy_6th_tank_regiment",
+      "confirmed": true,
+      "source": "Wikipedia 'Battle of Abu-Ageila (1967)' (G. Gawrych, Key to the Sinai, CSI 1990; Y. Gavish, Red Flag p.183) https://en.wikipedia.org/wiki/Battle_of_Abu-Ageila; Warfare History Network, 'The Six Day War: Outfoxed in the Sinai' https://warfarehistorynetwork.com/article/outfoxed-in-the-sinai/; Modern Spearhead 'Egyptian Army 1967' (compiled from Dunstan 2009, Oren 2003, Zaloga 1981) https://modernspearhead.wordpress.com/wp-content/uploads/2013/06/egypt_1967.pdf",
+      "_comment": "Avalanche calls it '24th Tank Brigade' – Gawrych preferred."
+    },
+    {
+      "class": "artillery",
+      "side": 1,
+      "hex": [
+        22,
+        8
+      ],
+      "entrenchment": 2,
+      "morale_pct": 75,
+      "formation": "egy_2nd_infantry_division",
+      "nation": "egypt",
+      "name": "formation.egy_51st_artillery_brigade",
+      "confirmed": true,
+      "source": "Wikipedia 'Battle of Abu-Ageila (1967)' (G. Gawrych, Key to the Sinai, CSI 1990; Y. Gavish, Red Flag p.183) https://en.wikipedia.org/wiki/Battle_of_Abu-Ageila",
+      "_comment": "330th, 332nd, 334th Arty Bns plus 299th, 336th attached. Avalanche: '26th and 27th Artillery Bdes' – Gawrych preferred."
+    },
+    {
+      "class": "hq",
+      "side": 1,
+      "hex": [
+        17,
+        9
+      ],
+      "hq_rating": 5,
+      "morale_pct": 75,
+      "formation": "egy_3rd_infantry_division",
+      "nation": "egypt",
+      "name": "formation.egy_3rd_infantry_division_hq",
+      "confirmed": true,
+      "source": "Wikipedia 'Six-Day War order of battle' (cites S. Dunstan, The Six Day War 1967: Sinai, Osprey 2009, no pages) https://en.wikipedia.org/wiki/Six-Day_War_order_of_battle; Modern Spearhead 'Egyptian Army 1967' (compiled from Dunstan 2009, Oren 2003, Zaloga 1981) https://modernspearhead.wordpress.com/wp-content/uploads/2013/06/egypt_1967.pdf; WarHistory.org 'The Sinai Campaign of 1967 Part I' (tank counts per formation; source not stated) https://warhistory.org/article/the-sinai-campaign-of-1967-part-i; H. Barasch, 'The Arab-Israeli 67 War: the history as the game', Moves #15 (SPI, 1974) http://russgifford.net/MovesScans/Moves15/sinaifl.pdf",
+      "_comment": "Second defensive line; ~100 T-34/85 and T-54 (WH1). Brigade numbers not found in reliable sources."
+    },
+    {
+      "class": "infantry",
+      "side": 1,
+      "hex": [
+        17,
+        10
+      ],
+      "entrenchment": 2,
+      "morale_pct": 75,
+      "formation": "egy_3rd_infantry_division",
+      "nation": "egypt",
+      "name": "formation.egy_114th_brigade",
+      "confirmed": false,
+      "source": "he.wikipedia 'החזית המצרית במלחמת ששת הימים' (Gawrych 1991 JCH; Zalmanovich 2024) https://he.wikipedia.org/wiki/החזית_המצרית_במלחמת_ששת_הימים",
+      "_comment": "Number from hewiki only; type (infantry with tank bn) is our reading."
+    },
+    {
+      "class": "infantry",
+      "side": 1,
+      "hex": [
+        17,
+        11
+      ],
+      "entrenchment": 2,
+      "morale_pct": 75,
+      "formation": "egy_3rd_infantry_division",
+      "nation": "egypt",
+      "name": "formation.egy_3rd_division_infantry_brigade_number_unk",
+      "confirmed": false,
+      "source": "WarHistory.org 'The Sinai Campaign of 1967 Part I' (tank counts per formation; source not stated) https://warhistory.org/article/the-sinai-campaign-of-1967-part-i; H. Barasch, 'The Arab-Israeli 67 War: the history as the game', Moves #15 (SPI, 1974) http://russgifford.net/MovesScans/Moves15/sinaifl.pdf",
+      "_comment": "Placeholder for the division's other infantry; WaW wargame gives '112th and 125th Inf Bdes' at Bir Hasana (conflicts with 112th at Jiradi)."
+    },
+    {
+      "class": "tank",
+      "side": 1,
+      "hex": [
+        16,
+        10
+      ],
+      "morale_pct": 75,
+      "formation": "egy_front",
+      "nation": "egypt",
+      "name": "formation.egy_14th_armored_brigade",
+      "confirmed": true,
+      "source": "he.wikipedia 'עוצבת עמוד האש' (D. Asher, Maarachot 471, May 2017, pp. 36-43) https://www.hamichlol.org.il/עוצבת_עמוד_האש; he.wikipedia 'החזית המצרית במלחמת ששת הימים' (Gawrych 1991 JCH; Zalmanovich 2024) https://he.wikipedia.org/wiki/החזית_המצרית_במלחמת_ששת_הימים",
+      "_comment": "Hewiki (Asher) assigns it to the 3rd Division; Moves says the second line had 'two independent armored brigades'. Probably the 'armored + mech brigade' that counterattacked Bir Lahfan on night 5–6 June."
+    },
+    {
+      "class": "tank",
+      "side": 1,
+      "hex": [
+        17,
+        12
+      ],
+      "morale_pct": 75,
+      "formation": "egy_front",
+      "nation": "egypt",
+      "name": "formation.egy_141st_armored_brigade",
+      "confirmed": false,
+      "source": "H. Barasch, 'The Arab-Israeli 67 War: the history as the game', Moves #15 (SPI, 1974) http://russgifford.net/MovesScans/Moves15/sinaifl.pdf",
+      "_comment": "Second independent armored brigade per Moves #15 (unnumbered there). Number '141st' appears only in the 2026 WaW scenario sheet – weak; designer may keep it unnamed."
+    },
+    {
+      "class": "hq",
+      "side": 1,
+      "hex": [
+        16,
+        18
+      ],
+      "hq_rating": 5,
+      "morale_pct": 75,
+      "formation": "egy_6th_mechanized_division",
+      "nation": "egypt",
+      "name": "formation.egy_6th_mechanized_division_hq",
+      "confirmed": true,
+      "source": "Wikipedia 'Six-Day War order of battle' (cites S. Dunstan, The Six Day War 1967: Sinai, Osprey 2009, no pages) https://en.wikipedia.org/wiki/Six-Day_War_order_of_battle; Modern Spearhead 'Egyptian Army 1967' (compiled from Dunstan 2009, Oren 2003, Zaloga 1981) https://modernspearhead.wordpress.com/wp-content/uploads/2013/06/egypt_1967.pdf; C. B. Long, Analysis of the Six Day War, ACSC Report 84-1595 (1984), App. A/B, DTIC ADA146294 https://archive.org/stream/DTIC_ADA146294/DTIC_ADA146294_djvu.txt",
+      "_comment": "~100 T-34/85 and T-54 (WH1), Kuntilla–Nakhl axis."
+    },
+    {
+      "class": "tank",
+      "side": 1,
+      "hex": [
+        25,
+        17
+      ],
+      "morale_pct": 75,
+      "formation": "egy_6th_mechanized_division",
+      "nation": "egypt",
+      "name": "formation.egy_1st_armored_brigade",
+      "confirmed": true,
+      "source": "Modern Spearhead 'Egyptian Army 1967' (compiled from Dunstan 2009, Oren 2003, Zaloga 1981) https://modernspearhead.wordpress.com/wp-content/uploads/2013/06/egypt_1967.pdf; C. B. Long, Analysis of the Six Day War, ACSC Report 84-1595 (1984), App. A/B, DTIC ADA146294 https://archive.org/stream/DTIC_ADA146294/DTIC_ADA146294_djvu.txt",
+      "_comment": "Long App. B and Dunstan (via MODSP) list it under the 6th; Wikipedia OOB puts it under the 20th PLA (layout error). Exact position unconfirmed."
+    },
+    {
+      "class": "tank",
+      "side": 1,
+      "hex": [
+        21,
+        17
+      ],
+      "morale_pct": 75,
+      "formation": "egy_6th_mechanized_division",
+      "nation": "egypt",
+      "name": "formation.egy_125th_armored_brigade",
+      "confirmed": true,
+      "source": "Modern Spearhead 'Egyptian Army 1967' (compiled from Dunstan 2009, Oren 2003, Zaloga 1981) https://modernspearhead.wordpress.com/wp-content/uploads/2013/06/egypt_1967.pdf; C. B. Long, Analysis of the Six Day War, ACSC Report 84-1595 (1984), App. A/B, DTIC ADA146294 https://archive.org/stream/DTIC_ADA146294/DTIC_ADA146294_djvu.txt; WarHistory.org 'The Sinai Campaign of 1967 Part II' (quotes S. Teveth, The Tanks of Tammuz) https://warhistory.org/2021/07/12/the-sinai-campaign-of-1967-part-ii/",
+      "_comment": "Position unconfirmed."
+    },
+    {
+      "class": "mech",
+      "side": 1,
+      "hex": [
+        17,
+        18
+      ],
+      "morale_pct": 75,
+      "formation": "egy_6th_mechanized_division",
+      "nation": "egypt",
+      "name": "formation.egy_6th_division_mechanized_brigade_number_u",
+      "confirmed": false,
+      "source": "WarHistory.org 'The Sinai Campaign of 1967 Part II' (quotes S. Teveth, The Tanks of Tammuz) https://warhistory.org/2021/07/12/the-sinai-campaign-of-1967-part-ii/; H. Barasch, 'The Arab-Israeli 67 War: the history as the game', Moves #15 (SPI, 1974) http://russgifford.net/MovesScans/Moves15/sinaifl.pdf",
+      "_comment": "Brigade routed at Nakhl on 8 June (60 tanks, 100 guns, 300 vehicles). Hewiki Rafah article makes the 16th 'mechanized' and Avalanche ties it to the 6th Div – rejected."
+    },
+    {
+      "class": "hq",
+      "side": 1,
+      "hex": [
+        10,
+        13
+      ],
+      "hq_rating": 6,
+      "morale_pct": 75,
+      "formation": "egy_4th_armored_division",
+      "nation": "egypt",
+      "name": "formation.egy_4th_armored_division_hq",
+      "confirmed": true,
+      "source": "Wikipedia 'Six-Day War order of battle' (cites S. Dunstan, The Six Day War 1967: Sinai, Osprey 2009, no pages) https://en.wikipedia.org/wiki/Six-Day_War_order_of_battle; Modern Spearhead 'Egyptian Army 1967' (compiled from Dunstan 2009, Oren 2003, Zaloga 1981) https://modernspearhead.wordpress.com/wp-content/uploads/2013/06/egypt_1967.pdf; WarHistory.org 'The Sinai Campaign of 1967 Part I' (tank counts per formation; source not stated) https://warhistory.org/article/the-sinai-campaign-of-1967-part-i",
+      "_comment": "~200 T-55 (WH1), 250 tanks + 150 APC (MODSP). Field army's mobile reserve."
+    },
+    {
+      "class": "tank",
+      "side": 1,
+      "hex": [
+        13,
+        15
+      ],
+      "morale_pct": 75,
+      "formation": "egy_4th_armored_division",
+      "nation": "egypt",
+      "name": "formation.egy_2nd_armored_brigade",
+      "confirmed": true,
+      "source": "G. Gawrych, 'The Egyptian Military Defeat of 1967', Journal of Contemporary History 26:2 (1991) 277-305 (quoted in search snippet only) https://doi.org/10.1177/002200949102600205; Avalanche Press, Panzer Grenadier Modern '1967: Sword of Israel' scenario book (2013, wargame) https://gamers-hq.de/media/pdf/64/eb/7d/NEW_1967_book.pdf",
+      "_comment": "Gawrych 1991: ordered forward then recalled to 'its original area at Bir al-Tamada' at 11:00 on 6 June."
+    },
+    {
+      "class": "tank",
+      "side": 1,
+      "hex": [
+        11,
+        13
+      ],
+      "morale_pct": 75,
+      "formation": "egy_4th_armored_division",
+      "nation": "egypt",
+      "name": "formation.egy_3rd_armored_brigade",
+      "confirmed": false,
+      "source": "Modern Spearhead 'Egyptian Army 1967' (compiled from Dunstan 2009, Oren 2003, Zaloga 1981) https://modernspearhead.wordpress.com/wp-content/uploads/2013/06/egypt_1967.pdf",
+      "_comment": "MODSP: two unnumbered armored brigades with T-54/55. Number 3rd is taken from later (1973) OOB of the division – unconfirmed."
+    },
+    {
+      "class": "mech",
+      "side": 1,
+      "hex": [
+        11,
+        14
+      ],
+      "morale_pct": 75,
+      "formation": "egy_4th_armored_division",
+      "nation": "egypt",
+      "name": "formation.egy_4th_division_mechanized_brigade",
+      "confirmed": false,
+      "source": "Modern Spearhead 'Egyptian Army 1967' (compiled from Dunstan 2009, Oren 2003, Zaloga 1981) https://modernspearhead.wordpress.com/wp-content/uploads/2013/06/egypt_1967.pdf; Avalanche Press, Panzer Grenadier Modern '1967: Sword of Israel' scenario book (2013, wargame) https://gamers-hq.de/media/pdf/64/eb/7d/NEW_1967_book.pdf",
+      "_comment": "Avalanche names an '18th Mechanized Brigade' – wargame only; number unconfirmed."
+    },
+    {
+      "class": "hq",
+      "side": 1,
+      "hex": [
+        25,
+        13
+      ],
+      "hq_rating": 6,
+      "morale_pct": 75,
+      "formation": "egy_task_force_separate_armored_group",
+      "nation": "egypt",
+      "name": "formation.egy_task_force_separate_armored_group_hq",
+      "confirmed": true,
+      "source": "Wikipedia 'Six-Day War order of battle' (cites S. Dunstan, The Six Day War 1967: Sinai, Osprey 2009, no pages) https://en.wikipedia.org/wiki/Six-Day_War_order_of_battle; Modern Spearhead 'Egyptian Army 1967' (compiled from Dunstan 2009, Oren 2003, Zaloga 1981) https://modernspearhead.wordpress.com/wp-content/uploads/2013/06/egypt_1967.pdf; WarHistory.org 'The Sinai Campaign of 1967 Part I' (tank counts per formation; source not stated) https://warhistory.org/article/the-sinai-campaign-of-1967-part-i; H. Barasch, 'The Arab-Israeli 67 War: the history as the game', Moves #15 (SPI, 1974) http://russgifford.net/MovesScans/Moves15/sinaifl.pdf",
+      "_comment": "Division-size task force for a thrust to cut off Eilat. ~120-150 T-55 in about 4 tank bns."
+    },
+    {
+      "class": "tank",
+      "side": 1,
+      "hex": [
+        25,
+        14
+      ],
+      "morale_pct": 75,
+      "formation": "egy_task_force_separate_armored_group",
+      "nation": "egypt",
+      "name": "formation.egy_separate_armored_group_armored_brigade_4",
+      "confirmed": true,
+      "source": "Modern Spearhead 'Egyptian Army 1967' (compiled from Dunstan 2009, Oren 2003, Zaloga 1981) https://modernspearhead.wordpress.com/wp-content/uploads/2013/06/egypt_1967.pdf; WarHistory.org 'The Sinai Campaign of 1967 Part I' (tank counts per formation; source not stated) https://warhistory.org/article/the-sinai-campaign-of-1967-part-i; H. Barasch, 'The Arab-Israeli 67 War: the history as the game', Moves #15 (SPI, 1974) http://russgifford.net/MovesScans/Moves15/sinaifl.pdf",
+      "_comment": "No brigade number in sources. Exact position unconfirmed (between Kusseima 34.37/30.66 and Kuntilla 34.67/29.98)."
+    },
+    {
+      "class": "commando",
+      "side": 1,
+      "hex": [
+        24,
+        13
+      ],
+      "morale_pct": 75,
+      "formation": "egy_task_force_separate_armored_group",
+      "nation": "egypt",
+      "name": "formation.egy_separate_armored_group_commando_mechaniz",
+      "confirmed": false,
+      "source": "H. Barasch, 'The Arab-Israeli 67 War: the history as the game', Moves #15 (SPI, 1974) http://russgifford.net/MovesScans/Moves15/sinaifl.pdf",
+      "_comment": "Moves: 'one commando mechanized brigade'; NWC study (via search) 'a commando brigade, a tank brigade and an artillery brigade'. Number not found."
+    },
+    {
+      "class": "fighter",
+      "side": 0,
+      "hex": [
+        0,
+        0
+      ],
+      "strength": 10,
+      "morale_pct": 85,
+      "nation": "israel",
+      "offmap_base": "isr_central",
+      "name": "formation.isr_air_mirage",
+      "confirmed": true,
+      "source": "T. Cooper & N. Baker / F. Vajda, ACIG.org IDF/AF and Arab air forces orders of battle, 5 June 1967; C. B. Long 1984 (DTIC ADA146294); unit counts per game unit are a design choice (≈30–40 aircraft per unit)"
+    },
+    {
+      "class": "fighter",
+      "side": 0,
+      "hex": [
+        0,
+        0
+      ],
+      "strength": 10,
+      "morale_pct": 85,
+      "nation": "israel",
+      "offmap_base": "isr_central",
+      "name": "formation.isr_air_mirage",
+      "confirmed": true,
+      "source": "T. Cooper & N. Baker / F. Vajda, ACIG.org IDF/AF and Arab air forces orders of battle, 5 June 1967; C. B. Long 1984 (DTIC ADA146294); unit counts per game unit are a design choice (≈30–40 aircraft per unit)"
+    },
+    {
+      "class": "strike",
+      "side": 0,
+      "hex": [
+        27,
+        3
+      ],
+      "strength": 10,
+      "morale_pct": 85,
+      "nation": "israel",
+      "name": "formation.isr_air_strike",
+      "confirmed": true,
+      "source": "T. Cooper & N. Baker / F. Vajda, ACIG.org IDF/AF and Arab air forces orders of battle, 5 June 1967; C. B. Long 1984 (DTIC ADA146294); unit counts per game unit are a design choice (≈30–40 aircraft per unit)"
+    },
+    {
+      "class": "strike",
+      "side": 0,
+      "hex": [
+        0,
+        0
+      ],
+      "strength": 10,
+      "morale_pct": 85,
+      "nation": "israel",
+      "offmap_base": "isr_central",
+      "name": "formation.isr_air_strike",
+      "confirmed": true,
+      "source": "T. Cooper & N. Baker / F. Vajda, ACIG.org IDF/AF and Arab air forces orders of battle, 5 June 1967; C. B. Long 1984 (DTIC ADA146294); unit counts per game unit are a design choice (≈30–40 aircraft per unit)"
+    },
+    {
+      "class": "strike",
+      "side": 0,
+      "hex": [
+        0,
+        0
+      ],
+      "strength": 10,
+      "morale_pct": 85,
+      "nation": "israel",
+      "offmap_base": "isr_central",
+      "name": "formation.isr_air_strike",
+      "confirmed": true,
+      "source": "T. Cooper & N. Baker / F. Vajda, ACIG.org IDF/AF and Arab air forces orders of battle, 5 June 1967; C. B. Long 1984 (DTIC ADA146294); unit counts per game unit are a design choice (≈30–40 aircraft per unit)"
+    },
+    {
+      "class": "strike",
+      "side": 0,
+      "hex": [
+        0,
+        0
+      ],
+      "strength": 10,
+      "morale_pct": 85,
+      "nation": "israel",
+      "offmap_base": "isr_central",
+      "name": "formation.isr_air_strike",
+      "confirmed": true,
+      "source": "T. Cooper & N. Baker / F. Vajda, ACIG.org IDF/AF and Arab air forces orders of battle, 5 June 1967; C. B. Long 1984 (DTIC ADA146294); unit counts per game unit are a design choice (≈30–40 aircraft per unit)"
+    },
+    {
+      "class": "fighter",
+      "side": 1,
+      "hex": [
+        10,
+        13
+      ],
+      "strength": 10,
+      "morale_pct": 75,
+      "nation": "egypt",
+      "when": {
+        "first_strike": "free"
+      },
+      "name": "formation.egy_air_mig21",
+      "confirmed": true,
+      "source": "T. Cooper & N. Baker / F. Vajda, ACIG.org IDF/AF and Arab air forces orders of battle, 5 June 1967; C. B. Long 1984 (DTIC ADA146294); unit counts per game unit are a design choice (≈30–40 aircraft per unit)"
+    },
+    {
+      "class": "fighter",
+      "side": 1,
+      "hex": [
+        0,
+        14
+      ],
+      "strength": 10,
+      "morale_pct": 75,
+      "nation": "egypt",
+      "when": {
+        "first_strike": "free"
+      },
+      "name": "formation.egy_air_mig21",
+      "confirmed": true,
+      "source": "T. Cooper & N. Baker / F. Vajda, ACIG.org IDF/AF and Arab air forces orders of battle, 5 June 1967; C. B. Long 1984 (DTIC ADA146294); unit counts per game unit are a design choice (≈30–40 aircraft per unit)"
+    },
+    {
+      "class": "fighter",
+      "side": 1,
+      "hex": [
+        3,
+        14
+      ],
+      "strength": 10,
+      "morale_pct": 75,
+      "nation": "egypt",
+      "when": {
+        "first_strike": "free"
+      },
+      "name": "formation.egy_air_mig21",
+      "confirmed": true,
+      "source": "T. Cooper & N. Baker / F. Vajda, ACIG.org IDF/AF and Arab air forces orders of battle, 5 June 1967; C. B. Long 1984 (DTIC ADA146294); unit counts per game unit are a design choice (≈30–40 aircraft per unit)"
+    },
+    {
+      "class": "fighter",
+      "side": 1,
+      "hex": [
+        0,
+        0
+      ],
+      "strength": 10,
+      "morale_pct": 75,
+      "nation": "egypt",
+      "offmap_base": "egy_delta",
+      "when": {
+        "first_strike": "free"
+      },
+      "name": "formation.egy_air_mig21",
+      "confirmed": true,
+      "source": "T. Cooper & N. Baker / F. Vajda, ACIG.org IDF/AF and Arab air forces orders of battle, 5 June 1967; C. B. Long 1984 (DTIC ADA146294); unit counts per game unit are a design choice (≈30–40 aircraft per unit)"
+    },
+    {
+      "class": "fighter",
+      "side": 1,
+      "hex": [
+        0,
+        0
+      ],
+      "strength": 10,
+      "morale_pct": 75,
+      "nation": "egypt",
+      "offmap_base": "egy_delta",
+      "when": {
+        "first_strike": "free"
+      },
+      "name": "formation.egy_air_mig21",
+      "confirmed": true,
+      "source": "T. Cooper & N. Baker / F. Vajda, ACIG.org IDF/AF and Arab air forces orders of battle, 5 June 1967; C. B. Long 1984 (DTIC ADA146294); unit counts per game unit are a design choice (≈30–40 aircraft per unit)"
+    },
+    {
+      "class": "strike",
+      "side": 1,
+      "hex": [
+        17,
+        5
+      ],
+      "strength": 10,
+      "morale_pct": 75,
+      "nation": "egypt",
+      "when": {
+        "first_strike": "free"
+      },
+      "name": "formation.egy_air_strike",
+      "confirmed": true,
+      "source": "T. Cooper & N. Baker / F. Vajda, ACIG.org IDF/AF and Arab air forces orders of battle, 5 June 1967; C. B. Long 1984 (DTIC ADA146294); unit counts per game unit are a design choice (≈30–40 aircraft per unit)"
+    },
+    {
+      "class": "strike",
+      "side": 1,
+      "hex": [
+        13,
+        15
+      ],
+      "strength": 10,
+      "morale_pct": 75,
+      "nation": "egypt",
+      "when": {
+        "first_strike": "free"
+      },
+      "name": "formation.egy_air_strike",
+      "confirmed": true,
+      "source": "T. Cooper & N. Baker / F. Vajda, ACIG.org IDF/AF and Arab air forces orders of battle, 5 June 1967; C. B. Long 1984 (DTIC ADA146294); unit counts per game unit are a design choice (≈30–40 aircraft per unit)"
+    },
+    {
+      "class": "strike",
+      "side": 1,
+      "hex": [
+        15,
+        10
+      ],
+      "strength": 10,
+      "morale_pct": 75,
+      "nation": "egypt",
+      "when": {
+        "first_strike": "free"
+      },
+      "name": "formation.egy_air_strike",
+      "confirmed": true,
+      "source": "T. Cooper & N. Baker / F. Vajda, ACIG.org IDF/AF and Arab air forces orders of battle, 5 June 1967; C. B. Long 1984 (DTIC ADA146294); unit counts per game unit are a design choice (≈30–40 aircraft per unit)"
+    },
+    {
+      "class": "strike",
+      "side": 1,
+      "hex": [
+        0,
+        0
+      ],
+      "strength": 10,
+      "morale_pct": 75,
+      "nation": "egypt",
+      "offmap_base": "egy_delta",
+      "when": {
+        "first_strike": "free"
+      },
+      "name": "formation.egy_air_strike",
+      "confirmed": true,
+      "source": "T. Cooper & N. Baker / F. Vajda, ACIG.org IDF/AF and Arab air forces orders of battle, 5 June 1967; C. B. Long 1984 (DTIC ADA146294); unit counts per game unit are a design choice (≈30–40 aircraft per unit)"
+    },
+    {
+      "class": "strike",
+      "side": 1,
+      "hex": [
+        0,
+        0
+      ],
+      "strength": 10,
+      "morale_pct": 75,
+      "nation": "egypt",
+      "offmap_base": "egy_delta",
+      "when": {
+        "first_strike": "free"
+      },
+      "name": "formation.egy_air_strike",
+      "confirmed": true,
+      "source": "T. Cooper & N. Baker / F. Vajda, ACIG.org IDF/AF and Arab air forces orders of battle, 5 June 1967; C. B. Long 1984 (DTIC ADA146294); unit counts per game unit are a design choice (≈30–40 aircraft per unit)"
+    },
+    {
+      "class": "fighter",
+      "side": 1,
+      "hex": [
+        0,
+        0
+      ],
+      "strength": 6,
+      "morale_pct": 50,
+      "nation": "egypt",
+      "offmap_base": "egy_delta",
+      "when": {
+        "first_strike": "historical"
+      },
+      "name": "formation.egy_air_mig21",
+      "confirmed": true,
+      "source": "T. Cooper & N. Baker / F. Vajda, ACIG.org IDF/AF and Arab air forces orders of battle, 5 June 1967; C. B. Long 1984 (DTIC ADA146294); unit counts per game unit are a design choice (≈30–40 aircraft per unit)"
+    },
+    {
+      "class": "fighter",
+      "side": 1,
+      "hex": [
+        0,
+        0
+      ],
+      "strength": 5,
+      "morale_pct": 50,
+      "nation": "egypt",
+      "offmap_base": "egy_delta",
+      "when": {
+        "first_strike": "historical"
+      },
+      "name": "formation.egy_air_mig21",
+      "confirmed": true,
+      "source": "T. Cooper & N. Baker / F. Vajda, ACIG.org IDF/AF and Arab air forces orders of battle, 5 June 1967; C. B. Long 1984 (DTIC ADA146294); unit counts per game unit are a design choice (≈30–40 aircraft per unit)"
+    },
+    {
+      "class": "strike",
+      "side": 1,
+      "hex": [
+        0,
+        0
+      ],
+      "strength": 5,
+      "morale_pct": 50,
+      "nation": "egypt",
+      "offmap_base": "egy_delta",
+      "when": {
+        "first_strike": "historical"
+      },
+      "name": "formation.egy_air_strike",
+      "confirmed": true,
+      "source": "T. Cooper & N. Baker / F. Vajda, ACIG.org IDF/AF and Arab air forces orders of battle, 5 June 1967; C. B. Long 1984 (DTIC ADA146294); unit counts per game unit are a design choice (≈30–40 aircraft per unit)"
+    }
+  ]
 }

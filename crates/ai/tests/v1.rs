@@ -154,3 +154,32 @@ fn v1_flies_air_strikes() {
     assert_eq!(refused, 0);
     assert!(strikes > 0, "the AI used its aircraft");
 }
+
+/// Stage 4, step 6: AI v1 plays «Синай-67» (48 brigades and HQs, aircraft)
+/// for both sides to the end; every command legal.
+#[test]
+fn v1_plays_sinai67_to_the_end() {
+    let scenario = include_str!("../../../data/scenarios/sinai67/scenario.json");
+    let setup = load_scenario(
+        scenario,
+        include_str!("../../../data/scenarios/sinai67/map.json"),
+        Some(include_str!("../../../data/scenarios/sinai67/events.json")),
+    )
+    .unwrap();
+    let (mut s, _) = GameState::new(data(), setup).unwrap();
+    let mut ai = AiV1::new(
+        AiParams::from_json(AI).unwrap(),
+        AiHints::from_scenario_json(scenario).unwrap(),
+        3,
+    );
+    let mut refused = 0;
+    for _ in 0..40 {
+        if s.outcome().is_some() {
+            break;
+        }
+        let max = ai.max_commands();
+        refused += play_phase(&mut s, |st| ai.next(st), max).unwrap().refused;
+    }
+    assert!(s.outcome().is_some());
+    assert_eq!(refused, 0);
+}

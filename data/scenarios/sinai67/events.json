@@ -1,0 +1,61 @@
+{
+  "_comment": "Синай-67: события R-EVT-01. Гексы — offset [col, row], как в map.json.",
+  "events": [
+    {
+      "id": "egy_withdrawal_order",
+      "_comment": "Общий приказ египетского командования об отходе за перевалы (6 июня; источники расходятся от утра до вечера — взят ход 4). Срабатывает в фазу Израиля, как в «Голанах-67».",
+      "phase_of": 0,
+      "trigger": {
+        "kind": "any_of",
+        "of": [
+          {
+            "kind": "turn",
+            "turn": 4
+          },
+          {
+            "kind": "all_of",
+            "of": [
+              {
+                "kind": "hex_control",
+                "hex": [
+                  21,
+                  7
+                ],
+                "side": 0
+              },
+              {
+                "kind": "hex_control",
+                "hex": [
+                  17,
+                  4
+                ],
+                "side": 0
+              }
+            ]
+          }
+        ]
+      },
+      "effects": [
+        {
+          "kind": "units_morale",
+          "side": 1,
+          "change": -20
+        },
+        {
+          "kind": "units_entrenchment",
+          "side": 1,
+          "change": -2
+        },
+        {
+          "kind": "units_readiness_penalty",
+          "side": 1,
+          "pct": 15
+        },
+        {
+          "kind": "message",
+          "key": "event.sinai67.withdrawal_order"
+        }
+      ]
+    }
+  ]
+}
