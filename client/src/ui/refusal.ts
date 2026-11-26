@@ -11,6 +11,7 @@ const FAMILIES: [RegExp, string][] = [
   [/^illegal move of unit \d+: (\w+)/, "move"],
   [/^illegal attack by unit \d+: (\w+)/, "attack"],
   [/^illegal bridge action by unit \d+: (\w+)/, "bridge"],
+  [/^illegal air action by unit \d+: (\w+)/, "air"],
 ];
 
 const WHOLE: [RegExp, string][] = [

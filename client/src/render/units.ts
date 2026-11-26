@@ -267,3 +267,32 @@ export function drawUnits(
 export function expStars(exp: number): number {
   return Math.max(0, Math.floor(exp / 100));
 }
+
+/** R-AIR-01: aircraft as small medallions in the upper right corner of their base's hex. */
+export interface AirToken extends Token {
+  /** Position among the aircraft at the same base (0, 1, …). */
+  slot: number;
+}
+
+const AIR_SCALE = 0.5;
+
+/** World position of an aircraft token (also for hit tests). */
+export function airTokenCenter(col: number, row: number, slot: number, size: number): { x: number; y: number } {
+  const c = hexCenter(offsetToAxial({ col, row }), size);
+  return { x: c.x + size * (0.55 - slot * 0.55), y: c.y - size * 0.62 };
+}
+
+/** Radius of an aircraft token, for hit tests. */
+export const airTokenRadius = (size: number) => size * AIR_SCALE * 0.8;
+
+export function drawAirTokens(tokens: AirToken[], textures: Map<number, Texture | null>, size: number, colors: number[], flags: (FlagStripes | null)[] = []): Container {
+  const layer = new Container();
+  for (const u of tokens) {
+    const color = colors[u.side] ?? FALLBACK_SIDE;
+    const token = drawMedallion(u, textures.get(u.key) ?? null, size * AIR_SCALE, color, flags[u.side] ?? null);
+    const p = airTokenCenter(u.col, u.row, u.slot, size);
+    token.position.set(p.x, p.y);
+    layer.addChild(token);
+  }
+  return layer;
+}

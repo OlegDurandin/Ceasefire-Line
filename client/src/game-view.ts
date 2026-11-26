@@ -61,6 +61,55 @@ export interface GameStateView {
   /** R-MOVE-06: neutral closed territory. */
   neutral: [number, number][];
   objectives: { hex: [number, number]; vp: number; nm_value: number; owner: number | null }[];
+  /** R-AIR-01: aircraft, airfields and off-map bases. */
+  air: AirUnitView[];
+  airfields: [number, number][];
+  offmap_bases: { id: string; side: number; edge: "north" | "south" | "east" | "west"; distance_km: number }[];
+}
+
+export type BaseView = { kind: "hex"; hex: [number, number] } | { kind: "off_map"; id: string };
+
+export interface AirUnitView {
+  id: number;
+  class: string;
+  side: number;
+  base: BaseView;
+  strength: number;
+  readiness_pct: number;
+  exp: number;
+  fatigue_pct: number;
+  sorties: number;
+  rebased: boolean;
+  nation: string | null;
+  name: string | null;
+  radius_hexes: number;
+}
+
+/** R-AIR-02: what an aircraft can strike now. */
+export type AirTarget = { kind: "unit"; target: number } | { kind: "airfield"; hex: [number, number] } | { kind: "bridge"; a: [number, number]; b: [number, number] };
+
+export interface AirDuel {
+  a: number;
+  b: number;
+  a_fire: FireParamsView;
+  b_fire: FireParamsView;
+}
+
+export interface FireParamsView {
+  n: number;
+  a: number;
+  d: number;
+  p: number;
+}
+
+export interface AirForecast {
+  escorts: number[];
+  interceptors: number[];
+  escort_duels: AirDuel[];
+  group_duels: AirDuel[];
+  strike: FireParamsView;
+  strike_losses: { expected: number; low: number; high: number };
+  return_fire: FireParamsView | null;
 }
 
 /** Game.economy(): what the active side can buy (R-ECO-02, R-ECO-03, R-TECH-02). */

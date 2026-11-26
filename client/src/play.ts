@@ -7,7 +7,7 @@
 import { Assets, Container, Graphics, type Texture } from "pixi.js";
 
 import type { Camera } from "./camera";
-import type { BridgeTarget, EconomyView, Forecast, GameStateView, LiveUnit, Reach, Target, TransferTargets } from "./game-view";
+import type { AirForecast, AirTarget, AirUnitView, BaseView, BridgeTarget, EconomyView, Forecast, GameStateView, LiveUnit, Reach, Target, TransferTargets } from "./game-view";
 import { axialToOffset, hexCenter, offsetToAxial, pixelToAxial } from "./hex";
 import { attrText, turnDate, type Rules } from "./explain";
 import { applyFacing, type Facing } from "./facing";
@@ -15,7 +15,7 @@ import { encodeSave } from "./save";
 import { fill, formatEvent, type UnitRef } from "./log";
 import { drawControl } from "./render/control";
 import { drawHqLinks, drawObjectives, drawSupply, drawUmbrellas, drawZoc } from "./render/layers";
-import { AttackWindow, type CardData, type Explained } from "./ui/attack-window";
+import { AttackWindow, type AirCardData, type CardData, type Explained } from "./ui/attack-window";
 import { ACTIONS, actionBarHtml, type ActionId, type ActionState } from "./ui/action-bar";
 import { hexCardHtml, type HexFacts, type TerrainInfo } from "./ui/hex-info";
 import { Minimap, type Rect } from "./ui/minimap";
@@ -24,7 +24,7 @@ import { flagCss, topBarHtml, type Layer, type Tab } from "./ui/top-bar";
 import { drawBridges, setGridActive, type MapTextures } from "./render/map";
 import { drawOverlays } from "./render/overlays";
 import type { FlagStripes } from "./render/token-geom";
-import { drawUnits, expStars, type Token } from "./render/units";
+import { airTokenCenter, airTokenRadius, drawAirTokens, drawUnits, expStars, type AirToken, type Token } from "./render/units";
 import { tokenHtml } from "./ui/token-svg";
 import { pickSprite, styledSprite, type MiniIndex, type SpritesFile, type UnitStyle } from "./sprites";
 import type { HexView } from "./view";
@@ -119,6 +119,8 @@ export class Play {
   private tab: Tab = "map";
   /** R-MOVE-05: transfer mode for the selected unit. */
   private transfer: TransferTargets | null = null;
+  /** R-AIR-01: rebase mode for the selected aircraft. */
+  private rebase: BaseView[] | null = null;
   /** R-UI-03: where each unit faces after its last move or attack. */
   private facing = new Map<number, Facing>();
   /** Facing before each command, so «Отменить» turns the unit back too. */
@@ -146,6 +148,12 @@ export class Play {
   private showingResult = false;
   /** R-AI-01: the AI is playing its phase. */
   private aiRunning = false;
+  /** R-AIR-01/02: the selected aircraft, its targets and the aimed one. */
+  private airSel: { a: AirUnitView; targets: AirTarget[]; aimed: AirTarget | null } | null = null;
+  private airLayer = new Container();
+  private airRing = new Graphics();
+  /** Air tokens on the map, for hit tests. */
+  private airSpots: { id: number; x: number; y: number }[] = [];
 
   constructor(
     private game: Game,
@@ -164,6 +172,8 @@ export class Play {
     world.addChild(this.layerBox);
     world.addChild(this.overlay);
     world.addChild(this.unitsLayer);
+    world.addChild(this.airRing);
+    world.addChild(this.airLayer);
     this.facing = new Map(ctx.savedFacing);
     camera.onTap = (x, y) => this.tap(x, y);
     window.addEventListener("keydown", (e) => this.key(e));
@@ -200,7 +210,11 @@ export class Play {
     this.drawLayers();
     this.drawTop();
     this.world.tint = this.state.night ? NIGHT_TINT : 0xffffff;
-    if (this.selection) {
+    if (this.airSel) {
+      const plane = this.state.air.find((a) => a.id === this.airSel!.a.id);
+      if (plane && plane.side === this.state.active_side) this.selectAir(plane);
+      else this.deselect();
+    } else if (this.selection) {
       const still = this.state.units.find((u) => u.id === this.selection!.unit.id);
       if (still && still.side === this.state.active_side) this.select(still);
       else this.deselect();
@@ -280,6 +294,7 @@ export class Play {
     }
     this.unitsLayer.removeChildren().forEach((c) => c.destroy({ children: true }));
     this.unitsLayer.addChild(drawUnits(tokens, tex, this.size, this.colors, this.ctx.flags));
+    await this.drawAir();
   }
 
   private flag(side: number): string {
@@ -433,6 +448,15 @@ export class Play {
       this.lineCell = { col, row };
       this.drawPointerLine();
     }
+    // R-AIR-01: an aircraft token is picked before the hex under it.
+    const w = this.camera.toWorld(x, y);
+    const spot = this.airSpots.find((p) => Math.hypot(p.x - w.x, p.y - w.y) <= airTokenRadius(this.size));
+    const plane = spot && this.state.air.find((a) => a.id === spot.id);
+    if (plane && plane.side === this.state.active_side) {
+      this.selectAir(plane);
+      return;
+    }
+    if (this.airSel && this.airTap(col, row)) return;
     const there = this.unitAt(col, row);
     const sel = this.selection;
     if (sel && this.transfer) {
@@ -462,6 +486,7 @@ export class Play {
   }
 
   private select(unit: LiveUnit) {
+    this.airSel = null;
     const reach = JSON.parse(this.game.reachable(unit.id)) as Reach[];
     const targets = JSON.parse(this.game.targets(unit.id)) as Target[];
     const keepAim = this.selection?.unit.id === unit.id ? this.selection.aimed : null;
@@ -483,6 +508,7 @@ export class Play {
   }
 
   private deselect() {
+    this.airSel = null;
     this.selection = null;
     this.transfer = null;
     this.hovered = null;
@@ -499,10 +525,31 @@ export class Play {
       .filter((u): u is LiveUnit => !!u);
     const transfer = (this.transfer?.hexes ?? []).map(([col, row]) => ({ col, row }));
     const picked = !sel ? this.picked : null;
-    drawOverlays(this.overlay, this.size, this.transfer ? [] : (sel?.reach ?? []), targetHexes, sel ? sel.unit : picked, transfer);
+    const air = this.airSel;
+    if (air) {
+      // R-AIR-01/02: the aircraft's base, its targets, and the radius ring.
+      const hexes = air.targets.flatMap((t) => {
+        if (t.kind === "unit") {
+          const u = this.state.units.find((x) => x.id === t.target);
+          return u ? [{ col: u.col, row: u.row }] : [];
+        }
+        if (t.kind === "airfield") return [{ col: t.hex[0], row: t.hex[1] }];
+        return [];
+      });
+      const base = air.a.base.kind === "hex" ? { col: air.a.base.hex[0], row: air.a.base.hex[1] } : null;
+      drawOverlays(this.overlay, this.size, [], hexes, base, (this.rebase ?? []).flatMap((b) => (b.kind === "hex" ? [{ col: b.hex[0], row: b.hex[1] }] : [])));
+      this.airRing.clear();
+      if (base) {
+        const c = hexCenter(offsetToAxial(base), this.size);
+        this.airRing.circle(c.x, c.y, air.a.radius_hexes * Math.sqrt(3) * this.size).stroke({ width: 3, color: 0xffd76a, alpha: 0.6 });
+      }
+    } else {
+      this.airRing.clear();
+      drawOverlays(this.overlay, this.size, this.transfer ? [] : (sel?.reach ?? []), targetHexes, sel ? sel.unit : picked, transfer);
+    }
     setGridActive(this.world, !!sel);
     // R-UI-03: the tokens draw the selection and target halos.
-    const k = `${sel?.unit.id ?? ""}|${(sel?.targets ?? []).map((t) => t.target).join(",")}`;
+    const k = `${sel?.unit.id ?? ""}|${(sel?.targets ?? []).map((t) => t.target).join(",")}|${this.airSel?.a.id ?? ""}`;
     if (k !== this.haloKey) {
       this.haloKey = k;
       void this.drawUnits();
@@ -513,6 +560,11 @@ export class Play {
   private showWindow() {
     if (this.state.outcome) {
       this.aw.hide();
+      return;
+    }
+    if (this.airSel) {
+      if (this.airSel.aimed) this.showAirForecast(this.airSel.aimed, true);
+      else this.aw.showAirUnit(this.airCard(this.airSel.a));
       return;
     }
     const sel = this.selection;
@@ -698,6 +750,15 @@ export class Play {
       this.drawPointerLine();
       if (!(this.selection && this.info === "unit")) this.drawHexCard("right");
     }
+    if (this.airSel && !this.airSel.aimed) {
+      const t = this.airTargetAt(c.col, c.row);
+      const id = t ? (t.kind === "unit" ? t.target : -1 - (t.kind === "airfield" ? t.hex[0] * 1000 + t.hex[1] : 0)) : null;
+      if (id === this.hovered) return;
+      this.hovered = id;
+      if (t) this.showAirForecast(t, false);
+      else this.aw.showAirUnit(this.airCard(this.airSel.a));
+      return;
+    }
     const sel = this.selection;
     if (!sel || sel.aimed || this.info !== "unit" || this.showingResult) return;
     const there = this.unitAt(c.col, c.row);
@@ -735,6 +796,7 @@ export class Play {
     out.heli = { enabled: false, tip: this.t("ui.act.heli_off") };
     const canUndo = this.game.canUndo();
     out.undo = { enabled: canUndo, tip: this.t(canUndo ? "ui.act.undo_tip" : "ui.act.undo_off") };
+    if (this.airSel && !this.state.outcome) return this.airActionStates(out);
     if (!u || this.state.outcome) return out;
     const cost = (elite: boolean) => {
       try {
@@ -808,6 +870,10 @@ export class Play {
   }
 
   private act(a: ActionId) {
+    if (this.airSel && a !== "undo") {
+      this.airAct(a);
+      return;
+    }
     const u = this.selection?.unit;
     if (a === "undo") {
       void this.undo();
@@ -973,6 +1039,249 @@ export class Play {
     void this.drawUnits();
   }
 
+  /** R-AIR-01: aircraft as small medallions at their bases; off-map ones are not drawn. */
+  private async drawAir() {
+    const tokens: AirToken[] = [];
+    const tex = new Map<number, Texture | null>();
+    const slots = new Map<string, number>();
+    this.airSpots = [];
+    for (const a of this.state.air ?? []) {
+      if (a.base.kind !== "hex") continue;
+      const [col, row] = a.base.hex;
+      const slot = slots.get(`${col},${row}`) ?? 0;
+      slots.set(`${col},${row}`, slot + 1);
+      const tech = this.state.sides.find((s) => s.id === a.side)?.tech ?? {};
+      const base = pickSprite(this.sprites, a.class, a.nation, tech);
+      if (base && !this.textures.has(base.url)) this.textures.set(base.url, await Assets.load<Texture>(base.url));
+      tex.set(a.id, base ? (this.textures.get(base.url) ?? null) : null);
+      const mine = a.side === this.state.active_side;
+      tokens.push({
+        key: a.id,
+        side: a.side,
+        col,
+        row,
+        slot,
+        label: String(a.strength),
+        stars: expStars(a.exp),
+        dim: mine && (a.sorties > 0 || a.rebased || this.state.night),
+        facing: this.ctx.sideFacing[a.side] ?? "left",
+        style: "medallion",
+        anchor: [0.5, 0.5],
+        selected: this.airSel?.a.id === a.id,
+        target: false,
+      });
+      const p = airTokenCenter(col, row, slot, this.size);
+      this.airSpots.push({ id: a.id, x: p.x, y: p.y });
+    }
+    this.airLayer.removeChildren().forEach((c) => c.destroy({ children: true }));
+    this.airLayer.addChild(drawAirTokens(tokens, tex, this.size, this.colors, this.ctx.flags));
+  }
+
+  private baseLabel(b: BaseView): string {
+    return b.kind === "hex" ? `[${b.hex[0]}, ${b.hex[1]}]` : `${this.t("ui.air.offmap")} (${this.t(`base.${b.id}`, b.id)})`;
+  }
+
+  private airName(a: AirUnitView): string {
+    const cls = this.t(`unit.${a.class}`, a.class);
+    return a.name ? this.t(a.name, cls) : cls;
+  }
+
+  private airCard(a: AirUnitView): AirCardData {
+    const tech = this.state.sides.find((x) => x.id === a.side)?.tech ?? {};
+    const base = pickSprite(this.sprites, a.class, a.nation, tech);
+    const nation = (a.nation ? this.t(`nation.${a.nation}`, "") : "") || this.sideName(a.side);
+    const model = base ? this.ru[`model.${base.id}`] : undefined;
+    const portrait = tokenHtml({
+      w: 84,
+      color: this.colors[a.side] ?? 0xb08d57,
+      flag: this.ctx.flags[a.side] ?? null,
+      label: String(a.strength),
+      model: base?.url ?? null,
+      anchor: [0.5, 0.75],
+      mirrored: (this.ctx.sideFacing[a.side] ?? "left") === "right",
+    });
+    return {
+      title: this.airName(a),
+      subtitle: [nation, model].filter(Boolean).join(" · "),
+      portrait,
+      stars: expStars(a.exp),
+      strength: a.strength,
+      canSortie: a.sorties === 0 && !a.rebased && !this.state.night,
+      readiness: a.readiness_pct,
+      fatigue: a.fatigue_pct,
+      radius: a.radius_hexes,
+      base: this.baseLabel(a.base),
+    };
+  }
+
+  /** R-AIR-01: select an own aircraft — its card, targets and radius. */
+  private selectAir(a: AirUnitView) {
+    this.selection = null;
+    this.transfer = null;
+    this.rebase = null;
+    this.hovered = null;
+    const targets = JSON.parse(this.game.airTargets(a.id)) as AirTarget[];
+    const prev = this.airSel?.a.id === a.id ? this.airSel.aimed : null;
+    // Keep the aim only while that target can still be struck.
+    const keep = prev && targets.some((t) => JSON.stringify(t) === JSON.stringify(prev)) ? prev : null;
+    this.airSel = { a, targets, aimed: keep };
+    this.redrawOverlay();
+    this.drawActionBar();
+    this.showWindow();
+    this.showAdvanceOrHide();
+    void this.drawAir();
+  }
+
+  private airTargetAt(col: number, row: number): AirTarget | undefined {
+    const sel = this.airSel;
+    if (!sel) return undefined;
+    const u = this.unitAt(col, row);
+    return sel.targets.find((t) => (t.kind === "unit" ? u?.id === t.target : t.kind === "airfield" ? t.hex[0] === col && t.hex[1] === row : false));
+  }
+
+  /** A tap while an aircraft is selected: rebase, aim, strike; false → normal handling. */
+  private airTap(col: number, row: number): boolean {
+    const sel = this.airSel!;
+    if (this.rebase) {
+      const to = this.rebase.find((b) => b.kind === "hex" && b.hex[0] === col && b.hex[1] === row);
+      this.rebase = null;
+      if (to) {
+        void this.run(() => this.game.apply(JSON.stringify({ type: "rebase", unit: sel.a.id, base: this.baseCmd(to) })));
+        return true;
+      }
+    }
+    const t = this.airTargetAt(col, row);
+    if (!t) {
+      this.airSel = null;
+      return false;
+    }
+    const same = sel.aimed && JSON.stringify(sel.aimed) === JSON.stringify(t);
+    if (same) this.strikeAir(t);
+    else {
+      sel.aimed = t;
+      this.showAirForecast(t, true);
+    }
+    return true;
+  }
+
+  private baseCmd(b: BaseView): object {
+    return b.kind === "hex" ? { kind: "hex", hex: hex(b.hex) } : { kind: "off_map", id: b.id };
+  }
+
+  private airCmd(t: AirTarget): object {
+    const unit = this.airSel!.a.id;
+    if (t.kind === "unit") return { type: "air_strike", unit, target: t.target };
+    if (t.kind === "airfield") return { type: "air_strike_airfield", unit, hex: hex(t.hex) };
+    return { type: "air_strike_bridge", unit, a: hex(t.a), b: hex(t.b) };
+  }
+
+  /** R-AIR-02: the forecast of a strike in the attack window (hover or aim). */
+  private showAirForecast(t: AirTarget, aimed: boolean) {
+    const sel = this.airSel;
+    if (!sel || t.kind === "bridge") return;
+    let f: AirForecast;
+    try {
+      f = JSON.parse(this.game.forecastAir(sel.a.id, JSON.stringify(t))) as AirForecast;
+    } catch {
+      sel.aimed = null;
+      this.aw.showAirUnit(this.airCard(sel.a));
+      return;
+    }
+    const at = t.kind === "unit" ? this.state.units.find((u) => u.id === t.target) : null;
+    const where = at ? { col: at.col, row: at.row } : t.kind === "airfield" ? { col: t.hex[0], row: t.hex[1] } : null;
+    const def =
+      at !== null && at !== undefined
+        ? this.card(at)
+        : {
+            title: `${this.t("ui.air.airfield")} [${where?.col}, ${where?.row}]`,
+            subtitle: this.sideName(this.state.air.find((a) => a.base.kind === "hex" && t.kind === "airfield" && a.base.hex[0] === t.hex[0] && a.base.hex[1] === t.hex[1])?.side ?? null),
+            parked: this.state.air.filter((a) => a.base.kind === "hex" && t.kind === "airfield" && a.base.hex[0] === t.hex[0] && a.base.hex[1] === t.hex[1]).length,
+          };
+    let deg = 0;
+    if (sel.a.base.kind === "hex" && where) {
+      const pa = hexCenter(offsetToAxial({ col: sel.a.base.hex[0], row: sel.a.base.hex[1] }), 1);
+      const pd = hexCenter(offsetToAxial(where), 1);
+      deg = (Math.atan2(pd.y - pa.y, pd.x - pa.x) * 180) / Math.PI;
+    }
+    const actions = aimed ? `<button id="strike">${this.t("ui.air.strike_cmd")}</button> <button id="cancel">${this.t("ui.cancel")}</button>` : "";
+    this.aw.showAirTarget(this.airCard(sel.a), def, f, deg, actions);
+    if (aimed) {
+      document.getElementById("strike")!.onclick = () => this.strikeAir(t);
+      document.getElementById("cancel")!.onclick = () => {
+        if (!this.airSel) return;
+        this.airSel.aimed = null;
+        this.showWindow();
+      };
+    }
+  }
+
+  private strikeAir(t: AirTarget) {
+    const cmd = JSON.stringify(this.airCmd(t));
+    const id = this.airSel?.a.id;
+    void this.run(() => this.game.apply(cmd)).then((events) => {
+      const strike = (events as { type: string; losses?: number; return_losses?: number }[]).find((e) => e.type === "air_strike");
+      const battles = (events as { type: string }[]).filter((e) => e.type === "air_battle").length;
+      if (strike) this.toast(fill(this.t("ui.air.result"), { hit: strike.losses ?? 0, lost: strike.return_losses ?? 0, battles }));
+      const a = this.state.air.find((x) => x.id === id);
+      if (a) this.selectAir({ ...a });
+      else this.deselect();
+      if (this.airSel) this.airSel.aimed = null;
+      this.showWindow();
+    });
+  }
+
+  private airActionStates(out: Record<ActionId, ActionState>): Record<ActionId, ActionState> {
+    const sel = this.airSel!;
+    const ground = { enabled: false, tip: this.t("ui.act.ground_only") };
+    for (const a of ["reinforce", "elite", "pin", "bridge", "heli"] as ActionId[]) out[a] = ground;
+    const bases = JSON.parse(this.game.rebaseTargets(sel.a.id)) as BaseView[];
+    out.transfer = bases.length
+      ? { enabled: true, on: !!this.rebase, tip: this.t("ui.act.rebase_tip") }
+      : { enabled: false, tip: this.refusal({ type: "rebase", unit: sel.a.id, base: this.baseCmd(sel.a.base) }) ?? this.t("ui.act.no_targets") };
+    out.bombard = sel.targets.length ? { enabled: true, tip: this.t("ui.act.air_targets") } : { enabled: false, tip: this.state.night ? this.t("refusal.air.Night") : this.t("ui.act.no_targets") };
+    return out;
+  }
+
+  private airAct(a: ActionId) {
+    const sel = this.airSel!;
+    if (a === "transfer") {
+      const bases = JSON.parse(this.game.rebaseTargets(sel.a.id)) as BaseView[];
+      this.rebase = this.rebase ? null : bases;
+      this.redrawOverlay();
+      this.drawActionBar();
+      // Off-map bases cannot be tapped: they come in a list.
+      if (this.rebase) {
+        this.popover(
+          this.t("ui.act.choose_base"),
+          bases.map((b) => `<button data-cmd="${attr({ type: "rebase", unit: sel.a.id, base: this.baseCmd(b) })}">${this.baseLabel(b)}</button>`),
+        );
+      }
+    } else if (a === "bombard") {
+      const items = sel.targets.map((t) => {
+        if (t.kind === "bridge") return `<button data-cmd="${attr(this.airCmd(t))}">${this.t("ui.air.strike")}: ${this.t("ui.bombard_bridge")} [${t.a.join(", ")}]–[${t.b.join(", ")}]</button>`;
+        const label =
+          t.kind === "unit"
+            ? (() => {
+                const u = this.state.units.find((x) => x.id === t.target);
+                return u ? this.unitLabel(u) : String(t.target);
+              })()
+            : `${this.t("ui.air.airfield")} [${t.hex.join(", ")}]`;
+        return `<button data-airaim="${attr(t)}">${label}</button>`;
+      });
+      this.popover(this.t("ui.act.choose_target"), items);
+      for (const b of document.querySelectorAll<HTMLButtonElement>("#combat [data-airaim]")) {
+        b.onclick = () => {
+          const t = JSON.parse(decodeURIComponent(b.dataset.airaim!)) as AirTarget;
+          this.showAdvanceOrHide();
+          if (this.airSel) {
+            this.airSel.aimed = t;
+            this.showAirForecast(t, true);
+          }
+        };
+      }
+    }
+  }
+
   /** Own units that can still move or strike (the same test as the dimming). */
   private ready(): LiveUnit[] {
     return this.state.units.filter(
@@ -980,18 +1289,31 @@ export class Play {
     );
   }
 
-  /** R-UI-05: N — the next unit that has not acted, in id order, cycling. */
+  /** R-UI-05: N — the next unit that has not acted (aircraft that can fly too), in id order, cycling. */
   private nextUnit(dir: 1 | -1 = 1) {
-    const ready = this.ready();
+    const planes = this.state.night ? [] : this.state.air.filter((a) => a.side === this.state.active_side && a.sorties === 0 && !a.rebased);
+    const ready: { id: number; air: AirUnitView | null; ground: LiveUnit | null }[] = [
+      ...this.ready().map((u) => ({ id: u.id, air: null, ground: u })),
+      ...planes.map((a) => ({ id: a.id, air: a, ground: null })),
+    ].sort((x, y) => x.id - y.id);
     if (!ready.length) return;
-    const cur = this.selection?.unit.id ?? (dir > 0 ? -1 : Infinity);
+    const cur = this.airSel?.a.id ?? this.selection?.unit.id ?? (dir > 0 ? -1 : Infinity);
     const next =
       dir > 0
         ? (ready.find((u) => u.id > cur) ?? ready[0]!)
         : ([...ready].reverse().find((u) => u.id < cur) ?? ready[ready.length - 1]!);
-    this.select(next);
-    const c = hexCenter(offsetToAxial({ col: next.col, row: next.row }), this.size);
-    this.camera.centerOn(c.x, c.y);
+    let at: { col: number; row: number } | null = null;
+    if (next.ground) {
+      this.select(next.ground);
+      at = next.ground;
+    } else if (next.air) {
+      this.selectAir(next.air);
+      if (next.air.base.kind === "hex") at = { col: next.air.base.hex[0], row: next.air.base.hex[1] };
+    }
+    if (at) {
+      const c = hexCenter(offsetToAxial(at), this.size);
+      this.camera.centerOn(c.x, c.y);
+    }
   }
 
   /** R-UI-05: warn before ending the phase with strikes left on units that have a target. */
