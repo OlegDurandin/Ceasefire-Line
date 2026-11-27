@@ -9,7 +9,7 @@
 //! - Every candidate plays every opponent on every scenario, `--games` games in
 //!   each role (fixed seeds); a game scores ½ × outcome (1 win, ½ draw, 0)
 //!   plus ½ × the acceptance measure (designer decision 2026-11-27): by date
-//!   the VP share (0.5 + margin / 2 Σ objective VP); by sudden death how early
+//!   the side's share of both sides' VP; by sudden death how early
 //!   the loser broke (the winner gains, the loser loses) and NM at the end.
 //! - Fitness = the minimum score over (scenario, opponent); ties by the mean.
 //! - `--rounds` > 1: the next round perturbs the best with half the spread.
@@ -193,16 +193,22 @@ fn play(
         };
         (0.5 + 0.5 * won * early + 0.1 * (nm(a_side) - nm(1 - a_side)) / 100.0).clamp(0.0, 1.0)
     } else {
-        let vp = |side: u8| o.vp.iter().find(|x| x.0 == SideId(side)).map_or(0, |x| x.1);
-        let scale = f64::from(
-            s.objectives()
-                .iter()
-                .map(|x| x.vp.max(1))
-                .sum::<i32>()
-                .max(1),
-        );
-        let margin = f64::from(vp(a_side) - vp(1 - a_side));
-        (0.5 + margin / (2.0 * scale)).clamp(0.0, 1.0)
+        // The side's share of both sides' VP: no saturation when one side runs
+        // far ahead (Sinai-67 with VP for exits and for the enemy's steps).
+        let vp = |side: u8| {
+            f64::from(
+                o.vp.iter()
+                    .find(|x| x.0 == SideId(side))
+                    .map_or(0, |x| x.1)
+                    .max(0),
+            )
+        };
+        let total = vp(a_side) + vp(1 - a_side);
+        if total > 0.0 {
+            vp(a_side) / total
+        } else {
+            0.5
+        }
     };
     Ok(0.5 * result + 0.5 * share)
 }
@@ -316,7 +322,7 @@ pub fn run(o: &Options) -> Result<(), String> {
         .collect();
     let mut best = base.clone();
     let mut report = format!(
-        "# Турнир весов ИИ v1\n\nСценарии: {}; соперники: «жадина», v1, v1 с разбросом ×2; {} партий в каждой роли; оценка партии — ½ исхода + ½ мерила приёмки (по дате — доля победных очков; внезапная смерть — ход развала и NM в конце); оценка кандидата — минимум по (сценарий, соперник), затем среднее.\n",
+        "# Турнир весов ИИ v1\n\nСценарии: {}; соперники: «жадина», v1, v1 с разбросом ×2; {} партий в каждой роли; оценка партии — ½ исхода + ½ мерила приёмки (по дате — доля своих победных очков от суммы обеих сторон; внезапная смерть — ход развала и NM в конце); оценка кандидата — минимум по (сценарий, соперник), затем среднее.\n",
         o.scenarios.join(", "),
         o.games
     );

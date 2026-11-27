@@ -4,23 +4,23 @@
   "aggressiveness_jitter": 0.25,
   "max_commands_per_phase": 400,
   "attack": {
-    "min_score_defensive": 0.6,
-    "min_score_aggressive": -0.4,
-    "retreat_bonus": 1.5,
-    "objective_bonus": 2.0,
-    "focus_bonus": 0.5
+    "min_score_defensive": 0.558,
+    "min_score_aggressive": -0.223,
+    "retreat_bonus": 0.901,
+    "objective_bonus": 2.392,
+    "focus_bonus": 0.534
   },
   "advance": {
     "max_adjacent_enemies": 1
   },
   "move": {
-    "goal_weight": 1.0,
-    "terrain_weight": 3.0,
-    "entrench_weight": 0.6,
-    "threat_weight": 0.08,
+    "goal_weight": 1.283,
+    "terrain_weight": 2.917,
+    "entrench_weight": 0.364,
+    "threat_weight": 0.051,
     "support_weight": 0.03,
-    "objective_bonus": 4.0,
-    "contact_bonus": 0.6,
+    "objective_bonus": 5.348,
+    "contact_bonus": 0.615,
     "enemy_hex_bonus": 0.4,
     "min_gain": 0.3,
     "influence_radius": 4,
@@ -52,7 +52,7 @@
     "pin_radius": 4,
     "finish_bonus": 1.0,
     "min_own_supply": 2,
-    "min_vp": 0.5,
+    "min_vp": 0.763,
     "finish_steps_per_phase": 1.0,
     "horizon_phases": 10,
     "breach_movers": 3,
@@ -80,10 +80,10 @@
   },
   "position": {
     "_comment": "Step 7 item 6: position terms of the hex score (weights for the tournament, ± seeded jitter per game and side): w_cut — tanks and mechs on enemy supply paths (was pockets.dependency_weight); w_pocket — contact with enemy units at supply 0; w_risk — own steps in hexes a threatened own chokepoint would cut; w_choke — a ground unit on an own chokepoint.",
-    "w_cut": 1.0,
-    "w_pocket": 0.5,
-    "w_risk": 1.0,
-    "w_choke": 1.0,
+    "w_cut": 1.082,
+    "w_pocket": 0.543,
+    "w_risk": 1.204,
+    "w_choke": 0.936,
     "jitter": 0.25
   },
   "retreat": {
