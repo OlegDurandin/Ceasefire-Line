@@ -60,6 +60,10 @@ pub enum Effect {
         side: SideId,
         change: i32,
     },
+    /// R-NM-02: the exits of `side` open (e.g. a withdrawal order).
+    OpenExits {
+        side: SideId,
+    },
     /// Entrenchment of every ground unit of `side` changes, within 0 and the terrain's maximum.
     UnitsEntrenchment {
         side: SideId,
@@ -203,6 +207,10 @@ impl GameState {
                     side: *side,
                     change: *change,
                 });
+            }
+            Effect::OpenExits { side } => {
+                self.open_exits(*side);
+                events.push(Event::ExitsOpened { side: *side });
             }
             Effect::UnitsReadinessPenalty { side, pct } => {
                 for unit in self.ground_units_mut(*side)? {

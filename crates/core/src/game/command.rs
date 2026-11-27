@@ -247,6 +247,17 @@ pub enum Event {
         #[serde(default, skip_serializing_if = "Option::is_none")]
         at: Option<Hex>,
     },
+    /// R-NM-02: a unit left the map through an open exit.
+    UnitExited {
+        unit: UnitId,
+        hex: Hex,
+        steps: u8,
+        vp: i32,
+    },
+    /// R-EVT-01: the exits of `side` opened.
+    ExitsOpened {
+        side: SideId,
+    },
     UnitArrived {
         unit: UnitId,
         class: String,

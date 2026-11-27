@@ -121,6 +121,7 @@ fn two_fronts(north_threat: bool, mpp: u32) -> (ScenarioSetup, AiHints) {
         neutral: vec![],
         offmap_bases: vec![],
         variants: BTreeMap::new(),
+        conditions: Default::default(),
     };
     let sector = |rows: std::ops::RangeInclusive<i32>| -> Vec<Hex> {
         (0..=3)

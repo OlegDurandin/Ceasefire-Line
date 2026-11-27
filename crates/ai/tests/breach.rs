@@ -125,6 +125,7 @@ fn line(weak: bool, seed: u64) -> GameState {
         neutral: vec![],
         offmap_bases: vec![],
         variants: BTreeMap::new(),
+        conditions: Default::default(),
     };
     GameState::new(data(), setup).unwrap().0
 }

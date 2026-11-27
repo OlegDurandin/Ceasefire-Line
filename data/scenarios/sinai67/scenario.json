@@ -1383,5 +1383,47 @@
       "confirmed": true,
       "source": "T. Cooper & N. Baker / F. Vajda, ACIG.org IDF/AF and Arab air forces orders of battle, 5 June 1967; C. B. Long 1984 (DTIC ADA146294); unit counts per game unit are a design choice (≈30–40 aircraft per unit)"
     }
+  ],
+  "sudden_death": [
+    {
+      "side": 1,
+      "threshold": null
+    }
+  ],
+  "exits": [
+    {
+      "side": 1,
+      "_comment": "Выходы Египта (решение дизайнера 2026-11-27): восточные концы переправ у Эль-Фердана (1,10), Исмаилии (1,11), Суэца (4,17) и западные выходы перевалов Гиди (7,15) и Митла (7,17). Закрыты до приказа об отходе. Очки за шаг — предварительно 1, число — при перебалансировке после шага 7.",
+      "hexes": [
+        [
+          1,
+          10
+        ],
+        [
+          1,
+          11
+        ],
+        [
+          4,
+          17
+        ],
+        [
+          7,
+          15
+        ],
+        [
+          7,
+          17
+        ]
+      ],
+      "vp_per_step": 1,
+      "open": false
+    }
+  ],
+  "vp_per_enemy_step": [
+    {
+      "side": 0,
+      "vp": 1
+    }
   ]
 }

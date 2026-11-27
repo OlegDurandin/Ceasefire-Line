@@ -105,6 +105,7 @@ fn setup(units: Vec<UnitSetup>, last_turn: u32, mpp: u32) -> ScenarioSetup {
         neutral: vec![],
         offmap_bases: vec![],
         variants: BTreeMap::new(),
+        conditions: Default::default(),
     }
 }
 

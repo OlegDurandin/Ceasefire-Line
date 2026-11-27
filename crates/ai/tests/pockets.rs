@@ -121,6 +121,7 @@ fn salient() -> GameState {
         neutral: vec![],
         offmap_bases: vec![],
         variants: BTreeMap::new(),
+        conditions: Default::default(),
     };
     GameState::new(data(), setup).unwrap().0
 }
@@ -172,6 +173,7 @@ fn two_corridors() -> GameState {
         neutral: vec![],
         offmap_bases: vec![],
         variants: BTreeMap::new(),
+        conditions: Default::default(),
     };
     GameState::new(data(), setup).unwrap().0
 }
@@ -308,6 +310,7 @@ fn neck(reserve: bool, salient: &str, variants: &[&str]) -> GameState {
         neutral: vec![],
         offmap_bases: vec![],
         variants: variants.iter().map(|v| (v.to_string(), true)).collect(),
+        conditions: Default::default(),
     };
     let mut s = GameState::new(data(), setup).unwrap().0;
     while s.active_side() != B {

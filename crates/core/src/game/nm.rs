@@ -107,7 +107,8 @@ impl GameState {
         Ok(())
     }
 
-    /// R-NM-02: VP = objectives held + NM.
+    /// R-NM-02: VP = objectives held + NM + steps taken out through exits +
+    /// VP for the enemy's lost steps (scenario conditions).
     pub fn victory_points(&self) -> Vec<(SideId, i32)> {
         let mut vp: BTreeMap<SideId, i32> = self
             .sides
@@ -119,17 +120,37 @@ impl GameState {
                 *vp.entry(*holder).or_insert(0) += o.vp;
             }
         }
+        for (side, gained) in &self.exited_vp {
+            *vp.entry(*side).or_insert(0) += gained;
+        }
+        for (side, per) in &self.conditions.vp_per_enemy_step {
+            let lost: u32 = self
+                .sides
+                .iter()
+                .filter(|s| s.id != *side)
+                .map(|s| s.steps_lost)
+                .sum();
+            *vp.entry(*side).or_insert(0) += per * i32::try_from(lost).unwrap_or(i32::MAX);
+        }
         self.sides.iter().map(|s| (s.id, vp[&s.id])).collect()
     }
 
     /// R-NM-02: NM at or below the threshold → the other side wins decisively;
     /// both at once → draw.
     fn sudden_death(&self) -> Option<Outcome> {
-        let limit = self.data.rules.national_morale.sudden_death_pct;
+        let default = self.data.rules.national_morale.sudden_death_pct;
+        // Per side (scenario conditions); `None` — this side never breaks.
+        let limit = |side: SideId| -> Option<u8> {
+            self.conditions
+                .sudden_death
+                .get(&side)
+                .copied()
+                .unwrap_or(Some(default))
+        };
         let broken: Vec<SideId> = self
             .sides
             .iter()
-            .filter(|s| s.national_morale_pct <= limit)
+            .filter(|s| limit(s.id).is_some_and(|l| s.national_morale_pct <= l))
             .map(|s| s.id)
             .collect();
         if broken.is_empty() {
@@ -245,6 +266,7 @@ mod tests {
             neutral: vec![],
             offmap_bases: vec![],
             variants: BTreeMap::new(),
+            conditions: Default::default(),
         };
         GameState::new(Arc::new(data), setup).unwrap().0
     }

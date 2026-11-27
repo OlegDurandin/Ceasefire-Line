@@ -116,6 +116,7 @@ pub mod scenario {
             neutral: vec![],
             offmap_bases: vec![],
             variants: BTreeMap::new(),
+            conditions: Default::default(),
         }
     }
 

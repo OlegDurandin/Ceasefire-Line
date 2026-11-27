@@ -1,6 +1,7 @@
 //! R-TURN-01: game state. It changes only through [`GameState::apply`].
 
 mod attack;
+mod exits;
 pub use attack::AttackModifiers;
 mod aviation;
 mod boosts;
@@ -328,6 +329,32 @@ pub struct ScenarioSetup {
     pub offmap_bases: Vec<OffMapBase>,
     /// Rule variants switched on or off for this scenario (over `rules.variants`).
     pub variants: BTreeMap<String, bool>,
+    /// R-NM-02: per-side sudden death, exits, VP for destroyed enemy steps.
+    pub conditions: VictoryConditions,
+}
+
+/// R-NM-02 (designer decision 2026-11-27): the scenario's victory conditions
+/// beyond objectives and NM.
+#[derive(Debug, Clone, PartialEq, Eq, Default, Serialize, Deserialize)]
+pub struct VictoryConditions {
+    /// Sudden-death NM threshold per side; `None` — the side never breaks;
+    /// a side not listed uses `national_morale.sudden_death_pct`.
+    pub sudden_death: BTreeMap<SideId, Option<u8>>,
+    /// Exit hexes: steps of `side` entering an open one leave the map for VP.
+    pub exits: Vec<ExitZone>,
+    /// VP to a side for every step its enemies have lost.
+    pub vp_per_enemy_step: BTreeMap<SideId, i32>,
+}
+
+/// R-NM-02 «выход»: hexes through which `side` takes its units off the map.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ExitZone {
+    pub side: SideId,
+    pub hexes: Vec<Hex>,
+    /// VP per strength step that exits.
+    pub vp_per_step: i32,
+    /// Closed exits give nothing until an event opens them (R-EVT-01).
+    pub open: bool,
 }
 
 /// R-MOVE-06: a neutral country's hexes in a scenario.
@@ -392,6 +419,10 @@ pub struct GameState {
     next_combat_id: u32,
     pending_advance: Option<PendingAdvance>,
     rng: Pcg32,
+    /// R-NM-02: victory conditions; exit zones open and close here.
+    conditions: VictoryConditions,
+    /// R-NM-02: VP earned by steps that left through exits, per side.
+    exited_vp: BTreeMap<SideId, i32>,
 }
 
 fn invalid(msg: impl Into<String>) -> RuleError {
@@ -599,6 +630,8 @@ impl GameState {
             next_combat_id: 1,
             pending_advance: None,
             rng: Pcg32::new(setup.seed, 0),
+            conditions: setup.conditions,
+            exited_vp: BTreeMap::new(),
         };
 
         // Initial supply and readiness for both sides (defenders need it too).
@@ -664,6 +697,13 @@ impl GameState {
             Command::Attack { .. } | Command::Advance { .. } | Command::ResolveCombat { .. }
         );
         let backup = self.clone();
+        // R-NM-02: a unit that ends a move, transfer or advance in an open exit leaves.
+        let mover = match &command {
+            Command::Move { unit, .. }
+            | Command::Transfer { unit, .. }
+            | Command::Advance { unit } => Some(*unit),
+            _ => None,
+        };
         let result = match command {
             Command::Move { unit, path } => self.move_unit(unit, &path),
             Command::Attack { unit, target } => self.attack(unit, target),
@@ -685,7 +725,10 @@ impl GameState {
             Command::EndPhase => self.end_phase(),
         };
         match result {
-            Ok(events) => {
+            Ok(mut events) => {
+                if let Some(id) = mover {
+                    self.exit_if_due(id, &mut events);
+                }
                 if !keeps_pending {
                     self.pending_advance = None;
                 }

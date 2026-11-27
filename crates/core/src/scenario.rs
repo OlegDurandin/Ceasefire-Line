@@ -315,7 +315,43 @@ struct ScenarioFile {
     /// Rule variants on or off for this scenario (names of `rules.variants`).
     #[serde(default)]
     variants: BTreeMap<String, bool>,
+    /// R-NM-02: sudden-death threshold per side (`null` — never breaks).
+    #[serde(default)]
+    sudden_death: Vec<SuddenDeathFile>,
+    /// R-NM-02: exit hexes per side.
+    #[serde(default)]
+    exits: Vec<ExitFile>,
+    /// R-NM-02: VP per enemy step lost, per side.
+    #[serde(default)]
+    vp_per_enemy_step: Vec<SideVpFile>,
     units: Vec<UnitFile>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct SuddenDeathFile {
+    side: u8,
+    threshold: Option<u8>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ExitFile {
+    side: u8,
+    hexes: Vec<[i32; 2]>,
+    vp_per_step: i32,
+    #[serde(default)]
+    open: bool,
+    /// Where the hexes come from (data notes).
+    #[serde(default, rename = "_comment")]
+    _comment: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct SideVpFile {
+    side: u8,
+    vp: i32,
 }
 
 #[derive(Debug, Deserialize)]
@@ -420,6 +456,7 @@ enum EffectFile {
     Message { key: String },
     UnitsMorale { side: u8, change: i32 },
     UnitsEntrenchment { side: u8, change: i32 },
+    OpenExits { side: u8 },
     UnitsReadinessPenalty { side: u8, pct: u8 },
     DestroyBridge { a: [i32; 2], b: [i32; 2] },
 }
@@ -449,6 +486,7 @@ impl From<EffectFile> for Effect {
                 side: SideId(side),
                 change,
             },
+            EffectFile::OpenExits { side } => Effect::OpenExits { side: SideId(side) },
             EffectFile::UnitsReadinessPenalty { side, pct } => Effect::UnitsReadinessPenalty {
                 side: SideId(side),
                 pct,
@@ -688,6 +726,28 @@ pub fn load_scenario(
             })
             .collect(),
         variants: file.variants.clone(),
+        conditions: crate::game::VictoryConditions {
+            sudden_death: file
+                .sudden_death
+                .iter()
+                .map(|x| (SideId(x.side), x.threshold))
+                .collect(),
+            exits: file
+                .exits
+                .iter()
+                .map(|x| crate::game::ExitZone {
+                    side: SideId(x.side),
+                    hexes: x.hexes.iter().map(|h| hex(*h)).collect(),
+                    vp_per_step: x.vp_per_step,
+                    open: x.open,
+                })
+                .collect(),
+            vp_per_enemy_step: file
+                .vp_per_enemy_step
+                .iter()
+                .map(|x| (SideId(x.side), x.vp))
+                .collect(),
+        },
         offmap_bases: file
             .offmap_bases
             .into_iter()
