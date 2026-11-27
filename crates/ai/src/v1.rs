@@ -778,12 +778,36 @@ impl AiV1 {
                 .max_by(|a, c| a.0.total_cmp(&c.0).then(c.1.cmp(&a.1)))
                 .map(|(_, h)| h)
         });
+        let idle = self
+            .hints
+            .sides
+            .get(&b.side)
+            .is_some_and(|h| h.idle_to_objectives);
+        // Own objectives with the enemy within twice the defence radius.
+        let threatened: Vec<Hex> = b
+            .objectives
+            .keys()
+            .filter(|h| b.s.controller(**h) == Some(b.side))
+            .filter(|h| {
+                b.enemy
+                    .iter()
+                    .any(|e| e.hex.distance(**h) <= 2 * m.defend_radius)
+            })
+            .copied()
+            .collect();
         for u in movers {
             if taken.contains(&u.id) {
                 continue;
             }
             let goal = match (attack, target) {
                 (true, Some(t)) => t,
+                // Hint `idle_to_objectives`: a defending side's free unit goes to
+                // the nearest threatened own objective, else holds.
+                _ if idle => threatened
+                    .iter()
+                    .min_by_key(|h| (h.distance(u.hex), **h))
+                    .copied()
+                    .unwrap_or(u.hex),
                 _ => u.hex,
             };
             goals.insert(u.id, goal);

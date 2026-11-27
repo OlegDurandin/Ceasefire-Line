@@ -226,6 +226,9 @@ struct SideHintFile {
     /// Objectives in the order the side takes them (operation «следующая цель»).
     #[serde(default)]
     sequence: Vec<[i32; 2]>,
+    /// A defending side's free units go to the nearest threatened own objective.
+    #[serde(default)]
+    idle_to_objectives: bool,
 }
 
 #[derive(Debug, Deserialize)]
@@ -253,6 +256,10 @@ pub struct SideHints {
     /// R-AI-01 operation «следующая цель»: objectives in order; the attack
     /// goes to the first one the side does not hold, then on to the next.
     pub sequence: Vec<Hex>,
+    /// R-AI-01 hint (designer decision 2026-11-27): when the side does not
+    /// attack, its free units go to the nearest own objective the enemy is
+    /// closing in on (within twice the defence radius) instead of holding.
+    pub idle_to_objectives: bool,
 }
 
 /// `scenario.json` → `ai` (R-AI-01 «подсказки сценария»).
@@ -285,6 +292,7 @@ impl AiHints {
                         .map(|p| (offset_to_axial(p.hex), p.weight))
                         .collect(),
                     sequence: s.sequence.into_iter().map(offset_to_axial).collect(),
+                    idle_to_objectives: s.idle_to_objectives,
                 };
                 (SideId(s.side), hints)
             })
