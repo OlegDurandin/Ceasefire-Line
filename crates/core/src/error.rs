@@ -77,6 +77,8 @@ pub enum TransferError {
     NotEnoughMpp,
     /// R-ECO-02 variant `reinforce_locks`: reinforced this phase.
     Reinforced,
+    /// R-MOVE-05 variant `transfer_supply_min`: unit supply too low.
+    LowSupply,
 }
 
 /// Why a reinforcement or purchase is rejected (R-ECO-02, R-ECO-03, R-SUP-03).

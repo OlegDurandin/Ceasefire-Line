@@ -159,6 +159,8 @@ pub struct MovementRules {
     pub boat_crossing_readiness_pct: u8,
     /// R-MOVE-05 (variant `transfer_morale`): morale lost by a strategic transfer.
     pub transfer_morale_loss: u8,
+    /// R-MOVE-05 (variant `transfer_supply_min`): the unit's supply must be at least this.
+    pub transfer_min_supply: u8,
 }
 
 /// Unit morale changes (GDD section 3).
@@ -331,6 +333,8 @@ pub struct Variants {
     pub source_isolation: bool,
     /// R-AIR-02: fighters intercept and escort only at strength ≥ `air.intercept_min_strength` (SC п. 30).
     pub air_strength_threshold: bool,
+    /// R-MOVE-05: strategic transfer only at unit supply ≥ `movement.transfer_min_supply` (SC п. 34).
+    pub transfer_supply_min: bool,
 }
 
 impl Variants {

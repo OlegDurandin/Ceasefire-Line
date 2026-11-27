@@ -302,6 +302,7 @@
   "refusal.transfer.NoRoute": "Нет пути по дорогам через свои гексы",
   "refusal.transfer.NotEnoughMpp": "Не хватает MPP",
   "refusal.transfer.Reinforced": "Юнит пополнен в этой фазе",
+  "refusal.transfer.LowSupply": "Переброска — только при снабжении юнита 4 и выше",
   "refusal.bridge.NotEngineer": "Мосты наводят только инженеры",
   "refusal.bridge.Acted": "Инженеры уже действовали в этой фазе",
   "refusal.bridge.NoCanal": "Рядом нет канала без моста",

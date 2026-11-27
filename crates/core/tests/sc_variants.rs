@@ -11,7 +11,7 @@ use ceasefire_core::hex::Hex;
 use common::scenario::{board, start, unit, A, B};
 
 /// Every boolean variant, so each test states its own rules.
-const VARIANTS: [&str; 13] = [
+const VARIANTS: [&str; 14] = [
     "attack_strips_entrenchment",
     "prepared_attack",
     "unsupplied_target",
@@ -25,6 +25,7 @@ const VARIANTS: [&str; 13] = [
     "pocket_desertion",
     "source_isolation",
     "air_strength_threshold",
+    "transfer_supply_min",
 ];
 
 /// The common test scenario with every variant switched off.
@@ -799,4 +800,47 @@ fn r_air_02_worn_fighters_do_not_intercept_or_escort() {
         on.escorts.is_empty() && on.interceptors.is_empty(),
         "{on:?}"
     );
+}
+
+/// SC п. 34 `transfer_supply_min`: a strategic transfer needs unit supply
+/// ≥ 4. The road board with the source at `source` (its value sets the supply).
+#[test]
+fn r_move_05_transfer_needs_supply_4() {
+    use ceasefire_core::error::{RuleError, TransferError};
+    let try_at = |source: u8, variant: Option<&str>| {
+        let (mut map, mut control) = board();
+        for q in 0..6 {
+            map.add_road(Hex::new(q, 0), Hex::new(q + 1, 0)).unwrap();
+        }
+        for q in 0..=6 {
+            control.insert(Hex::new(q, 0), A);
+        }
+        let mut u = unit("infantry", A, Hex::new(0, 0));
+        u.supply = Some(source); // no inertia from a higher start
+        let mut sc = setup(map, control, vec![u]);
+        sc.sides[0].mpp = 100;
+        sc.sources[0].value = source;
+        let mut s = start(match variant {
+            Some(v) => with(v, sc),
+            None => sc,
+        });
+        let have = s.unit(UnitId(1)).unwrap().supply;
+        let r = s.apply(Command::Transfer {
+            unit: UnitId(1),
+            to: Hex::new(6, 0),
+        });
+        (have, r)
+    };
+    let (have, r) = try_at(3, Some("transfer_supply_min"));
+    assert_eq!(have, 3);
+    assert!(matches!(
+        r,
+        Err(RuleError::IllegalTransfer {
+            reason: TransferError::LowSupply,
+            ..
+        })
+    ));
+    assert!(try_at(3, None).1.is_ok(), "off: allowed");
+    let (have, r) = try_at(4, Some("transfer_supply_min"));
+    assert!(have == 4 && r.is_ok(), "supply {have}: allowed");
 }

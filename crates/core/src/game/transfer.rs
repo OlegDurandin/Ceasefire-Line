@@ -29,6 +29,12 @@ impl GameState {
         if self.variants.reinforce_locks && unit.reinforced_steps > 0 {
             return Err(refuse(id, TransferError::Reinforced));
         }
+        // SC п. 34: a half-cut unit is not taken out cheaply by road.
+        if self.variants.transfer_supply_min
+            && unit.supply < self.data.rules.movement.transfer_min_supply
+        {
+            return Err(refuse(id, TransferError::LowSupply));
+        }
         let occupancy = self.occupancy();
         let zoc = enemy_zoc(&self.map, &occupancy, unit.side);
         if zoc.contains(&unit.hex) {
