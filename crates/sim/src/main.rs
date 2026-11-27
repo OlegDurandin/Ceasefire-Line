@@ -8,6 +8,7 @@ mod check_data;
 mod combat_matrix;
 mod supply_reach;
 mod tactical_sim;
+mod tournament;
 
 use std::process::ExitCode;
 
@@ -18,6 +19,7 @@ fn usage() -> String {
      sim ai-vs-ai [--data DIR] [--scenario ID] [--runs N] [--seed S] [--report FILE] [--json FILE]\n    [--players v1,v1] [--variant NAME,..] [--set section.key=JSON] [--variance binomial|sc] [--watch c,r;c,r] [--dump-battles DIR]\n  \
      sim supply-reach [--data DIR] [--scenario ID] [--side N] [--min S]\n  \
      sim check-data [--data DIR]\n  \
+     sim tournament [--data DIR] [--scenarios a,b] [--candidates N] [--games N] [--rounds N] [--spread X] [--seed S] [--out FILE] [--report FILE]\n  \
      sim tactical --snapshots DIR [--games N] [--limit M] [--mode alternating|igougo|both] [--report FILE] [--json FILE]"
         .to_owned()
 }
@@ -30,6 +32,9 @@ fn main() -> ExitCode {
         }
         Some("balance") => balance::parse_options(&args[1..]).and_then(|o| balance::run(&o)),
         Some("ai-vs-ai") => ai_vs_ai::parse_options(&args[1..]).and_then(|o| ai_vs_ai::run(&o)),
+        Some("tournament") => {
+            tournament::parse_options(&args[1..]).and_then(|o| tournament::run(&o))
+        }
         Some("check-data") => {
             check_data::parse_options(&args[1..]).and_then(|o| check_data::run(&o))
         }
