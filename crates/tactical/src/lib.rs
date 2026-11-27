@@ -39,13 +39,54 @@ pub fn replay(
     Ok(b)
 }
 
-/// WASM bundle probe for the T1 size check (T-TECH-01): parses the embedded
-/// tactical rules so the rules code stays in the binary.
+/// WASM bundle probe for the T1 size check (T-TECH-01): builds a battle
+/// from an embedded snapshot with the game data and plays it to the end with
+/// waits and passes, so the rules, setup and battle code stay in the binary.
 #[cfg(target_arch = "wasm32")]
 #[no_mangle]
-pub extern "C" fn tactical_size_probe() -> i32 {
-    match TacRules::from_json(include_str!("../../../data/tactical.json")) {
-        Ok(r) => i32::try_from(r.units.len()).unwrap_or(0),
-        Err(_) => -1,
+pub extern "C" fn tactical_size_probe(seed: u64) -> i32 {
+    use ceasefire_core::data::{GameData, GameDataJson};
+    let Ok(rules) = TacRules::from_json(include_str!("../../../data/tactical.json")) else {
+        return -1;
+    };
+    let Ok(data) = GameData::from_json(GameDataJson {
+        rules: include_str!("../../../data/rules.json"),
+        terrain: include_str!("../../../data/terrain.json"),
+        units: include_str!("../../../data/units.json"),
+        tech: include_str!("../../../data/tech.json"),
+    }) else {
+        return -2;
+    };
+    let Ok(input) =
+        serde_json::from_str::<BattleInput>(include_str!("../tests/fixtures/battle.json"))
+    else {
+        return -3;
+    };
+    let Ok(mut b) = build_battle(
+        std::sync::Arc::new(rules),
+        &data,
+        &input,
+        seed,
+        TurnMode::Alternating,
+    ) else {
+        return -4;
+    };
+    for _ in 0..500 {
+        if b.result.is_some() {
+            break;
+        }
+        let unit = b.alive(b.active).find(|u| !u.activated).map(|u| u.id);
+        let cmd = match unit {
+            Some(unit) => TacCommand::Act {
+                unit,
+                support: None,
+                action: Action::Wait,
+            },
+            None => TacCommand::Pass,
+        };
+        if b.apply(cmd).is_err() {
+            return -5;
+        }
     }
+    b.result.map_or(-6, |r| r.margin)
 }

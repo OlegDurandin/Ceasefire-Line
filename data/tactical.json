@@ -202,6 +202,43 @@
       "tags": [
         "engineer"
       ]
+    },
+    {
+      "kind": "artillery_bn",
+      "class": "artillery",
+      "move": 2,
+      "range": 1,
+      "tags": [
+        "rear"
+      ]
+    },
+    {
+      "kind": "hq_co",
+      "class": "hq",
+      "move": 3,
+      "range": 1,
+      "tags": [
+        "rear"
+      ]
+    },
+    {
+      "kind": "sam_bn",
+      "class": "sam_mobile",
+      "move": 2,
+      "range": 1,
+      "tags": [
+        "rear",
+        "armor"
+      ]
+    },
+    {
+      "kind": "sam_static_bn",
+      "class": "sam_static",
+      "move": 1,
+      "range": 1,
+      "tags": [
+        "rear"
+      ]
     }
   ],
   "breakdown": [
@@ -261,6 +298,41 @@
       "support": [
         "engineer"
       ]
+    },
+    {
+      "class": "artillery",
+      "battalions": [
+        "artillery_bn",
+        "artillery_bn"
+      ],
+      "extra": [],
+      "support": []
+    },
+    {
+      "class": "hq",
+      "battalions": [
+        "hq_co"
+      ],
+      "extra": [],
+      "support": []
+    },
+    {
+      "class": "sam_mobile",
+      "battalions": [
+        "sam_bn",
+        "sam_bn"
+      ],
+      "extra": [],
+      "support": []
+    },
+    {
+      "class": "sam_static",
+      "battalions": [
+        "sam_static_bn",
+        "sam_static_bn"
+      ],
+      "extra": [],
+      "support": []
     }
   ],
   "extra_steps": 1,

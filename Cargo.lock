@@ -76,6 +76,7 @@ name = "ceasefire-ai"
 version = "0.1.0"
 dependencies = [
  "ceasefire-core",
+ "ceasefire-tactical",
  "serde",
  "serde_json",
 ]
@@ -628,6 +629,7 @@ version = "0.1.0"
 dependencies = [
  "ceasefire-ai",
  "ceasefire-core",
+ "ceasefire-tactical",
  "image",
  "serde",
  "serde_json",

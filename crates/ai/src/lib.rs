@@ -11,6 +11,7 @@ pub mod operations;
 pub mod params;
 pub mod pockets;
 pub mod runner;
+pub mod tactical;
 pub mod v1;
 
 pub use greedy::greedy_next;
