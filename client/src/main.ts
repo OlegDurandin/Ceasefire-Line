@@ -14,6 +14,7 @@ import type { Facing } from "./facing";
 import { decodeSave } from "./save";
 import { parseFlag } from "./render/token-geom";
 import { Play } from "./play";
+import { installTooltips } from "./ui/tooltip";
 import { drawControl } from "./render/control";
 import { drawMap, setGridActive } from "./render/map";
 import { BakedMap, pickLevel, worldPerBakePx, type TilesMeta } from "./render/tiles";
@@ -40,6 +41,7 @@ const text = (url: string) =>
 const optionalText = (url: string) => fetch(url).then((r) => (r.ok ? r.text() : undefined));
 
 async function main() {
+  installTooltips();
   const panel = document.getElementById("panel")!;
   const stage = (msg: string) => {
     console.info(`[client] ${msg}`);

@@ -139,7 +139,12 @@ export class AttackWindow {
       pair(this.t("ui.air.radius"), `${c.radius} ${this.t("ui.air.hexes")}`),
       pair(this.t("ui.air.base"), c.base),
     ].join("");
-    const stars = `<div class="aw-stars">${"★".repeat(c.stars)}<span class="aw-star-off">${"★".repeat(Math.max(0, MAX_STARS - c.stars))}</span></div>`;
+    const expTip = fill(this.t("ui.exp_tip"), {
+      atk: num(this.rules.combat.exp_attack_bonus * 100, 0),
+      def: num(this.rules.combat.exp_defense_bonus * 100, 0),
+      rdy: num(this.rules.readiness.exp_bonus * 100, 0),
+    });
+    const stars = `<div class="aw-stars" title="${attrText(expTip)}" aria-label="${attrText(fill(this.t("ui.stars_label"), { n: c.stars, max: MAX_STARS }))}">${"★".repeat(c.stars)}<span class="aw-star-off">${"★".repeat(Math.max(0, MAX_STARS - c.stars))}</span></div>`;
     return `<div class="aw-card ${side}">
       <div class="aw-portrait">${c.portrait}</div>
       <div class="aw-info">
