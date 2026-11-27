@@ -4,7 +4,8 @@
 mod common;
 
 use ceasefire_core::game::{
-    Command, Effect, EndReason, Event, ExitZone, GameState, Predicate, ScenarioEvent, UnitId,
+    Command, Effect, EndReason, Event, ExitZone, GameState, Predicate, ScenarioEvent, StepVp,
+    UnitId,
 };
 use ceasefire_core::hex::Hex;
 
@@ -160,8 +161,32 @@ fn r_nm_02_vp_for_enemy_steps_lost() {
     let (map, control) = board();
     let mut sc = setup(map, control, vec![]);
     sc.sides[1].steps_lost = 7;
-    sc.conditions.vp_per_enemy_step.insert(A, 3);
+    sc.conditions.vp_per_enemy_step.insert(
+        A,
+        StepVp {
+            vp: 3,
+            per_steps: 1,
+        },
+    );
     let s = start(sc);
     let base = s.side(A).unwrap().national_morale_pct as i32;
     assert_eq!(vp(&s, A), base + 21);
+}
+
+/// R-NM-02: half a point a step — 1 VP per 2 enemy steps, whole groups only.
+#[test]
+fn r_nm_02_vp_per_enemy_steps_in_groups() {
+    let (map, control) = board();
+    let mut sc = setup(map, control, vec![]);
+    sc.sides[1].steps_lost = 7;
+    sc.conditions.vp_per_enemy_step.insert(
+        A,
+        StepVp {
+            vp: 1,
+            per_steps: 2,
+        },
+    );
+    let s = start(sc);
+    let base = s.side(A).unwrap().national_morale_pct as i32;
+    assert_eq!(vp(&s, A), base + 3, "7 steps → 3 groups of 2");
 }

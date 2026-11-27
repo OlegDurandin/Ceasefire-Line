@@ -161,7 +161,7 @@ impl GameState {
                 .filter(|s| s.id != *side)
                 .map(|s| s.steps_lost)
                 .sum();
-            *vp.entry(*side).or_insert(0) += per * i32::try_from(lost).unwrap_or(i32::MAX);
+            *vp.entry(*side).or_insert(0) += per.for_steps(lost);
         }
         self.sides.iter().map(|s| (s.id, vp[&s.id])).collect()
     }

@@ -342,8 +342,30 @@ pub struct VictoryConditions {
     pub sudden_death: BTreeMap<SideId, Option<u8>>,
     /// Exit hexes: steps of `side` entering an open one leave the map for VP.
     pub exits: Vec<ExitZone>,
-    /// VP to a side for every step its enemies have lost.
-    pub vp_per_enemy_step: BTreeMap<SideId, i32>,
+    /// VP to a side for the steps its enemies have lost.
+    pub vp_per_enemy_step: BTreeMap<SideId, StepVp>,
+}
+
+/// R-NM-02 «очки за шаги противника»: `vp` for every `per_steps` enemy steps
+/// lost (whole groups only; `per_steps` 2 and `vp` 1 is half a point a step).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub struct StepVp {
+    pub vp: i32,
+    pub per_steps: u32,
+}
+
+impl StepVp {
+    /// VP for `lost` enemy steps.
+    pub fn for_steps(self, lost: u32) -> i32 {
+        let groups = lost / self.per_steps.max(1);
+        self.vp
+            .saturating_mul(i32::try_from(groups).unwrap_or(i32::MAX))
+    }
+
+    /// VP per step on average (for the AI's estimates).
+    pub fn per_step(self) -> f64 {
+        f64::from(self.vp) / f64::from(self.per_steps.max(1))
+    }
 }
 
 /// R-NM-02 «выход»: hexes through which `side` takes its units off the map.

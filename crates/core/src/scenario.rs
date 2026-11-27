@@ -352,6 +352,13 @@ struct ExitFile {
 struct SideVpFile {
     side: u8,
     vp: i32,
+    /// R-NM-02: `vp` per this many enemy steps (default 1).
+    #[serde(default = "one_step")]
+    per_steps: u32,
+}
+
+fn one_step() -> u32 {
+    1
 }
 
 #[derive(Debug, Deserialize)]
@@ -745,7 +752,15 @@ pub fn load_scenario(
             vp_per_enemy_step: file
                 .vp_per_enemy_step
                 .iter()
-                .map(|x| (SideId(x.side), x.vp))
+                .map(|x| {
+                    (
+                        SideId(x.side),
+                        crate::game::StepVp {
+                            vp: x.vp,
+                            per_steps: x.per_steps,
+                        },
+                    )
+                })
                 .collect(),
         },
         offmap_bases: file

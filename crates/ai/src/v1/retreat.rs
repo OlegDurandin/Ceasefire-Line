@@ -74,7 +74,7 @@ impl AiV1 {
             .vp_per_enemy_step
             .iter()
             .filter(|(side, _)| **side != us)
-            .map(|(_, v)| f64::from(*v))
+            .map(|(_, v)| v.per_step())
             .sum();
         let band = self.params.pockets.cut_supply_max;
         let mut own: Vec<&Unit> = s
