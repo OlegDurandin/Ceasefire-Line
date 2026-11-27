@@ -388,10 +388,11 @@ impl AiV1 {
         if let Some(c) = self.strike(&b) {
             return c;
         }
-        if let Some(c) = self.hq_move(&b) {
+        if let Some(c) = self.best_move(&b) {
             return c;
         }
-        if let Some(c) = self.best_move(&b) {
+        // HQs last: the line has moved first.
+        if let Some(c) = self.hq_move(&b) {
             return c;
         }
         Command::EndPhase
@@ -990,7 +991,13 @@ impl AiV1 {
             .iter()
             .filter(|u| u.hq_rating.is_some() && u.can_move && !u.moved)
         {
-            if far_enough(hq.hex) {
+            // An HQ on an own objective is its garrison, and one in a line of
+            // own combat units is part of it: both stay.
+            let in_line = b
+                .own
+                .iter()
+                .any(|u| u.hq_rating.is_none() && u.hex.is_adjacent(hq.hex));
+            if far_enough(hq.hex) || b.objectives.contains_key(&hq.hex) || in_line {
                 continue;
             }
             let subs: Vec<Hex> = b
@@ -999,10 +1006,22 @@ impl AiV1 {
                 .filter(|u| u.attached_hq == Some(hq.id))
                 .map(|u| u.hex)
                 .collect();
+            // The HQ's supply bonus (R-SUP-02, 20 km) must reach as many of its
+            // units as now: a step back may not cost the front its supply.
+            let bonus_radius = ceasefire_core::scale::range_in_hexes(
+                b.s.data().rules.supply.hq_bonus_radius_km,
+                b.s.hex_km(),
+            );
+            let in_bonus = |h: Hex| {
+                subs.iter()
+                    .filter(|s| s.distance(h) <= bonus_radius)
+                    .count()
+            };
+            let now = in_bonus(hq.hex);
             let reach = b.s.reachable(hq.id).unwrap_or_default();
             let best = reach
                 .keys()
-                .filter(|h| far_enough(**h))
+                .filter(|h| far_enough(**h) && in_bonus(**h) >= now)
                 .map(|h| {
                     let kept = subs.iter().filter(|s| s.distance(*h) <= radius).count();
                     (std::cmp::Reverse(kept), h.distance(hq.hex), *h)
