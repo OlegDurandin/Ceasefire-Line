@@ -7,8 +7,12 @@
       "trigger": { "kind": "turn", "turn": 3 },
       "effects": [
         { "kind": "reinforcements", "units": [
-          { "class": "tank", "side": 0, "hex": [1, 14], "morale_pct": 85, "formation": "armored_div", "nation": "israel" },
-          { "class": "mech", "side": 0, "hex": [2, 5], "morale_pct": 85, "formation": "armored_div", "nation": "israel" }
+          { "class": "tank", "side": 0, "hex": [1, 14], "morale_pct": 85, "formation": "armored_div", "nation": "israel",
+            "name": "formation.isr_36_div_tank_group",
+            "source": "Assumption: the tank part of the 36th Division (the Peled ugda) that climbed to the southern Golan on 10 June; its brigades 37 and 45 are already on the map, so this unit stands for the rest of the division force. Jewish Virtual Library, 'Day-by-Day Action Review of the Six-Day War' (from IDF material): 'The Peled division engaged in combat in the southern Golan' https://jewishvirtuallibrary.org/day-by-day-action-review-of-the-six-day-war; Wikipedia '36th Division (Israel)' (division number) https://en.wikipedia.org/wiki/36th_Division_(Israel)" },
+          { "class": "mech", "side": 0, "hex": [2, 5], "morale_pct": 85, "formation": "armored_div", "nation": "israel",
+            "name": "formation.isr_10_harel_mech",
+            "source": "10th 'Harel' Brigade, moved from Jerusalem: ordered to the Golan the night before the ceasefire, entered via Gonen and Darbashiya to Rafid junction and Khushniya. Council for the Preservation of Heritage Sites, 'Harel Armored Brigade' https://shimur.org/signs/חטיבת-שריון-הראל/; Jewish Virtual Library, 'Day-by-Day Action Review of the Six-Day War': 'The 10th brigade ascended ... in the late afternoon and had already advanced into Chushia that night' https://jewishvirtuallibrary.org/day-by-day-action-review-of-the-six-day-war; composition (2 tank battalions + half-track infantry battalion): balagan.info, 'Israeli Order of Battle in the 1967 Arab-Israeli War' https://balagan.info/israeli-order-of-battle-in-the-1967-arab-israeli-war" }
         ] },
         { "kind": "message", "key": "event.golan67.isr_reserves" }
       ]
