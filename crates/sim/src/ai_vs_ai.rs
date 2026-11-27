@@ -166,6 +166,12 @@ pub fn parse_options(args: &[String]) -> Result<Options, String> {
 struct Game {
     winner: Option<SideId>,
     level: Option<VictoryLevel>,
+    /// R-NM-02: ended by sudden death (NM), not by the date.
+    sudden_death: bool,
+    /// NM per side at the end.
+    nm_end: Vec<(SideId, u8)>,
+    /// NM change per side by reason (R-NM-01).
+    nm_by: BTreeMap<(u8, &'static str), i32>,
     turn: u32,
     vp: Vec<(SideId, i32)>,
     steps_lost: Vec<(SideId, u32)>,
@@ -430,12 +436,31 @@ fn play_one(sh: &Shared, seed: u64) -> Result<Game, String> {
                 Event::Advanced { .. } => g.advances += 1,
                 Event::UnitDestroyed { .. } => g.destroyed += 1,
                 Event::NationalMorale {
-                    reason:
+                    side,
+                    change,
+                    reason,
+                    ..
+                } => {
+                    let why = match reason {
+                        NmReason::ObjectiveLost { .. } => "objective_lost",
+                        NmReason::ObjectiveTaken { .. } => "objective_taken",
                         NmReason::UnitDestroyed {
                             encircled: true, ..
-                        },
-                    ..
-                } => g.destroyed_encircled += 1,
+                        } => "destroyed_encircled",
+                        NmReason::UnitDestroyed { .. } => "destroyed",
+                        NmReason::StepsLost { .. } => "steps_lost",
+                        NmReason::KeyHexHeld { .. } => "key_hex",
+                        NmReason::HqDestroyed { .. } => "hq_destroyed",
+                        NmReason::ScenarioEvent { .. } => "event",
+                    };
+                    *g.nm_by.entry((side.0, why)).or_default() += change;
+                    if let NmReason::UnitDestroyed {
+                        encircled: true, ..
+                    } = reason
+                    {
+                        g.destroyed_encircled += 1;
+                    }
+                }
                 Event::ScenarioEventFired { id } => g.fired.push(id.clone()),
                 // R-AI-01 п. 3: MPP by use, per side.
                 Event::Reinforced { cost, .. } => g.spent.entry(mover).or_default()[0] += cost,
@@ -467,6 +492,12 @@ fn play_one(sh: &Shared, seed: u64) -> Result<Game, String> {
     });
     g.winner = o.winner;
     g.level = Some(o.level);
+    g.sudden_death = o.reason == ceasefire_core::game::EndReason::SuddenDeath;
+    g.nm_end = s
+        .sides()
+        .iter()
+        .map(|x| (x.id, x.national_morale_pct))
+        .collect();
     g.vp = o.vp.clone();
     g.turn = s.turn();
     let mut sides: Vec<SideId> = o.vp.iter().map(|(s, _)| *s).collect();
@@ -801,6 +832,20 @@ fn summary(o: &Options, games: &[Game]) -> serde_json::Value {
         "sets": o.sets,
         "variance": format!("{:?}", o.variance),
         "wins": sides.iter().map(|s| share(*s)).collect::<Vec<_>>(),
+        "vp_mean": sides.iter().map(|side| games.iter().map(|g| f64::from(g.vp.iter().find(|x| x.0 == *side).map_or(0, |x| x.1))).sum::<f64>() / n).collect::<Vec<_>>(),
+        "nm_end": sides.iter().map(|side| games.iter().map(|g| f64::from(g.nm_end.iter().find(|x| x.0 == *side).map_or(0, |x| x.1))).sum::<f64>() / n).collect::<Vec<_>>(),
+        "nm_by_reason": (0u8..2).map(|side| {
+            let mut m: BTreeMap<&str, f64> = BTreeMap::new();
+            for g in games {
+                for ((sd, why), v) in &g.nm_by {
+                    if *sd == side {
+                        *m.entry(why).or_default() += f64::from(*v) / n;
+                    }
+                }
+            }
+            m
+        }).collect::<Vec<_>>(),
+        "sudden_death_share": games.iter().filter(|g| g.sudden_death).count() as f64 / n,
         "decisive": sides.iter().map(|s| decisive(*s)).collect::<Vec<_>>(),
         "draws": draws,
         "last_turn": games.iter().map(|g| f64::from(g.turn)).sum::<f64>() / n,
