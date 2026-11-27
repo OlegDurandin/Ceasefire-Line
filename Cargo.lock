@@ -90,6 +90,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "ceasefire-tactical"
+version = "0.1.0"
+dependencies = [
+ "ceasefire-core",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.21",
+]
+
+[[package]]
 name = "ceasefire-wasm"
 version = "0.1.0"
 dependencies = [
