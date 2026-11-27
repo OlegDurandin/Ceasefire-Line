@@ -32,7 +32,8 @@ fn golan67_loads_and_validates() {
     assert_eq!(setup.map.hexes().count(), 22 * 18);
     assert_eq!(validate(&data, &setup), vec![]);
     assert_eq!(setup.events.len(), 4);
-    assert_eq!(setup.tech_boosts.len(), 2);
+    // Training scenario, 4 turns: no boosts (designer decision 2026-11-27).
+    assert!(setup.tech_boosts.is_empty());
     // Every message key used by the scenario has a Russian string.
     let ru: std::collections::BTreeMap<String, String> = serde_json::from_str(LOCALE_RU).unwrap();
     for e in &setup.events {
@@ -83,8 +84,15 @@ fn validation_reports_event_boost_and_water_problems() {
     }
     setup.events[1].phase_of = Some(ceasefire_core::side::SideId(7));
     // R-TECH-02: duplicate boost id.
-    let dup = setup.tech_boosts[0].clone();
-    setup.tech_boosts.push(dup);
+    let boost = ceasefire_core::game::TechBoost {
+        id: "isr_emergency_atgm".into(),
+        side: ceasefire_core::side::SideId(0),
+        branch: ceasefire_core::tech::TechBranch::Antitank,
+        cost: 40,
+        turns: 2,
+    };
+    setup.tech_boosts.push(boost.clone());
+    setup.tech_boosts.push(boost);
     // R-MOVE-01: a controlled water hex.
     let lake = ceasefire_core::scenario::offset_to_axial([10, 10]);
     setup

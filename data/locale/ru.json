@@ -118,8 +118,6 @@
   "tech.air_defense": "ПВО",
   "tech.aviation": "Авиация",
   "tech.ew": "РЭБ",
-  "boost.isr_emergency_atgm": "Экстренная поставка ПТУР",
-  "boost.syr_air_defense": "Дополнительные ЗРК",
   "log.phase_started": "Ход {turn}, {side}: начало фазы ({time})",
   "log.income": "{side}: доход +{amount} MPP (всего {total})",
   "log.combat": "{attacker} атакует {defender}: −{al} | −{dl}",

@@ -29,7 +29,7 @@ await new Promise(r => setTimeout(r, 600));
 const wait = (ms) => new Promise(r => setTimeout(r, ms));
 const state = () => page.evaluate(() => JSON.parse(window.__cl.game.state()));
 const shot = async (name) => { if (shots) await page.screenshot({ path: `${shots}/${name}.png` }); };
-const stats = { attacks: 0, moves: 0, phases: 0, offscreen: 0, noReach: 0 };
+const stats = { attacks: 0, moves: 0, phases: 0, offscreen: 0, noReach: 0, boosts: false };
 /** HUD checks: name → passed. */
 const ui = {};
 const check = (name, ok) => { ui[name] = ui[name] || !!ok; };
@@ -91,6 +91,8 @@ async function orders() {
   // R-TECH-02: a boost from the «Технологии» tab.
   if (!done.has("buy_tech_boost")) {
     await click('[data-tab="tech"]');
+    // Required only where the scenario offers boosts («Голаны-67» has none).
+    if (await page.$('#panel button[data-cmd*="buy_tech_boost"]')) stats.boosts = true;
     const b = await page.$('#panel button[data-cmd*="buy_tech_boost"]:not([disabled])');
     if (b) { await b.click(); await wait(200); done.add("buy_tech_boost"); }
     await click('[data-tab="map"]');
@@ -205,11 +207,11 @@ await shot("04-outcome");
 const used = new Set(await page.evaluate(() => JSON.parse(window.__cl.game.commands()).map((c) => (c.type === "reinforce" && c.elite ? "reinforce elite" : c.type))));
 const classes = new Set(s.units.map(u => u.class));
 // An advance is offered only when a defender retreats or dies (dice): required only if it was offered.
-const wanted = ["move", "attack", "bombard", "bombard_bridge", "reinforce", "reinforce elite", "transfer", "pin_to_hq", "buy_tech_boost", "end_phase", ...(stats.pending ? ["advance"] : [])];
+const wanted = ["move", "attack", "bombard", "bombard_bridge", "reinforce", "reinforce elite", "transfer", "pin_to_hq", ...(stats.boosts ? ["buy_tech_boost"] : []), "end_phase", ...(stats.pending ? ["advance"] : [])];
 const missing = wanted.filter(c => !used.has(c));
 console.log("outcome:", JSON.stringify(s.outcome), "turn", s.turn, JSON.stringify(stats));
 console.log("commands given:", [...used].sort().join(", "));
-console.log("not in this scenario:", [classes.has("engineer") ? null : "build_bridge (no engineers)", "purchase (no force limits)"].filter(Boolean).join("; "));
+console.log("not in this scenario:", [classes.has("engineer") ? null : "build_bridge (no engineers)", "purchase (no force limits)", stats.boosts ? null : "buy_tech_boost (no boosts)"].filter(Boolean).join("; "));
 console.log("HUD checks:", Object.entries(ui).map(([k, v]) => `${v ? "ok" : "FAIL"} ${k}`).join(" · "));
 console.log("modal:", await page.evaluate(() => document.querySelector("#modal")?.style.display + " | " + document.querySelector("#modal .panel")?.innerText.replace(/\n/g, " / ")));
 console.log("errors:", JSON.stringify(errs));
