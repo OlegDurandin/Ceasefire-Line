@@ -79,11 +79,42 @@ pub struct AreaEdge {
     pub bridge: Option<BridgeState>,
 }
 
+/// What a side brings to the battle beyond its brigade (T-SUP-01/02).
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct TacticalSupport {
+    /// Unit supply of the best own artillery whose range reaches the battle hex.
+    #[serde(default)]
+    pub artillery_supply: Option<u8>,
+    /// Own strike aircraft able to reach the hex now (not flown, not rebased).
+    #[serde(default)]
+    pub air_sorties: u8,
+    /// Supply of the best such aircraft's base, and its readiness.
+    #[serde(default)]
+    pub air_supply: Option<u8>,
+    #[serde(default)]
+    pub air_readiness_pct: u8,
+    /// An enemy SAM umbrella covers the battle hex (R-AIR-03).
+    #[serde(default)]
+    pub enemy_sam: bool,
+    /// Rating of the brigade's HQ (R-HQ-01).
+    #[serde(default)]
+    pub hq_rating: Option<u8>,
+    /// Classes of own combat brigades in hexes adjacent to the battle hex (reserves).
+    #[serde(default)]
+    pub reserves: Vec<String>,
+    /// Own engineers within 2 hexes.
+    #[serde(default)]
+    pub engineers: bool,
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct TacticalSide {
     pub side: u8,
     pub role: Role,
     pub tech: TechLevels,
+    /// T-SUP-01/02 (added 2026-11-27; absent in older snapshots).
+    #[serde(default)]
+    pub support: TacticalSupport,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

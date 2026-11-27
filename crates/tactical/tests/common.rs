@@ -10,12 +10,12 @@ use ceasefire_core::hex::Hex;
 use ceasefire_core::prob::LossForecast;
 use ceasefire_core::rng::Pcg32;
 use ceasefire_core::tactical::{
-    AreaHex, Origin, Role, TacticalScenario, TacticalSide, TacticalUnit,
+    AreaHex, Origin, Role, TacticalScenario, TacticalSide, TacticalSupport, TacticalUnit,
 };
 use ceasefire_core::tech::TechLevels;
 use ceasefire_tactical::battle::{Battle, Support, TacUnit, TurnMode};
 use ceasefire_tactical::map::{Cell, TacMap};
-use ceasefire_tactical::{BattleInput, SupportInfo, TacRules};
+use ceasefire_tactical::{BattleInput, TacRules};
 
 pub fn rules() -> Arc<TacRules> {
     Arc::new(TacRules::from_json(include_str!("../../../data/tactical.json")).unwrap())
@@ -185,11 +185,13 @@ pub fn snapshot(
                     side: 0,
                     role: Role::Attacker,
                     tech: TechLevels::default(),
+                    support: TacticalSupport::default(),
                 },
                 TacticalSide {
                     side: 1,
                     role: Role::Defender,
                     tech: def_tech,
+                    support: TacticalSupport::default(),
                 },
             ],
             units: vec![
@@ -206,7 +208,6 @@ pub fn snapshot(
             },
             outcome_percentiles: BTreeMap::new(),
         },
-        support: SupportInfo::default(),
     }
 }
 

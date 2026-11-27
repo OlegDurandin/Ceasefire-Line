@@ -17,40 +17,11 @@ use crate::map::{Cell, TacMap};
 use crate::rules::TacRules;
 use crate::TacError;
 
-/// What one side brings beyond its brigade (T-SUP-01). The core's snapshot
-/// (R-TAC-03) does not carry these yet: `sim --dump-battles` fills them.
-#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
-pub struct SideSupport {
-    #[serde(default)]
-    pub artillery_supply: Option<u8>,
-    #[serde(default)]
-    pub air_supply: Option<u8>,
-    #[serde(default)]
-    pub air_readiness_pct: u8,
-    #[serde(default)]
-    pub hq_rating: Option<u8>,
-    #[serde(default)]
-    pub reserve_class: Option<String>,
-    #[serde(default)]
-    pub engineers: bool,
-    #[serde(default)]
-    pub enemy_sam: bool,
-}
-
-#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
-pub struct SupportInfo {
-    #[serde(default)]
-    pub attacker: SideSupport,
-    #[serde(default)]
-    pub defender: SideSupport,
-}
-
-/// The input of a tactical battle: the core's snapshot and the support.
+/// The input of a tactical battle: the core's snapshot (R-TAC-03), which
+/// also carries the support of each side (T-SUP-01/02).
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct BattleInput {
     pub scenario: TacticalScenario,
-    #[serde(default)]
-    pub support: SupportInfo,
 }
 
 fn role_ix(r: Role) -> usize {
@@ -364,12 +335,14 @@ pub fn build_battle(
         for ((kind, steps), hex) in parts.iter().zip(places) {
             b.add(&map, role, kind, *steps, src, hex, None)?;
         }
-        let side = match role {
-            Role::Attacker => &input.support.attacker,
-            Role::Defender => &input.support.defender,
-        };
+        let side = sc
+            .sides
+            .iter()
+            .find(|x| x.role == role)
+            .map(|x| x.support.clone())
+            .unwrap_or_default();
         // T-SUP-01: a reserve battalion from an adjacent brigade, side edge, turn 3.
-        if let Some(class) = &side.reserve_class {
+        if let Some(class) = side.reserves.first() {
             let fake = TacticalUnit {
                 class: class.clone(),
                 strength: 10,
@@ -404,7 +377,7 @@ pub fn build_battle(
         s.air = if sc.night || side.air_readiness_pct < rules.support.air_min_readiness_pct {
             0
         } else {
-            air
+            air.min(side.air_sorties)
         };
         s.mortar = rules.breakdown.get(&src.class).map_or(0, |bd| {
             bd.support.iter().filter(|x| *x == "mortar").count() as u8
@@ -421,8 +394,15 @@ pub fn build_battle(
         s.mortar_soft = inf.attack.soft;
         s.mortar_hard = inf.attack.soft * 0.5;
     }
+    let support_of = |role: Role| {
+        sc.sides
+            .iter()
+            .find(|x| x.role == role)
+            .map(|x| x.support.clone())
+            .unwrap_or_default()
+    };
     // T-SUP-01: the defender's engineers lay 1–2 hidden minefields on the approach.
-    if input.support.defender.engineers {
+    if support_of(Role::Defender).engineers {
         let span = rules.mines.fields_max - rules.mines.fields_min + 1;
         let n = rules.mines.fields_min + (rng.next_u32() as usize % span);
         let row = map.rows / 2;
@@ -441,7 +421,7 @@ pub fn build_battle(
         }
     }
     // The attacker's engineers can bridge the canal.
-    if input.support.attacker.engineers && sc.across_canal {
+    if support_of(Role::Attacker).engineers && sc.across_canal {
         if let Some(src) = sc.units.iter().find(|u| u.role == Role::Attacker) {
             let taken: BTreeSet<Hex> = b.units.values().map(|u| u.hex).collect();
             let hex = spots(&map, Role::Attacker, 30)

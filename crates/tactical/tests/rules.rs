@@ -264,13 +264,18 @@ fn t_sup_01_02_support_calls_and_reserve() {
     let r = rules();
     let d = data();
     let mut input = snapshot("tank", "infantry", false, campaign(), TechLevels::default());
-    input.support.attacker.artillery_supply = Some(8);
-    input.support.attacker.air_supply = Some(5);
-    input.support.attacker.air_readiness_pct = 80;
-    input.support.attacker.hq_rating = Some(8);
-    input.support.attacker.reserve_class = Some("mech".into());
-    input.support.defender.artillery_supply = Some(2);
-    input.support.defender.engineers = true;
+    {
+        let a = &mut input.scenario.sides[0].support;
+        a.artillery_supply = Some(8);
+        a.air_supply = Some(5);
+        a.air_sorties = 2;
+        a.air_readiness_pct = 80;
+        a.hq_rating = Some(8);
+        a.reserves = vec!["mech".into()];
+        let d = &mut input.scenario.sides[1].support;
+        d.artillery_supply = Some(2);
+        d.engineers = true;
+    }
     let b = build_battle(r.clone(), &d, &input, 5, TurnMode::Alternating).unwrap();
     assert_eq!(
         (b.support[0].artillery, b.support[0].air, b.support[0].any),

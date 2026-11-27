@@ -188,6 +188,7 @@ impl GameState {
                 side: u.side.0,
                 role,
                 tech: self.side_state(u.side)?.tech.clone(),
+                support: self.tactical_support(u, center),
             });
         }
         // Readiness above is after the attacker's own fatigue from declaring;
@@ -209,5 +210,80 @@ impl GameState {
             forecast: c.forecast,
             outcome_percentiles: rules.tactical.percentiles.clone(),
         })
+    }
+
+    /// T-SUP-01/02: the support `unit`'s side brings to a battle at `hex`
+    /// (artillery in range, strike aircraft, SAM umbrella of the enemy, the
+    /// brigade's HQ, adjacent own brigades, engineers). Read-only.
+    fn tactical_support(&self, unit: &super::Unit, hex: Hex) -> crate::tactical::TacticalSupport {
+        use crate::data::UnitTag;
+        use crate::scale::range_in_hexes;
+        let side = unit.side;
+        let km = self.hex_km;
+        let class = |c: &str| self.data.units.get(c).ok();
+        let artillery_supply = self
+            .units
+            .values()
+            .filter(|u| u.side == side && u.id != unit.id)
+            .filter(|u| class(&u.class).is_some_and(|c| c.has_tag(UnitTag::Bombard)))
+            .filter(|u| {
+                class(&u.class)
+                    .and_then(|c| c.range_km)
+                    .is_some_and(|r| u.hex.distance(hex) <= range_in_hexes(r, km))
+            })
+            .map(|u| u.supply)
+            .max();
+        let mut strikes: Vec<&super::AirUnit> = self
+            .air
+            .values()
+            .filter(|a| a.side == side && a.sorties == 0 && !a.rebased)
+            .filter(|a| class(&a.class).is_some_and(|c| c.has_tag(UnitTag::StrikeInfrastructure)))
+            .filter(|a| {
+                let radius = class(&a.class).and_then(|c| c.range_km).unwrap_or(0.0);
+                self.base_distance(&a.base, hex)
+                    .is_some_and(|d| d <= range_in_hexes(radius, km))
+            })
+            .collect();
+        strikes.sort_by_key(|a| (std::cmp::Reverse(a.readiness_pct(&self.data)), a.id));
+        let best = strikes.first();
+        let air_supply = best.map(|a| match &a.base {
+            super::AirBase::Hex { hex } => self.hex_supply(side).map_or(0, |m| m.get(*hex)),
+            super::AirBase::OffMap { .. } => self.supply_params.max,
+        });
+        let enemy_sam = self.units.values().any(|u| {
+            u.side != side
+                && class(&u.class)
+                    .and_then(|c| c.sam_radius_km)
+                    .is_some_and(|r| u.hex.distance(hex) <= range_in_hexes(r, km))
+        });
+        let mut reserves: Vec<(super::UnitId, String)> = self
+            .units
+            .values()
+            .filter(|u| {
+                u.side == side && u.id != unit.id && u.hex.is_adjacent(hex) && u.hq_rating.is_none()
+            })
+            .filter(|u| {
+                class(&u.class).is_some_and(|c| !c.has_tag(UnitTag::Bombard) && c.strikes > 0)
+            })
+            .map(|u| (u.id, u.class.clone()))
+            .collect();
+        reserves.sort();
+        crate::tactical::TacticalSupport {
+            artillery_supply,
+            air_sorties: u8::try_from(strikes.len()).unwrap_or(u8::MAX),
+            air_supply,
+            air_readiness_pct: best.map_or(0, |a| a.readiness_pct(&self.data)),
+            enemy_sam,
+            hq_rating: unit
+                .attached_hq
+                .and_then(|id| self.units.get(&id))
+                .and_then(|h| h.hq_rating),
+            reserves: reserves.into_iter().map(|r| r.1).collect(),
+            engineers: self.units.values().any(|u| {
+                u.side == side
+                    && u.hex.distance(hex) <= 2
+                    && class(&u.class).is_some_and(|c| c.has_tag(UnitTag::BuildBridge))
+            }),
+        }
     }
 }

@@ -13,7 +13,7 @@ pub mod setup;
 
 pub use battle::{Action, Battle, SupportCall, TacCommand, TacEvent, TacResult, TurnMode};
 pub use rules::TacRules;
-pub use setup::{build_battle, BattleInput, SideSupport, SupportInfo};
+pub use setup::{build_battle, BattleInput};
 
 #[derive(Debug, Clone, PartialEq, thiserror::Error)]
 pub enum TacError {

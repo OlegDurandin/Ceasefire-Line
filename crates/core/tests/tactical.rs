@@ -253,3 +253,48 @@ fn attack_command_is_declare_plus_auto() {
     assert_eq!(a.unit(UnitId(1)), b.unit(UnitId(1)));
     assert_eq!(a.unit(UnitId(2)), b.unit(UnitId(2)));
 }
+
+/// R-TAC-03 (2026-11-27): the snapshot carries each side's support —
+/// artillery in range with its supply, the brigade's HQ, adjacent brigades,
+/// engineers — and does not change the strategic game.
+#[test]
+fn snapshot_carries_the_support_of_both_sides() {
+    use common::scenario::hq;
+    let (map, control) = board();
+    let mut d = unit("infantry", B, Hex::new(3, 0));
+    d.entrenchment = 2;
+    let units = vec![
+        unit("tank", A, Hex::new(2, 0)),
+        d,
+        unit("artillery", A, Hex::new(1, 0)),
+        hq(A, Hex::new(1, 1), 8),
+        unit("infantry", A, Hex::new(2, 1)), // next to the battle hex (3,0)
+        unit("engineer", B, Hex::new(4, 0)),
+    ];
+    let mut s = start(setup(map, control, units));
+    let before = s.clone();
+    let (_, snap) = declare(&mut s);
+    let att = &snap
+        .sides
+        .iter()
+        .find(|x| x.role == Role::Attacker)
+        .unwrap()
+        .support;
+    let def = &snap
+        .sides
+        .iter()
+        .find(|x| x.role == Role::Defender)
+        .unwrap()
+        .support;
+    assert!(
+        att.artillery_supply.is_some(),
+        "artillery in range: {att:?}"
+    );
+    assert_eq!(att.hq_rating, Some(8));
+    assert_eq!(att.reserves, vec!["infantry".to_owned()]);
+    assert!(!att.engineers && def.engineers);
+    assert_eq!(def.artillery_supply, None);
+    // The snapshot is read-only for the strategy: a declared combat on a
+    // copy leaves the original state as it was.
+    assert_eq!(before.units().count(), s.units().count());
+}
