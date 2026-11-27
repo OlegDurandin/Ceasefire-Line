@@ -190,6 +190,8 @@ struct Game {
     /// R-AI-01 operations: phases with carried operations, and of those kept.
     ops_carried: u32,
     ops_kept: u32,
+    /// Step 7 item 5 per side: reserves to own chokepoints, withdrawals.
+    defend: BTreeMap<u8, (u32, u32)>,
     /// Breakthrough forecasts against outcomes.
     breaches: Vec<(f64, bool)>,
     /// First turn side 0 controls any watched hex.
@@ -438,6 +440,7 @@ fn play_one(sh: &Shared, seed: u64) -> Result<Game, String> {
     g.ops_carried = v1.stats.carried_phases;
     g.ops_kept = v1.stats.kept_phases;
     g.breaches = v1.stats.breaches.clone();
+    g.defend = v1.stats.defend.clone();
     // Turning point: the first turn-end look after the last change of leader.
     let final_leader = leaders.last().and_then(|l| l.1);
     g.turning_point = final_leader.and_then(|w| {
@@ -798,6 +801,8 @@ fn summary(o: &Options, games: &[Game]) -> serde_json::Value {
         "turning_share": m.turning_share,
         "refused": games.iter().map(|g| f64::from(g.refused)).sum::<f64>() / n,
         "ops_kept_share": ops_kept_share,
+        "defend_guards": (0u8..2).map(|side| games.iter().map(|g| f64::from(g.defend.get(&side).map_or(0, |d| d.0))).sum::<f64>() / n).collect::<Vec<_>>(),
+        "defend_withdrawals": (0u8..2).map(|side| games.iter().map(|g| f64::from(g.defend.get(&side).map_or(0, |d| d.1))).sum::<f64>() / n).collect::<Vec<_>>(),
         "breach_calibration": calibration(games),
         "watch_turns": watch_turns,
         "ground_attacks": games.iter().map(|g| f64::from(g.ground_attacks)).sum::<f64>() / n,

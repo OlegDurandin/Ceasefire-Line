@@ -483,6 +483,8 @@ impl Game {
             "envelop": p.envelop.iter().map(|(id, h)| (id.0, cell(h))).collect::<Vec<_>>(),
             "hold": p.hold.iter().map(|id| id.0).collect::<Vec<_>>(),
             "pin": p.pin.iter().map(|(id, h)| (id.0, cell(h))).collect::<Vec<_>>(),
+            "guard": p.guard.iter().map(|(id, h)| (id.0, cell(h))).collect::<Vec<_>>(),
+            "withdraw": p.withdraw.iter().map(|(id, h)| (id.0, cell(h))).collect::<Vec<_>>(),
         }))
     }
 

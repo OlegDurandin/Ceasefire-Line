@@ -58,5 +58,14 @@
     "switch_margin": 0.25,
     "drop_supply": 2,
     "drop_strength": 3
+  },
+  "defend": {
+    "_comment": "Step 7 item 5 «защита своих горловин»: own chokepoints with high D get a reserve when an enemy is near; with no reserve, units the pocket would cut (projected supply ≤ pockets.cut_supply_max) withdraw, except garrisons of own objectives and, with fortified_hold, of cities and fortified areas.",
+    "enabled": true,
+    "candidates": 6,
+    "min_share": 0.2,
+    "threat_radius": 3,
+    "guard_radius": 6,
+    "max_guards": 2
   }
 }

@@ -25,7 +25,7 @@ use ceasefire_core::supply::SupplyMap;
 use crate::operations::{is_mobile, op_units, reach_to, reconcile, Breach, OpStats, Operation};
 use crate::params::{AiHints, AiParams};
 use crate::pockets::{
-    best_pocket, chokepoints, pocket_value, pocket_vp, supply_dependency, Pocket,
+    best_pocket, chokepoints, own_chokepoints, pocket_value, pocket_vp, supply_dependency, Pocket,
 };
 
 pub struct AiV1 {
@@ -69,6 +69,11 @@ pub struct Plan {
     pub breaches: Vec<Breach>,
     /// The operations themselves.
     pub ops: Vec<Operation>,
+    /// Step 7 item 5 «защита своих горловин»: reserves sent to (or holding)
+    /// threatened own chokepoints.
+    pub guard: BTreeMap<UnitId, Hex>,
+    /// Units a closing enemy pocket would cut off, and the hex they withdraw to.
+    pub withdraw: BTreeMap<UnitId, Hex>,
     /// Own hex supply now (for the «no stranding» rule).
     own_supply: SupplyMap,
 }
@@ -140,6 +145,10 @@ impl AiV1 {
                 ops
             };
             self.fill_plan(s, &mut plan, ops.clone());
+            self.defend(s, &mut plan);
+            let d = self.stats.defend.entry(key.1).or_default();
+            d.0 += plan.guard.len() as u32;
+            d.1 += plan.withdraw.len() as u32;
             self.pending = plan
                 .breaches
                 .iter()
@@ -356,6 +365,126 @@ impl AiV1 {
         }
         plan.pockets = ops.iter().map(|o| o.pocket.clone()).collect();
         plan.ops = ops;
+    }
+
+    /// Step 7 item 5 «защита своих горловин»: the pocket search from the own
+    /// side. An own chokepoint the side depends on enough (`defend.min_share`)
+    /// with an enemy ground unit near gets the nearest free reserve; when none
+    /// is free, the pocket is closing and the units it would cut off (projected
+    /// supply ≤ `pockets.cut_supply_max` with the enemy on the chokepoint)
+    /// withdraw to the nearest hex that keeps supply. Garrisons stay: units
+    /// on own objectives and, with `fortified_hold`, in cities and fortified areas.
+    fn defend(&self, s: &GameState, plan: &mut Plan) {
+        let d = &self.params.defend;
+        let w = &self.params.pockets;
+        if !d.enabled {
+            return;
+        }
+        let us = s.active_side();
+        let Some(enemy) = s.units().map(|u| u.side).find(|x| *x != us) else {
+            return;
+        };
+        let mut own: Vec<&Unit> = s.units().filter(|u| u.side == us).collect();
+        own.sort_by_key(|u| u.id);
+        let total: f64 = own
+            .iter()
+            .map(|u| crate::pockets::unit_weight(s, &u.class, u.strength))
+            .sum();
+        if total <= 0.0 {
+            return;
+        }
+        let ground_enemy: Vec<&Unit> = s
+            .units()
+            .filter(|u| u.side == enemy && u.hq_rating.is_none() && !is_air(s, u))
+            .collect();
+        let mut busy: BTreeSet<UnitId> = plan
+            .envelop
+            .keys()
+            .chain(plan.pin.keys())
+            .chain(plan.hold.iter())
+            .copied()
+            .collect();
+        let objectives: BTreeSet<Hex> = s.objectives().iter().map(|o| o.hex).collect();
+        let garrison = |u: &Unit| -> bool {
+            objectives.contains(&u.hex)
+                || (s.variants().fortified_hold
+                    && s.map()
+                        .cell(u.hex)
+                        .and_then(|c| s.data().terrain.get(&c.terrain).ok())
+                        .is_some_and(|t| t.def.stronghold))
+        };
+        let mut guarded = 0;
+        for (c, dep) in own_chokepoints(s, us, d.candidates).unwrap_or_default() {
+            if dep / total < d.min_share
+                || !ground_enemy
+                    .iter()
+                    .any(|e| e.hex.distance(c) <= d.threat_radius)
+            {
+                continue;
+            }
+            // Only a real pocket: the trial recount with the enemy on `c` cuts someone.
+            let Ok((_, cut)) = pocket_value(s, enemy, us, &[c], w) else {
+                continue;
+            };
+            if cut.is_empty() {
+                continue;
+            }
+            // A free reserve: not in an operation, not in contact, fit; the one
+            // already on the chokepoint first, then the nearest.
+            let reserve = (guarded < d.max_guards)
+                .then(|| {
+                    own.iter()
+                        .filter(|u| u.hq_rating.is_none() && !is_air(s, u) && !busy.contains(&u.id))
+                        .filter(|u| u.supply > w.drop_supply && u.strength > w.drop_strength)
+                        .filter(|u| !garrison(u) || u.hex == c)
+                        .filter(|u| {
+                            u.hex == c || !ground_enemy.iter().any(|e| e.hex.distance(u.hex) <= 1)
+                        })
+                        .filter(|u| u.hex.distance(c) <= d.guard_radius)
+                        .min_by_key(|u| (u.hex.distance(c), u.id))
+                        .map(|u| (u.id, u.hex))
+                })
+                .flatten();
+            if let Some((id, at)) = reserve {
+                busy.insert(id);
+                guarded += 1;
+                plan.chokes.insert(c);
+                if at == c {
+                    plan.hold.insert(id);
+                } else {
+                    plan.guard.insert(id, c);
+                }
+                continue;
+            }
+            // No reserve: the pocket closes — those it cuts off withdraw.
+            let Ok(after) = s.hex_supply_if(us, &[(c, enemy)]) else {
+                continue;
+            };
+            for id in cut {
+                let Some(u) = s.unit(id) else { continue };
+                // Envelopment and chokepoint holders stay in their operation (it
+                // drops them itself at `pockets.drop_supply`); leaving the pocket
+                // comes before «сковывание».
+                let assigned = plan.envelop.contains_key(&id)
+                    || plan.hold.contains(&id)
+                    || plan.guard.contains_key(&id)
+                    || plan.withdraw.contains_key(&id);
+                if assigned || garrison(u) || u.hq_rating.is_some() || is_air(s, u) {
+                    continue;
+                }
+                let out = s
+                    .map()
+                    .hexes()
+                    .filter(|h| *h != c && after.get(*h) > w.cut_supply_max)
+                    .filter(|h| s.controller(*h) == Some(us) && s.unit_at(*h).is_none())
+                    .min_by_key(|h| (h.distance(u.hex), *h));
+                if let Some(h) = out {
+                    busy.insert(id);
+                    plan.pin.remove(&id);
+                    plan.withdraw.insert(id, h);
+                }
+            }
+        }
     }
 
     pub fn max_commands(&self) -> u32 {
@@ -665,6 +794,12 @@ impl AiV1 {
                     }
                 }
             }
+            // Step 7 item 5: reserves to own chokepoints, cut units out of the pocket.
+            for (id, h) in plan.guard.iter().chain(plan.withdraw.iter()) {
+                if !taken.contains(id) {
+                    goals.insert(*id, *h);
+                }
+            }
             for id in &plan.hold {
                 if let Some(u) = b.s.unit(*id) {
                     goals.insert(*id, u.hex);
@@ -856,6 +991,14 @@ impl AiV1 {
 }
 
 /// Strength × readiness × best ground attack: a unit's weight on the influence maps.
+/// Air (and naval) units are not ground reserves and are not cut off.
+fn is_air(s: &GameState, u: &Unit) -> bool {
+    s.data()
+        .units
+        .get(&u.class)
+        .is_ok_and(|c| !c.target_class.is_ground())
+}
+
 fn power(s: &GameState, u: &Unit) -> f64 {
     let rules = &s.data().rules.readiness;
     let attack = s

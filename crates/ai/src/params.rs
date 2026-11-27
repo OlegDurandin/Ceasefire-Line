@@ -101,6 +101,25 @@ pub struct PocketWeights {
     pub drop_strength: u8,
 }
 
+/// Step 7 item 5 «защита своих горловин» (R-AI-01, the side's own pockets).
+#[derive(Debug, Clone, Deserialize)]
+pub struct DefendWeights {
+    #[serde(default, rename = "_comment")]
+    _comment: Option<String>,
+    pub enabled: bool,
+    /// Own chokepoint candidates per phase.
+    pub candidates: usize,
+    /// A chokepoint counts when the own units depending on it weigh at least
+    /// this share of all own units (strength × price).
+    pub min_share: f64,
+    /// It is threatened when an enemy ground unit is within this many hexes.
+    pub threat_radius: u32,
+    /// A reserve goes to it from at most this many hexes away.
+    pub guard_radius: u32,
+    /// At most this many chokepoints get a reserve per phase.
+    pub max_guards: usize,
+}
+
 #[derive(Debug, Clone, Deserialize)]
 pub struct EconomyWeights {
     pub reinforce_at_or_below: u8,
@@ -123,6 +142,7 @@ pub struct AiParams {
     pub moves: MoveWeights,
     pub economy: EconomyWeights,
     pub pockets: PocketWeights,
+    pub defend: DefendWeights,
 }
 
 impl AiParams {

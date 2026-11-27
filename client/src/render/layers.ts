@@ -180,10 +180,14 @@ export interface AiPlanView {
   envelop: [number, [number, number]][];
   hold: number[];
   pin: [number, [number, number]][];
+  /** Step 7 item 5: reserves to own chokepoints; units leaving a closing pocket. */
+  guard?: [number, [number, number]][];
+  withdraw?: [number, [number, number]][];
 }
 
 /** Chokepoints (yellow rings with V), arrows from the units sent there,
- * holders (yellow dot), pinning units (thin lines) and cut-off units (red rings). */
+ * holders (yellow dot), pinning units (thin lines), cut-off units (red rings),
+ * reserves to own chokepoints (blue arrows) and withdrawals (red arrows). */
 export function drawIntent(size: number, plan: AiPlanView, units: { id: number; col: number; row: number }[]): Container {
   const layer = new Container();
   const g = new Graphics();
@@ -218,6 +222,18 @@ export function drawIntent(size: number, plan: AiPlanView, units: { id: number; 
     const b = center(col, row, size);
     g.moveTo(a.x, a.y).lineTo(b.x, b.y).stroke({ width: size * 0.03, color: 0xe8d9b0, alpha: 0.7 });
   }
+  const arrows = (list: [number, [number, number]][] | undefined, color: number) => {
+    for (const [id, [col, row]] of list ?? []) {
+      const a = at.get(id);
+      if (!a) continue;
+      const b = center(col, row, size);
+      g.moveTo(a.x, a.y).lineTo(b.x, b.y).stroke({ width: size * 0.09, color: 0x1c1a17, alpha: 0.5, cap: "round" });
+      g.moveTo(a.x, a.y).lineTo(b.x, b.y).stroke({ width: size * 0.05, color, cap: "round" });
+      g.circle(b.x, b.y, size * 0.12).fill(color);
+    }
+  };
+  arrows(plan.guard, 0x6fb3e0);
+  arrows(plan.withdraw, 0xd2402a);
   for (const id of plan.hold) {
     const a = at.get(id);
     if (a) g.circle(a.x, a.y - size * 0.5, size * 0.12).fill(0xf2c94c);

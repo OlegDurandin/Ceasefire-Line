@@ -87,6 +87,39 @@ pub fn chokepoints_if(
 ) -> Result<Vec<(Hex, f64)>, RuleError> {
     let mut occupied: std::collections::BTreeSet<Hex> = s.units().map(|u| u.hex).collect();
     occupied.extend(held.iter().map(|h| h.0));
+    ranked_chokepoints(s, enemy, held, k, &occupied, &[])
+}
+
+/// Step 7 item 5 «защита своих горловин»: the same chokepoints of the side's
+/// own supply, seen from its side — hexes its own units stand on count (a
+/// unit holding the neck is its defence); only enemy-held hexes do not.
+/// Of a trunk the hex nearest to an enemy ground unit stands for it: the
+/// enemy cuts the trunk there first.
+pub fn own_chokepoints(s: &GameState, us: SideId, k: usize) -> Result<Vec<(Hex, f64)>, RuleError> {
+    let occupied: std::collections::BTreeSet<Hex> =
+        s.units().filter(|u| u.side != us).map(|u| u.hex).collect();
+    let enemy: Vec<Hex> = s
+        .units()
+        .filter(|u| u.side != us && u.hq_rating.is_none())
+        .filter(|u| {
+            s.data()
+                .units
+                .get(&u.class)
+                .is_ok_and(|c| c.target_class.is_ground())
+        })
+        .map(|u| u.hex)
+        .collect();
+    ranked_chokepoints(s, us, &[], k, &occupied, &enemy)
+}
+
+fn ranked_chokepoints(
+    s: &GameState,
+    enemy: SideId,
+    held: &[(Hex, SideId)],
+    k: usize,
+    occupied: &std::collections::BTreeSet<Hex>,
+    toward: &[Hex],
+) -> Result<Vec<(Hex, f64)>, RuleError> {
     // Narrowness: neighbours whose terrain cannot be entered (mountains
     // without a pass, water); the map's edge and canal sides do not count.
     let narrowness = |h: Hex| -> usize {
@@ -110,7 +143,20 @@ pub fn chokepoints_if(
         }
         let n = narrowness(h);
         let e = by_units.entry(d.units).or_insert((h, d.weight, n, d.cost));
-        if n > e.2 || (n == e.2 && d.cost > e.3) {
+        let better = if toward.is_empty() {
+            n > e.2 || (n == e.2 && d.cost > e.3)
+        } else {
+            // Own defence: nearest to the enemy, then the narrowest.
+            let near = |x: Hex| {
+                toward
+                    .iter()
+                    .map(|t| t.distance(x))
+                    .min()
+                    .unwrap_or(u32::MAX)
+            };
+            (near(h), std::cmp::Reverse(n), h) < (near(e.0), std::cmp::Reverse(e.2), e.0)
+        };
+        if better {
             *e = (h, d.weight, n, d.cost);
         }
     }

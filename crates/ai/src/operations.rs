@@ -319,6 +319,9 @@ pub struct OpStats {
     pub kept_phases: u32,
     /// (P(breach) forecast, the defender left its hex during the phase).
     pub breaches: Vec<(f64, bool)>,
+    /// Step 7 item 5, per side: (reserves sent to own chokepoints, units
+    /// withdrawn from a closing pocket), summed over phases.
+    pub defend: BTreeMap<u8, (u32, u32)>,
 }
 
 /// Units an operation's chokepoints and breaches concern.
