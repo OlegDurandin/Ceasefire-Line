@@ -67,7 +67,9 @@
     "min_ap": 1,
     "boat_crossing_readiness_pct": 30,
     "transfer_morale_loss": 15,
-    "transfer_min_supply": 4
+    "transfer_min_supply": 4,
+    "breakthrough_zoc_ap": 1,
+    "breakthrough_stop_zoc_units": 2
   },
   "morale": {
     "loss_per_step": 5,
@@ -181,17 +183,18 @@
     "hq_supply_node": false,
     "transfer_morale": false,
     "zero_supply_ap": true,
-    "reinforce_locks": false,
+    "reinforce_locks": true,
     "nm_by_cost": true,
     "hq_strength_scaling": false,
     "fortified_hold": false,
     "pocket_desertion": false,
-    "source_isolation": false,
+    "source_isolation": true,
     "air_strength_threshold": false,
     "transfer_supply_min": false,
     "hq_contact_priority": false,
-    "armor_city_penalty": false,
+    "armor_city_penalty": true,
     "arrival_choice": false,
-    "nm_morale_multiplier": false
+    "nm_morale_multiplier": false,
+    "breakthrough": true
   }
 }

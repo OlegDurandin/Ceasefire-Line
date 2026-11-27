@@ -11,7 +11,7 @@ use ceasefire_core::hex::Hex;
 use common::scenario::{board, start, unit, A, B};
 
 /// Every boolean variant, so each test states its own rules.
-const VARIANTS: [&str; 18] = [
+const VARIANTS: [&str; 19] = [
     "attack_strips_entrenchment",
     "prepared_attack",
     "unsupplied_target",
@@ -30,6 +30,7 @@ const VARIANTS: [&str; 18] = [
     "armor_city_penalty",
     "arrival_choice",
     "nm_morale_multiplier",
+    "breakthrough",
 ];
 
 /// The common test scenario with every variant switched off.
@@ -49,8 +50,11 @@ fn with(variant: &str, mut sc: ScenarioSetup) -> ScenarioSetup {
     sc
 }
 
-/// Designer decision 2026-11-26: П1, П2, П3, П7, П9 on by default, ZOC from
-/// strength 5 (П6); П4, П5, П8 off until step 7.
+/// Designer decisions: 2026-11-26 — П1, П2, П3, П7, П9 on, ZOC from
+/// strength 5 (П6); 2026-11-27 (rebalancing A/B) — `reinforce_locks` (П8),
+/// `source_isolation`, `armor_city_penalty` and `breakthrough` (R-MOVE-07)
+/// on; П4, П5, `fortified_hold`, `nm_morale_multiplier` and the flags without
+/// effect off until «Голаны-73».
 #[test]
 fn sc_alignment_defaults() {
     let (map, control) = board();
@@ -58,7 +62,11 @@ fn sc_alignment_defaults() {
     let v = s.variants();
     assert!(v.attack_strips_entrenchment && v.prepared_attack && v.unsupplied_target);
     assert!(v.zero_supply_ap && v.nm_by_cost);
-    assert!(!v.hq_supply_node && !v.transfer_morale && !v.reinforce_locks);
+    assert!(v.reinforce_locks && v.source_isolation && v.armor_city_penalty && v.breakthrough);
+    assert!(!v.hq_supply_node && !v.transfer_morale && !v.fortified_hold);
+    assert!(!v.nm_morale_multiplier && !v.pocket_desertion && !v.hq_strength_scaling);
+    assert!(!v.air_strength_threshold && !v.transfer_supply_min && !v.hq_contact_priority);
+    assert!(!v.arrival_choice);
     assert_eq!(s.data().rules.movement.zoc_min_strength, 5);
 }
 

@@ -279,6 +279,7 @@ mod tests {
             purchased: BTreeMap::new(),
             loss_sensitivity: sensitivity,
             steps_lost: 0,
+            night_combat: Vec::new(),
         };
         let mut map = HexMap::default();
         map.insert(Hex::new(0, 0), HexCell::new("plain"));

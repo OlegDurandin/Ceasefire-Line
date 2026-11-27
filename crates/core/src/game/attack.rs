@@ -98,7 +98,7 @@ impl GameState {
     fn ground_context(&self, attacker: &Unit, defender: &Unit) -> Result<GroundAttack, RuleError> {
         Ok(GroundAttack {
             terrain_mult: self.terrain_defense(defender)?,
-            night: self.is_night(),
+            night: self.night_penalised(attacker)?,
             across_canal: self.map.has_canal(attacker.hex, defender.hex),
             attack_mult: self
                 .modifiers_for(attacker, defender)
@@ -193,6 +193,9 @@ impl GameState {
             u.acted = true;
             u.strikes_left -= 1;
             u.ap_halves = u.ap_halves.saturating_sub(attack_ap);
+            // R-MOVE-07: a new attack ends the breakthrough; a won one
+            // with an advance starts the next.
+            u.breakthrough = false;
             if exploits {
                 u.can_move = u.ap_halves >= exploit_min;
             } else {
@@ -471,6 +474,12 @@ impl GameState {
             return Err(RuleError::NoPendingAdvance(id.0));
         }
         let in_zoc = enemy_zoc(&self.map, &occupancy, side).contains(&pending.hex);
+        // R-MOVE-07: tank and mech brigades break through after a won combat.
+        let breakthrough = self.variants.breakthrough
+            && !pending.by_boat
+            && self
+                .class(self.get_unit(id)?)?
+                .has_tag(UnitTag::Exploitation);
         let boat_penalty = self.data.rules.movement.boat_crossing_readiness_pct;
         let mut events = vec![Event::Advanced {
             unit: id,
@@ -482,7 +491,8 @@ impl GameState {
             u.hex = pending.hex;
             u.entrenchment = 0;
             u.moved = true;
-            if in_zoc {
+            u.breakthrough = breakthrough;
+            if in_zoc && !breakthrough {
                 u.can_move = false;
             }
             // R-MOVE-02: a boat crossing takes all AP and −30% readiness.
@@ -522,7 +532,7 @@ impl GameState {
         let att = self.combatant(data, a)?;
         let def = self.combatant(data, d)?;
         let rules = &data.rules;
-        let night_mult = if self.is_night() && !att.class.has_tag(UnitTag::NightCombat) {
+        let night_mult = if self.night_penalised(a)? {
             rules.combat.night_attack_mult
         } else {
             1.0

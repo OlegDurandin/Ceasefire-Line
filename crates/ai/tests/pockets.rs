@@ -46,6 +46,7 @@ fn side(id: SideId) -> SideState {
         purchased: BTreeMap::new(),
         loss_sensitivity: 1,
         steps_lost: 0,
+        night_combat: Vec::new(),
     }
 }
 

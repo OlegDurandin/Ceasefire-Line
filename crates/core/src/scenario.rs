@@ -153,6 +153,13 @@ struct SideFile {
     loss_sensitivity: u8,
     #[serde(default)]
     purchase_limits: BTreeMap<String, u32>,
+    /// R-TURN-02: unit classes of the side that fight at night without penalties.
+    #[serde(default)]
+    night_combat: Vec<String>,
+    /// Where `night_combat` comes from (a reference or «предположение»); the rules ignore it.
+    #[serde(default)]
+    #[allow(dead_code)]
+    night_combat_source: Option<String>,
     /// R-UI-03: ring and control colour ("#rrggbb"); client data, the rules ignore it.
     #[serde(default)]
     #[allow(dead_code)]
@@ -648,6 +655,7 @@ pub fn load_scenario(
                 purchased: BTreeMap::new(),
                 loss_sensitivity: s.loss_sensitivity,
                 steps_lost: 0,
+                night_combat: s.night_combat,
             })
             .collect(),
         map,

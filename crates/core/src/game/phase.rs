@@ -2,7 +2,7 @@
 
 use std::sync::Arc;
 
-use crate::data::{ap_to_halves, UnitTag};
+use crate::data::ap_to_halves;
 use crate::error::RuleError;
 use crate::movement::enemy_zoc;
 use crate::unit::readiness_pct;
@@ -140,6 +140,7 @@ impl GameState {
             let Some(unit) = self.units.get(&id) else {
                 continue;
             };
+            let night_penalised = self.night_penalised(unit)?;
             let class = data.units.get(&unit.class)?;
             let terrain_def = &data.terrain.get(&self.map_terrain(unit.hex)?)?.def;
             let max_entrench = terrain_def.max_entrench;
@@ -238,7 +239,7 @@ impl GameState {
             } else if unit.supply <= s.low_supply_max {
                 ap = ap.saturating_sub(self.ap.low_supply_penalty);
             }
-            if night && !class.has_tag(UnitTag::NightCombat) {
+            if night_penalised {
                 ap = ap.saturating_sub(self.ap.night_penalty);
             }
             unit.ap_halves = ap.max(self.ap.min);
@@ -246,6 +247,7 @@ impl GameState {
             unit.can_move = true;
             unit.started_in_zoc = in_zoc;
             unit.moved = false;
+            unit.breakthrough = false;
             unit.fought = false;
             unit.acted = false;
             unit.reinforced_steps = 0;

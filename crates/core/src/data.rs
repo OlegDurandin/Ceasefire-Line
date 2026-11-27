@@ -161,6 +161,10 @@ pub struct MovementRules {
     pub transfer_morale_loss: u8,
     /// R-MOVE-05 (variant `transfer_supply_min`): the unit's supply must be at least this.
     pub transfer_min_supply: u8,
+    /// R-MOVE-07 (variant `breakthrough`): extra AP for each hex in enemy ZOC.
+    pub breakthrough_zoc_ap: f64,
+    /// R-MOVE-07: a breakthrough stops in a hex in the ZOC of this many enemy units.
+    pub breakthrough_stop_zoc_units: u8,
 }
 
 /// Unit morale changes (GDD section 3).
@@ -370,6 +374,9 @@ pub struct Variants {
     pub arrival_choice: bool,
     /// R-NM-01: NM scales unit morale in readiness instead of capping it (SC 7.29.4).
     pub nm_morale_multiplier: bool,
+    /// R-MOVE-07: a tank or mech brigade that occupied a hex after a won
+    /// combat moves on through enemy ZOC at +1 AP per ZOC hex.
+    pub breakthrough: bool,
 }
 
 impl Variants {

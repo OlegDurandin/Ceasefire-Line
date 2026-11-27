@@ -107,6 +107,10 @@ pub struct Unit {
     pub crossing_penalty_pct: u8,
     /// R-EVT-01: readiness penalty from a scenario event, until the next own phase.
     pub event_penalty_pct: u8,
+    /// R-MOVE-07: occupied a hex after a won combat this phase; moves on
+    /// through enemy ZOC until it attacks again or the phase ends.
+    #[serde(default)]
+    pub breakthrough: bool,
 }
 
 impl Unit {
@@ -146,6 +150,7 @@ impl Unit {
             attacked_by: Vec::new(),
             crossing_penalty_pct: 0,
             event_penalty_pct: 0,
+            breakthrough: false,
         }
     }
 
@@ -192,6 +197,11 @@ pub struct SideState {
     /// Steps lost so far.
     #[serde(default)]
     pub steps_lost: u32,
+    /// R-TURN-02: unit classes of this side that fight at night without the
+    /// AP and attack penalties (scenario property; class tag `night_combat`
+    /// works everywhere).
+    #[serde(default)]
+    pub night_combat: Vec<String>,
 }
 
 /// R-NM-01, R-NM-02: objective city.
@@ -397,6 +407,10 @@ struct ApParams {
     /// R-UNIT-02 variant `zero_supply_ap`; equals `low_supply_penalty` when off.
     zero_supply_penalty: u32,
     min: u32,
+    /// R-MOVE-07: extra cost of a ZOC hex in a breakthrough.
+    breakthrough_zoc: u32,
+    /// R-MOVE-07: ZOC units that stop a breakthrough.
+    breakthrough_stop: u8,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -478,6 +492,8 @@ impl GameState {
             night_penalty: ap_to_halves(m.night_ap_penalty)?,
             low_supply_penalty: ap_to_halves(m.low_supply_ap_penalty)?,
             min: ap_to_halves(m.min_ap)?,
+            breakthrough_zoc: ap_to_halves(m.breakthrough_zoc_ap)?,
+            breakthrough_stop: m.breakthrough_stop_zoc_units,
         };
         if setup.start_turn == 0 {
             return Err(invalid("start_turn must be >= 1"));
@@ -485,6 +501,11 @@ impl GameState {
         let side_ids: BTreeSet<SideId> = setup.sides.iter().map(|s| s.id).collect();
         if setup.sides.len() < 2 || side_ids.len() != setup.sides.len() {
             return Err(invalid("need at least two sides with distinct ids"));
+        }
+        for s in &setup.sides {
+            for class in &s.night_combat {
+                data.units.get(class)?;
+            }
         }
 
         let mut sources = BTreeMap::new();
@@ -817,6 +838,19 @@ impl GameState {
     /// R-TURN-02: odd turns are day, even turns are night.
     pub fn is_night(&self) -> bool {
         self.turn.is_multiple_of(2)
+    }
+
+    /// R-TURN-02: night penalties (−AP, attack ×`night_attack_mult`) apply
+    /// to `unit` now: it is night and the unit has neither the class tag
+    /// `night_combat` nor its side's scenario `night_combat` for its class.
+    pub fn night_penalised(&self, unit: &Unit) -> Result<bool, RuleError> {
+        if !self.is_night() || self.class(unit)?.has_tag(crate::data::UnitTag::NightCombat) {
+            return Ok(false);
+        }
+        Ok(!self
+            .side_state(unit.side)?
+            .night_combat
+            .contains(&unit.class))
     }
 
     pub fn hex_km(&self) -> f64 {

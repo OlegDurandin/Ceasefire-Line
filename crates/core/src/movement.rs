@@ -39,6 +39,24 @@ pub fn enemy_zoc(map: &HexMap, occupancy: &Occupancy, side: SideId) -> BTreeSet<
         .collect()
 }
 
+/// R-MOVE-07: how many enemy units of `side` put each hex in their ZOC
+/// (same reach as [`enemy_zoc`]).
+pub fn enemy_zoc_counts(map: &HexMap, occupancy: &Occupancy, side: SideId) -> BTreeMap<Hex, u8> {
+    let mut counts = BTreeMap::new();
+    for (&h, o) in occupancy {
+        if o.side == side || !o.exerts_zoc {
+            continue;
+        }
+        for n in h.neighbors() {
+            if !map.has_canal(h, n) || map.has_bridge(h, n) {
+                let c: &mut u8 = counts.entry(n).or_insert(0);
+                *c = c.saturating_add(1);
+            }
+        }
+    }
+    counts
+}
+
 /// R-MOVE-01, R-MOVE-02: AP (in half-points) to enter `to` from adjacent
 /// `from`. `Ok(None)` means impassable: off-map, canal without bridge,
 /// mountain without a pass, neutral closed territory (R-MOVE-06). Roads and

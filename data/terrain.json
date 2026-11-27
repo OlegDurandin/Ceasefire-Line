@@ -45,7 +45,7 @@
     {
       "id": "fortified",
       "ap": 1,
-      "defense_mult": 1.5,
+      "defense_mult": 1.25,
       "hard_defense_mult": 1.0,
       "max_entrench": 5,
       "stronghold": true

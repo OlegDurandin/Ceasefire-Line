@@ -6,13 +6,15 @@ use std::collections::{BTreeMap, BTreeSet, BinaryHeap};
 use crate::data::UnitTag;
 use crate::error::{MoveError, RuleError};
 use crate::hex::Hex;
-use crate::movement::{enemy_zoc, entry_cost_halves, Mobility};
+use crate::movement::{enemy_zoc_counts, entry_cost_halves, Mobility};
 use crate::side::SideId;
 
 use super::{Event, GameState, Unit, UnitId};
 
 struct Step {
     cost: u32,
+    /// The step ends the move: enemy ZOC (R-MOVE-03), or in a breakthrough
+    /// ZOC of `breakthrough_stop` enemy units (R-MOVE-07).
     enters_zoc: bool,
     /// R-MOVE-02: across a canal without a bridge; costs all remaining AP.
     boat: bool,
@@ -23,16 +25,20 @@ struct MoveView<'a> {
     state: &'a GameState,
     unit: &'a Unit,
     zoc: BTreeSet<Hex>,
+    /// R-MOVE-07: enemy units whose ZOC covers each hex.
+    zoc_units: BTreeMap<Hex, u8>,
     ground: BTreeMap<Hex, SideId>,
 }
 
 impl<'a> MoveView<'a> {
     fn new(state: &'a GameState, unit: &'a Unit) -> Self {
         let occupancy = state.occupancy();
+        let zoc_units = enemy_zoc_counts(&state.map, &occupancy, unit.side);
         Self {
             state,
             unit,
-            zoc: enemy_zoc(&state.map, &occupancy, unit.side),
+            zoc: zoc_units.keys().copied().collect(),
+            zoc_units,
             ground: occupancy.iter().map(|(&h, o)| (h, o.side)).collect(),
         }
     }
@@ -54,7 +60,8 @@ impl<'a> MoveView<'a> {
         }
         let from_zoc = self.zoc.contains(&from);
         let to_zoc = self.zoc.contains(&to);
-        if from_zoc && to_zoc {
+        let breakthrough = self.breakthrough();
+        if from_zoc && to_zoc && !breakthrough {
             return Err(self.illegal(MoveError::ZocToZoc));
         }
         let map = &self.state.map;
@@ -74,7 +81,7 @@ impl<'a> MoveView<'a> {
             }
             return Ok(Step {
                 cost: 0,
-                enters_zoc: to_zoc,
+                enters_zoc: self.stops_at(to),
                 boat: true,
             });
         }
@@ -87,17 +94,40 @@ impl<'a> MoveView<'a> {
             to_zoc,
         )?
         .ok_or_else(|| self.illegal(MoveError::Impassable))?;
-        // Exit surcharge only for units that began the phase in ZOC.
-        let surcharge = if first && from_zoc && self.unit.started_in_zoc {
+        // Exit surcharge only for units that began the phase in ZOC; a
+        // breakthrough pays per ZOC hex entered instead (R-MOVE-07).
+        let surcharge = if breakthrough {
+            if to_zoc {
+                self.state.ap.breakthrough_zoc
+            } else {
+                0
+            }
+        } else if first && from_zoc && self.unit.started_in_zoc {
             self.state.ap.zoc_exit
         } else {
             0
         };
         Ok(Step {
             cost: cost + surcharge,
-            enters_zoc: to_zoc,
+            enters_zoc: self.stops_at(to),
             boat: false,
         })
+    }
+
+    /// R-MOVE-07: the unit is in a breakthrough and the variant is on.
+    fn breakthrough(&self) -> bool {
+        self.unit.breakthrough && self.state.variants.breakthrough
+    }
+
+    /// Entering `hex` ends the move: enemy ZOC (R-MOVE-03); in a
+    /// breakthrough only the ZOC of `breakthrough_stop` or more enemy units.
+    fn stops_at(&self, hex: Hex) -> bool {
+        let units = self.zoc_units.get(&hex).copied().unwrap_or(0);
+        if self.breakthrough() {
+            units >= self.state.ap.breakthrough_stop
+        } else {
+            units > 0
+        }
     }
 
     fn can_end_at(&self, hex: Hex) -> bool {
@@ -205,7 +235,7 @@ impl GameState {
             if best.get(&hex).is_some_and(|&(b, _)| cost > b) {
                 continue;
             }
-            if hex != start && view.zoc.contains(&hex) {
+            if hex != start && view.stops_at(hex) {
                 continue;
             }
             for next in hex.neighbors() {
