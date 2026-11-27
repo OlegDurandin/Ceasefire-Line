@@ -44,6 +44,24 @@ pub fn run(o: &Options) -> Result<(), String> {
     if ids.is_empty() {
         return Err(format!("no scenarios in {}", dir.display()));
     }
+    // The start menu's list (client) names exactly the scenario folders.
+    let index = dir.join("index.json");
+    let text = fs::read_to_string(&index).map_err(|e| format!("{}: {e}", index.display()))?;
+    let v: serde_json::Value =
+        serde_json::from_str(&text).map_err(|e| format!("{}: {e}", index.display()))?;
+    let mut listed: Vec<String> = v["scenarios"]
+        .as_array()
+        .ok_or_else(|| format!("{}: `scenarios` list missing", index.display()))?
+        .iter()
+        .filter_map(|x| x.as_str().map(str::to_owned))
+        .collect();
+    listed.sort();
+    if listed != ids {
+        return Err(format!(
+            "{}: lists {listed:?}, folders are {ids:?}",
+            index.display()
+        ));
+    }
     for id in &ids {
         let d = dir.join(id);
         let read = |n: &str| fs::read_to_string(d.join(n));

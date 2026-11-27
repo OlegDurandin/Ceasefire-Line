@@ -1,0 +1,7 @@
+{
+  "_comment": "Scenarios offered in the start menu, in this order; names — locale `scenario.<id>.name`. `sim check-data` checks it against the folders.",
+  "scenarios": [
+    "golan67",
+    "sinai67"
+  ]
+}

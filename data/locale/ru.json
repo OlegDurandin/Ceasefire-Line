@@ -3,6 +3,8 @@
   "event.golan67.kuneitra_falls": "Кунейтра перешла под контроль наступающей стороны.",
   "event.golan67.ceasefire_earlier": "Под давлением великих держав прекращение огня наступит на ход раньше.",
   "scenario.golan67.name": "Голаны-67",
+  "scenario.sinai67.name": "Синай-67",
+  "ui.scenario": "Сценарий",
   "ui.validation.ok": "Сценарий проходит проверку",
   "ui.validation.problems": "Проблемы сценария",
   "side.isr": "Израиль",

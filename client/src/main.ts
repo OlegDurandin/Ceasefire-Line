@@ -289,7 +289,11 @@ async function main() {
       }
     }
     // R-AI-01: a new game asks who plays (or `?vs=hotseat|<side key>`).
-    if (aiSide === undefined) aiSide = await chooseMode(ru, sideKeys, PARAMS.get("vs"));
+    if (aiSide === undefined) {
+      const index = await optionalText("/data/scenarios/index.json");
+      const scenarios = index ? ((JSON.parse(index) as { scenarios?: string[] }).scenarios ?? [SCENARIO]) : [SCENARIO];
+      aiSide = await chooseMode(ru, sideKeys, PARAMS.get("vs"), scenarios);
+    }
     // A new game draws the AI's seed; a resumed one keeps it (R-AI-01).
     if (aiSeed === null) aiSeed = crypto.getRandomValues(new Uint32Array(1))[0]!;
     game.setAi(aiText, scenario, aiSeed);
@@ -367,14 +371,24 @@ async function main() {
  * R-AI-01: hotseat, or against the AI for one side. `vs` from the URL skips
  * the question: `hotseat`, or the key of the side the player takes.
  */
-function chooseMode(ru: Record<string, string>, sideKeys: string[], vs: string | null): Promise<number | null> {
+function chooseMode(ru: Record<string, string>, sideKeys: string[], vs: string | null, scenarios: string[] = [SCENARIO]): Promise<number | null> {
   const human = (key: string) => sideKeys.indexOf(key);
   if (vs === "hotseat") return Promise.resolve(null);
   if (vs && human(vs) >= 0 && sideKeys.length === 2) return Promise.resolve(1 - human(vs));
   const modal = document.getElementById("modal")!;
   const box = modal.querySelector(".panel")!;
   const sideName = (k: string) => ru[`side.${k}`] ?? k;
-  box.innerHTML = `<h2>${ru["ui.mode.title"] ?? "New game"}</h2><div class="menu">
+  // The scenario: another one reloads the page with `?scenario=<id>`.
+  const pick =
+    scenarios.length > 1
+      ? `<div class="scenario-pick" role="tablist" aria-label="${ru["ui.scenario"] ?? "Scenario"}">${scenarios
+          .map(
+            (id) =>
+              `<button data-scenario="${id}" role="tab" aria-selected="${id === SCENARIO}"${id === SCENARIO ? ' class="on"' : ""}>${ru[`scenario.${id}.name`] ?? id}</button>`,
+          )
+          .join("")}</div>`
+      : "";
+  box.innerHTML = `<h2>${ru["ui.mode.title"] ?? "New game"}</h2>${pick}<div class="menu">
     <button id="mode-hotseat">${ru["ui.mode.hotseat"] ?? "Hotseat"}</button>
     ${sideKeys
       .map((k, i) => `<button id="mode-play-${k}" data-ai="${sideKeys.length === 2 ? 1 - i : ""}">${(ru["ui.mode.vs_ai"] ?? "{side}").replace("{side}", sideName(k))}</button>`)
@@ -386,6 +400,15 @@ function chooseMode(ru: Record<string, string>, sideKeys: string[], vs: string |
       resolve(v);
     };
     document.getElementById("mode-hotseat")!.onclick = () => done(null);
+    for (const b of box.querySelectorAll<HTMLButtonElement>("[data-scenario]")) {
+      b.onclick = () => {
+        if (b.dataset.scenario === SCENARIO) return;
+        const url = new URL(location.href);
+        url.searchParams.set("scenario", b.dataset.scenario!);
+        url.searchParams.delete("vs");
+        location.assign(url.toString());
+      };
+    }
     for (const b of box.querySelectorAll<HTMLButtonElement>("[data-ai]")) {
       b.onclick = () => done(b.dataset.ai === "" ? null : Number(b.dataset.ai));
     }
