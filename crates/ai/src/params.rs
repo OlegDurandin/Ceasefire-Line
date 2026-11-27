@@ -41,6 +41,9 @@ pub struct MoveWeights {
     pub defend_radius: u32,
     /// Aggressiveness from which a side attacks objectives instead of holding.
     pub attack_from_aggressiveness: f64,
+    /// Own HQs keep at least this many hexes from enemy ground units, if the
+    /// attachment radius (R-HQ-01) allows (step 7, «оборона»).
+    pub hq_min_enemy_distance: u32,
 }
 
 /// R-AI-01 «поиск котлов».

@@ -25,7 +25,8 @@
     "min_gain": 0.3,
     "influence_radius": 4,
     "defend_radius": 3,
-    "attack_from_aggressiveness": 0.35
+    "attack_from_aggressiveness": 0.35,
+    "hq_min_enemy_distance": 2
   },
   "economy": {
     "reinforce_at_or_below": 8,

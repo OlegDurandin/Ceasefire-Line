@@ -196,6 +196,11 @@ struct Game {
     watch_turn: Option<u32>,
     /// Battles written by `--dump-battles`.
     dumped: u32,
+    /// Ground attack commands, those on HQs, and those whose HQ target was in
+    /// contact (an enemy unit next to it) at the start of the phase.
+    ground_attacks: u32,
+    hq_attacks: u32,
+    hq_attacks_in_contact: u32,
 }
 
 /// Strength and «encircled» of every ground unit at the last look.
@@ -264,7 +269,28 @@ fn play_one(sh: &Shared, seed: u64) -> Result<Game, String> {
                 .collect();
         };
         let mut steps = Game::default();
+        // HQs of the side not moving, in contact at the start of the phase.
+        let active = s.active_side();
+        let hq_contact: BTreeMap<UnitId, bool> = s
+            .units()
+            .filter(|u| u.side != active && u.hq_rating.is_some())
+            .map(|h| {
+                (
+                    h.id,
+                    s.units()
+                        .any(|e| e.side == active && e.hex.is_adjacent(h.hex)),
+                )
+            })
+            .collect();
+        let mut hq_seen = (0u32, 0u32, 0u32);
         let mut dump = |st: &GameState, cmd: &ceasefire_core::game::Command| {
+            if let ceasefire_core::game::Command::Attack { target, .. } = cmd {
+                hq_seen.0 += 1;
+                if let Some(c) = hq_contact.get(target) {
+                    hq_seen.1 += 1;
+                    hq_seen.2 += u32::from(*c);
+                }
+            }
             if let Some(dir) = &sh.dump {
                 if let Some(input) = crate::battles::battle_of(st, cmd) {
                     let name = format!("{}-{seed}-{}", sh.scenario, g.dumped);
@@ -300,6 +326,9 @@ fn play_one(sh: &Shared, seed: u64) -> Result<Game, String> {
             }
         }
         .map_err(|e| e.to_string())?;
+        g.ground_attacks += hq_seen.0;
+        g.hq_attacks += hq_seen.1;
+        g.hq_attacks_in_contact += hq_seen.2;
         // The closing EndPhase: losses up to the next side's phase start (attrition).
         look(&s, &mut steps);
         if g.watch_turn.is_none() && sh.watch.iter().any(|h| s.controller(*h) == Some(SideId(0))) {
@@ -726,6 +755,11 @@ fn summary(o: &Options, games: &[Game]) -> serde_json::Value {
             .count() as f64
             / n
     };
+    let attacks_all: u32 = games.iter().map(|g| g.ground_attacks).sum();
+    let hq_all: u32 = games.iter().map(|g| g.hq_attacks).sum();
+    let hq_share = f64::from(hq_all) / f64::from(attacks_all.max(1));
+    let hq_contact_share = f64::from(games.iter().map(|g| g.hq_attacks_in_contact).sum::<u32>())
+        / f64::from(hq_all.max(1));
     let carried: u32 = games.iter().map(|g| g.ops_carried).sum();
     let kept: u32 = games.iter().map(|g| g.ops_kept).sum();
     let ops_kept_share = if carried == 0 {
@@ -766,6 +800,9 @@ fn summary(o: &Options, games: &[Game]) -> serde_json::Value {
         "ops_kept_share": ops_kept_share,
         "breach_calibration": calibration(games),
         "watch_turns": watch_turns,
+        "ground_attacks": games.iter().map(|g| f64::from(g.ground_attacks)).sum::<f64>() / n,
+        "hq_attack_share": hq_share,
+        "hq_attacks_in_contact_share": hq_contact_share,
     })
 }
 

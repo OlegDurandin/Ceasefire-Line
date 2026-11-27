@@ -388,6 +388,9 @@ impl AiV1 {
         if let Some(c) = self.strike(&b) {
             return c;
         }
+        if let Some(c) = self.hq_move(&b) {
+            return c;
+        }
         if let Some(c) = self.best_move(&b) {
             return c;
         }
@@ -963,6 +966,51 @@ impl AiV1 {
                     if let Some(path) = b.s.path_to(*id, to).ok().flatten() {
                         return Some(Command::Move { unit: *id, path });
                     }
+                }
+            }
+        }
+        None
+    }
+}
+
+impl AiV1 {
+    /// Step 7, «оборона»: an own HQ closer than `hq_min_enemy_distance` to an
+    /// enemy ground unit steps back to a reachable hex at that distance from
+    /// all of them, keeping the most of its attached units within the
+    /// attachment radius (R-HQ-01); ties — the shorter move, then hex order.
+    fn hq_move(&self, b: &Board) -> Option<Command> {
+        let min = self.params.moves.hq_min_enemy_distance;
+        let radius = ceasefire_core::scale::range_in_hexes(
+            b.s.data().rules.hq.attach_radius_km,
+            b.s.hex_km(),
+        );
+        let far_enough = |h: Hex| b.enemy.iter().all(|e| e.hex.distance(h) >= min);
+        for hq in b
+            .own
+            .iter()
+            .filter(|u| u.hq_rating.is_some() && u.can_move && !u.moved)
+        {
+            if far_enough(hq.hex) {
+                continue;
+            }
+            let subs: Vec<Hex> = b
+                .own
+                .iter()
+                .filter(|u| u.attached_hq == Some(hq.id))
+                .map(|u| u.hex)
+                .collect();
+            let reach = b.s.reachable(hq.id).unwrap_or_default();
+            let best = reach
+                .keys()
+                .filter(|h| far_enough(**h))
+                .map(|h| {
+                    let kept = subs.iter().filter(|s| s.distance(*h) <= radius).count();
+                    (std::cmp::Reverse(kept), h.distance(hq.hex), *h)
+                })
+                .min();
+            if let Some((_, _, to)) = best {
+                if let Some(path) = b.s.path_to(hq.id, to).ok().flatten() {
+                    return Some(Command::Move { unit: hq.id, path });
                 }
             }
         }
