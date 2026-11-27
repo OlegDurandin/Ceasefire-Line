@@ -279,6 +279,8 @@ pub struct EconomyRules {
     pub boost_max_levels_above_start: u8,
     /// Bought units arrive in an own source with at least this value.
     pub arrival_source_value: u8,
+    /// Variant `arrival_choice` (SC п. 26): a chosen arrival source needs this current value.
+    pub arrival_choice_min_value: u8,
 }
 
 impl EconomyRules {
@@ -339,6 +341,8 @@ pub struct Variants {
     pub hq_contact_priority: bool,
     /// R-MOVE-01, R-COMBAT-02: hard defenders take the terrain's `hard_defense_mult` (city, fortified area ×1,0) (SC п. 8).
     pub armor_city_penalty: bool,
+    /// R-ECO-02: the buyer picks the arrival source (value ≥ `economy.arrival_choice_min_value`, no enemy next to it) (SC п. 26).
+    pub arrival_choice: bool,
 }
 
 impl Variants {

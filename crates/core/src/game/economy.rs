@@ -1,6 +1,7 @@
 //! R-ECO-01..03, R-SUP-03: income, reinforcement, purchases.
 
 use crate::error::{EconomyError, RuleError};
+use crate::hex::Hex;
 use crate::side::SideId;
 use crate::supply::SupplyMap;
 
@@ -131,8 +132,43 @@ impl GameState {
         }])
     }
 
-    /// R-ECO-02, R-ECO-03.
-    pub(super) fn purchase(&mut self, class_id: &str) -> Result<Vec<Event>, RuleError> {
+    /// Variant `arrival_choice` (SC п. 26): own sources of current value ≥
+    /// `arrival_choice_min_value` with no enemy ground unit next to them
+    /// (sorted). Empty when the variant is off.
+    pub fn arrival_choices(&self, side: SideId) -> Vec<Hex> {
+        if !self.variants.arrival_choice {
+            return Vec::new();
+        }
+        let min = self.data.rules.economy.arrival_choice_min_value;
+        let enemy: Vec<Hex> = self
+            .units
+            .values()
+            .filter(|u| u.side != side)
+            .filter(|u| {
+                self.data
+                    .units
+                    .get(&u.class)
+                    .is_ok_and(|c| c.target_class.is_ground())
+            })
+            .map(|u| u.hex)
+            .collect();
+        self.sources
+            .iter()
+            .filter(|(h, s)| {
+                self.control.get(h) == Some(&side)
+                    && s.current >= min
+                    && !enemy.iter().any(|e| e.distance(**h) <= 1)
+            })
+            .map(|(&h, _)| h)
+            .collect()
+    }
+
+    /// R-ECO-02, R-ECO-03; `at` — the chosen arrival source (`arrival_choice`).
+    pub(super) fn purchase(
+        &mut self,
+        class_id: &str,
+        at: Option<Hex>,
+    ) -> Result<Vec<Event>, RuleError> {
         let class = self.data.units.get(class_id)?;
         if !class.target_class.is_ground() {
             return Err(RuleError::Unsupported(format!(
@@ -143,6 +179,11 @@ impl GameState {
         let delay = self.data.rules.economy.purchase_delay_turns;
         let side = self.active_side();
         let arrives_turn = self.turn + delay;
+        if let Some(h) = at {
+            if !self.arrival_choices(side).contains(&h) {
+                return Err(refuse(EconomyError::BadArrival));
+            }
+        }
         let state = self.side_state_mut(side)?;
         let limit = state.purchase_limits.get(class_id).copied().unwrap_or(0);
         let bought = state.purchased.get(class_id).copied().unwrap_or(0);
@@ -158,12 +199,14 @@ impl GameState {
             side,
             class: class_id.to_owned(),
             turn: arrives_turn,
+            at,
         });
         Ok(vec![Event::Purchased {
             side,
             class: class_id.to_owned(),
             cost,
             arrives_turn,
+            at,
         }])
     }
 
@@ -178,16 +221,21 @@ impl GameState {
         self.arrivals = waiting;
         for arrival in due {
             let occupied = self.occupancy();
-            let spot = self
-                .sources
-                .iter()
-                .filter(|(h, s)| {
-                    self.control.get(h) == Some(&side)
-                        && s.current >= min_value
-                        && !occupied.contains_key(h)
-                })
-                .map(|(&h, _)| h)
-                .next();
+            // The chosen source if it still qualifies and is free, else the old rule.
+            let chosen = arrival
+                .at
+                .filter(|h| self.arrival_choices(side).contains(h) && !occupied.contains_key(h));
+            let spot = chosen.or_else(|| {
+                self.sources
+                    .iter()
+                    .filter(|(h, s)| {
+                        self.control.get(h) == Some(&side)
+                            && s.current >= min_value
+                            && !occupied.contains_key(h)
+                    })
+                    .map(|(&h, _)| h)
+                    .next()
+            });
             let Some(hex) = spot else {
                 events.push(Event::ArrivalDelayed {
                     side,

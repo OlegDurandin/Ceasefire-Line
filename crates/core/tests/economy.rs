@@ -180,6 +180,7 @@ fn r_eco_03_purchase_limit_and_arrival() {
     let events = s
         .apply(Command::Purchase {
             class: "tank".into(),
+            at: None,
         })
         .unwrap();
     assert_eq!(
@@ -189,15 +190,18 @@ fn r_eco_03_purchase_limit_and_arrival() {
             class: "tank".into(),
             cost: 105,
             arrives_turn: 3,
+            at: None,
         }]
     );
     assert_eq!(mpp(&s), 145);
     let limit = s.apply(Command::Purchase {
         class: "tank".into(),
+        at: None,
     });
     assert_eq!(refused(limit), EconomyError::PurchaseLimit);
     let no_limit = s.apply(Command::Purchase {
         class: "mech".into(),
+        at: None,
     });
     assert_eq!(
         refused(no_limit),
@@ -226,6 +230,7 @@ fn r_eco_02_arrival_waits_for_a_free_source() {
     let mut s = start(sc);
     s.apply(Command::Purchase {
         class: "mech".into(),
+        at: None,
     })
     .unwrap();
     end_turn(&mut s);

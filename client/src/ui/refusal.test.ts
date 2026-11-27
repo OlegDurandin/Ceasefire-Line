@@ -18,7 +18,7 @@ describe("refusal reasons (R-UI-04 action bar)", () => {
 
   it("every variant the action bar can meet has a Russian text", () => {
     const variants = {
-      economy: ["ZeroSteps", "UnitActed", "NoSupply", "StepLimit", "FullStrength", "NotEnoughMpp", "PurchaseLimit"],
+      economy: ["ZeroSteps", "UnitActed", "NoSupply", "StepLimit", "FullStrength", "NotEnoughMpp", "PurchaseLimit", "EliteNearEnemy", "BadArrival"],
       transfer: ["Acted", "StartsInZoc", "NoRoute", "NotEnoughMpp", "Reinforced", "LowSupply"],
       bridge: ["NotEngineer", "Acted", "NoCanal", "AlreadyBridged", "NoFriendlyOnFarBank", "NoBridge"],
       attack: ["NoStrikes", "NoAp", "NotAdjacent", "OutOfRange", "NotEnemy", "NotGroundTarget", "UseBombard", "CannotBombard"],

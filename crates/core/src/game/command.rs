@@ -27,8 +27,13 @@ pub enum Command {
         steps: u8,
         elite: bool,
     },
-    /// R-ECO-02, R-ECO-03: buy a unit; it arrives after a delay.
-    Purchase { class: String },
+    /// R-ECO-02, R-ECO-03: buy a unit; it arrives after a delay. `at`: the
+    /// arrival source chosen by the buyer (variant `arrival_choice`).
+    Purchase {
+        class: String,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        at: Option<Hex>,
+    },
     /// R-MOVE-05: strategic transfer by road to `to`; the route is found by the engine.
     Transfer { unit: UnitId, to: Hex },
     /// R-HQ-01: pin a unit to an HQ (`None` removes the pin); applied at the
@@ -239,6 +244,8 @@ pub enum Event {
         class: String,
         cost: u32,
         arrives_turn: u32,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        at: Option<Hex>,
     },
     UnitArrived {
         unit: UnitId,

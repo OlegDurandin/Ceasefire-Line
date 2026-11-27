@@ -115,6 +115,7 @@
     ],
     "purchase_delay_turns": 2,
     "arrival_source_value": 10,
+    "arrival_choice_min_value": 8,
     "transfer_cost_pct": 10,
     "boost_max_levels_above_start": 1
   },
@@ -184,6 +185,7 @@
     "air_strength_threshold": false,
     "transfer_supply_min": false,
     "hq_contact_priority": false,
-    "armor_city_penalty": false
+    "armor_city_penalty": false,
+    "arrival_choice": false
   }
 }

@@ -11,7 +11,7 @@ use ceasefire_core::hex::Hex;
 use common::scenario::{board, start, unit, A, B};
 
 /// Every boolean variant, so each test states its own rules.
-const VARIANTS: [&str; 16] = [
+const VARIANTS: [&str; 17] = [
     "attack_strips_entrenchment",
     "prepared_attack",
     "unsupplied_target",
@@ -28,6 +28,7 @@ const VARIANTS: [&str; 16] = [
     "transfer_supply_min",
     "hq_contact_priority",
     "armor_city_penalty",
+    "arrival_choice",
 ];
 
 /// The common test scenario with every variant switched off.
@@ -929,4 +930,65 @@ fn r_combat_02_armor_in_a_city_loses_the_city_bonus() {
         d_of("infantry", "city", true)
     );
     assert_eq!(d_of("tank", "plain", false), d_of("tank", "plain", true));
+}
+
+/// SC п. 26 `arrival_choice`: a purchase may name its arrival source — own,
+/// current value ≥ 8, no enemy ground unit next to it; the unit appears there.
+/// Without a choice — the old rule; without the variant a choice is refused.
+#[test]
+fn r_eco_02_arrival_at_the_chosen_source() {
+    use ceasefire_core::error::{EconomyError, RuleError};
+    use ceasefire_core::supply::SupplySource;
+    let sc = |on: bool| {
+        let (map, control) = board();
+        let units = vec![unit("infantry", B, Hex::new(3, 2))];
+        let mut sc = setup(map, control, units);
+        sc.sources.extend([
+            SupplySource {
+                hex: Hex::new(2, -2),
+                value: 8,
+            },
+            SupplySource {
+                hex: Hex::new(2, 2), // next to B's infantry
+                value: 8,
+            },
+            SupplySource {
+                hex: Hex::new(1, -3),
+                value: 7,
+            },
+        ]);
+        sc.sides[0].mpp = 300;
+        sc.sides[0].purchase_limits.insert("mech".into(), 3);
+        start(if on { with("arrival_choice", sc) } else { sc })
+    };
+    let bad = |r: Result<Vec<ceasefire_core::game::Event>, RuleError>| {
+        matches!(r, Err(RuleError::IllegalEconomy(EconomyError::BadArrival)))
+    };
+    let mut s = sc(true);
+    assert_eq!(s.arrival_choices(A), vec![Hex::new(0, 0), Hex::new(2, -2)]);
+    for h in [Hex::new(2, 2), Hex::new(1, -3), Hex::new(4, 0)] {
+        let r = s.apply(Command::Purchase {
+            class: "mech".into(),
+            at: Some(h),
+        });
+        assert!(bad(r), "{h:?} refused");
+    }
+    s.apply(Command::Purchase {
+        class: "mech".into(),
+        at: Some(Hex::new(2, -2)),
+    })
+    .unwrap();
+    for _ in 0..4 {
+        s.apply(Command::EndPhase).unwrap();
+    }
+    let hexes: Vec<Hex> = s.units().filter(|u| u.side == A).map(|u| u.hex).collect();
+    assert_eq!(hexes, vec![Hex::new(2, -2)], "arrived at the chosen source");
+
+    let mut s = sc(false);
+    assert!(s.arrival_choices(A).is_empty());
+    let r = s.apply(Command::Purchase {
+        class: "mech".into(),
+        at: Some(Hex::new(2, -2)),
+    });
+    assert!(bad(r), "off: a choice is refused");
 }

@@ -120,7 +120,10 @@ export interface EconomyView {
   mpp: number;
   base_income: number;
   purchasable: { class: string; cost: number; left: number; refused: string | null }[];
-  arrivals: [string, number][];
+  /** (class, turn, chosen source [col,row] or null). */
+  arrivals: [string, number, [number, number] | null][];
+  /** Variant `arrival_choice`: sources a purchase may arrive at (empty when off). */
+  arrival_choices: [number, number][];
   boosts: { id: string; branch: string; cost: number; turns: number; ready_turn: number | null; bought: boolean; refused: string | null }[];
 }
 

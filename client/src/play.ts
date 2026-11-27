@@ -123,6 +123,8 @@ export class Play {
   private known = new Map<number, UnitRef>();
   private log: string[] = [];
   private tab: Tab = "map";
+  /** R-ECO-02 variant `arrival_choice`: the source chosen on the purchase screen. */
+  private arrivalAt: [number, number] | null = null;
   /** R-MOVE-05: transfer mode for the selected unit. */
   private transfer: TransferTargets | null = null;
   /** R-AIR-01: rebase mode for the selected aircraft. */
@@ -465,18 +467,27 @@ export class Play {
     if (this.tab === "purchases") {
       html = `<b>${this.t("ui.purchases")}</b> · ${this.sideName(e.side)}<br>
         <span class="muted">${this.t("ui.mpp")} ${e.mpp} · ${this.t("ui.income")} ${e.base_income}</span>`;
+      // R-ECO-02 variant `arrival_choice`: where the purchase arrives.
+      const choices = e.arrival_choices;
+      const at = this.arrivalAt && choices.some((c) => c[0] === this.arrivalAt![0] && c[1] === this.arrivalAt![1]) ? this.arrivalAt : null;
+      if (choices.length) {
+        const opt = (value: string, label: string, on: boolean) => `<option value="${value}"${on ? " selected" : ""}>${label}</option>`;
+        html += `<div class="arrival"><span title="${attrText(this.t("ui.arrival_at_tip"))}">${this.t("ui.arrival_at")}</span>
+          <select id="arrival-at">${opt("", this.t("ui.arrival_auto"), !at)}${choices.map((c) => opt(`${c[0]},${c[1]}`, `[${c[0]}, ${c[1]}]`, !!at && at[0] === c[0] && at[1] === c[1])).join("")}</select></div>`;
+      }
+      const buy = (cls: string) => (at ? { type: "purchase", class: cls, at: hex(at) } : { type: "purchase", class: cls });
       html += e.purchasable.length
         ? `<table>${e.purchasable
             .map(
               (p) => `<tr><td>${this.t(`unit.${p.class}`, p.class)}</td><td>${p.cost} MPP</td>
-                <td class="muted">${this.t("ui.left")} ${p.left}</td><td>${button(this.t("ui.buy"), { type: "purchase", class: p.class }, p.refused)}</td></tr>`,
+                <td class="muted">${this.t("ui.left")} ${p.left}</td><td>${button(this.t("ui.buy"), buy(p.class), p.refused)}</td></tr>`,
             )
             .join("")}</table>`
         : `<p class="muted">${this.t("ui.nothing_to_buy")}</p>`;
     } else if (this.tab === "reinforcements") {
       html = `<b>${this.t("ui.reinforcements")}</b> · ${this.sideName(e.side)}`;
       html += e.arrivals.length
-        ? `<ul>${e.arrivals.map(([c, turn]) => `<li>${this.t(`unit.${c}`, c)} — ${this.t("ui.arrives_turn")} ${turn}</li>`).join("")}</ul>`
+        ? `<ul>${e.arrivals.map(([c, turn, to]) => `<li>${this.t(`unit.${c}`, c)} — ${this.t("ui.arrives_turn")} ${turn}${to ? ` · [${to[0]}, ${to[1]}]` : ""}</li>`).join("")}</ul>`
         : `<p class="muted">${this.t("ui.no_arrivals")}</p>`;
     } else if (this.tab === "tech") {
       const levels = this.state.sides.find((x) => x.id === e.side)?.tech ?? {};
@@ -499,6 +510,13 @@ export class Play {
     }
     el.innerHTML = html;
     this.bindCommands(el);
+    const pick = el.querySelector<HTMLSelectElement>("#arrival-at");
+    if (pick)
+      pick.onchange = () => {
+        const [c, r] = pick.value.split(",").map(Number);
+        this.arrivalAt = pick.value ? [c!, r!] : null;
+        this.drawPanel();
+      };
   }
 
   /** Buttons carrying a command (`data-cmd`) run it through the core. */

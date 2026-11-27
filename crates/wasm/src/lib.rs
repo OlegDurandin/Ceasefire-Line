@@ -352,7 +352,11 @@ struct EconomyView {
     mpp: u32,
     base_income: u32,
     purchasable: Vec<Purchasable>,
-    arrivals: Vec<(String, u32)>,
+    /// (class, turn, chosen source `[col,row]` if any).
+    arrivals: Vec<(String, u32, Option<[i32; 2]>)>,
+    /// Variant `arrival_choice`: sources a purchase may arrive at, `[col,row]`
+    /// (empty when the variant is off).
+    arrival_choices: Vec<[i32; 2]>,
     boosts: Vec<BoostView>,
 }
 
@@ -1004,6 +1008,7 @@ impl Game {
                     left: limit.saturating_sub(side.purchased.get(class).copied().unwrap_or(0)),
                     refused: self.refusal(Command::Purchase {
                         class: class.clone(),
+                        at: None,
                     }),
                 }
             })
@@ -1012,7 +1017,12 @@ impl Game {
             .arrivals()
             .iter()
             .filter(|a| a.side == side_id)
-            .map(|a| (a.class.clone(), a.turn))
+            .map(|a| (a.class.clone(), a.turn, a.at.map(axial_to_offset)))
+            .collect();
+        let arrival_choices = s
+            .arrival_choices(side_id)
+            .into_iter()
+            .map(axial_to_offset)
             .collect();
         let boosts = s
             .tech_boosts()
@@ -1038,6 +1048,7 @@ impl Game {
             base_income: side.base_income,
             purchasable,
             arrivals,
+            arrival_choices,
             boosts,
         })
     }

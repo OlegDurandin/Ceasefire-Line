@@ -242,6 +242,9 @@ pub struct Arrival {
     pub side: SideId,
     pub class: String,
     pub turn: u32,
+    /// Variant `arrival_choice`: the source the buyer chose (still checked on arrival).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub at: Option<Hex>,
 }
 
 /// R-SUP-01: source with base value and current (captured) value.
@@ -667,7 +670,7 @@ impl GameState {
             Command::Bombard { unit, target } => self.bombard(unit, target),
             Command::Advance { unit } => self.advance(unit),
             Command::Reinforce { unit, steps, elite } => self.reinforce(unit, steps, elite),
-            Command::Purchase { class } => self.purchase(&class),
+            Command::Purchase { class, at } => self.purchase(&class, at),
             Command::Transfer { unit, to } => self.transfer(unit, to),
             Command::PinToHq { unit, hq } => self.pin_to_hq(unit, hq),
             Command::BuildBridge { unit, toward } => self.build_bridge(unit, toward),

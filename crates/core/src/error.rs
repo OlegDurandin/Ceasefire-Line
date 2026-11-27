@@ -103,6 +103,9 @@ pub enum EconomyError {
     BoostCap,
     /// R-ECO-02 variant `reinforce_locks`: no elite steps next to an enemy unit.
     EliteNearEnemy,
+    /// R-ECO-02 variant `arrival_choice`: not an own source of value ≥ 8 free of
+    /// adjacent enemies, or the variant is off.
+    BadArrival,
 }
 
 /// Why a move is rejected (R-MOVE-01..04).
