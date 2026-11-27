@@ -28,7 +28,7 @@ import { flagCss, topBarHtml, type Layer, type Tab } from "./ui/top-bar";
 import { drawBridges, setGridActive, type MapTextures } from "./render/map";
 import { drawOverlays } from "./render/overlays";
 import type { FlagStripes } from "./render/token-geom";
-import { airTokenCenter, airTokenRadius, drawAirTokens, drawUnits, expStars, type AirToken, type Token } from "./render/units";
+import { airTokenCenter, airTokenRadius, drawAirTokens, drawUnits, expStars, readiness, type AirToken, type Token } from "./render/units";
 import { tokenHtml } from "./ui/token-svg";
 import { pickSprite, styledSprite, type MiniIndex, type SpritesFile, type UnitStyle } from "./sprites";
 import type { HexView } from "./view";
@@ -360,6 +360,7 @@ export class Play {
         label: u.hq_rating !== null ? `★${u.hq_rating}` : String(u.strength),
         stars: expStars(u.exp),
         dim: mine && spent,
+        ready: mine && !spent && !this.aiTurn() ? readiness(u) : null,
         facing: this.facing.get(u.id) ?? this.ctx.sideFacing[u.side] ?? "left",
         lowSupply: u.supply <= this.ctx.rules.supply.low_supply_max,
         encircled: u.hex_supply === 0,
@@ -1479,7 +1480,7 @@ export class Play {
   }
 
   private help() {
-    const keys = ["n", "enter", "undo", "i", "l", "s", "u", "esc"].map((k) => `<li>${this.t(`ui.help.${k}`)}</li>`).join("");
+    const keys = ["n", "enter", "undo", "i", "l", "s", "u", "esc"].map((k) => `<li>${this.t(`ui.help.${k}`)}</li>`).join("") + `<li>${this.t("ui.help.ready")}</li>`;
     this.modal(`<h2>${this.t("ui.help")}</h2><b>${this.t("ui.help.keys")}</b><ul class="help">${keys}</ul><p class="help">${this.t("ui.help.mouse")}</p>`);
   }
 

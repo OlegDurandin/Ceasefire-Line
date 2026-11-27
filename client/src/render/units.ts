@@ -27,6 +27,9 @@ export interface Token {
   stars: number;
   /** R-UI-05: units with no AP and no strikes left are muted. */
   dim: boolean;
+  /** SC UI item 1: own units in their phase — not acted yet (`fresh`) or acted
+   * but still able to move or strike (`partial`); spent ones are muted instead. */
+  ready?: "fresh" | "partial" | null;
   style: "miniature" | "medallion";
   /** Contact point of the picture (share of its size). */
   anchor: [number, number];
@@ -107,6 +110,26 @@ function drawPlate(label: string, g: TokenGeom, flag: FlagStripes | null, color:
 }
 
 /** R-UI-03 status icons right of the plate: supply ≤ 3, encircled. */
+/** SC UI item 1: a unit that can still act — `fresh` if it has not acted this
+ * phase, else `partial`; null when it can neither move nor strike (muted). */
+export function readiness(u: { acted: boolean; can_move: boolean; ap_halves: number; strikes_left: number }): "fresh" | "partial" | null {
+  const canMove = u.can_move && u.ap_halves > 0;
+  const canStrike = u.strikes_left > 0 && u.ap_halves > 0;
+  if (!canMove && !canStrike) return null;
+  return u.acted ? "partial" : "fresh";
+}
+
+/** SC UI item 1: «может ещё действовать» — a dot left of the strength plate. */
+export const READY_COLORS = { fresh: 0x6cc24a, partial: 0xe0a83a } as const;
+
+function readyMark(token: Container, u: Token, x: number, y: number, size: number) {
+  if (!u.ready) return;
+  const r = size * 0.11;
+  const g = new Graphics().circle(0, 0, r + size * 0.03).fill(DARK).circle(0, 0, r).fill(READY_COLORS[u.ready]);
+  g.position.set(x, y);
+  token.addChild(g);
+}
+
 function statusIcons(token: Container, u: Token, x: number, y: number, size: number) {
   const r = size * 0.14;
   const g = new Graphics();
@@ -195,6 +218,7 @@ function drawMiniature(u: Token, tex: Texture | null, size: number, color: numbe
   plate.position.set(g.cx, g.plT);
   body.addChild(plate);
   statusIcons(body, u, g.cx + plate.width / 2 + size * 0.18, g.plT + plate.height / 2, size);
+  readyMark(body, u, g.cx - plate.width / 2 - size * 0.16, g.plT + plate.height / 2, size);
   if (u.dim) {
     // As on the mock: saturate(0.35) brightness(0.78).
     const cm = new ColorMatrixFilter();
@@ -236,6 +260,7 @@ function drawMedallion(u: Token, tex: Texture | null, size: number, color: numbe
   plate.position.set(0, radius * 0.7);
   token.addChild(plate);
   statusIcons(token, u, plate.width / 2 + size * 0.18, radius * 0.7 + plate.height / 2, size);
+  readyMark(token, u, -plate.width / 2 - size * 0.16, radius * 0.7 + plate.height / 2, size);
   token.alpha = u.dim ? DIM_ALPHA : 1;
   return token;
 }
