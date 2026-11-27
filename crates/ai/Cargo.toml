@@ -10,5 +10,6 @@ name = "ceasefire_ai"
 
 [dependencies]
 ceasefire-core.workspace = true
+ceasefire-tactical.workspace = true
 serde.workspace = true
 serde_json.workspace = true

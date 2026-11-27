@@ -1,0 +1,16 @@
+[package]
+name = "ceasefire-tactical"
+description = "Tactical battles of the mobile version (docs/tactical.md, T-*): rules without graphics"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+
+[lib]
+# cdylib: the WASM bundle size check of T1 (T-TECH-01); rlib for the AI, sim and tests.
+crate-type = ["rlib", "cdylib"]
+
+[dependencies]
+ceasefire-core.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true

@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["crates/core", "crates/ai", "crates/sim", "crates/wasm", "crates/mapgen"]
+members = ["crates/core", "crates/ai", "crates/sim", "crates/wasm", "crates/mapgen", "crates/tactical"]
 
 [workspace.package]
 version = "0.1.0"
@@ -14,3 +14,4 @@ serde_json = { version = "1", features = ["float_roundtrip"] }
 thiserror = "2"
 ceasefire-core = { path = "crates/core" }
 ceasefire-ai = { path = "crates/ai" }
+ceasefire-tactical = { path = "crates/tactical" }

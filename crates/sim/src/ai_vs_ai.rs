@@ -48,6 +48,8 @@ pub struct Options {
     /// Hexes (offset `c,r;c,r`) whose first control by side 0 is reported
     /// (e.g. the Sinai passes: «выход к перевалам», section 17).
     watch: Vec<ceasefire_core::hex::Hex>,
+    /// T1: write every ground attack as a tactical battle input here.
+    dump: Option<PathBuf>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -84,6 +86,8 @@ struct Shared {
     variants: BTreeMap<String, bool>,
     variance: Variance,
     watch: Vec<ceasefire_core::hex::Hex>,
+    dump: Option<PathBuf>,
+    scenario: String,
 }
 
 pub fn parse_options(args: &[String]) -> Result<Options, String> {
@@ -100,6 +104,7 @@ pub fn parse_options(args: &[String]) -> Result<Options, String> {
         sets: Vec::new(),
         variance: Variance::Binomial,
         watch: Vec::new(),
+        dump: None,
     };
     let mut it = args.iter();
     while let Some(flag) = it.next() {
@@ -125,6 +130,7 @@ pub fn parse_options(args: &[String]) -> Result<Options, String> {
                     .ok_or_else(|| format!("--set {value}: expected section.key=value"))?;
                 o.sets.push((k.to_owned(), v.to_owned()));
             }
+            "--dump-battles" => o.dump = Some(PathBuf::from(value)),
             "--watch" => {
                 for cr in value.split(';').filter(|x| !x.is_empty()) {
                     let (c, r) = cr
@@ -188,6 +194,8 @@ struct Game {
     breaches: Vec<(f64, bool)>,
     /// First turn side 0 controls any watched hex.
     watch_turn: Option<u32>,
+    /// Battles written by `--dump-battles`.
+    dumped: u32,
 }
 
 /// Strength and «encircled» of every ground unit at the last look.
@@ -256,12 +264,24 @@ fn play_one(sh: &Shared, seed: u64) -> Result<Game, String> {
                 .collect();
         };
         let mut steps = Game::default();
+        let mut dump = |st: &GameState, cmd: &ceasefire_core::game::Command| {
+            if let Some(dir) = &sh.dump {
+                if let Some(input) = crate::battles::battle_of(st, cmd) {
+                    let name = format!("{}-{seed}-{}", sh.scenario, g.dumped);
+                    if crate::battles::write(dir, &name, &input).is_ok() {
+                        g.dumped += 1;
+                    }
+                }
+            }
+        };
         let r = match player {
             Player::Greedy => play_phase(
                 &mut s,
                 |st| {
                     look(st, &mut steps);
-                    greedy_next(st)
+                    let c = greedy_next(st);
+                    dump(st, &c);
+                    c
                 },
                 MAX_COMMANDS,
             ),
@@ -271,7 +291,9 @@ fn play_one(sh: &Shared, seed: u64) -> Result<Game, String> {
                     &mut s,
                     |st| {
                         look(st, &mut steps);
-                        v1.next(st)
+                        let c = v1.next(st);
+                        dump(st, &c);
+                        c
                     },
                     max,
                 )
@@ -433,7 +455,12 @@ pub fn run(o: &Options) -> Result<(), String> {
         variants: o.variants.clone(),
         variance: o.variance,
         watch: o.watch.clone(),
+        dump: o.dump.clone(),
+        scenario: o.scenario.clone(),
     });
+    if let Some(d) = &o.dump {
+        fs::create_dir_all(d).map_err(|e| format!("{}: {e}", d.display()))?;
+    }
     let started = Instant::now();
     let threads = std::thread::available_parallelism()
         .map_or(4, |n| n.get())

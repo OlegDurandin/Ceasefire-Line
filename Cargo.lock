@@ -76,6 +76,7 @@ name = "ceasefire-ai"
 version = "0.1.0"
 dependencies = [
  "ceasefire-core",
+ "ceasefire-tactical",
  "serde",
  "serde_json",
 ]
@@ -90,11 +91,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "ceasefire-tactical"
+version = "0.1.0"
+dependencies = [
+ "ceasefire-core",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.21",
+]
+
+[[package]]
 name = "ceasefire-wasm"
 version = "0.1.0"
 dependencies = [
  "ceasefire-ai",
  "ceasefire-core",
+ "ceasefire-tactical",
  "serde",
  "serde_json",
  "wasm-bindgen",
@@ -618,6 +630,7 @@ version = "0.1.0"
 dependencies = [
  "ceasefire-ai",
  "ceasefire-core",
+ "ceasefire-tactical",
  "image",
  "serde",
  "serde_json",
