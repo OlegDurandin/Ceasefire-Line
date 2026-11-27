@@ -18,6 +18,7 @@ const facts: HexFacts = {
   info: { ap: 2, defense_mult: 1.3, max_entrench: 3 },
   control: "Сирия",
   supply: null,
+  forecast: null,
   road: "track",
   enemyZoc: false,
   occupant: null,
@@ -33,6 +34,13 @@ describe("hex mode (R-UI-04)", () => {
       "Дорога грунтовая",
       "ZOC врага нет",
     ]);
+  });
+
+  it("R-SUP-04: supply after entering a hex that is not own", () => {
+    const row = hexRows({ ...facts, forecast: 6 }, ru)[3]!;
+    expect(row.value).toBe("— → 6");
+    expect(row.tip).toBe("forecast");
+    expect(hexRows({ ...facts, supply: 2, forecast: 5 }, ru)[3]!.value).toBe("2 → 5");
   });
 
   it("closed and impassable hexes", () => {

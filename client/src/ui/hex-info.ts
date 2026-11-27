@@ -27,6 +27,8 @@ export interface HexFacts {
   control: string;
   /** Own side's supply here, or null where it does not reach. */
   supply: number | null;
+  /** R-SUP-04: supply after an own unit enters a hex that is not own yet. */
+  forecast: number | null;
   road: "road" | "track" | null;
   enemyZoc: boolean;
   occupant: string | null;
@@ -48,7 +50,11 @@ export function hexRows(f: HexFacts, ru: Locale): { label: string; value: string
     { label: t("ui.hex.move"), value: move, tip: "move" },
     { label: t("ui.hex.defense"), value: f.info ? `×${num(f.info.defense_mult, 1)}` : "—", tip: "defense" },
     { label: t("ui.hex.max_entrench"), value: f.info ? String(f.info.max_entrench) : "—", tip: "entrench" },
-    { label: t("ui.hex.supply"), value: f.supply === null ? "—" : String(f.supply), tip: "supply" },
+    {
+      label: t("ui.hex.supply"),
+      value: f.forecast === null ? (f.supply === null ? "—" : String(f.supply)) : `${f.supply ?? "—"} → ${f.forecast}`,
+      tip: f.forecast === null ? "supply" : "forecast",
+    },
     { label: t("ui.hex.road"), value: road, tip: "road" },
     { label: t("ui.hex.enemy_zoc"), value: t(f.enemyZoc ? "ui.yes" : "ui.no"), tip: "zoc" },
   ];
@@ -66,6 +72,7 @@ export function hexCardHtml(f: HexFacts | null, where: "selected" | "cursor", si
     defense: t("ui.hex.defense_tip"),
     entrench: fill(t("ui.entrench_tip"), { terrain: f.terrainName, max: f.info?.max_entrench ?? "—", min: r.entrenchMinSupply }),
     supply: t("ui.hex.supply_tip"),
+    forecast: t("ui.hex.forecast_tip"),
     road: t("ui.hex.road"),
     zoc: t("ui.hex.zoc_tip"),
   };

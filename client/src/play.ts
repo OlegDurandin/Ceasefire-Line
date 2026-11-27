@@ -156,6 +156,8 @@ export class Play {
   /** Own supply and enemy ZOC of the active side, per refresh (hex mode). */
   private supplyHere: Map<string, number> | null = null;
   private zocHere: Set<string> | null = null;
+  /** R-SUP-04: supply after entering hexes that are not own, by `key`. */
+  private forecastHere = new Map<string, number>();
   private minimap: Minimap;
   /** A result is on show in the attack window (the window stays in attack mode). */
   private showingResult = false;
@@ -216,6 +218,7 @@ export class Play {
     this.state = JSON.parse(this.game.state()) as GameStateView;
     this.supplyHere = null;
     this.zocHere = null;
+    this.forecastHere.clear();
     for (const u of this.state.units) this.known.set(u.id, { class: u.class, side: u.side });
     this.bridges.removeChildren().forEach((c) => c.destroy({ children: true }));
     this.bridges.addChild(drawBridges(this.state.bridges, this.mapTex, this.size));
@@ -412,11 +415,7 @@ export class Play {
     }
     for (const b of top.querySelectorAll<HTMLButtonElement>("[data-layer]")) {
       b.onclick = () => {
-        const l = b.dataset.layer as Layer;
-        if (this.layers.has(l)) this.layers.delete(l);
-        else this.layers.add(l);
-        this.drawTop();
-        this.drawLayers();
+        this.toggleLayer(b.dataset.layer as Layer);
       };
     }
     const on = (id: string, f: () => void) => {
@@ -450,6 +449,14 @@ export class Play {
       const plan = JSON.parse(this.game.aiPlan()) as AiPlanView | null;
       if (plan) this.layerBox.addChild(drawIntent(this.size, plan, this.state.units));
     }
+  }
+
+  /** R-UI-02 layer on / off (buttons, key S for supply). */
+  private toggleLayer(l: Layer) {
+    if (this.layers.has(l)) this.layers.delete(l);
+    else this.layers.add(l);
+    this.drawTop();
+    this.drawLayers();
   }
 
   /** R-UI-04 panels under the tabs: purchases, reinforcements on the way, technologies, reports. */
@@ -734,16 +741,25 @@ export class Play {
     if (!this.zocHere) this.zocHere = new Set((JSON.parse(this.game.zoc(side)) as [number, number][]).map(([x, y]) => key(x, y)));
     const owner = this.state.control.find(([[x, y]]) => x === c.col && y === c.row)?.[1];
     const u = this.unitAt(c.col, c.row);
+    const closed = this.state.neutral.some(([x, y]) => x === c.col && y === c.row);
+    const info = this.ctx.terrain.get(h.terrain) ?? null;
+    // R-SUP-04: what supply would be here after entering — for hexes not own yet.
+    let forecast: number | null = null;
+    if (owner !== side && !closed && info && info.ap > 0 && !(u && u.side !== side)) {
+      if (!this.forecastHere.has(k)) this.forecastHere.set(k, this.game.supplyIf(side, c.col, c.row));
+      forecast = this.forecastHere.get(k)!;
+    }
     return {
       col: c.col,
       row: c.row,
       terrain: h.terrain,
       terrainName: this.t(`terrain.${h.terrain}`, h.terrain),
       texture: this.ctx.terrainTexture(h.terrain),
-      closed: this.state.neutral.some(([x, y]) => x === c.col && y === c.row),
-      info: this.ctx.terrain.get(h.terrain) ?? null,
+      closed,
+      info,
       control: owner === undefined ? this.t("ui.nobody", "—") : this.sideName(owner),
       supply: this.supplyHere.get(k) ?? null,
+      forecast,
       road: this.ctx.roadHexes.has(k) ? "road" : this.ctx.trackHexes.has(k) ? "track" : null,
       enemyZoc: this.zocHere.has(k),
       occupant: u ? `${this.unitName(u)}${u.hq_rating !== null ? ` ★${u.hq_rating}` : ""} (${this.sideName(u.side)})` : null,
@@ -763,7 +779,12 @@ export class Play {
       const u = this.state.units.find((x) => x.id === t.target);
       return u && u.col === f.col && u.row === f.row;
     });
-    const supply = f.supply === null ? "" : ` · ${this.t("ui.supply_short")} ${f.supply}`;
+    const supply =
+      f.forecast !== null
+        ? ` · ${fill(this.t("ui.supply_after_entry"), { n: f.forecast })}`
+        : f.supply === null
+          ? ""
+          : ` · ${this.t("ui.supply_short")} ${f.supply}`;
     const when = this.t(this.state.night ? "ui.night" : "ui.day");
     el.innerHTML = `${this.t(target ? "ui.target" : "ui.cursor")} (${f.col}, ${f.row}) · ${f.terrainName.toLowerCase()} · ${f.control}<br>${when.charAt(0).toUpperCase()}${when.slice(1)}${supply}`;
     el.style.display = "block";
@@ -1118,6 +1139,7 @@ export class Play {
     else if (k === "u" || k === "г") this.setStyle(this.ctx.style === "miniature" ? "medallion" : "miniature");
     else if (k === "i" || k === "ш") this.toggleInfo();
     else if (k === "l" || k === "д") this.showSummary();
+    else if (k === "s" || k === "ы") this.toggleLayer("supply");
     else if (e.key === "Escape") {
       if (!this.selection) return;
       this.deselect();
@@ -1457,7 +1479,7 @@ export class Play {
   }
 
   private help() {
-    const keys = ["n", "enter", "undo", "i", "l", "u", "esc"].map((k) => `<li>${this.t(`ui.help.${k}`)}</li>`).join("");
+    const keys = ["n", "enter", "undo", "i", "l", "s", "u", "esc"].map((k) => `<li>${this.t(`ui.help.${k}`)}</li>`).join("");
     this.modal(`<h2>${this.t("ui.help")}</h2><b>${this.t("ui.help.keys")}</b><ul class="help">${keys}</ul><p class="help">${this.t("ui.help.mouse")}</p>`);
   }
 

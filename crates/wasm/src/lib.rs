@@ -874,6 +874,16 @@ impl Game {
         to_json(&cells)
     }
 
+    /// R-SUP-04: the supply `side` would have at `[col, row]` once its unit
+    /// enters it — the hex becomes its own (R-MOVE-06) and the unit exerts ZOC.
+    #[wasm_bindgen(js_name = supplyIf)]
+    pub fn supply_if(&self, side: u8, col: i32, row: i32) -> Result<u8, JsError> {
+        let side = ceasefire_core::side::SideId(side);
+        let h = ceasefire_core::scenario::offset_to_axial([col, row]);
+        let m = self.state.hex_supply_if(side, &[(h, side)]).map_err(js)?;
+        Ok(m.get(h))
+    }
+
     /// R-UI-02 ZOC layer: hexes in the ZOC of `side`'s enemies.
     pub fn zoc(&self, side: u8) -> Result<String, JsError> {
         let hexes: Vec<[i32; 2]> = self

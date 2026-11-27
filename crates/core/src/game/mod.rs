@@ -949,12 +949,20 @@ impl GameState {
             .sources
             .iter()
             .filter(|(h, _)| control.get(h) == Some(&side))
-            .map(|(&hex, s)| SupplySource {
-                hex,
-                value: match &linked {
-                    Some(l) if s.base < max && !l.contains(&hex) => s.current.min(cap),
-                    _ => s.current,
-                },
+            .map(|(&hex, s)| {
+                // A trial recount that takes a source captures it (R-SUP-01, as `take_hex`).
+                let current = if self.control.get(&hex) == control.get(&hex) {
+                    s.current
+                } else {
+                    s.base / self.data.rules.supply.captured_source_divisor
+                };
+                SupplySource {
+                    hex,
+                    value: match &linked {
+                        Some(l) if s.base < max && !l.contains(&hex) => current.min(cap),
+                        _ => current,
+                    },
+                }
             })
             .collect())
     }
