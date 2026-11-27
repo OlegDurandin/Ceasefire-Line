@@ -373,3 +373,24 @@ fn r_ai_01_no_threat_no_guard() {
         "{plan:?}"
     );
 }
+
+/// Item 6: the neck (4,0) is an own chokepoint of B and, with A next to it,
+/// the salient behind it is at risk (supply to the cut band) — `w_risk`
+/// pushes B's units out of it, `w_choke` onto the neck.
+#[test]
+fn r_ai_01_position_risk_and_own_chokepoints() {
+    let s = neck(false, "plain", &[]);
+    let plan = defend_plan(&s);
+    assert!(
+        plan.own_chokes.contains(&Hex::new(4, 0)),
+        "{:?}",
+        plan.own_chokes
+    );
+    for h in [Hex::new(3, 0), Hex::new(3, 1)] {
+        assert!(plan.risk.contains(&h), "{h:?} at risk: {:?}", plan.risk);
+    }
+    assert!(
+        !plan.risk.contains(&Hex::new(6, 0)),
+        "behind the neck is safe"
+    );
+}

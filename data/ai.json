@@ -50,7 +50,6 @@
     "reach_two_phases": 0.6,
     "loss_weight": 0.02,
     "pin_radius": 4,
-    "dependency_weight": 1.0,
     "finish_bonus": 1.0,
     "min_own_supply": 2,
     "min_vp": 0.5,
@@ -78,5 +77,13 @@
     "threat_radius": 2,
     "need_ratio": 1.0,
     "max_per_phase": 1
+  },
+  "position": {
+    "_comment": "Step 7 item 6: position terms of the hex score (weights for the tournament, ± seeded jitter per game and side): w_cut — tanks and mechs on enemy supply paths (was pockets.dependency_weight); w_pocket — contact with enemy units at supply 0; w_risk — own steps in hexes a threatened own chokepoint would cut; w_choke — a ground unit on an own chokepoint.",
+    "w_cut": 1.0,
+    "w_pocket": 0.5,
+    "w_risk": 1.0,
+    "w_choke": 1.0,
+    "jitter": 0.25
   }
 }

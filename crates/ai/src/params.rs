@@ -76,8 +76,6 @@ pub struct PocketWeights {
     pub loss_weight: f64,
     /// «Сковывание»: infantry and artillery within this many hexes of a cut unit keep contact.
     pub pin_radius: u32,
-    /// Tanks and mechs: hex score + this × D(h) / max D.
-    pub dependency_weight: f64,
     /// «Добивание»: attack bonus (attacker's MPP per step) on targets at supply 0.
     pub finish_bonus: f64,
     /// No move may end where own supply in a phase drops below this, except on a chokepoint.
@@ -99,6 +97,24 @@ pub struct PocketWeights {
     /// A unit leaves its operation at unit supply ≤ this or strength ≤ `drop_strength`.
     pub drop_supply: u8,
     pub drop_strength: u8,
+}
+
+/// Step 7 item 6: position terms of the hex score, weights for the tournament.
+#[derive(Debug, Clone, Deserialize)]
+pub struct PositionWeights {
+    #[serde(default, rename = "_comment")]
+    _comment: Option<String>,
+    /// Tanks and mechs: × D(h) / max D — enemy steps (by price) whose supply the hex cuts.
+    pub w_cut: f64,
+    /// × steps / 10 of enemy units at supply 0 next to the hex.
+    pub w_pocket: f64,
+    /// − × own steps / 10 in a hex whose supply drops to the cut band if the
+    /// enemy takes a threatened own chokepoint.
+    pub w_risk: f64,
+    /// + for a ground unit on an own chokepoint.
+    pub w_choke: f64,
+    /// ± seeded spread of each weight per game and side.
+    pub jitter: f64,
 }
 
 /// R-AI-01 «сектора», R-MOVE-05: reserves between sectors (stage 4 step 7).
@@ -168,6 +184,7 @@ pub struct AiParams {
     pub pockets: PocketWeights,
     pub defend: DefendWeights,
     pub transfer: TransferWeights,
+    pub position: PositionWeights,
 }
 
 impl AiParams {

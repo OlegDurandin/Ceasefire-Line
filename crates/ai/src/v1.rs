@@ -83,6 +83,11 @@ pub struct Plan {
     pub withdraw: BTreeMap<UnitId, Hex>,
     /// Defended own chokepoints: the VP the enemy's pocket through each would take.
     pub guard_vp: BTreeMap<Hex, f64>,
+    /// Step 7 item 6: own hexes whose supply drops to the cut band if the
+    /// enemy takes a threatened own chokepoint.
+    pub risk: BTreeSet<Hex>,
+    /// Own chokepoints the side depends on enough (`defend.min_share`).
+    pub own_chokes: BTreeSet<Hex>,
     /// Own hex supply now (for the «no stranding» rule).
     own_supply: SupplyMap,
 }
@@ -157,6 +162,7 @@ impl AiV1 {
             };
             self.fill_plan(s, &mut plan, ops.clone());
             self.defend(s, &mut plan);
+            self.position_maps(s, &mut plan);
             let d = self.stats.defend.entry(key.1).or_default();
             d.0 += plan.guard.len() as u32;
             d.1 += plan.withdraw.len() as u32;
@@ -846,13 +852,84 @@ impl AiV1 {
                 .units
                 .get(&u.class)
                 .is_ok_and(|c| c.has_tag(UnitTag::Exploitation));
-        if mobile {
-            if let Some(plan) = &self.plan {
-                score += self.params.pockets.dependency_weight
+        // Step 7 item 6: the position terms.
+        let p = &self.params.position;
+        if let Some(plan) = &self.plan {
+            if mobile {
+                score += self.weight(p.w_cut, 1, b.side)
                     * plan.dependency.get(&h).copied().unwrap_or(0.0);
+            }
+            let cut_off: f64 = b
+                .enemy
+                .iter()
+                .filter(|e| e.supply == 0 && e.hex.distance(h) == 1)
+                .map(|e| f64::from(e.strength) / 10.0)
+                .sum();
+            score += self.weight(p.w_pocket, 2, b.side) * cut_off;
+            let holds = plan.guard.contains_key(&u.id) || plan.hold.contains(&u.id);
+            if plan.risk.contains(&h) && !holds {
+                score -= self.weight(p.w_risk, 3, b.side) * f64::from(u.strength) / 10.0;
+            }
+            if plan.own_chokes.contains(&h) && u.hq_rating.is_none() {
+                score += self.weight(p.w_choke, 4, b.side);
             }
         }
         score
+    }
+
+    /// A position weight with the game's seeded spread (± `position.jitter`).
+    fn weight(&self, w: f64, salt: u64, side: SideId) -> f64 {
+        let u = unit_float(self.seed, 0x9051_0000 + salt * 8 + u64::from(side.0));
+        w * (1.0 + self.params.position.jitter * (u * 2.0 - 1.0))
+    }
+
+    /// Step 7 item 6: own chokepoints the side depends on, and the hexes a
+    /// threatened one would cut (trial recount with the enemy on it).
+    fn position_maps(&self, s: &GameState, plan: &mut Plan) {
+        let p = &self.params.position;
+        let d = &self.params.defend;
+        if p.w_risk == 0.0 && p.w_choke == 0.0 {
+            return;
+        }
+        let us = s.active_side();
+        let Some(enemy) = s.units().map(|u| u.side).find(|x| *x != us) else {
+            return;
+        };
+        let total: f64 = s
+            .units()
+            .filter(|u| u.side == us)
+            .map(|u| crate::pockets::unit_weight(s, &u.class, u.strength))
+            .sum();
+        if total <= 0.0 {
+            return;
+        }
+        let band = self.params.pockets.cut_supply_max;
+        let enemy_ground: Vec<Hex> = s
+            .units()
+            .filter(|e| e.side == enemy && e.hq_rating.is_none() && !is_air(s, e))
+            .map(|e| e.hex)
+            .collect();
+        for (c, dep) in own_chokepoints(s, us, d.candidates).unwrap_or_default() {
+            if dep / total < d.min_share {
+                continue;
+            }
+            plan.own_chokes.insert(c);
+            if p.w_risk == 0.0
+                || !enemy_ground
+                    .iter()
+                    .any(|e| e.distance(c) <= d.threat_radius)
+            {
+                continue;
+            }
+            let Ok(after) = s.hex_supply_if(us, &[(c, enemy)]) else {
+                continue;
+            };
+            for (h, v) in plan.own_supply.iter() {
+                if v > band && after.get(h) <= band {
+                    plan.risk.insert(h);
+                }
+            }
+        }
     }
 
     /// The single move with the largest gain over staying put.
