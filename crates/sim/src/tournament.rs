@@ -8,8 +8,9 @@
 //!   perturbed weights (`--spread`).
 //! - Every candidate plays every opponent on every scenario, `--games` games in
 //!   each role (fixed seeds); a game scores ½ × outcome (1 win, ½ draw, 0)
-//!   plus ½ × VP share (0.5 + margin / 2 Σ objective VP, clamped): the margin
-//!   tells apart games the scenario's balance decides alone.
+//!   plus ½ × the acceptance measure (designer decision 2026-11-27): by date
+//!   the VP share (0.5 + margin / 2 Σ objective VP); by sudden death how early
+//!   the loser broke (the winner gains, the loser loses) and NM at the end.
 //! - Fitness = the minimum score over (scenario, opponent); ties by the mean.
 //! - `--rounds` > 1: the next round perturbs the best with half the spread.
 //!
@@ -175,18 +176,34 @@ fn play(
         None => 0.5,
         Some(_) => 0.0,
     };
-    // The VP margin tells apart games a scenario's balance decides alone
-    // («Синай-67»): ½ outcome + ½ margin, normalised by the objectives' VP.
-    let vp = |side: u8| o.vp.iter().find(|x| x.0 == SideId(side)).map_or(0, |x| x.1);
-    let scale = f64::from(
-        s.objectives()
-            .iter()
-            .map(|x| x.vp.max(1))
-            .sum::<i32>()
-            .max(1),
-    );
-    let margin = f64::from(vp(a_side) - vp(1 - a_side));
-    let share = (0.5 + margin / (2.0 * scale)).clamp(0.0, 1.0);
+    // Designer decision 2026-11-27 (acceptance measure): a game that ends by
+    // date — outcome and VP; by sudden death — outcome, the turn of the
+    // collapse and NM at the end.
+    let share = if o.reason == ceasefire_core::game::EndReason::SuddenDeath {
+        let last = f64::from(s.last_turn().unwrap_or(s.turn()).max(1));
+        let early = (1.0 - f64::from(s.turn()) / last).clamp(0.0, 1.0);
+        let won = match o.winner {
+            Some(w) if w == SideId(a_side) => 1.0,
+            None => 0.0,
+            Some(_) => -1.0,
+        };
+        let nm = |side: u8| {
+            s.side(SideId(side))
+                .map_or(0.0, |x| f64::from(x.national_morale_pct))
+        };
+        (0.5 + 0.5 * won * early + 0.1 * (nm(a_side) - nm(1 - a_side)) / 100.0).clamp(0.0, 1.0)
+    } else {
+        let vp = |side: u8| o.vp.iter().find(|x| x.0 == SideId(side)).map_or(0, |x| x.1);
+        let scale = f64::from(
+            s.objectives()
+                .iter()
+                .map(|x| x.vp.max(1))
+                .sum::<i32>()
+                .max(1),
+        );
+        let margin = f64::from(vp(a_side) - vp(1 - a_side));
+        (0.5 + margin / (2.0 * scale)).clamp(0.0, 1.0)
+    };
     Ok(0.5 * result + 0.5 * share)
 }
 
@@ -299,7 +316,7 @@ pub fn run(o: &Options) -> Result<(), String> {
         .collect();
     let mut best = base.clone();
     let mut report = format!(
-        "# Турнир весов ИИ v1\n\nСценарии: {}; соперники: «жадина», v1, v1 с разбросом ×2; {} партий в каждой роли; оценка партии — ½ исхода + ½ доли победных очков; оценка кандидата — минимум по (сценарий, соперник), затем среднее.\n",
+        "# Турнир весов ИИ v1\n\nСценарии: {}; соперники: «жадина», v1, v1 с разбросом ×2; {} партий в каждой роли; оценка партии — ½ исхода + ½ мерила приёмки (по дате — доля победных очков; внезапная смерть — ход развала и NM в конце); оценка кандидата — минимум по (сценарий, соперник), затем среднее.\n",
         o.scenarios.join(", "),
         o.games
     );
