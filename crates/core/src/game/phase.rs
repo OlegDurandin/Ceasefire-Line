@@ -239,9 +239,9 @@ impl GameState {
             } else if unit.supply <= s.low_supply_max {
                 ap = ap.saturating_sub(self.ap.low_supply_penalty);
             }
-            if night_penalised {
-                ap = ap.saturating_sub(self.ap.night_penalty);
-            }
+            // R-TURN-02: at night no AP are taken at phase start; the first
+            // hex off a road or into enemy ZOC costs more (moves.rs).
+            unit.night_surcharge_due = night_penalised;
             unit.ap_halves = ap.max(self.ap.min);
             unit.strikes_left = class.strikes;
             unit.can_move = true;

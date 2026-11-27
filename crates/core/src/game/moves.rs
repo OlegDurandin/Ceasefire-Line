@@ -18,6 +18,9 @@ struct Step {
     enters_zoc: bool,
     /// R-MOVE-02: across a canal without a bridge; costs all remaining AP.
     boat: bool,
+    /// R-TURN-02: along a road or dirt road and not into enemy ZOC — no
+    /// night surcharge.
+    on_road: bool,
 }
 
 /// Snapshot of what matters for one unit's movement.
@@ -83,6 +86,7 @@ impl<'a> MoveView<'a> {
                 cost: 0,
                 enters_zoc: self.stops_at(to),
                 boat: true,
+                on_road: false,
             });
         }
         let cost = entry_cost_halves(
@@ -111,7 +115,18 @@ impl<'a> MoveView<'a> {
             cost: cost + surcharge,
             enters_zoc: self.stops_at(to),
             boat: false,
+            on_road: (map.has_road(from, to) || map.has_track(from, to)) && !to_zoc,
         })
+    }
+
+    /// R-TURN-02: the night surcharge for this step when still `due`;
+    /// returns the extra cost and whether it is still due after the step.
+    fn night(&self, step: &Step, due: bool) -> (u32, bool) {
+        if due && !step.on_road {
+            (self.state.ap.night_penalty, false)
+        } else {
+            (0, due)
+        }
     }
 
     /// R-MOVE-07: the unit is in a breakthrough and the variant is on.
@@ -147,9 +162,10 @@ impl GameState {
         Ok(unit)
     }
 
-    /// Validates a path; returns its AP cost, whether it ends in enemy ZOC and
-    /// whether its last step is a boat crossing.
-    fn plan_move(&self, id: UnitId, path: &[Hex]) -> Result<(u32, bool, bool), RuleError> {
+    /// Validates a path; returns its AP cost, whether it ends in enemy ZOC,
+    /// whether its last step is a boat crossing and whether the night
+    /// surcharge (R-TURN-02) is still due after it.
+    fn plan_move(&self, id: UnitId, path: &[Hex]) -> Result<(u32, bool, bool, bool), RuleError> {
         let unit = self.movable_unit(id)?;
         let view = MoveView::new(self, unit);
         let Some(&last) = path.last() else {
@@ -159,6 +175,7 @@ impl GameState {
         let mut total = 0u32;
         let mut in_zoc_stop = false;
         let mut boat = false;
+        let mut night_due = unit.night_surcharge_due;
         for (i, &to) in path.iter().enumerate() {
             if in_zoc_stop {
                 return Err(view.illegal(MoveError::ZocStop));
@@ -167,7 +184,9 @@ impl GameState {
                 return Err(view.illegal(MoveError::BoatCrossingNotLast));
             }
             let step = view.step(from, to, i == 0)?;
-            total = total.saturating_add(step.cost);
+            let (night, due) = view.night(&step, night_due);
+            night_due = due;
+            total = total.saturating_add(step.cost + night);
             in_zoc_stop = step.enters_zoc;
             boat = step.boat;
             from = to;
@@ -185,13 +204,16 @@ impl GameState {
             return Err(view.illegal(MoveError::NotEnoughAp));
         }
         let cost = if boat { unit.ap_halves } else { total };
-        Ok((cost, in_zoc_stop, boat))
+        Ok((cost, in_zoc_stop, boat, night_due))
     }
 
     /// R-MOVE-01..04, R-MOVE-06.
     pub(super) fn move_unit(&mut self, id: UnitId, path: &[Hex]) -> Result<Vec<Event>, RuleError> {
-        let (cost, ends_in_zoc, by_boat) = self.plan_move(id, path)?;
+        let (cost, ends_in_zoc, by_boat, night_due) = self.plan_move(id, path)?;
         let side = self.get_unit(id)?.side;
+        // R-MOVE-06: a hex of the path in enemy ZOC (as the move began)
+        // does not change hands; the final hex always does.
+        let zoc = MoveView::new(self, self.get_unit(id)?).zoc;
         let boat_penalty = self.data.rules.movement.boat_crossing_readiness_pct;
         let mut events = vec![Event::UnitMoved {
             unit: id,
@@ -199,8 +221,10 @@ impl GameState {
             ap_spent_halves: cost,
             by_boat,
         }];
-        for &hex in path {
-            self.take_hex(hex, side, &mut events);
+        for (i, &hex) in path.iter().enumerate() {
+            if i + 1 == path.len() || !zoc.contains(&hex) {
+                self.take_hex(hex, side, &mut events);
+            }
         }
         let unit = self
             .units
@@ -210,6 +234,7 @@ impl GameState {
             unit.hex = last;
         }
         unit.ap_halves -= cost;
+        unit.night_surcharge_due = night_due;
         unit.entrenchment = 0;
         unit.moved = true;
         unit.acted = true;
@@ -223,50 +248,68 @@ impl GameState {
         Ok(events)
     }
 
-    /// Dijkstra over legal steps: best cost and predecessor per hex. Boat
+    /// Dijkstra over legal steps and the night surcharge state (R-TURN-02):
+    /// best cost and predecessor per (hex, surcharge still due). Boat
     /// crossings are terminal and cost all remaining AP.
-    fn search(&self, unit: &Unit) -> Result<BTreeMap<Hex, (u32, Hex)>, RuleError> {
+    fn search(&self, unit: &Unit) -> Result<BTreeMap<Node, (u32, Node)>, RuleError> {
         let view = MoveView::new(self, unit);
-        let start = unit.hex;
-        let mut best: BTreeMap<Hex, (u32, Hex)> = BTreeMap::from([(start, (0, start))]);
+        let start: Node = (unit.hex, unit.night_surcharge_due);
+        let mut best: BTreeMap<Node, (u32, Node)> = BTreeMap::from([(start, (0, start))]);
         let mut heap = BinaryHeap::from([Reverse((0u32, start))]);
-        let mut boats: BTreeMap<Hex, Hex> = BTreeMap::new();
-        while let Some(Reverse((cost, hex))) = heap.pop() {
-            if best.get(&hex).is_some_and(|&(b, _)| cost > b) {
+        let mut boats: BTreeMap<Node, Node> = BTreeMap::new();
+        while let Some(Reverse((cost, node))) = heap.pop() {
+            let (hex, due) = node;
+            if best.get(&node).is_some_and(|&(b, _)| cost > b) {
                 continue;
             }
-            if hex != start && view.stops_at(hex) {
+            if hex != start.0 && view.stops_at(hex) {
                 continue;
             }
             for next in hex.neighbors() {
-                let step = match view.step(hex, next, hex == start) {
+                let step = match view.step(hex, next, hex == start.0) {
                     Ok(s) => s,
                     Err(RuleError::IllegalMove { .. }) => continue,
                     Err(e) => return Err(e),
                 };
-                if next == start {
+                if next == start.0 {
                     continue;
                 }
+                let (night, next_due) = view.night(&step, due);
+                let next_node = (next, next_due);
                 if step.boat {
-                    if cost.saturating_add(self.ap.min) <= unit.ap_halves {
-                        boats.entry(next).or_insert(hex);
+                    if cost.saturating_add(night).saturating_add(self.ap.min) <= unit.ap_halves {
+                        boats.entry(next_node).or_insert(node);
                     }
                     continue;
                 }
-                let next_cost = cost.saturating_add(step.cost);
+                let next_cost = cost.saturating_add(step.cost + night);
                 if next_cost > unit.ap_halves {
                     continue;
                 }
-                if best.get(&next).is_none_or(|&(b, _)| next_cost < b) {
-                    best.insert(next, (next_cost, hex));
-                    heap.push(Reverse((next_cost, next)));
+                if best.get(&next_node).is_none_or(|&(b, _)| next_cost < b) {
+                    best.insert(next_node, (next_cost, node));
+                    heap.push(Reverse((next_cost, next_node)));
                 }
             }
         }
-        for (hex, from) in boats {
-            best.entry(hex).or_insert((unit.ap_halves, from));
+        for (node, from) in boats {
+            best.entry(node).or_insert((unit.ap_halves, from));
         }
         Ok(best)
+    }
+
+    /// Cheapest search node per hex (ties: surcharge still due first).
+    fn cheapest(best: &BTreeMap<Node, (u32, Node)>) -> BTreeMap<Hex, (u32, Node)> {
+        let mut out: BTreeMap<Hex, (u32, Node)> = BTreeMap::new();
+        for (&node, &(cost, _)) in best {
+            let better = out
+                .get(&node.0)
+                .is_none_or(|&(c, n)| cost < c || (cost == c && node.1 && !n.1));
+            if better {
+                out.insert(node.0, (cost, node));
+            }
+        }
+        out
     }
 
     /// R-MOVE-01..03: hexes the unit can end its move in, with AP cost (half-points).
@@ -276,8 +319,7 @@ impl GameState {
             return Ok(BTreeMap::new());
         }
         let view = MoveView::new(self, unit);
-        Ok(self
-            .search(unit)?
+        Ok(Self::cheapest(&self.search(unit)?)
             .into_iter()
             .filter(|&(hex, _)| hex != unit.hex && view.can_end_at(hex))
             .map(|(hex, (cost, _))| (hex, cost))
@@ -292,16 +334,22 @@ impl GameState {
         }
         let unit = self.get_unit(id)?;
         let best = self.search(unit)?;
+        let Some(&(_, mut cur)) = Self::cheapest(&best).get(&to) else {
+            return Ok(None);
+        };
+        let start = (unit.hex, unit.night_surcharge_due);
         let mut path = vec![to];
-        let mut cur = to;
         while let Some(&(_, prev)) = best.get(&cur) {
-            if prev == unit.hex {
+            if prev == start || prev.0 == unit.hex {
                 break;
             }
-            path.push(prev);
+            path.push(prev.0);
             cur = prev;
         }
         path.reverse();
         Ok(Some(path))
     }
 }
+
+/// A search state: hex and whether the night surcharge is still due.
+type Node = (Hex, bool);

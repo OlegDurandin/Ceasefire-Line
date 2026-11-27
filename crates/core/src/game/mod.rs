@@ -111,6 +111,10 @@ pub struct Unit {
     /// through enemy ZOC until it attacks again or the phase ends.
     #[serde(default)]
     pub breakthrough: bool,
+    /// R-TURN-02: at night the first hex of the phase off a road or into
+    /// enemy ZOC costs `movement.night_ap_penalty` more; set at phase start.
+    #[serde(default)]
+    pub night_surcharge_due: bool,
 }
 
 impl Unit {
@@ -151,6 +155,7 @@ impl Unit {
             crossing_penalty_pct: 0,
             event_penalty_pct: 0,
             breakthrough: false,
+            night_surcharge_due: false,
         }
     }
 

@@ -180,7 +180,7 @@ fn r_move_03_weak_units_have_no_zoc() {
 }
 
 #[test]
-fn r_turn_02_night_costs_ap() {
+fn r_turn_02_night_first_hex_costs_ap() {
     let (map, control) = board();
     let units = vec![
         unit("tank", A, Hex::new(2, 0)),
@@ -191,8 +191,18 @@ fn r_turn_02_night_costs_ap() {
     s.apply(Command::EndPhase).unwrap();
     s.apply(Command::EndPhase).unwrap();
     assert!(s.is_night());
-    assert_eq!(ap(&s, 1), 8, "night −1 AP");
+    // R-TURN-02 (designer decision 2026-11-27): full AP, the first hex off
+    // a road or into enemy ZOC costs +1 AP — on a plain 1 + 1.
+    assert_eq!(ap(&s, 1), 10);
+    assert_eq!(
+        s.reachable(UnitId(1)).unwrap().get(&Hex::new(1, 0)),
+        Some(&4)
+    );
     assert_eq!(ap(&s, 2), 6, "commando: night combat, no penalty");
+    assert_eq!(
+        s.reachable(UnitId(2)).unwrap().get(&Hex::new(1, 1)),
+        Some(&2)
+    );
 }
 
 #[test]

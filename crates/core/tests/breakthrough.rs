@@ -7,6 +7,7 @@ use std::collections::BTreeMap;
 
 use ceasefire_core::game::{Command, Event, GameState, UnitId, UnitSetup};
 use ceasefire_core::hex::Hex;
+use ceasefire_core::map::HexMap;
 use ceasefire_core::{MoveError, RuleError};
 
 use common::scenario::{board, setup, start, unit, A, B};
@@ -177,12 +178,18 @@ fn night(classes: &[&str]) -> GameState {
 fn r_turn_02_side_night_combat() {
     let plain = night(&[]);
     assert!(plain.is_night());
-    assert_eq!(ap(&plain, 1), 4, "3 AP − 1 at night");
+    assert_eq!(
+        ap(&plain, 1),
+        6,
+        "full AP at night; the first hex costs more"
+    );
+    assert!(plain.unit(UnitId(1)).unwrap().night_surcharge_due);
     let fire = plain.explain_attack(UnitId(1), UnitId(2)).unwrap();
     assert!((fire[0].attack_mult - 0.8).abs() < 1e-9);
 
     let trained = night(&["infantry"]);
-    assert_eq!(ap(&trained, 1), 6, "no night AP penalty");
+    assert_eq!(ap(&trained, 1), 6);
+    assert!(!trained.unit(UnitId(1)).unwrap().night_surcharge_due);
     let fire = trained.explain_attack(UnitId(1), UnitId(2)).unwrap();
     assert!((fire[0].attack_mult - 1.0).abs() < 1e-9);
 }
@@ -193,4 +200,111 @@ fn r_turn_02_night_combat_class_must_exist() {
     let mut s = setup(map, control, vec![]);
     s.sides[0].night_combat = vec!["paratroops".into()];
     assert!(GameState::new(std::sync::Arc::new(common::data()), s).is_err());
+}
+
+/// Night (turn 2): `class` of A at (0,0), a road along r = 0 from q = 0 to
+/// 6; enemy infantry at (3,-2), its ZOC covers (2,-1) next to the road.
+fn night_road(class: &str, day: bool) -> GameState {
+    let (mut map, control): (HexMap, _) = board();
+    for q in 0..6 {
+        map.add_road(Hex::new(q, 0), Hex::new(q + 1, 0)).unwrap();
+    }
+    let mut s = setup(
+        map,
+        control,
+        vec![
+            unit(class, A, Hex::new(0, 0)),
+            unit("infantry", B, Hex::new(3, -2)),
+        ],
+    );
+    s.start_turn = if day { 1 } else { 2 };
+    start(s)
+}
+
+#[test]
+fn r_turn_02_night_column_on_road_keeps_full_ap() {
+    let mut s = night_road("mech", false);
+    assert_eq!(ap(&s, 1), 8, "no AP taken at the phase start");
+    mv(&mut s, 1, &[(1, 0), (2, 0), (3, 0)]).unwrap();
+    assert_eq!(ap(&s, 1), 5, "3 road hexes × 0,5 AP, no surcharge");
+    assert!(s.unit(UnitId(1)).unwrap().night_surcharge_due);
+}
+
+#[test]
+fn r_turn_02_night_leaving_the_road_pays_once() {
+    let mut s = night_road("mech", false);
+    assert_eq!(
+        s.reachable(UnitId(1)).unwrap().get(&Hex::new(0, 1)),
+        Some(&4)
+    );
+    mv(&mut s, 1, &[(0, 1)]).unwrap();
+    assert_eq!(ap(&s, 1), 4, "plain 1 AP + night 1 AP");
+    assert!(!s.unit(UnitId(1)).unwrap().night_surcharge_due);
+    mv(&mut s, 1, &[(0, 2)]).unwrap();
+    assert_eq!(ap(&s, 1), 2, "once per phase");
+
+    // By day — no surcharge.
+    let mut d = night_road("mech", true);
+    mv(&mut d, 1, &[(0, 1)]).unwrap();
+    assert_eq!(ap(&d, 1), 6);
+}
+
+#[test]
+fn r_turn_02_night_entering_zoc_pays_if_not_yet_paid() {
+    // Tank, 5 AP = 10 half-points.
+    let mut s = night_road("tank", false);
+    mv(&mut s, 1, &[(1, 0), (2, 0), (2, -1)]).unwrap();
+    assert_eq!(ap(&s, 1), 4, "2 road hexes + ZOC hex 1 AP + night 1 AP");
+
+    // Paid off the road first: the ZOC hex costs no more.
+    let mut t = night_road("tank", false);
+    mv(&mut t, 1, &[(0, 1), (1, 0), (2, 0), (2, -1)]).unwrap();
+    assert_eq!(
+        ap(&t, 1),
+        1,
+        "(0,1) 1 + night 1, (1,0) 1, road 0,5, ZOC hex 1"
+    );
+}
+
+#[test]
+fn r_move_06_breakthrough_keeps_control_of_zoc_hexes() {
+    // The line of `line()`, but the gap's retreat is blocked by two weak A
+    // units at (4,-1) and (4,0) (no ZOC below strength 5); B has a source at (6,1).
+    let (map, control) = board();
+    let weak = UnitSetup {
+        strength: 2,
+        ..unit("infantry", B, Hex::new(3, 0))
+    };
+    let mut units = vec![unit("tank", A, Hex::new(2, 0)), weak];
+    for r in [-2, -1, 1, 2] {
+        units.push(unit("infantry", B, Hex::new(3, r)));
+    }
+    for h in [Hex::new(4, -1), Hex::new(4, 0)] {
+        units.push(UnitSetup {
+            strength: 3,
+            ..unit("infantry", A, h)
+        });
+    }
+    let mut sc = setup(map, control, units);
+    sc.sources.push(ceasefire_core::supply::SupplySource {
+        hex: Hex::new(6, 1),
+        value: 10,
+    });
+    let mut s = start(sc);
+    break_in(&mut s);
+    assert_eq!(s.controller(Hex::new(4, 0)), Some(B));
+    let before = s.hex_supply(B).unwrap();
+
+    // (4,0) is in the ZOC of (3,1): passed through, it stays B's; the
+    // final hex (5,-1) changes hands.
+    mv(&mut s, 1, &[(4, 0), (5, -1)]).unwrap();
+    assert_eq!(s.controller(Hex::new(4, 0)), Some(B));
+    assert_eq!(s.controller(Hex::new(5, -1)), Some(A));
+    // The southern half of the line keeps its path from (6,1) by (5,1),
+    // (4,1); the northern half is cut by the tank's own ZOC, not by control.
+    let after = s.hex_supply(B).unwrap();
+    for r in [1, 2] {
+        let h = Hex::new(3, r);
+        assert_eq!(after.get(h), before.get(h), "B supply at {h:?}");
+    }
 }
