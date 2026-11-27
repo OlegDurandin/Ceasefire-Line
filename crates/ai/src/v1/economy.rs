@@ -187,7 +187,8 @@ impl AiV1 {
             }
         }
 
-        // Transfer reserve with two sectors or more (R-MOVE-05).
+        // Transfer reserve with two sectors or more (R-MOVE-05); not kept when
+        // the MPP do not cover it — no transfer this phase anyway (test C).
         let reserve = if self.hints.sectors.len() >= 2 {
             own.iter()
                 .filter_map(|u| s.transfer_cost(u.id).ok())
@@ -196,6 +197,7 @@ impl AiV1 {
         } else {
             0
         };
+        let reserve = if reserve > side.mpp { 0 } else { reserve };
 
         cands.retain(|c| c.value > 0.0 && c.cost > 0);
         cands.sort_by(|a, b| {

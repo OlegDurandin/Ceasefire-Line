@@ -71,5 +71,12 @@
     "threat_radius": 3,
     "guard_radius": 6,
     "max_guards": 2
+  },
+  "transfer": {
+    "_comment": "R-AI-01 «сектора», R-MOVE-05 (step 7): a free reserve goes by road to the sector whose threat exceeds its forces.",
+    "enabled": true,
+    "threat_radius": 2,
+    "need_ratio": 1.0,
+    "max_per_phase": 1
   }
 }

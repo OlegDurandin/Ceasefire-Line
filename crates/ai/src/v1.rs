@@ -29,6 +29,7 @@ use crate::pockets::{
 };
 
 mod economy;
+mod transfer;
 
 pub struct AiV1 {
     params: AiParams,
@@ -47,6 +48,8 @@ pub struct AiV1 {
     pub stats: OpStats,
     /// R-AI-01 п. 3: the phase's economy commands, decided at its start.
     eco: Option<((u32, u8), std::collections::VecDeque<Command>)>,
+    /// R-MOVE-05: transfers made this phase.
+    transfers_done: u32,
 }
 
 /// A chokepoint and the unit sent to it (`None`: an own unit already holds it).
@@ -118,6 +121,7 @@ impl AiV1 {
             attacked: BTreeSet::new(),
             stats: OpStats::default(),
             eco: None,
+            transfers_done: 0,
         }
     }
 
@@ -508,6 +512,7 @@ impl AiV1 {
         if self.eco.as_ref().is_none_or(|(k, _)| *k != key) {
             let queue = self.economy_plan(s);
             self.eco = Some((key, queue.into()));
+            self.transfers_done = 0;
         }
         let b = self.board(s);
         if let Some(c) = self.advance(&b) {
@@ -519,6 +524,11 @@ impl AiV1 {
                     return c;
                 }
             }
+        }
+        // R-AI-01 «сектора»: a reserve to the threatened sector before the fighting.
+        if let Some(c) = self.transfer(&b).filter(|c| accepted(s, c)) {
+            self.transfers_done += 1;
+            return c;
         }
         // R-AI-01 step 7: the breakthrough operations first, in order.
         if let Some(c) = self.breakthrough(&b) {

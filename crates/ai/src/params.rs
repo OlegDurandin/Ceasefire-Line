@@ -101,6 +101,19 @@ pub struct PocketWeights {
     pub drop_strength: u8,
 }
 
+/// R-AI-01 «сектора», R-MOVE-05: reserves between sectors (stage 4 step 7).
+#[derive(Debug, Clone, Deserialize)]
+pub struct TransferWeights {
+    #[serde(default, rename = "_comment")]
+    _comment: Option<String>,
+    pub enabled: bool,
+    /// Enemy ground units this close to a sector's hexes threaten it.
+    pub threat_radius: u32,
+    /// A sector needs help when its threat exceeds its forces × this.
+    pub need_ratio: f64,
+    pub max_per_phase: u32,
+}
+
 /// Step 7 item 5 «защита своих горловин» (R-AI-01, the side's own pockets).
 #[derive(Debug, Clone, Deserialize)]
 pub struct DefendWeights {
@@ -154,6 +167,7 @@ pub struct AiParams {
     pub economy: EconomyWeights,
     pub pockets: PocketWeights,
     pub defend: DefendWeights,
+    pub transfer: TransferWeights,
 }
 
 impl AiParams {
