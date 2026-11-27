@@ -4,7 +4,36 @@
 // its target — by the sign of dx. Flat-top hexes: screen x = 1.5·size·q, so
 // the sign of dx is the sign of Δq (axial q = offset column).
 
+import { distance, offsetToAxial } from "./hex";
+
 export type Facing = "left" | "right";
+
+/** Enemies farther than this (hexes) do not turn a unit. */
+const FACE_RADIUS = 6;
+
+/**
+ * R-UI-03: a unit faces the enemy — the side (left or right) where the enemy
+ * units near it are, the nearer ones weighing more (1/d²); with no enemy within
+ * `FACE_RADIUS`, or as many on both sides, the side's default. Δq = Δcolumn
+ * gives the screen direction on flat-top hexes.
+ */
+export function faceEnemy(
+  u: { col: number; row: number; side: number },
+  units: { col: number; row: number; side: number }[],
+  fallback: Facing,
+): Facing {
+  const at = offsetToAxial(u);
+  let pull = 0;
+  for (const e of units) {
+    if (e.side === u.side) continue;
+    const d = distance(at, offsetToAxial(e));
+    if (d === 0 || d > FACE_RADIUS) continue;
+    pull += Math.sign(e.col - u.col) / (d * d);
+  }
+  if (pull > 1e-9) return "right";
+  if (pull < -1e-9) return "left";
+  return fallback;
+}
 
 type Ev = { type: string } & Record<string, unknown>;
 type Hex = { q: number; r: number };

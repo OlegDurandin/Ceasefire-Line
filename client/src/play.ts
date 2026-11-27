@@ -10,7 +10,7 @@ import type { Camera } from "./camera";
 import type { AirForecast, AirTarget, AirUnitView, BaseView, BridgeTarget, EconomyView, Forecast, GameStateView, LiveUnit, Reach, Target, TransferTargets } from "./game-view";
 import { axialToOffset, hexCenter, offsetToAxial, pixelToAxial } from "./hex";
 import { attrText, num, turnDate, type Rules } from "./explain";
-import { applyFacing, type Facing } from "./facing";
+import { applyFacing, faceEnemy, type Facing } from "./facing";
 import { encodeSave } from "./save";
 import { fill, formatEvent, type UnitRef } from "./log";
 import { drawControl } from "./render/control";
@@ -364,7 +364,7 @@ export class Play {
         stars: expStars(u.exp),
         dim: mine && spent,
         ready: mine && !spent && !this.aiTurn() ? readiness(u) : null,
-        facing: this.facing.get(u.id) ?? this.ctx.sideFacing[u.side] ?? "left",
+        facing: faceEnemy(u, this.state.units, this.facing.get(u.id) ?? this.ctx.sideFacing[u.side] ?? "left"),
         lowSupply: u.supply <= this.ctx.rules.supply.low_supply_max,
         encircled: u.hex_supply === 0,
         style: ref?.style ?? "medallion",
@@ -829,7 +829,7 @@ export class Play {
     if (u.hq_rating !== null) parts.push(fill(this.t("ui.hq_rating"), { r: u.hq_rating }));
     else if (!hq) parts.push(this.t("ui.not_attached"));
     else parts.push(hq.name ? this.unitName(hq).replace(/^./, (c) => c.toLowerCase()) : fill(this.t("ui.under_hq"), { r: hq.hq_rating ?? "" }));
-    const facing = this.facing.get(u.id) ?? this.ctx.sideFacing[u.side] ?? "left";
+    const facing = faceEnemy(u, this.state.units, this.facing.get(u.id) ?? this.ctx.sideFacing[u.side] ?? "left");
     const portrait = tokenHtml({
       w: 84,
       color: this.colors[u.side] ?? 0xb08d57,

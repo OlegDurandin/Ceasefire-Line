@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { applyFacing, type Facing } from "./facing";
+import { applyFacing, faceEnemy, type Facing } from "./facing";
 
 const cols: Record<number, number> = { 1: 3, 2: 4, 3: 6 };
 const before = (id: number) => cols[id];
@@ -21,5 +21,20 @@ describe("unit facing (R-UI-03)", () => {
     applyFacing(f, [{ type: "bombarded", unit: 1, target: 3 }], before, () => "left");
     expect(f.get(1)).toBe("right");
     expect(f.has(2), "the defender does not turn").toBe(false);
+  });
+});
+
+describe("faceEnemy (R-UI-03)", () => {
+  const u = { col: 5, row: 5, side: 0 };
+  it("faces the nearest enemy, nearer ones weigh more", () => {
+    expect(faceEnemy(u, [{ col: 7, row: 5, side: 1 }], "left")).toBe("right");
+    expect(faceEnemy(u, [{ col: 3, row: 5, side: 1 }, { col: 9, row: 5, side: 1 }], "right")).toBe("left");
+  });
+  it("own units do not count; nobody near — the side's default", () => {
+    expect(faceEnemy(u, [{ col: 7, row: 5, side: 0 }], "left")).toBe("left");
+    expect(faceEnemy(u, [{ col: 20, row: 5, side: 1 }], "left")).toBe("left");
+  });
+  it("an enemy straight above or below does not turn it", () => {
+    expect(faceEnemy(u, [{ col: 5, row: 3, side: 1 }], "right")).toBe("right");
   });
 });

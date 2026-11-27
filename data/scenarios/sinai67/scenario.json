@@ -15,7 +15,7 @@
       "id": 0,
       "key": "isr",
       "color": "#9fb3bf",
-      "facing": "right",
+      "facing": "left",
       "flag": [
         [
           "#ffffff",
@@ -49,7 +49,7 @@
       "id": 1,
       "key": "egy",
       "color": "#b59c63",
-      "facing": "left",
+      "facing": "right",
       "flag": [
         [
           "#ce1126",
