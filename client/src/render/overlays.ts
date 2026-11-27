@@ -19,6 +19,21 @@ const TRANSFER = 0x4a90d9;
 const flat = (pts: Point[]) => pts.flatMap((p) => [p.x, p.y]);
 const center = (col: number, row: number, size: number) => hexCenter(offsetToAxial({ col, row }), size);
 
+/** SC UI item 2: the path of the move under the pointer, from the unit's hex. */
+export function drawPath(g: Graphics, size: number, from: { col: number; row: number } | null, path: [number, number][]) {
+  g.clear();
+  if (!from || !path.length) return;
+  const pts = [center(from.col, from.row, size), ...path.map(([c, r]) => center(c, r, size))];
+  g.moveTo(pts[0]!.x, pts[0]!.y);
+  for (const p of pts.slice(1)) g.lineTo(p.x, p.y);
+  g.stroke({ width: size * 0.16, color: 0x1c1a17, alpha: 0.45, cap: "round", join: "round" });
+  g.moveTo(pts[0]!.x, pts[0]!.y);
+  for (const p of pts.slice(1)) g.lineTo(p.x, p.y);
+  g.stroke({ width: size * 0.08, color: SELECT, cap: "round", join: "round" });
+  const end = pts[pts.length - 1]!;
+  g.circle(end.x, end.y, size * 0.14).fill(SELECT);
+}
+
 export function drawOverlays(
   g: Graphics,
   size: number,

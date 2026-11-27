@@ -9,7 +9,7 @@ import { Assets, Container, Graphics, type Texture } from "pixi.js";
 import type { Camera } from "./camera";
 import type { AirForecast, AirTarget, AirUnitView, BaseView, BridgeTarget, EconomyView, Forecast, GameStateView, LiveUnit, Reach, Target, TransferTargets } from "./game-view";
 import { axialToOffset, hexCenter, offsetToAxial, pixelToAxial } from "./hex";
-import { attrText, turnDate, type Rules } from "./explain";
+import { attrText, num, turnDate, type Rules } from "./explain";
 import { applyFacing, type Facing } from "./facing";
 import { encodeSave } from "./save";
 import { fill, formatEvent, type UnitRef } from "./log";
@@ -26,7 +26,7 @@ import { Minimap, type Rect } from "./ui/minimap";
 import { refusalText } from "./ui/refusal";
 import { flagCss, topBarHtml, type Layer, type Tab } from "./ui/top-bar";
 import { drawBridges, setGridActive, type MapTextures } from "./render/map";
-import { drawOverlays } from "./render/overlays";
+import { drawOverlays, drawPath } from "./render/overlays";
 import type { FlagStripes } from "./render/token-geom";
 import { airTokenCenter, airTokenRadius, drawAirTokens, drawUnits, expStars, readiness, type AirToken, type Token } from "./render/units";
 import { tokenHtml } from "./ui/token-svg";
@@ -116,6 +116,8 @@ export class Play {
   private selection: Selection | null = null;
   private unitsLayer = new Container();
   private overlay = new Graphics();
+  /** SC UI item 2: the path of the move under the pointer. */
+  private pathG = new Graphics();
   private control = new Graphics();
   private bridges = new Container();
   private textures = new Map<string, Texture>();
@@ -186,6 +188,7 @@ export class Play {
     world.addChild(this.control);
     world.addChild(this.layerBox);
     world.addChild(this.overlay);
+    world.addChild(this.pathG);
     world.addChild(this.unitsLayer);
     world.addChild(this.airRing);
     world.addChild(this.airLayer);
@@ -650,6 +653,7 @@ export class Play {
     } else {
       this.airRing.clear();
       drawOverlays(this.overlay, this.size, this.transfer ? [] : (sel?.reach ?? []), targetHexes, sel ? sel.unit : picked, transfer);
+      this.drawMovePath();
     }
     setGridActive(this.world, !!sel);
     // R-UI-03: the tokens draw the selection and target halos.
@@ -767,6 +771,23 @@ export class Play {
     };
   }
 
+  /** SC UI item 2: the selected unit's move to the hex under the pointer, if
+   * reachable — its cost and the AP left after it. */
+  private moveUnder(): { path: [number, number][]; left: number } | null {
+    const sel = this.selection;
+    const c = this.pointer;
+    if (!sel || !c || this.transfer || sel.aimed) return null;
+    const r = sel.reach.find((h) => h.col === c.col && h.row === c.row);
+    if (!r) return null;
+    const path = JSON.parse(this.game.pathTo(sel.unit.id, c.col, c.row)) as [number, number][];
+    return { path, left: Math.max(0, sel.unit.ap_halves - r.cost_halves) / 2 };
+  }
+
+  private drawMovePath() {
+    const m = this.moveUnder();
+    drawPath(this.pathG, this.size, m ? this.selection!.unit : null, m?.path ?? []);
+  }
+
   /** R-UI-04: the line about the hex under the pointer, bottom left. */
   private drawPointerLine() {
     const el = document.getElementById("hover-line");
@@ -787,7 +808,9 @@ export class Play {
           ? ""
           : ` · ${this.t("ui.supply_short")} ${f.supply}`;
     const when = this.t(this.state.night ? "ui.night" : "ui.day");
-    el.innerHTML = `${this.t(target ? "ui.target" : "ui.cursor")} (${f.col}, ${f.row}) · ${f.terrainName.toLowerCase()} · ${f.control}<br>${when.charAt(0).toUpperCase()}${when.slice(1)}${supply}`;
+    const m = this.moveUnder();
+    const after = m ? ` · ${fill(this.t("ui.ap_after_move"), { n: num(m.left, 1) })}` : "";
+    el.innerHTML = `${this.t(target ? "ui.target" : "ui.cursor")} (${f.col}, ${f.row}) · ${f.terrainName.toLowerCase()} · ${f.control}<br>${when.charAt(0).toUpperCase()}${when.slice(1)}${supply}${after}`;
     el.style.display = "block";
   }
 
@@ -865,6 +888,7 @@ export class Play {
     this.pointer = this.ctx.hexes.has(key(c.col, c.row)) ? c : null;
     if (this.pointer) this.lineCell = this.pointer;
     if (moved) {
+      this.drawMovePath();
       this.drawPointerLine();
       if (!(this.selection && this.info === "unit")) this.drawHexCard("right");
     }

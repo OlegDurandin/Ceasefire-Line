@@ -919,6 +919,19 @@ impl Game {
         }
     }
 
+    /// R-UI-04 (SC UI item 2): the path a move to [col, row] takes — `[col,row]`
+    /// hexes after the start; `[]` if not reachable.
+    #[wasm_bindgen(js_name = pathTo)]
+    pub fn path_to(&self, unit: u32, col: i32, row: i32) -> Result<String, JsError> {
+        let to = offset_to_axial([col, row]);
+        let path = self
+            .state
+            .path_to(UnitId(unit), to)
+            .map_err(js)?
+            .unwrap_or_default();
+        to_json(&path.into_iter().map(axial_to_offset).collect::<Vec<_>>())
+    }
+
     /// Moves along the core's cheapest path to [col, row].
     #[wasm_bindgen(js_name = moveTo)]
     pub fn move_to(&mut self, unit: u32, col: i32, row: i32) -> Result<String, JsError> {

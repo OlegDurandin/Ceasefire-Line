@@ -403,6 +403,7 @@
   "ui.target": "Цель",
   "ui.supply_short": "снабжение",
   "ui.supply_after_entry": "снабжение после входа {n}",
+  "ui.ap_after_move": "после хода {n} AP",
   "ui.settings.units": "Юниты на карте",
   "ui.settings.miniature": "миниатюры на подставке",
   "ui.settings.medallion": "медальоны",
