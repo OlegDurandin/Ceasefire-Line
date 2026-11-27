@@ -33,8 +33,8 @@ use crate::operations::op_units;
 
 /// What a unit does for the side: its VP per strength step and where.
 #[derive(Debug, Clone, Copy)]
-struct Role {
-    vp_per_step: f64,
+pub(super) struct Role {
+    pub(super) vp_per_step: f64,
     hex: Hex,
     /// A pocket operation: wants tanks and mechs.
     operation: bool,
@@ -224,7 +224,7 @@ impl AiV1 {
     }
 
     /// Own phases left including this one (the scenario's last turn, else the horizon).
-    fn own_phases_left(&self, s: &GameState) -> u32 {
+    pub(super) fn own_phases_left(&self, s: &GameState) -> u32 {
         self.own_phases_from(s, s.turn())
     }
 
@@ -250,6 +250,7 @@ impl AiV1 {
             .chain(plan.pin.keys())
             .chain(plan.guard.keys())
             .chain(plan.withdraw.keys())
+            .chain(plan.exit.keys())
             .copied()
             .collect();
         for op in &plan.ops {
@@ -267,7 +268,7 @@ impl AiV1 {
     }
 
     /// VP per strength step of each own unit's role; the best role counts.
-    fn roles(&self, s: &GameState, plan: &Plan) -> BTreeMap<UnitId, Role> {
+    pub(super) fn roles(&self, s: &GameState, plan: &Plan) -> BTreeMap<UnitId, Role> {
         let us = s.active_side();
         let m = &self.params.moves;
         let mut roles: BTreeMap<UnitId, Role> = BTreeMap::new();

@@ -43,7 +43,7 @@ pub fn is_mobile(s: &GameState, u: &Unit) -> bool {
         .is_ok_and(|c| c.has_tag(UnitTag::Exploitation))
 }
 
-fn ap_hexes(s: &GameState, u: &Unit) -> u32 {
+pub(crate) fn ap_hexes(s: &GameState, u: &Unit) -> u32 {
     s.data()
         .units
         .get(&u.class)

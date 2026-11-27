@@ -85,5 +85,13 @@
     "w_risk": 1.0,
     "w_choke": 1.0,
     "jitter": 0.25
+  },
+  "retreat": {
+    "_comment": "R-AI-01 «Отход» (designer decision 2026-11-27): a unit compares holding its hex with the VP for taking its steps out through an open exit (path, phases, risk of a cut on the way); rearguards near the withdrawal ways get a share of the exit VP they cover.",
+    "enabled": true,
+    "per_phase": 0.6,
+    "cut_way": 0.5,
+    "rearguard_radius": 1,
+    "rearguard_share": 0.25
   }
 }

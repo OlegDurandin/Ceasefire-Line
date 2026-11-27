@@ -170,6 +170,8 @@ struct Game {
     sudden_death: bool,
     /// NM per side at the end.
     nm_end: Vec<(SideId, u8)>,
+    /// R-NM-02: steps taken out through exits, per side.
+    exited: BTreeMap<u8, u32>,
     /// NM change per side by reason (R-NM-01).
     nm_by: BTreeMap<(u8, &'static str), i32>,
     turn: u32,
@@ -460,6 +462,9 @@ fn play_one(sh: &Shared, seed: u64) -> Result<Game, String> {
                     {
                         g.destroyed_encircled += 1;
                     }
+                }
+                Event::UnitExited { steps, .. } => {
+                    *g.exited.entry(mover).or_default() += u32::from(*steps)
                 }
                 Event::ScenarioEventFired { id } => g.fired.push(id.clone()),
                 // R-AI-01 п. 3: MPP by use, per side.
@@ -845,6 +850,7 @@ fn summary(o: &Options, games: &[Game]) -> serde_json::Value {
             }
             m
         }).collect::<Vec<_>>(),
+        "exited_steps": (0u8..2).map(|side| games.iter().map(|g| f64::from(g.exited.get(&side).copied().unwrap_or(0))).sum::<f64>() / n).collect::<Vec<_>>(),
         "sudden_death_share": games.iter().filter(|g| g.sudden_death).count() as f64 / n,
         "decisive": sides.iter().map(|s| decisive(*s)).collect::<Vec<_>>(),
         "draws": draws,

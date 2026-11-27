@@ -117,6 +117,22 @@ pub struct PositionWeights {
     pub jitter: f64,
 }
 
+/// R-AI-01 «Отход» (designer decision 2026-11-27): exits in the common currency.
+#[derive(Debug, Clone, Deserialize)]
+pub struct RetreatWeights {
+    #[serde(default, rename = "_comment")]
+    _comment: Option<String>,
+    pub enabled: bool,
+    /// × the exit value per own phase beyond this one the unit needs to get there.
+    pub per_phase: f64,
+    /// × the exit value when the way passes hexes a closing pocket would cut.
+    pub cut_way: f64,
+    /// A unit within this many hexes of a withdrawing unit's way can be its rearguard.
+    pub rearguard_radius: u32,
+    /// Rearguard value: this share of the exit VP of the units whose way it covers.
+    pub rearguard_share: f64,
+}
+
 /// R-AI-01 «сектора», R-MOVE-05: reserves between sectors (stage 4 step 7).
 #[derive(Debug, Clone, Deserialize)]
 pub struct TransferWeights {
@@ -185,6 +201,7 @@ pub struct AiParams {
     pub defend: DefendWeights,
     pub transfer: TransferWeights,
     pub position: PositionWeights,
+    pub retreat: RetreatWeights,
 }
 
 impl AiParams {

@@ -29,6 +29,7 @@ use crate::pockets::{
 };
 
 mod economy;
+mod retreat;
 mod transfer;
 
 pub struct AiV1 {
@@ -88,6 +89,10 @@ pub struct Plan {
     pub risk: BTreeSet<Hex>,
     /// Own chokepoints the side depends on enough (`defend.min_share`).
     pub own_chokes: BTreeSet<Hex>,
+    /// R-AI-01 «Отход»: units taking their steps out through an exit, and where.
+    pub exit: BTreeMap<UnitId, Hex>,
+    /// Rearguards: they stay to win time for the withdrawing units.
+    pub rearguard: BTreeSet<UnitId>,
     /// Own hex supply now (for the «no stranding» rule).
     own_supply: SupplyMap,
 }
@@ -163,6 +168,7 @@ impl AiV1 {
             self.fill_plan(s, &mut plan, ops.clone());
             self.defend(s, &mut plan);
             self.position_maps(s, &mut plan);
+            self.retreat(s, &mut plan);
             let d = self.stats.defend.entry(key.1).or_default();
             d.0 += plan.guard.len() as u32;
             d.1 += plan.withdraw.len() as u32;
@@ -806,12 +812,17 @@ impl AiV1 {
                 }
             }
             // Step 7 item 5: reserves to own chokepoints, cut units out of the pocket.
-            for (id, h) in plan.guard.iter().chain(plan.withdraw.iter()) {
+            for (id, h) in plan
+                .guard
+                .iter()
+                .chain(plan.withdraw.iter())
+                .chain(plan.exit.iter())
+            {
                 if !taken.contains(id) {
                     goals.insert(*id, *h);
                 }
             }
-            for id in &plan.hold {
+            for id in plan.hold.iter().chain(plan.rearguard.iter()) {
                 if let Some(u) = b.s.unit(*id) {
                     goals.insert(*id, u.hex);
                 }
@@ -944,7 +955,7 @@ impl AiV1 {
                 continue;
             }
             // «Горловина»: a unit on a chokepoint stays and digs in.
-            if plan.is_some_and(|p| p.hold.contains(&u.id)) {
+            if plan.is_some_and(|p| p.hold.contains(&u.id) || p.rearguard.contains(&u.id)) {
                 continue;
             }
             let Some(goal) = goals.get(&u.id).copied() else {
