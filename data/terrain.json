@@ -38,6 +38,7 @@
       "id": "city",
       "ap": 1,
       "defense_mult": 1.5,
+      "hard_defense_mult": 1.0,
       "max_entrench": 4,
       "stronghold": true
     },
@@ -45,6 +46,7 @@
       "id": "fortified",
       "ap": 1,
       "defense_mult": 1.5,
+      "hard_defense_mult": 1.0,
       "max_entrench": 5,
       "stronghold": true
     },

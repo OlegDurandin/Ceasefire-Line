@@ -11,7 +11,7 @@ use ceasefire_core::hex::Hex;
 use common::scenario::{board, start, unit, A, B};
 
 /// Every boolean variant, so each test states its own rules.
-const VARIANTS: [&str; 15] = [
+const VARIANTS: [&str; 16] = [
     "attack_strips_entrenchment",
     "prepared_attack",
     "unsupplied_target",
@@ -27,6 +27,7 @@ const VARIANTS: [&str; 15] = [
     "air_strength_threshold",
     "transfer_supply_min",
     "hq_contact_priority",
+    "armor_city_penalty",
 ];
 
 /// The common test scenario with every variant switched off.
@@ -893,4 +894,39 @@ fn r_hq_01_units_in_contact_attach_first() {
     };
     assert_eq!(attached(&start(sc(false))), [true, false]);
     assert_eq!(attached(&start(sc(true))), [false, true]);
+}
+
+/// SC п. 8 `armor_city_penalty`: a tank defending a city takes the terrain
+/// ×1,0 instead of ×1,5; infantry in the city keeps ×1,5; on plain nothing changes.
+#[test]
+fn r_combat_02_armor_in_a_city_loses_the_city_bonus() {
+    let d_of = |defender: &str, terrain: &str, on: bool| {
+        let (mut map, control) = board();
+        map.insert(Hex::new(3, 0), ceasefire_core::map::HexCell::new(terrain));
+        let units = vec![
+            unit(defender, B, Hex::new(3, 0)),
+            unit("infantry", A, Hex::new(2, 0)),
+        ];
+        let sc = setup(map, control, units);
+        let s = start(if on {
+            with("armor_city_penalty", sc)
+        } else {
+            sc
+        });
+        s.forecast_attack(UnitId(2), UnitId(1))
+            .unwrap()
+            .exchange
+            .vs_defender
+            .d
+    };
+    let (off, on) = (d_of("tank", "city", false), d_of("tank", "city", true));
+    assert!(
+        (off / on - 1.5).abs() < 1e-9,
+        "tank in a city: {off} → {on}"
+    );
+    assert_eq!(
+        d_of("infantry", "city", false),
+        d_of("infantry", "city", true)
+    );
+    assert_eq!(d_of("tank", "plain", false), d_of("tank", "plain", true));
 }

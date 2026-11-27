@@ -337,6 +337,8 @@ pub struct Variants {
     pub transfer_supply_min: bool,
     /// R-HQ-01: units in contact attach first, within own formation and among the rest (SC п. 17).
     pub hq_contact_priority: bool,
+    /// R-MOVE-01, R-COMBAT-02: hard defenders take the terrain's `hard_defense_mult` (city, fortified area ×1,0) (SC п. 8).
+    pub armor_city_penalty: bool,
 }
 
 impl Variants {
@@ -485,6 +487,10 @@ pub struct TerrainDef {
     #[serde(default)]
     pub wheeled_ap: Option<f64>,
     pub defense_mult: f64,
+    /// R-MOVE-01 variant `armor_city_penalty` (SC п. 8): defense multiplier
+    /// for hard defenders (tanks, mech) instead of `defense_mult`; none — the same.
+    #[serde(default)]
+    pub hard_defense_mult: Option<f64>,
     pub max_entrench: u8,
     /// R-MOVE-01: mountains are entered only through hexes marked as passes.
     #[serde(default)]

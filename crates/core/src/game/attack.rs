@@ -84,10 +84,20 @@ impl GameState {
         Ok((unit, enemy))
     }
 
-    fn ground_context(&self, attacker: &Unit, defender: &Unit) -> Result<GroundAttack, RuleError> {
+    /// R-MOVE-01 terrain defense multiplier of `defender`'s hex; variant
+    /// `armor_city_penalty`: hard defenders take `hard_defense_mult` where set.
+    pub(super) fn terrain_defense(&self, defender: &Unit) -> Result<f64, RuleError> {
         let terrain = self.data.terrain.get(&self.map_terrain(defender.hex)?)?;
+        let hard = self.class(defender)?.target_class == crate::data::TargetClass::Hard;
+        Ok(match terrain.def.hard_defense_mult {
+            Some(m) if hard && self.variants.armor_city_penalty => m,
+            _ => terrain.def.defense_mult,
+        })
+    }
+
+    fn ground_context(&self, attacker: &Unit, defender: &Unit) -> Result<GroundAttack, RuleError> {
         Ok(GroundAttack {
-            terrain_mult: terrain.def.defense_mult,
+            terrain_mult: self.terrain_defense(defender)?,
             night: self.is_night(),
             across_canal: self.map.has_canal(attacker.hex, defender.hex),
             attack_mult: self
@@ -517,7 +527,7 @@ impl GameState {
         } else {
             1.0
         };
-        let terrain = data.terrain.get(&self.map_terrain(d.hex)?)?;
+        let terrain_mult = self.terrain_defense(d)?;
         Ok(FireInput {
             strength: att.strength,
             readiness_pct: att.readiness_pct,
@@ -531,7 +541,7 @@ impl GameState {
                 .ground
                 .ok_or_else(|| RuleError::NoGroundDefense(def.class.id.clone()))?,
             target_exp: def.exp_stars,
-            terrain_mult: terrain.def.defense_mult,
+            terrain_mult,
             entrenchment: def.entrenchment,
             defense_mult: 1.0,
             p_shift: 0.0,
