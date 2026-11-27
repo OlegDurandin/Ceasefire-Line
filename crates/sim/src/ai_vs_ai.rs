@@ -228,6 +228,8 @@ struct Game {
     ground_attacks: u32,
     hq_attacks: u32,
     hq_attacks_in_contact: u32,
+    /// R-MOVE-07 per side: moves made in a breakthrough and hexes entered by them.
+    breakthrough: BTreeMap<u8, (u32, u32)>,
 }
 
 /// Strength and «encircled» of every ground unit at the last look.
@@ -395,6 +397,13 @@ fn play_one(sh: &Shared, seed: u64) -> Result<Game, String> {
             if sh.battle_log && st.active_side() == SideId(0) && st.turn() <= BATTLE_LOG_TURNS {
                 if let Some(entry) = battle_entry(st, cmd) {
                     logged.push(entry);
+                }
+            }
+            if let ceasefire_core::game::Command::Move { unit, path } = cmd {
+                if let Some(u) = st.unit(*unit).filter(|u| u.breakthrough) {
+                    let e = g.breakthrough.entry(u.side.0).or_default();
+                    e.0 += 1;
+                    e.1 += u32::try_from(path.len()).unwrap_or(u32::MAX);
                 }
             }
             if let ceasefire_core::game::Command::Attack { target, .. } = cmd {
@@ -978,6 +987,8 @@ fn summary(o: &Options, games: &[Game]) -> serde_json::Value {
             }
             m
         }).collect::<Vec<_>>(),
+        "breakthrough_moves": (0u8..2).map(|side| games.iter().map(|g| f64::from(g.breakthrough.get(&side).map_or(0, |b| b.0))).sum::<f64>() / n).collect::<Vec<_>>(),
+        "breakthrough_hexes": (0u8..2).map(|side| games.iter().map(|g| f64::from(g.breakthrough.get(&side).map_or(0, |b| b.1))).sum::<f64>() / n).collect::<Vec<_>>(),
         "exited_steps": (0u8..2).map(|side| games.iter().map(|g| f64::from(g.exited.get(&side).copied().unwrap_or(0))).sum::<f64>() / n).collect::<Vec<_>>(),
         "sudden_death_share": games.iter().filter(|g| g.sudden_death).count() as f64 / n,
         "decisive": sides.iter().map(|s| decisive(*s)).collect::<Vec<_>>(),

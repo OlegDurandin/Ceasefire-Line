@@ -233,7 +233,7 @@ pub struct NationalMoraleRules {
     /// New owner of an objective gains this share of its NM value (floor).
     pub objective_taken_share_pct: u8,
     /// R-NM-01 variant `nm_morale_multiplier`: NM bands that scale unit
-    /// morale in readiness instead of capping it (SC 7.29.4).
+    /// morale in readiness instead of capping it (SC 7.30.4).
     pub morale_bands: Vec<NmMoraleBand>,
 }
 

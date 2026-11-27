@@ -975,7 +975,8 @@ impl AiV1 {
         let drop = b.s.data().rules.supply.max_drop_per_phase;
         let min_supply = self.params.pockets.min_own_supply;
         for u in &b.own {
-            if u.moved || !u.can_move || u.ap_halves == 0 {
+            // R-MOVE-07: a unit in a breakthrough moves again after its advance.
+            if (u.moved && !u.breakthrough) || !u.can_move || u.ap_halves == 0 {
                 continue;
             }
             // «Горловина»: a unit on a chokepoint stays and digs in.

@@ -170,7 +170,8 @@ fn strike(s: &GameState, u: &Unit, target: Hex) -> Option<Command> {
 }
 
 fn approach(s: &GameState, u: &Unit, target: Hex) -> Option<Command> {
-    if u.moved || !u.can_move || u.ap_halves == 0 || u.hex == target {
+    // R-MOVE-07: a unit in a breakthrough moves again after its advance.
+    if (u.moved && !u.breakthrough) || !u.can_move || u.ap_halves == 0 || u.hex == target {
         return None;
     }
     // Artillery keeps out of contact: it stops two hexes short.
