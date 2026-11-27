@@ -120,10 +120,21 @@ pub struct DefendWeights {
     pub max_guards: usize,
 }
 
+/// R-AI-01 п. 3 «экономика» (stage 4 step 7): MPP in expected VP.
 #[derive(Debug, Clone, Deserialize)]
 pub struct EconomyWeights {
-    pub reinforce_at_or_below: u8,
-    pub boost_mpp_reserve: u32,
+    #[serde(default, rename = "_comment")]
+    _comment: Option<String>,
+    /// ± seeded spread of each candidate's value per game (standard jitter).
+    pub jitter: f64,
+    /// × the value of a non-mobile class bought for a pocket operation.
+    pub non_mobile_op_fit: f64,
+    /// Own units this close to the attacked objective share its VP.
+    pub attack_radius: u32,
+    /// A purchase is worth nothing with fewer own phases left after it arrives.
+    pub min_phases_after_arrival: u32,
+    /// A boost is worth nothing if it is ready later than this many turns before the end.
+    pub boost_turns_before_end: u32,
 }
 
 /// `data/ai.json`.
@@ -170,11 +181,19 @@ struct SideHintFile {
 }
 
 #[derive(Debug, Deserialize)]
+struct SectorFile {
+    id: String,
+    hexes: Vec<[i32; 2]>,
+}
+
+#[derive(Debug, Deserialize)]
 struct HintsFile {
     #[serde(default, rename = "_comment")]
     _comment: Option<String>,
     #[serde(default)]
     sides: Vec<SideHintFile>,
+    #[serde(default)]
+    sectors: Vec<SectorFile>,
 }
 
 /// One side's hints: how readily it attacks and which hexes matter most.
@@ -192,6 +211,8 @@ pub struct SideHints {
 #[derive(Debug, Clone, Default)]
 pub struct AiHints {
     pub sides: BTreeMap<SideId, SideHints>,
+    /// R-AI-01 «сектора»: (id, hexes) — threat and forces are counted by sector.
+    pub sectors: Vec<(String, Vec<Hex>)>,
 }
 
 impl AiHints {
@@ -220,7 +241,12 @@ impl AiHints {
                 (SideId(s.side), hints)
             })
             .collect();
-        Ok(Self { sides })
+        let sectors = file
+            .sectors
+            .into_iter()
+            .map(|s| (s.id, s.hexes.into_iter().map(offset_to_axial).collect()))
+            .collect();
+        Ok(Self { sides, sectors })
     }
 
     pub fn aggressiveness(&self, side: SideId, default: f64) -> f64 {

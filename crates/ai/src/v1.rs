@@ -28,6 +28,8 @@ use crate::pockets::{
     best_pocket, chokepoints, own_chokepoints, pocket_value, pocket_vp, supply_dependency, Pocket,
 };
 
+mod economy;
+
 pub struct AiV1 {
     params: AiParams,
     hints: AiHints,
@@ -43,6 +45,8 @@ pub struct AiV1 {
     attacked: BTreeSet<UnitId>,
     /// For `sim`: kept operations and breakthrough calibration.
     pub stats: OpStats,
+    /// R-AI-01 п. 3: the phase's economy commands, decided at its start.
+    eco: Option<((u32, u8), std::collections::VecDeque<Command>)>,
 }
 
 /// A chokepoint and the unit sent to it (`None`: an own unit already holds it).
@@ -74,6 +78,8 @@ pub struct Plan {
     pub guard: BTreeMap<UnitId, Hex>,
     /// Units a closing enemy pocket would cut off, and the hex they withdraw to.
     pub withdraw: BTreeMap<UnitId, Hex>,
+    /// Defended own chokepoints: the VP the enemy's pocket through each would take.
+    pub guard_vp: BTreeMap<Hex, f64>,
     /// Own hex supply now (for the «no stranding» rule).
     own_supply: SupplyMap,
 }
@@ -111,6 +117,7 @@ impl AiV1 {
             pending: Vec::new(),
             attacked: BTreeSet::new(),
             stats: OpStats::default(),
+            eco: None,
         }
     }
 
@@ -187,8 +194,7 @@ impl AiV1 {
         let Some(o) = s.objectives().iter().find(|o| o.hex == t) else {
             return 0.0;
         };
-        let share = f64::from(s.data().rules.national_morale.objective_taken_share_pct) / 100.0;
-        let margin = 2.0 * f64::from(o.vp) + f64::from(o.nm_value) * (1.0 + share);
+        let margin = objective_margin(s, o);
         let near = |own: bool| -> f64 {
             s.units()
                 .filter(|u| (u.side == us) == own && u.hex.distance(t) <= 3)
@@ -449,6 +455,9 @@ impl AiV1 {
                 busy.insert(id);
                 guarded += 1;
                 plan.chokes.insert(c);
+                let delay = 1;
+                plan.guard_vp
+                    .insert(c, pocket_vp(s, enemy, us, &[c], delay, w).unwrap_or(0.0));
                 if at == c {
                     plan.hold.insert(id);
                 } else {
@@ -494,9 +503,22 @@ impl AiV1 {
     /// The next command for the active side.
     pub fn next(&mut self, s: &GameState) -> Command {
         self.plan_for(s);
+        // R-AI-01 п. 3: economy decided once, after the plan and before any action.
+        let key = (s.turn(), s.active_side().0);
+        if self.eco.as_ref().is_none_or(|(k, _)| *k != key) {
+            let queue = self.economy_plan(s);
+            self.eco = Some((key, queue.into()));
+        }
         let b = self.board(s);
         if let Some(c) = self.advance(&b) {
             return c;
+        }
+        if let Some((_, queue)) = self.eco.as_mut() {
+            while let Some(c) = queue.pop_front() {
+                if accepted(s, &c) {
+                    return c;
+                }
+            }
         }
         // R-AI-01 step 7: the breakthrough operations first, in order.
         if let Some(c) = self.breakthrough(&b) {
@@ -506,9 +528,6 @@ impl AiV1 {
             {
                 self.attacked.insert(*target);
             }
-            return c;
-        }
-        if let Some(c) = self.economy(&b) {
             return c;
         }
         if let Some(c) = self.air(&b) {
@@ -602,47 +621,28 @@ impl AiV1 {
             .then_some(Command::Advance { unit: p.unit })
     }
 
-    /// Reinforce worn units that have not acted, then buy a boost (R-ECO-02, R-TECH-02).
-    fn economy(&self, b: &Board) -> Option<Command> {
-        let e = &self.params.economy;
-        let mut worn: Vec<&&Unit> = b
-            .own
-            .iter()
-            .filter(|u| !u.acted && u.strength <= e.reinforce_at_or_below && u.strength < 10)
-            .collect();
-        worn.sort_by_key(|u| (u.strength, u.id));
-        for u in worn {
-            let cmd = Command::Reinforce {
-                unit: u.id,
-                steps: 1,
-                elite: false,
-            };
-            if accepted(b.s, &cmd) {
-                return Some(cmd);
-            }
-        }
-        let mpp = b.s.side(b.side).map_or(0, |s| s.mpp);
-        for boost in b.s.tech_boosts().iter().filter(|t| t.side == b.side) {
-            if b.s.boost_bought(&boost.id) || mpp < boost.cost + e.boost_mpp_reserve {
-                continue;
-            }
-            let cmd = Command::BuyTechBoost {
-                id: boost.id.clone(),
-            };
-            if accepted(b.s, &cmd) {
-                return Some(cmd);
-            }
-        }
-        None
-    }
-
     /// Bombardments first, then attacks; the best score above the side's bar.
     fn strike(&self, b: &Board) -> Option<Command> {
+        let mut best: Option<(u8, f64, Command)> = None;
+        for (rank, score, cmd) in self.strike_options(b) {
+            let better = best
+                .as_ref()
+                .is_none_or(|(r, sc, _)| rank < *r || (rank == *r && score > *sc));
+            if better {
+                best = Some((rank, score, cmd));
+            }
+        }
+        best.map(|(_, _, c)| c)
+    }
+
+    /// Every bombardment and attack worth making now: (rank 0 bombardment /
+    /// 1 attack, score, command).
+    fn strike_options(&self, b: &Board) -> Vec<(u8, f64, Command)> {
         let w = &self.params.attack;
         let aggr = self.aggressiveness(b.side);
         let bar = w.min_score_defensive + (w.min_score_aggressive - w.min_score_defensive) * aggr;
         let retreat_at = f64::from(b.s.data().rules.retreat.max_strength);
-        let mut best: Option<(u8, f64, Command)> = None;
+        let mut options: Vec<(u8, f64, Command)> = Vec::new();
         for u in b.own.iter().filter(|u| u.strikes_left > 0) {
             let own_step = step_value(b.s, u);
             for e in &b.enemy {
@@ -700,15 +700,10 @@ impl AiV1 {
                 } else {
                     continue;
                 };
-                let better = best
-                    .as_ref()
-                    .is_none_or(|(r, sc, _)| rank < *r || (rank == *r && score > *sc));
-                if better {
-                    best = Some((rank, score, cmd));
-                }
+                options.push((rank, score, cmd));
             }
         }
-        best.map(|(_, _, c)| c)
+        options
     }
 
     /// Goal hex of every own unit that may move (operations).
@@ -991,6 +986,13 @@ impl AiV1 {
 }
 
 /// Strength × readiness × best ground attack: a unit's weight on the influence maps.
+/// R-AI-01 common currency: what an objective is worth between the sides —
+/// its VP to both holders, NM lost and the share gained.
+fn objective_margin(s: &GameState, o: &ceasefire_core::game::Objective) -> f64 {
+    let share = f64::from(s.data().rules.national_morale.objective_taken_share_pct) / 100.0;
+    2.0 * f64::from(o.vp) + f64::from(o.nm_value) * (1.0 + share)
+}
+
 /// Air (and naval) units are not ground reserves and are not cut off.
 fn is_air(s: &GameState, u: &Unit) -> bool {
     s.data()

@@ -192,6 +192,10 @@ struct Game {
     ops_kept: u32,
     /// Step 7 item 5 per side: reserves to own chokepoints, withdrawals.
     defend: BTreeMap<u8, (u32, u32)>,
+    /// R-AI-01 п. 3 per side: MPP on reinforcement, purchases, boosts, transfers.
+    spent: BTreeMap<u8, [u32; 4]>,
+    /// MPP left unspent at the end, per side.
+    mpp_left: BTreeMap<u8, u32>,
     /// Breakthrough forecasts against outcomes.
     breaches: Vec<(f64, bool)>,
     /// First turn side 0 controls any watched hex.
@@ -302,6 +306,7 @@ fn play_one(sh: &Shared, seed: u64) -> Result<Game, String> {
                 }
             }
         };
+        let mover = s.active_side().0;
         let r = match player {
             Player::Greedy => play_phase(
                 &mut s,
@@ -432,6 +437,15 @@ fn play_one(sh: &Shared, seed: u64) -> Result<Game, String> {
                     ..
                 } => g.destroyed_encircled += 1,
                 Event::ScenarioEventFired { id } => g.fired.push(id.clone()),
+                // R-AI-01 п. 3: MPP by use, per side.
+                Event::Reinforced { cost, .. } => g.spent.entry(mover).or_default()[0] += cost,
+                Event::Purchased { cost, side, .. } => {
+                    g.spent.entry(side.0).or_default()[1] += cost
+                }
+                Event::TechBoostBought { cost, side, .. } => {
+                    g.spent.entry(side.0).or_default()[2] += cost
+                }
+                Event::Transferred { cost, .. } => g.spent.entry(mover).or_default()[3] += cost,
                 _ => {}
             }
         }
@@ -441,6 +455,7 @@ fn play_one(sh: &Shared, seed: u64) -> Result<Game, String> {
     g.ops_kept = v1.stats.kept_phases;
     g.breaches = v1.stats.breaches.clone();
     g.defend = v1.stats.defend.clone();
+    g.mpp_left = s.sides().iter().map(|x| (x.id.0, x.mpp)).collect();
     // Turning point: the first turn-end look after the last change of leader.
     let final_leader = leaders.last().and_then(|l| l.1);
     g.turning_point = final_leader.and_then(|w| {
@@ -801,6 +816,16 @@ fn summary(o: &Options, games: &[Game]) -> serde_json::Value {
         "turning_share": m.turning_share,
         "refused": games.iter().map(|g| f64::from(g.refused)).sum::<f64>() / n,
         "ops_kept_share": ops_kept_share,
+        "mpp_use": (0u8..2).map(|side| {
+            let sum = |i: usize| games.iter().map(|g| f64::from(g.spent.get(&side).map_or(0, |x| x[i]))).sum::<f64>();
+            let all: f64 = (0..4).map(sum).sum();
+            let share = |i: usize| if all > 0.0 { sum(i) / all } else { 0.0 };
+            serde_json::json!({
+                "spent_per_game": all / n,
+                "reinforce": share(0), "purchase": share(1), "boost": share(2), "transfer": share(3),
+                "left_per_game": games.iter().map(|g| f64::from(g.mpp_left.get(&side).copied().unwrap_or(0))).sum::<f64>() / n,
+            })
+        }).collect::<Vec<_>>(),
         "defend_guards": (0u8..2).map(|side| games.iter().map(|g| f64::from(g.defend.get(&side).map_or(0, |d| d.0))).sum::<f64>() / n).collect::<Vec<_>>(),
         "defend_withdrawals": (0u8..2).map(|side| games.iter().map(|g| f64::from(g.defend.get(&side).map_or(0, |d| d.1))).sum::<f64>() / n).collect::<Vec<_>>(),
         "breach_calibration": calibration(games),

@@ -29,8 +29,12 @@
     "hq_min_enemy_distance": 0
   },
   "economy": {
-    "reinforce_at_or_below": 8,
-    "boost_mpp_reserve": 20
+    "_comment": "R-AI-01 п. 3 «экономика» (step 7, designer task 2026-11-27): reinforcements, purchases and boosts valued in expected VP per MPP, greedy; a transfer reserve with two sectors.",
+    "jitter": 0.15,
+    "non_mobile_op_fit": 0.5,
+    "attack_radius": 6,
+    "min_phases_after_arrival": 2,
+    "boost_turns_before_end": 2
   },
   "pockets": {
     "_comment": "R-AI-01 «поиск котлов» (step 7): chokepoint candidates K, pincers, lookahead phases, supply bands.",

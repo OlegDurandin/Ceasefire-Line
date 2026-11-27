@@ -800,6 +800,21 @@ impl GameState {
         &self.tech_boosts
     }
 
+    /// R-AI-01 «экономика» (what-if): a copy of the state with `side`'s
+    /// `branch` at `level` — forecasts on the boosted values. The state itself
+    /// does not change.
+    pub fn with_tech_level(
+        &self,
+        side: SideId,
+        branch: crate::tech::TechBranch,
+        level: u8,
+    ) -> Result<GameState, RuleError> {
+        let mut s = self.clone();
+        let st = s.side_state_mut(side)?;
+        st.tech = st.tech.clone().with(branch, level);
+        Ok(s)
+    }
+
     pub fn pending_boosts(&self) -> &[PendingBoost] {
         &self.pending_boosts
     }
