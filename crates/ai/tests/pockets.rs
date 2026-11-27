@@ -43,6 +43,7 @@ fn side(id: SideId) -> SideState {
         mpp: 0,
         base_income: 0,
         purchase_limits: BTreeMap::new(),
+        purchase_alt: Default::default(),
         purchased: BTreeMap::new(),
         loss_sensitivity: 1,
         steps_lost: 0,

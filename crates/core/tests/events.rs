@@ -17,6 +17,7 @@ fn event(
 ) -> ScenarioEvent {
     ScenarioEvent {
         id: id.into(),
+        important: false,
         phase_of,
         trigger,
         conditions: vec![],
@@ -36,7 +37,9 @@ fn end_phase(s: &mut GameState) -> Vec<Event> {
 }
 
 fn fired(events: &[Event], id: &str) -> bool {
-    events.contains(&Event::ScenarioEventFired { id: id.into() })
+    events
+        .iter()
+        .any(|e| matches!(e, Event::ScenarioEventFired { id: x, .. } if x == id))
 }
 
 #[test]
@@ -205,6 +208,7 @@ fn r_evt_01_losses_trigger() {
 fn r_evt_01_any_of_trigger_morale_and_entrenchment_effects() {
     let order = ScenarioEvent {
         id: "withdrawal".into(),
+        important: false,
         phase_of: Some(A),
         trigger: Predicate::AnyOf {
             of: vec![
@@ -227,6 +231,7 @@ fn r_evt_01_any_of_trigger_morale_and_entrenchment_effects() {
     };
     let never = ScenarioEvent {
         id: "never".into(),
+        important: false,
         phase_of: None,
         trigger: Predicate::AllOf {
             of: vec![

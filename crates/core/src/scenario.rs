@@ -151,8 +151,10 @@ struct SideFile {
     base_income: u32,
     #[serde(default = "one")]
     loss_sensitivity: u8,
+    /// R-ECO-03: class → count, or `{count, alt}` — `alt: true` marks a
+    /// historical unit that fought elsewhere («альтернатива», R-UI-07).
     #[serde(default)]
-    purchase_limits: BTreeMap<String, u32>,
+    purchase_limits: BTreeMap<String, LimitFile>,
     /// R-TURN-02: unit classes of the side that fight at night without penalties.
     #[serde(default)]
     night_combat: Vec<String>,
@@ -178,6 +180,30 @@ struct SideFile {
 
 fn one() -> u8 {
     1
+}
+
+/// R-ECO-03 limit entry: a bare count, or a count with the «альтернатива» flag.
+#[derive(Debug, Deserialize)]
+#[serde(untagged)]
+enum LimitFile {
+    Count(u32),
+    Entry {
+        count: u32,
+        #[serde(default)]
+        alt: bool,
+    },
+}
+
+impl LimitFile {
+    fn count(&self) -> u32 {
+        match self {
+            Self::Count(n) | Self::Entry { count: n, .. } => *n,
+        }
+    }
+
+    fn alt(&self) -> bool {
+        matches!(self, Self::Entry { alt: true, .. })
+    }
 }
 
 fn full_strength() -> u8 {
@@ -522,6 +548,9 @@ struct EventFile {
     _comment: Option<String>,
     #[serde(default)]
     phase_of: Option<u8>,
+    /// R-UI-07: show as a window until clicked.
+    #[serde(default)]
+    important: bool,
     trigger: PredicateFile,
     #[serde(default)]
     conditions: Vec<PredicateFile>,
@@ -544,6 +573,7 @@ fn parse_events(json: &str) -> Result<Vec<ScenarioEvent>, RuleError> {
         .into_iter()
         .map(|e| ScenarioEvent {
             id: e.id,
+            important: e.important,
             phase_of: e.phase_of.map(SideId),
             trigger: e.trigger.into(),
             conditions: e.conditions.into_iter().map(Into::into).collect(),
@@ -651,7 +681,17 @@ pub fn load_scenario(
                 national_morale_pct: s.national_morale_pct,
                 mpp: s.mpp,
                 base_income: s.base_income,
-                purchase_limits: s.purchase_limits,
+                purchase_alt: s
+                    .purchase_limits
+                    .iter()
+                    .filter(|(_, l)| l.alt())
+                    .map(|(c, _)| c.clone())
+                    .collect(),
+                purchase_limits: s
+                    .purchase_limits
+                    .iter()
+                    .map(|(c, l)| (c.clone(), l.count()))
+                    .collect(),
                 purchased: BTreeMap::new(),
                 loss_sensitivity: s.loss_sensitivity,
                 steps_lost: 0,

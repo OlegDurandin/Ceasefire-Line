@@ -194,6 +194,9 @@ pub struct SideState {
     /// R-ECO-03: how many units of each class may be bought ("above the schedule").
     #[serde(default)]
     pub purchase_limits: BTreeMap<String, u32>,
+    /// R-ECO-03, R-UI-07: limit classes marked «альтернатива» (fought elsewhere historically).
+    #[serde(default)]
+    pub purchase_alt: BTreeSet<String>,
     /// Bought so far, destroyed ones included.
     #[serde(default)]
     pub purchased: BTreeMap<String, u32>,

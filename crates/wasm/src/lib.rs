@@ -332,6 +332,8 @@ struct Purchasable {
     left: u32,
     /// Why it cannot be bought now, if so.
     refused: Option<String>,
+    /// R-UI-07: «альтернатива» — historically fought elsewhere.
+    alt: bool,
 }
 
 #[derive(Serialize)]
@@ -1029,6 +1031,7 @@ impl Game {
                     class: class.clone(),
                     cost,
                     left: limit.saturating_sub(side.purchased.get(class).copied().unwrap_or(0)),
+                    alt: side.purchase_alt.contains(class),
                     refused: self.refusal(Command::Purchase {
                         class: class.clone(),
                         at: None,

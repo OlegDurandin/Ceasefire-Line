@@ -91,6 +91,7 @@ fn r_evt_01_bridge_blown_when_the_enemy_comes_near() {
     );
     sc.events = vec![ScenarioEvent {
         id: "blow".into(),
+        important: false,
         phase_of: None,
         trigger: Predicate::UnitNear {
             side: A,

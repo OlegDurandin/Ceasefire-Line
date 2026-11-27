@@ -328,9 +328,14 @@ pub enum Event {
         a: Hex,
         b: Hex,
     },
-    /// R-EVT-01.
+    /// R-EVT-01. R-UI-07: `important` events open a window until clicked;
+    /// the window's «Игровой эффект» line is built from `effects`.
     ScenarioEventFired {
         id: String,
+        #[serde(default)]
+        important: bool,
+        #[serde(default)]
+        effects: Vec<super::events::Effect>,
     },
     MppChanged {
         side: SideId,

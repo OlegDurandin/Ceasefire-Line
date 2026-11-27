@@ -85,6 +85,8 @@ pub enum Effect {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ScenarioEvent {
     pub id: String,
+    /// R-UI-07: shown as a window with the historical text until clicked.
+    pub important: bool,
     /// Only checked at the start of this side's phase; `None` = every phase.
     pub phase_of: Option<SideId>,
     pub trigger: Predicate,
@@ -127,7 +129,11 @@ impl GameState {
             .collect();
         for e in due {
             self.fired_events.insert(e.id.clone());
-            events.push(Event::ScenarioEventFired { id: e.id.clone() });
+            events.push(Event::ScenarioEventFired {
+                id: e.id.clone(),
+                important: e.important,
+                effects: e.effects.clone(),
+            });
             for effect in &e.effects {
                 self.apply_effect(&e.id, effect, events)?;
             }

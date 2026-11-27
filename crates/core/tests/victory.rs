@@ -87,6 +87,7 @@ fn r_evt_01_withdrawal_order_opens_the_exits() {
     }];
     sc.events = vec![ScenarioEvent {
         id: "withdrawal".into(),
+        important: false,
         phase_of: Some(B),
         trigger: Predicate::AnyOf {
             of: vec![

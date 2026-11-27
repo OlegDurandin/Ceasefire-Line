@@ -37,8 +37,8 @@
       ],
       "tech": {},
       "national_morale_pct": 85,
-      "mpp": 40,
-      "base_income": 20,
+      "mpp": 10,
+      "base_income": 0,
       "loss_sensitivity": 2,
       "night_combat": ["infantry", "commando"],
       "night_combat_source": "Предположение: та же выучка пехоты и парашютистов, что на Синае (ночной штурм Умм-Катефа 5–6 июня 1967); на Голанах 9–10 июня главные бои шли днём. Танкам и мех. бригадам — нет (решение дизайнера 2026-11-27).",
@@ -65,8 +65,8 @@
       ],
       "tech": {},
       "national_morale_pct": 70,
-      "mpp": 30,
-      "base_income": 15,
+      "mpp": 12,
+      "base_income": 0,
       "loss_sensitivity": 1,
       "purchase_limits": {}
     }
@@ -145,7 +145,7 @@
     {
       "side": 1,
       "decisive": 30,
-      "victory": 1
+      "victory": -20
     }
   ],
   "scheduled_income": [],
@@ -482,12 +482,16 @@
       "class": "tank",
       "side": 1,
       "hex": [
-        7,
-        5
+        6,
+        6
       ],
       "morale_pct": 70,
       "nation": "syria",
-      "name": "formation.syr_44_armored"
+      "name": "formation.syr_44_armored",
+      "strength": 7,
+      "source": "предположение (баланс): позиция на подступе к Кунейтре с запада и неполная сила; по источникам не проверено",
+      "confirmed": false,
+      "_comment": "Перебалансировка 2026-11-27: из (7,5) в (6,6), сила 10 → 7. 500 партий v1 против v1: Кунейтра до хода 3 — 1%, всего 56%; Израиль 52,4% / Сирия 44,4% / ничьи 3,2% при порогах Израиль 40, Сирия −20. Замер — docs/reports/2026-11-27-rebalance-step6.md."
     },
     {
       "class": "artillery",
@@ -503,12 +507,15 @@
       "class": "hq",
       "side": 1,
       "hex": [
-        9,
-        5
+        7,
+        6
       ],
       "hq_rating": 5,
       "morale_pct": 70,
-      "nation": "syria"
+      "nation": "syria",
+      "source": "Кунейтра — командный центр сирийской армии на Голанах в 1967 году: M. Oren, «Six Days of War», 2002; T. N. Dupuy, «Elusive Victory», 1978 (без страниц).",
+      "confirmed": false,
+      "_comment": "Перебалансировка 2026-11-27 (п. 4 решений по отчёту step5): штаб перенесён из (9,5) в Кунейтру (7,6). До этого город был пуст, и Израиль занимал его на ходу 1 во всех партиях через разрыв (4,7) между укреплениями (4,5) и (4,9). Замер — docs/reports/2026-11-27-rebalance-step6.md."
     }
   ]
 }

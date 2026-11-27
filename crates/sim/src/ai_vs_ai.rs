@@ -230,6 +230,9 @@ struct Game {
     hq_attacks_in_contact: u32,
     /// R-MOVE-07 per side: moves made in a breakthrough and hexes entered by them.
     breakthrough: BTreeMap<u8, (u32, u32)>,
+    /// R-NM-02 per side at the end: VP of held objectives and of exits.
+    vp_objectives: BTreeMap<u8, i32>,
+    vp_exits: BTreeMap<u8, i32>,
 }
 
 /// Strength and «encircled» of every ground unit at the last look.
@@ -584,7 +587,7 @@ fn play_one(sh: &Shared, seed: u64) -> Result<Game, String> {
                 Event::UnitExited { steps, .. } => {
                     *g.exited.entry(mover).or_default() += u32::from(*steps)
                 }
-                Event::ScenarioEventFired { id } => g.fired.push(id.clone()),
+                Event::ScenarioEventFired { id, .. } => g.fired.push(id.clone()),
                 // R-AI-01 п. 3: MPP by use, per side.
                 Event::Reinforced { cost, .. } => g.spent.entry(mover).or_default()[0] += cost,
                 Event::Purchased { cost, side, .. } => {
@@ -622,6 +625,14 @@ fn play_one(sh: &Shared, seed: u64) -> Result<Game, String> {
         .map(|x| (x.id, x.national_morale_pct))
         .collect();
     g.vp = o.vp.clone();
+    for ob in s.objectives() {
+        if let Some(h) = s.controller(ob.hex) {
+            *g.vp_objectives.entry(h.0).or_default() += ob.vp;
+        }
+    }
+    for (side, _) in &o.vp {
+        g.vp_exits.insert(side.0, s.exited_vp(*side));
+    }
     g.turn = s.turn();
     let mut sides: Vec<SideId> = o.vp.iter().map(|(s, _)| *s).collect();
     sides.sort();
@@ -966,6 +977,26 @@ fn summary(o: &Options, games: &[Game]) -> serde_json::Value {
             m
         }),
     });
+    // VP of side 0 minus side 1 per game, sorted (victory thresholds).
+    let mut vp_margins: Vec<i32> = games
+        .iter()
+        .map(|g| {
+            let v = |s: u8| g.vp.iter().find(|x| x.0 .0 == s).map_or(0, |x| x.1);
+            v(0) - v(1)
+        })
+        .collect();
+    vp_margins.sort_unstable();
+    // Mean VP parts per side: NM, held objectives, exits, enemy steps (the rest).
+    let vp_parts: Vec<serde_json::Value> = (0u8..2)
+        .map(|side| {
+            let mean = |f: &dyn Fn(&Game) -> f64| games.iter().map(f).sum::<f64>() / n;
+            let total = mean(&|g| f64::from(g.vp.iter().find(|x| x.0 .0 == side).map_or(0, |x| x.1)));
+            let nm = mean(&|g| f64::from(g.nm_end.iter().find(|x| x.0 .0 == side).map_or(0, |x| x.1)));
+            let obj = mean(&|g| f64::from(g.vp_objectives.get(&side).copied().unwrap_or(0)));
+            let exits = mean(&|g| f64::from(g.vp_exits.get(&side).copied().unwrap_or(0)));
+            serde_json::json!({"nm": nm, "objectives": obj, "exits": exits, "steps": total - nm - obj - exits})
+        })
+        .collect();
     serde_json::json!({
         "scenario": o.scenario,
         "runs": games.len(),
@@ -974,6 +1005,8 @@ fn summary(o: &Options, games: &[Game]) -> serde_json::Value {
         "sets": o.sets,
         "variance": format!("{:?}", o.variance),
         "wins": sides.iter().map(|s| share(*s)).collect::<Vec<_>>(),
+        "vp_margins": vp_margins,
+        "vp_parts": vp_parts,
         "vp_mean": sides.iter().map(|side| games.iter().map(|g| f64::from(g.vp.iter().find(|x| x.0 == *side).map_or(0, |x| x.1))).sum::<f64>() / n).collect::<Vec<_>>(),
         "nm_end": sides.iter().map(|side| games.iter().map(|g| f64::from(g.nm_end.iter().find(|x| x.0 == *side).map_or(0, |x| x.1))).sum::<f64>() / n).collect::<Vec<_>>(),
         "nm_by_reason": (0u8..2).map(|side| {
