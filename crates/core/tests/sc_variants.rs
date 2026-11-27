@@ -11,7 +11,7 @@ use ceasefire_core::hex::Hex;
 use common::scenario::{board, start, unit, A, B};
 
 /// Every boolean variant, so each test states its own rules.
-const VARIANTS: [&str; 12] = [
+const VARIANTS: [&str; 13] = [
     "attack_strips_entrenchment",
     "prepared_attack",
     "unsupplied_target",
@@ -24,6 +24,7 @@ const VARIANTS: [&str; 12] = [
     "fortified_hold",
     "pocket_desertion",
     "source_isolation",
+    "air_strength_threshold",
 ];
 
 /// The common test scenario with every variant switched off.
@@ -755,4 +756,47 @@ fn r_combat_02_strips_entrenchment_by_attacker_class() {
     .0;
     let (_, entr) = three_attacks(s);
     assert_eq!(entr, vec![2, 2, 2]);
+}
+
+/// SC п. 30 `air_strength_threshold`: fighters below strength 5 neither
+/// intercept nor escort; without the variant they do.
+#[test]
+fn r_air_02_worn_fighters_do_not_intercept_or_escort() {
+    use ceasefire_core::tech::{TechBranch, TechLevels};
+    let sc = |on: bool| {
+        let (map, control) = board();
+        let mut escort = unit("fighter", A, Hex::new(0, 0));
+        escort.strength = 4;
+        let mut mig = unit("fighter", B, Hex::new(6, 0));
+        mig.strength = 4;
+        let units = vec![
+            unit("strike", A, Hex::new(0, 0)),
+            unit("infantry", B, Hex::new(4, 0)),
+            unit("infantry", A, Hex::new(1, 0)),
+            escort,
+            mig,
+        ];
+        let mut sc = setup(map, control, units);
+        sc.cities = [Hex::new(0, 0), Hex::new(6, 0)]
+            .into_iter()
+            .map(|hex| ceasefire_core::game::CityValue { hex, value: 1 })
+            .collect();
+        sc.sides[0].tech = TechLevels::default().with(TechBranch::Aviation, 2);
+        if on {
+            with("air_strength_threshold", sc)
+        } else {
+            sc
+        }
+    };
+    let off = start(sc(false))
+        .forecast_air_strike(UnitId(1), UnitId(2))
+        .unwrap();
+    assert_eq!((off.escorts.len(), off.interceptors.len()), (1, 1));
+    let on = start(sc(true))
+        .forecast_air_strike(UnitId(1), UnitId(2))
+        .unwrap();
+    assert!(
+        on.escorts.is_empty() && on.interceptors.is_empty(),
+        "{on:?}"
+    );
 }

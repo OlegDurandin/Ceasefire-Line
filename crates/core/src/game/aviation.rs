@@ -295,12 +295,19 @@ impl GameState {
     ) -> Result<(Vec<UnitId>, Vec<UnitId>), RuleError> {
         let air = &self.data.rules.air;
         let min = air.intercept_min_readiness_pct;
+        // SC п. 30: a worn fighter stays out of interception and escort.
+        let min_strength = if self.variants.air_strength_threshold {
+            air.intercept_min_strength
+        } else {
+            1
+        };
         let intercept = range_in_hexes(air.intercept_radius_km, self.hex_km);
         let mut escorts = Vec::new();
         let mut interceptors = Vec::new();
         for f in self.air.values() {
             let class = self.data.units.get(&f.class)?;
-            if f.id == striker.id || f.readiness_pct(&self.data) < min || f.strength == 0 {
+            if f.id == striker.id || f.readiness_pct(&self.data) < min || f.strength < min_strength
+            {
                 continue;
             }
             let Some(d) = self.base_distance(&f.base, target) else {

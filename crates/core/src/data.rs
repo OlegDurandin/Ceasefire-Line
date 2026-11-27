@@ -80,6 +80,8 @@ pub struct AirRules {
     pub airfield_strike_readiness_loss_pct: u8,
     /// Fighters intercept or escort only at or above this readiness.
     pub intercept_min_readiness_pct: u8,
+    /// R-AIR-02 variant `air_strength_threshold`: and only at or above this strength.
+    pub intercept_min_strength: u8,
     /// A fighter intercepts sorties whose target is within this range of its base.
     pub intercept_radius_km: f64,
     /// At most this many interceptors meet one strike (the best ones).
@@ -327,6 +329,8 @@ pub struct Variants {
     pub pocket_desertion: bool,
     /// R-SUP-01: cut-off sources give little, besieged ones dwindle.
     pub source_isolation: bool,
+    /// R-AIR-02: fighters intercept and escort only at strength ≥ `air.intercept_min_strength` (SC п. 30).
+    pub air_strength_threshold: bool,
 }
 
 impl Variants {

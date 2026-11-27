@@ -152,6 +152,7 @@
     "parked_air_defense": 2.0,
     "airfield_strike_readiness_loss_pct": 30,
     "intercept_min_readiness_pct": 50,
+    "intercept_min_strength": 5,
     "intercept_radius_km": 100,
     "max_intercepts_per_strike": 2,
     "base_lost_readiness_loss_pct": 30
@@ -178,6 +179,7 @@
     "hq_strength_scaling": false,
     "fortified_hold": false,
     "pocket_desertion": false,
-    "source_isolation": false
+    "source_isolation": false,
+    "air_strength_threshold": false
   }
 }
