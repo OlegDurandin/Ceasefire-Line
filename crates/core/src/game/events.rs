@@ -176,7 +176,7 @@ impl GameState {
             Effect::SetLastTurn { turn } => self.set_last_turn((*turn).max(self.turn), events),
             Effect::Message { key } => events.push(Event::Message { key: key.clone() }),
             Effect::UnitsMorale { side, change } => {
-                let cap = i32::from(self.side(*side).map_or(100, |s| s.national_morale_pct));
+                let cap = i32::from(self.morale_cap(*side)?);
                 for unit in self.ground_units_mut(*side)? {
                     unit.morale_pct = (i32::from(unit.morale_pct) + change).clamp(0, cap) as u8;
                 }

@@ -137,7 +137,12 @@
     "encircled_pct": 150,
     "steps_per_loss": 10,
     "sudden_death_pct": 20,
-    "objective_taken_share_pct": 50
+    "objective_taken_share_pct": 50,
+    "morale_bands": [
+      { "nm_below_pct": 95, "morale_pct": 95 },
+      { "nm_below_pct": 75, "morale_pct": 90 },
+      { "nm_below_pct": 40, "morale_pct": 85 }
+    ]
   },
   "bridge": {
     "bombard_destroy_chance": 0.3,
@@ -186,6 +191,7 @@
     "transfer_supply_min": false,
     "hq_contact_priority": false,
     "armor_city_penalty": false,
-    "arrival_choice": false
+    "arrival_choice": false,
+    "nm_morale_multiplier": false
   }
 }

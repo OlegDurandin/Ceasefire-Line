@@ -11,7 +11,7 @@ use ceasefire_core::hex::Hex;
 use common::scenario::{board, start, unit, A, B};
 
 /// Every boolean variant, so each test states its own rules.
-const VARIANTS: [&str; 17] = [
+const VARIANTS: [&str; 18] = [
     "attack_strips_entrenchment",
     "prepared_attack",
     "unsupplied_target",
@@ -29,6 +29,7 @@ const VARIANTS: [&str; 17] = [
     "hq_contact_priority",
     "armor_city_penalty",
     "arrival_choice",
+    "nm_morale_multiplier",
 ];
 
 /// The common test scenario with every variant switched off.
@@ -382,6 +383,49 @@ fn r_nm_01_unit_loss_by_price() {
         ),
         (2, 3)
     );
+}
+
+/// R-NM-01 variant `nm_morale_multiplier` (SC 7.29.4): NM bands
+/// below 95 → ×0.95, below 75 → ×0.90, below 40 → ×0.85.
+#[test]
+fn r_nm_01_morale_bands() {
+    let (map, control) = board();
+    let s = start(setup(map, control, vec![]));
+    let nm = &s.data().rules.national_morale;
+    let f: Vec<u8> = [100, 95, 94, 75, 74, 40, 39, 0]
+        .iter()
+        .map(|&x| nm.morale_factor_pct(x))
+        .collect();
+    assert_eq!(f, vec![100, 100, 95, 95, 90, 90, 85, 85]);
+}
+
+/// R-NM-01: without the variant NM caps unit morale; with it the morale
+/// stays and enters readiness scaled by the NM band (NM 70 → ×0.90).
+#[test]
+fn r_nm_01_nm_scales_morale_instead_of_capping() {
+    let run = |on: bool| {
+        let (map, control) = board();
+        let mut u = unit("infantry", A, Hex::new(0, 0));
+        u.morale_pct = 90;
+        let mut sc = setup(map, control, vec![u]);
+        sc.sides[0].national_morale_pct = 70;
+        if on {
+            sc = with("nm_morale_multiplier", sc);
+        }
+        let mut s = start(sc);
+        // A full turn: A's next phase recomputes morale and readiness.
+        s.apply(Command::EndPhase).unwrap();
+        s.apply(Command::EndPhase).unwrap();
+        let u = s.unit(UnitId(1)).unwrap();
+        (
+            u.morale_pct,
+            u.readiness_basis.morale_pct,
+            s.readiness_morale_pct(A, 90),
+        )
+    };
+    assert_eq!(run(false), (70, 70, 90), "capped at NM");
+    // Rest +10 lifts morale to 100 above NM; readiness takes 100 × 0.90.
+    assert_eq!(run(true), (100, 90, 81), "no cap, scaled in readiness");
 }
 
 /// П10 (sim only): `sc` variance draws round(E) + {−1, 0, +1} within [0, cap].

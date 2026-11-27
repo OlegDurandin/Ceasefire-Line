@@ -640,20 +640,27 @@ impl GameState {
             hex_supply.insert(side, state.hex_supply(side)?);
         }
         let data = Arc::clone(&state.data);
+        let factors: BTreeMap<SideId, u8> = state
+            .sides
+            .iter()
+            .map(|s| (s.id, state.readiness_morale_factor_pct(s.id)))
+            .collect();
         for (id, over) in supply_overrides {
             if let Some(u) = state.units.get_mut(&id) {
+                let readiness_morale =
+                    nm::scale_morale(u.morale_pct, factors.get(&u.side).copied().unwrap_or(100));
                 let from_hex = hex_supply.get(&u.side).map_or(0, |m| m.get(u.hex));
                 u.supply = over.unwrap_or(from_hex).min(state.supply_params.max);
                 u.base_readiness_pct = readiness_pct(
                     &data.rules.readiness,
                     u.supply,
-                    u.morale_pct,
+                    readiness_morale,
                     u.exp_stars(),
                     0,
                 );
                 u.readiness_basis = ReadinessBasis {
                     supply: u.supply,
-                    morale_pct: u.morale_pct,
+                    morale_pct: readiness_morale,
                     exp_stars: u.exp_stars(),
                     hq_pct: 0,
                 };

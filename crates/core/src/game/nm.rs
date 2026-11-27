@@ -8,7 +8,36 @@ use crate::side::SideId;
 use super::{EndReason, Event, GameState, NmReason, Outcome, VictoryLevel};
 
 impl GameState {
-    /// R-NM-01: changes NM within 0..=100 and caps unit morale at the new NM.
+    /// R-NM-01: the highest unit morale the side's NM allows — NM itself, or
+    /// 100 with the variant `nm_morale_multiplier` (NM then scales morale in
+    /// readiness instead, see [`Self::readiness_morale_pct`]).
+    pub(super) fn morale_cap(&self, side: SideId) -> Result<u8, RuleError> {
+        if self.variants.nm_morale_multiplier {
+            Ok(100)
+        } else {
+            Ok(self.side_state(side)?.national_morale_pct)
+        }
+    }
+
+    /// R-NM-01, R-UNIT-01: unit morale as it enters readiness. With the variant
+    /// `nm_morale_multiplier` it is scaled by the NM band of the side
+    /// (`national_morale.morale_bands`), rounded half up; otherwise unchanged.
+    pub fn readiness_morale_pct(&self, side: SideId, morale_pct: u8) -> u8 {
+        scale_morale(morale_pct, self.readiness_morale_factor_pct(side))
+    }
+
+    /// R-NM-01 variant `nm_morale_multiplier`: the side's morale multiplier in
+    /// percent (100 without the variant).
+    pub(super) fn readiness_morale_factor_pct(&self, side: SideId) -> u8 {
+        if !self.variants.nm_morale_multiplier {
+            return 100;
+        }
+        let nm = self.side(side).map_or(100, |s| s.national_morale_pct);
+        self.data.rules.national_morale.morale_factor_pct(nm)
+    }
+
+    /// R-NM-01: changes NM within 0..=100 and caps unit morale at the new NM
+    /// (no cap with the variant `nm_morale_multiplier`).
     pub(super) fn change_nm(
         &mut self,
         side: SideId,
@@ -16,12 +45,14 @@ impl GameState {
         reason: NmReason,
         events: &mut Vec<Event>,
     ) -> Result<(), RuleError> {
+        let multiplier = self.variants.nm_morale_multiplier;
         let state = self.side_state_mut(side)?;
         let old = i32::from(state.national_morale_pct);
         let value = (old + delta).clamp(0, 100) as u8;
         state.national_morale_pct = value;
+        let cap = if multiplier { 100 } else { value };
         for u in self.units.values_mut().filter(|u| u.side == side) {
-            u.morale_pct = u.morale_pct.min(value);
+            u.morale_pct = u.morale_pct.min(cap);
         }
         events.push(Event::NationalMorale {
             side,
@@ -210,6 +241,12 @@ impl GameState {
             vp,
         })
     }
+}
+
+/// `morale × factor / 100`, rounded half up.
+pub(super) fn scale_morale(morale_pct: u8, factor_pct: u8) -> u8 {
+    let scaled = (u32::from(morale_pct) * u32::from(factor_pct) + 50) / 100;
+    u8::try_from(scaled).unwrap_or(u8::MAX)
 }
 
 #[cfg(test)]

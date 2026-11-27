@@ -228,6 +228,31 @@ pub struct NationalMoraleRules {
     pub sudden_death_pct: u8,
     /// New owner of an objective gains this share of its NM value (floor).
     pub objective_taken_share_pct: u8,
+    /// R-NM-01 variant `nm_morale_multiplier`: NM bands that scale unit
+    /// morale in readiness instead of capping it (SC 7.29.4).
+    pub morale_bands: Vec<NmMoraleBand>,
+}
+
+/// R-NM-01 variant `nm_morale_multiplier`: below `nm_below_pct` NM, unit
+/// morale counts as `morale_pct`% of itself in readiness.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct NmMoraleBand {
+    pub nm_below_pct: u8,
+    pub morale_pct: u8,
+}
+
+impl NationalMoraleRules {
+    /// R-NM-01 variant `nm_morale_multiplier`: the multiplier (percent) at
+    /// this NM — the lowest band NM is below, 100 above every band.
+    pub fn morale_factor_pct(&self, nm_pct: u8) -> u8 {
+        self.morale_bands
+            .iter()
+            .filter(|b| nm_pct < b.nm_below_pct)
+            .map(|b| b.morale_pct)
+            .min()
+            .unwrap_or(100)
+    }
 }
 
 /// R-HQ-01, R-HQ-02.
@@ -343,6 +368,8 @@ pub struct Variants {
     pub armor_city_penalty: bool,
     /// R-ECO-02: the buyer picks the arrival source (value ≥ `economy.arrival_choice_min_value`, no enemy next to it) (SC п. 26).
     pub arrival_choice: bool,
+    /// R-NM-01: NM scales unit morale in readiness instead of capping it (SC 7.29.4).
+    pub nm_morale_multiplier: bool,
 }
 
 impl Variants {

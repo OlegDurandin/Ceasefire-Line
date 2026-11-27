@@ -17,7 +17,8 @@ impl GameState {
         let rules = &data.rules;
         let side = self.active_side();
         let night = self.is_night();
-        let nm = self.side_state(side)?.national_morale_pct;
+        let nm = self.morale_cap(side)?;
+        let morale_factor = self.readiness_morale_factor_pct(side);
         let mut events = vec![Event::PhaseStarted {
             turn: self.turn,
             side,
@@ -214,16 +215,17 @@ impl GameState {
             unit.attacks_received = 0;
             unit.crossing_penalty_pct = 0;
             unit.event_penalty_pct = 0;
+            let readiness_morale = super::nm::scale_morale(unit.morale_pct, morale_factor);
             unit.base_readiness_pct = readiness_pct(
                 &rules.readiness,
                 unit.supply,
-                unit.morale_pct,
+                readiness_morale,
                 unit.exp_stars(),
                 hq_readiness,
             );
             unit.readiness_basis = super::ReadinessBasis {
                 supply: unit.supply,
-                morale_pct: unit.morale_pct,
+                morale_pct: readiness_morale,
                 exp_stars: unit.exp_stars(),
                 hq_pct: hq_readiness,
             };
