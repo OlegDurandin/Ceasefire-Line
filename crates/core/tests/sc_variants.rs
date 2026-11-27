@@ -723,3 +723,36 @@ fn r_sup_01_isolation_follows_supply_paths_across_a_canal() {
     assert_eq!(east_bank(false), 3, "no bridge: cut off");
     assert_eq!(east_bank(true), 8, "a bridge links it");
 }
+
+/// SC п. 11: how many levels П1 strips is the attacker class's
+/// `strips_entrenchment` (1 by default, 0 for HQs).
+#[test]
+fn r_combat_02_strips_entrenchment_by_attacker_class() {
+    let d = common::data();
+    assert_eq!(d.units.get("hq").unwrap().strips_entrenchment, 0);
+    assert_eq!(d.units.get("infantry").unwrap().strips_entrenchment, 1);
+    // Infantry that strips nothing: the П1 attacks leave the entrenchment.
+    let mut units: serde_json::Value =
+        serde_json::from_str(include_str!("../../../data/units.json")).unwrap();
+    for u in units["units"].as_array_mut().unwrap() {
+        if u["id"] == "infantry" {
+            u["strips_entrenchment"] = 0.into();
+        }
+    }
+    let units = units.to_string();
+    let data = ceasefire_core::data::GameData::from_json(ceasefire_core::data::GameDataJson {
+        rules: include_str!("../../../data/rules.json"),
+        terrain: include_str!("../../../data/terrain.json"),
+        units: &units,
+        tech: include_str!("../../../data/tech.json"),
+    })
+    .unwrap();
+    let s = GameState::new(
+        std::sync::Arc::new(data),
+        with("attack_strips_entrenchment", three_on_one()),
+    )
+    .unwrap()
+    .0;
+    let (_, entr) = three_attacks(s);
+    assert_eq!(entr, vec![2, 2, 2]);
+}

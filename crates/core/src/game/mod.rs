@@ -717,11 +717,15 @@ impl GameState {
         self.variants
     }
 
-    /// R-COMBAT-02 variant `attack_strips_entrenchment`: levels a ground
-    /// attack or an air strike strips from its target (0 when off).
-    pub fn attack_entrench_loss(&self) -> u8 {
+    /// R-COMBAT-02 variant `attack_strips_entrenchment`: levels an attack or
+    /// air strike by a unit of `class` strips from its target — the class's
+    /// `strips_entrenchment` (SC п. 11); 0 when the variant is off.
+    pub fn attack_entrench_loss(&self, class: &str) -> u8 {
         if self.variants.attack_strips_entrenchment {
-            self.data.rules.combat.attack_entrench_loss
+            self.data
+                .units
+                .get(class)
+                .map_or(0, |c| c.strips_entrenchment)
         } else {
             0
         }

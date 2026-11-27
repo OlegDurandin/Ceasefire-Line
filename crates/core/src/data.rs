@@ -38,9 +38,6 @@ pub struct CombatRules {
     pub canal_defense_mult: f64,
     pub forecast_low_percentile: f64,
     pub forecast_high_percentile: f64,
-    /// R-COMBAT-02 variant `attack_strips_entrenchment`: levels a ground
-    /// attack or an air strike strips from the target after the combat.
-    pub attack_entrench_loss: u8,
     /// R-COMBAT-07 (variant `prepared_attack`): readiness points of an
     /// attacker that has not moved this phase, for this attack only.
     pub prepared_attack_readiness_pct: u8,
@@ -621,6 +618,10 @@ pub enum UnitTag {
     Hq,
 }
 
+fn default_strips_entrenchment() -> u8 {
+    1
+}
+
 fn default_entrench_per_turn() -> u32 {
     1
 }
@@ -650,6 +651,10 @@ pub struct UnitClass {
     pub exerts_zoc: bool,
     #[serde(default = "default_entrench_per_turn")]
     pub entrench_per_turn: u32,
+    /// R-COMBAT-02 (П1, `attack_strips_entrenchment`): entrenchment levels
+    /// this class's attack or air strike strips from its target (SC п. 11).
+    #[serde(default = "default_strips_entrenchment")]
+    pub strips_entrenchment: u8,
     #[serde(default)]
     pub tags: Vec<UnitTag>,
 }

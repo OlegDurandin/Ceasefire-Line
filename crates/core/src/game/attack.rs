@@ -111,7 +111,9 @@ impl GameState {
             } else {
                 1.0
             },
-            entrench_strip: self.attack_entrench_loss().min(defender.entrenchment),
+            entrench_strip: self
+                .attack_entrench_loss(&attacker.class)
+                .min(defender.entrenchment),
         }
     }
 
@@ -297,13 +299,17 @@ impl GameState {
         let side_of = |s: &GameState, u: UnitId| s.units.get(&u).map(|u| u.side);
         let (a_side, d_side) = (side_of(self, id), side_of(self, target));
 
+        // Read before the attacker's losses: it strips even if destroyed.
+        let strip = self
+            .units
+            .get(&id)
+            .map_or(0, |u| self.attack_entrench_loss(&u.class));
         if let Some(u) = self.units.get_mut(&id) {
             let lost = u.lose_steps(attacker_losses, rules.morale.loss_per_step);
             if let Some(side) = a_side {
                 self.charge_losses(side, lost, &mut events)?;
             }
         }
-        let strip = self.attack_entrench_loss();
         if let Some(u) = self.units.get_mut(&target) {
             let lost = u.lose_steps(defender_losses, rules.morale.loss_per_step);
             // R-COMBAT-02 variant: the attack strips entrenchment after the combat.

@@ -539,7 +539,7 @@ impl GameState {
                     return_losses: u8::try_from(back_hits).unwrap_or(u8::MAX).min(a.strength),
                 });
                 let loss = data.rules.air.ground_strike_readiness_loss_pct;
-                let strip = self.attack_entrench_loss();
+                let strip = self.attack_entrench_loss(&a.class);
                 if let Some(u) = self.units.get_mut(&t) {
                     let lost = u.lose_steps(losses, data.rules.morale.loss_per_step);
                     // R-COMBAT-02 variant: a strike strips entrenchment too.

@@ -86,7 +86,7 @@
       "id": "hq", "target_class": "soft", "cost_mpp": 120, "ap": 4, "strikes": 0,
       "attack": { "soft": 1, "hard": 1, "air": 0, "naval": 0 },
       "defense": { "ground": 3, "air": 2 },
-      "exerts_zoc": false,
+      "exerts_zoc": false, "strips_entrenchment": 0,
       "tags": ["hq"]
     }
   ]
