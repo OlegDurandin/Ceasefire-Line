@@ -6,6 +6,7 @@ mod balance;
 mod battles;
 mod check_data;
 mod combat_matrix;
+mod script;
 mod supply_reach;
 mod tactical_sim;
 mod tournament;

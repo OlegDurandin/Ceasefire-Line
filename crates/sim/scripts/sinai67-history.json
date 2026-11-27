@@ -1,0 +1,33 @@
+{
+  "_comment": "Sinai-67, Israel, turns 1–3 by the history (Oren, «Six Days of War»; Dupuy, «Elusive Victory»): 84th division (Tal) at the Rafah junction, then El Arish through Jiradi; 38th (Sharon) at Umm Katef / Abu Ageila, the main attack on the night of turn 2 with artillery, the 80th paratroop brigade on the batteries, tanks and infantry; 31st (Yoffe) between them through the dunes to Bir Lahfan, then towards Jebel Libni. Bir Lahfan (20,6) and Jebel Libni (18,9) are hexes read off the road data (±1 hex). Other formations, aircraft and economy — the side's AI. Rebalancing, step 2a: sim ai-vs-ai --script.",
+  "side": 0,
+  "phases": [
+    {
+      "turn": 1,
+      "_comment": "5 June, day",
+      "orders": [
+        { "formation": "isr_84th_armored_division", "target": [22, 4] },
+        { "formation": "isr_38th_armored_division", "target": [21, 7] },
+        { "formation": "isr_31st_armored_division", "target": [20, 6] }
+      ]
+    },
+    {
+      "turn": 2,
+      "_comment": "night 5–6 June: Sharon's night attack on Umm Katef; Tal past Jiradi to El Arish",
+      "orders": [
+        { "formation": "isr_38th_armored_division", "target": [21, 7] },
+        { "formation": "isr_84th_armored_division", "target": [17, 4] },
+        { "formation": "isr_31st_armored_division", "target": [20, 6] }
+      ]
+    },
+    {
+      "turn": 3,
+      "_comment": "6 June, day",
+      "orders": [
+        { "formation": "isr_38th_armored_division", "target": [21, 7] },
+        { "formation": "isr_84th_armored_division", "target": [17, 4] },
+        { "formation": "isr_31st_armored_division", "target": [18, 9] }
+      ]
+    }
+  ]
+}

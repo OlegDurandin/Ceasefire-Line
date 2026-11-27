@@ -50,6 +50,10 @@ pub struct Options {
     watch: Vec<ceasefire_core::hex::Hex>,
     /// T1: write every ground attack as a tactical battle input here.
     dump: Option<PathBuf>,
+    /// Scripted orders for one side on some turns (`crate::script`).
+    script: Option<PathBuf>,
+    /// JSON lines: side 0's attacks and bombardments of the first turns.
+    battle_log: Option<PathBuf>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -88,6 +92,8 @@ struct Shared {
     watch: Vec<ceasefire_core::hex::Hex>,
     dump: Option<PathBuf>,
     scenario: String,
+    script: Option<crate::script::Script>,
+    battle_log: bool,
 }
 
 pub fn parse_options(args: &[String]) -> Result<Options, String> {
@@ -105,6 +111,8 @@ pub fn parse_options(args: &[String]) -> Result<Options, String> {
         variance: Variance::Binomial,
         watch: Vec::new(),
         dump: None,
+        script: None,
+        battle_log: None,
     };
     let mut it = args.iter();
     while let Some(flag) = it.next() {
@@ -131,6 +139,8 @@ pub fn parse_options(args: &[String]) -> Result<Options, String> {
                 o.sets.push((k.to_owned(), v.to_owned()));
             }
             "--dump-battles" => o.dump = Some(PathBuf::from(value)),
+            "--script" => o.script = Some(PathBuf::from(value)),
+            "--battle-log" => o.battle_log = Some(PathBuf::from(value)),
             "--watch" => {
                 for cr in value.split(';').filter(|x| !x.is_empty()) {
                     let (c, r) = cr
@@ -210,6 +220,9 @@ struct Game {
     watch_turn: Option<u32>,
     /// Battles written by `--dump-battles`.
     dumped: u32,
+    /// `--battle-log`: side 0's attacks and bombardments up to turn
+    /// `BATTLE_LOG_TURNS`, with their inputs and results.
+    battles: Vec<serde_json::Value>,
     /// Ground attack commands, those on HQs, and those whose HQ target was in
     /// contact (an enemy unit next to it) at the start of the phase.
     ground_attacks: u32,
@@ -245,6 +258,86 @@ fn snapshot(s: &GameState) -> Snapshot {
             (u.id, (u.strength, encircled))
         })
         .collect()
+}
+
+/// Turns covered by `--battle-log`.
+const BATTLE_LOG_TURNS: u32 = 3;
+
+/// `--battle-log`: the inputs of a ground attack or bombardment before it is
+/// applied (the same explain functions as the forecast, R-UI-04).
+fn battle_entry(s: &GameState, cmd: &ceasefire_core::game::Command) -> Option<serde_json::Value> {
+    use ceasefire_core::game::Command;
+    let (kind, unit, target) = match cmd {
+        Command::Attack { unit, target } => ("attack", *unit, *target),
+        Command::Bombard { unit, target } => ("bombard", *unit, *target),
+        _ => return None,
+    };
+    let a = s.unit(unit)?;
+    let d = s.unit(target)?;
+    let inputs = match kind {
+        "attack" => serde_json::to_value(s.explain_attack(unit, target).ok()?).ok()?,
+        _ => serde_json::to_value([s.explain_bombard(unit, target).ok()?]).ok()?,
+    };
+    let rules = &s.data().rules.combat;
+    let params: Vec<_> =
+        serde_json::from_value::<Vec<ceasefire_core::combat::FireInput>>(inputs.clone())
+            .ok()?
+            .iter()
+            .map(|i| ceasefire_core::combat::fire_params(rules, i))
+            .collect();
+    Some(serde_json::json!({
+        "turn": s.turn(),
+        "night": s.is_night(),
+        "kind": kind,
+        "attacker": { "id": unit.0, "class": a.class, "name": a.name, "formation": a.formation,
+            "hex": ceasefire_core::scenario::axial_to_offset(a.hex), "strength": a.strength,
+            "supply": a.supply, "readiness": a.readiness_pct(&s.data().rules.readiness) },
+        "defender": { "id": target.0, "class": d.class, "name": d.name,
+            "hex": ceasefire_core::scenario::axial_to_offset(d.hex), "strength": d.strength,
+            "supply": d.supply, "entrenchment": d.entrenchment,
+            "terrain": s.map().cell(d.hex).map(|c| c.terrain.clone()) },
+        "inputs": inputs,
+        "params": params,
+    }))
+}
+
+/// Results of the logged fights, in command order (one result event each).
+fn fill_results(seed: u64, logged: &mut [serde_json::Value], events: &[Event]) {
+    // Air strikes and the other side's fights give no such event; results
+    // are matched in order by attacker and defender ids.
+    let mut results = events.iter().filter_map(|e| match e {
+        Event::CombatResolved {
+            attacker,
+            defender,
+            attacker_losses,
+            defender_losses,
+            ..
+        } => Some((
+            Some(*attacker_losses),
+            *defender_losses,
+            *attacker,
+            *defender,
+        )),
+        Event::Bombarded {
+            unit,
+            target,
+            losses,
+            ..
+        } => Some((None, *losses, *unit, *target)),
+        _ => None,
+    });
+    for entry in logged.iter_mut() {
+        let a = entry["attacker"]["id"].as_u64();
+        let d = entry["defender"]["id"].as_u64();
+        if let Some((al, dl, _, _)) = results
+            .by_ref()
+            .find(|x| Some(u64::from(x.2 .0)) == a && Some(u64::from(x.3 .0)) == d)
+        {
+            entry["seed"] = serde_json::json!(seed);
+            entry["attacker_losses"] = serde_json::json!(al);
+            entry["defender_losses"] = serde_json::json!(dl);
+        }
+    }
 }
 
 fn play_one(sh: &Shared, seed: u64) -> Result<Game, String> {
@@ -297,7 +390,13 @@ fn play_one(sh: &Shared, seed: u64) -> Result<Game, String> {
             })
             .collect();
         let mut hq_seen = (0u32, 0u32, 0u32);
+        let mut logged: Vec<serde_json::Value> = Vec::new();
         let mut dump = |st: &GameState, cmd: &ceasefire_core::game::Command| {
+            if sh.battle_log && st.active_side() == SideId(0) && st.turn() <= BATTLE_LOG_TURNS {
+                if let Some(entry) = battle_entry(st, cmd) {
+                    logged.push(entry);
+                }
+            }
             if let ceasefire_core::game::Command::Attack { target, .. } = cmd {
                 hq_seen.0 += 1;
                 if let Some(c) = hq_contact.get(target) {
@@ -315,12 +414,18 @@ fn play_one(sh: &Shared, seed: u64) -> Result<Game, String> {
             }
         };
         let mover = s.active_side().0;
+        let orders: Option<Vec<crate::script::Order>> = sh
+            .script
+            .as_ref()
+            .and_then(|x| x.orders(&s))
+            .map(<[_]>::to_vec);
+        let scripted = |st: &GameState| orders.as_deref().and_then(|o| crate::script::next(st, o));
         let r = match player {
             Player::Greedy => play_phase(
                 &mut s,
                 |st| {
                     look(st, &mut steps);
-                    let c = greedy_next(st);
+                    let c = scripted(st).unwrap_or_else(|| greedy_next(st));
                     dump(st, &c);
                     c
                 },
@@ -332,7 +437,7 @@ fn play_one(sh: &Shared, seed: u64) -> Result<Game, String> {
                     &mut s,
                     |st| {
                         look(st, &mut steps);
-                        let c = v1.next(st);
+                        let c = scripted(st).unwrap_or_else(|| v1.next(st));
                         dump(st, &c);
                         c
                     },
@@ -341,6 +446,10 @@ fn play_one(sh: &Shared, seed: u64) -> Result<Game, String> {
             }
         }
         .map_err(|e| e.to_string())?;
+        if !logged.is_empty() {
+            fill_results(seed, &mut logged, &r.events);
+            g.battles.append(&mut logged);
+        }
         g.ground_attacks += hq_seen.0;
         g.hq_attacks += hq_seen.1;
         g.hq_attacks_in_contact += hq_seen.2;
@@ -540,6 +649,12 @@ pub fn run(o: &Options) -> Result<(), String> {
         watch: o.watch.clone(),
         dump: o.dump.clone(),
         scenario: o.scenario.clone(),
+        battle_log: o.battle_log.is_some(),
+        script: o
+            .script
+            .as_deref()
+            .map(crate::script::Script::load)
+            .transpose()?,
     });
     if let Some(d) = &o.dump {
         fs::create_dir_all(d).map_err(|e| format!("{}: {e}", d.display()))?;
@@ -571,6 +686,14 @@ pub fn run(o: &Options) -> Result<(), String> {
         .into_iter()
         .map(|g| g.unwrap_or_else(|| Err("not played".into())))
         .collect::<Result<_, _>>()?;
+    if let Some(path) = &o.battle_log {
+        let mut text = String::new();
+        for b in games.iter().flat_map(|g| &g.battles) {
+            text.push_str(&b.to_string());
+            text.push('\n');
+        }
+        fs::write(path, text).map_err(|e| format!("{}: {e}", path.display()))?;
+    }
     let keys: BTreeMap<u8, String> = serde_json::from_str::<serde_json::Value>(&texts.0)
         .ok()
         .and_then(|v| v.get("sides").and_then(|s| s.as_array()).cloned())
@@ -828,6 +951,11 @@ fn summary(o: &Options, games: &[Game]) -> serde_json::Value {
         "median": turns.get(turns.len() / 2),
         "p25": turns.get(turns.len() / 4),
         "p75": turns.get(turns.len() * 3 / 4),
+        // Games by the turn of the first control (cumulative shares follow).
+        "by_turn": turns.iter().fold(BTreeMap::<u32, u32>::new(), |mut m, t| {
+            *m.entry(*t).or_default() += 1;
+            m
+        }),
     });
     serde_json::json!({
         "scenario": o.scenario,
