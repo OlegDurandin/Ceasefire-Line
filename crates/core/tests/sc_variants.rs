@@ -11,7 +11,7 @@ use ceasefire_core::hex::Hex;
 use common::scenario::{board, start, unit, A, B};
 
 /// Every boolean variant, so each test states its own rules.
-const VARIANTS: [&str; 14] = [
+const VARIANTS: [&str; 15] = [
     "attack_strips_entrenchment",
     "prepared_attack",
     "unsupplied_target",
@@ -26,6 +26,7 @@ const VARIANTS: [&str; 14] = [
     "source_isolation",
     "air_strength_threshold",
     "transfer_supply_min",
+    "hq_contact_priority",
 ];
 
 /// The common test scenario with every variant switched off.
@@ -843,4 +844,53 @@ fn r_move_05_transfer_needs_supply_4() {
     assert!(try_at(3, None).1.is_ok(), "off: allowed");
     let (have, r) = try_at(4, Some("transfer_supply_min"));
     assert!(have == 4 && r.is_ok(), "supply {have}: allowed");
+}
+
+/// SC п. 17 `hq_contact_priority`: an HQ with one free slot takes its unit
+/// in contact (farther) over the nearer one in the rear; and of the other
+/// units the one in contact goes first. Without the variant — the nearest.
+#[test]
+fn r_hq_01_units_in_contact_attach_first() {
+    let sc = |on: bool| {
+        let (map, control) = board();
+        let mut hq = unit("hq", A, Hex::new(0, 0));
+        hq.hq_rating = Some(1);
+        hq.formation = Some("d1".into());
+        let mut rear = unit("infantry", A, Hex::new(0, 1));
+        rear.formation = Some("d1".into());
+        let mut front = unit("infantry", A, Hex::new(2, 0));
+        front.formation = Some("d1".into());
+        let units = vec![hq, rear, front, unit("infantry", B, Hex::new(3, 0))];
+        let sc = setup(map, control, units);
+        if on {
+            with("hq_contact_priority", sc)
+        } else {
+            sc
+        }
+    };
+    let attached =
+        |s: &GameState| [UnitId(2), UnitId(3)].map(|id| s.unit(id).unwrap().attached_hq.is_some());
+    assert_eq!(attached(&start(sc(false))), [true, false], "nearest first");
+    assert_eq!(attached(&start(sc(true))), [false, true], "contact first");
+
+    // Other units (no formation): the one in contact wins the slot.
+    let sc = |on: bool| {
+        let (map, control) = board();
+        let mut hq = unit("hq", A, Hex::new(0, 0));
+        hq.hq_rating = Some(1);
+        let units = vec![
+            hq,
+            unit("infantry", A, Hex::new(0, 1)),
+            unit("infantry", A, Hex::new(2, 0)),
+            unit("infantry", B, Hex::new(3, 0)),
+        ];
+        let sc = setup(map, control, units);
+        if on {
+            with("hq_contact_priority", sc)
+        } else {
+            sc
+        }
+    };
+    assert_eq!(attached(&start(sc(false))), [true, false]);
+    assert_eq!(attached(&start(sc(true))), [false, true]);
 }

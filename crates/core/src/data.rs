@@ -335,6 +335,8 @@ pub struct Variants {
     pub air_strength_threshold: bool,
     /// R-MOVE-05: strategic transfer only at unit supply ≥ `movement.transfer_min_supply` (SC п. 34).
     pub transfer_supply_min: bool,
+    /// R-HQ-01: units in contact attach first, within own formation and among the rest (SC п. 17).
+    pub hq_contact_priority: bool,
 }
 
 impl Variants {

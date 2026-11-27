@@ -182,6 +182,7 @@
     "pocket_desertion": false,
     "source_isolation": false,
     "air_strength_threshold": false,
-    "transfer_supply_min": false
+    "transfer_supply_min": false,
+    "hq_contact_priority": false
   }
 }

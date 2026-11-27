@@ -24,7 +24,9 @@ impl GameState {
     /// formation (nearest first), then the nearest HQ of the same nation with a
     /// free slot (ties: higher rating, then lower id). Capacity = rating,
     /// radius from `hq.attach_radius_km`. Units whose HQ was destroyed skip
-    /// one phase.
+    /// one phase. Variant `hq_contact_priority` (SC п. 17): within the own
+    /// formation and among the rest, units in contact (an enemy ground unit
+    /// adjacent) come first.
     pub(super) fn attach_hqs(&mut self, side: SideId) -> Vec<(UnitId, UnitId)> {
         let radius = range_in_hexes(self.data.rules.hq.attach_radius_km, self.hex_km);
         let mut hqs: Vec<HqSlot> = self
@@ -48,6 +50,23 @@ impl GameState {
             .filter(|u| u.side == side && u.hq_rating.is_none())
             .cloned()
             .collect();
+        // SC п. 17: contact = an enemy ground unit next to the unit (rank 0).
+        let enemy_ground: Vec<Hex> = self
+            .units
+            .values()
+            .filter(|e| e.side != side)
+            .filter(|e| {
+                self.data
+                    .units
+                    .get(&e.class)
+                    .is_ok_and(|c| c.target_class.is_ground())
+            })
+            .map(|e| e.hex)
+            .collect();
+        let priority = self.variants.hq_contact_priority;
+        let rank = |u: &Unit| -> u8 {
+            u8::from(!(priority && enemy_ground.iter().any(|h| h.distance(u.hex) == 1)))
+        };
         let fits =
             |u: &Unit, hq: &HqSlot| u.nation == hq.nation && u.hex.distance(hq.hex) <= radius;
         let mut assigned: BTreeMap<UnitId, UnitId> = BTreeMap::new();
@@ -72,7 +91,7 @@ impl GameState {
                 .filter(|u| !u.hq_lost && !assigned.contains_key(&u.id))
                 .filter(|u| u.formation.as_deref() == Some(formation.as_str()) && fits(u, hq))
                 .collect();
-            own.sort_by_key(|u| (u.hex.distance(hq.hex), u.id));
+            own.sort_by_key(|u| (rank(u), u.hex.distance(hq.hex), u.id));
             for u in own {
                 if hq.free == 0 {
                     break;
@@ -81,8 +100,10 @@ impl GameState {
                 assigned.insert(u.id, hq.id);
             }
         }
-        // 3. Nearest HQ with a free slot.
-        for u in members.iter().filter(|u| !u.hq_lost) {
+        // 3. Nearest HQ with a free slot (units in contact first with the variant).
+        let mut rest: Vec<&Unit> = members.iter().filter(|u| !u.hq_lost).collect();
+        rest.sort_by_key(|u| (rank(u), u.id));
+        for u in rest {
             if assigned.contains_key(&u.id) {
                 continue;
             }
