@@ -266,3 +266,58 @@ fn reachable(b: &Battle, u: &TacUnit) -> Vec<(Hex, Vec<Hex>)> {
     }
     best.into_iter().map(|(h, (_, p))| (h, p)).collect()
 }
+
+/// Plays a battle to the end, the tactical AI on both sides.
+pub fn play_out(b: &mut Battle, seed: u64) -> Result<(), ceasefire_tactical::TacError> {
+    let ai = TacticalAi::new(seed);
+    let mut n = 0;
+    while b.result.is_none() {
+        let cmd = ai.next(b);
+        if b.apply(cmd).is_err() || n > 5000 {
+            b.apply(TacCommand::Resign)?;
+        }
+        n += 1;
+    }
+    Ok(())
+}
+
+/// T-RES-05: margins M of `runs` AI-vs-AI runs of the snapshot, seeds
+/// derived from the battle's seed.
+pub fn reference_margins(
+    rules: &std::sync::Arc<ceasefire_tactical::TacRules>,
+    data: &ceasefire_core::data::GameData,
+    input: &ceasefire_tactical::BattleInput,
+    seed: u64,
+    mode: ceasefire_tactical::TurnMode,
+) -> Result<Vec<i32>, ceasefire_tactical::TacError> {
+    let runs = rules.result.t_res_05.runs;
+    ceasefire_tactical::battle::reference_seeds(seed, runs)
+        .into_iter()
+        .map(|s| {
+            let mut b = ceasefire_tactical::build_battle(
+                std::sync::Arc::clone(rules),
+                data,
+                input,
+                s,
+                mode,
+            )?;
+            play_out(&mut b, s)?;
+            Ok(b.result.map_or(0, |r| r.margin))
+        })
+        .collect()
+}
+
+/// T-RES-05: a campaign battle — built and given its reference runs.
+pub fn campaign_battle(
+    rules: &std::sync::Arc<ceasefire_tactical::TacRules>,
+    data: &ceasefire_core::data::GameData,
+    input: &ceasefire_tactical::BattleInput,
+    seed: u64,
+    mode: ceasefire_tactical::TurnMode,
+) -> Result<Battle, ceasefire_tactical::TacError> {
+    let reference = reference_margins(rules, data, input, seed, mode)?;
+    let mut b =
+        ceasefire_tactical::build_battle(std::sync::Arc::clone(rules), data, input, seed, mode)?;
+    b.reference = Some(reference);
+    Ok(b)
+}

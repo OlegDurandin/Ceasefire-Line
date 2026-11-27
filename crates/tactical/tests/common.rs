@@ -119,6 +119,7 @@ pub fn battle(units: Vec<TacUnit>, mode: TurnMode) -> Battle {
         rng: Pcg32::new(7, 1),
         result: None,
         log: Vec::new(),
+        reference: None,
     };
     let mut ev = Vec::new();
     b.start_turn(&mut ev);

@@ -191,12 +191,25 @@ pub struct Thresholds {
     pub rout: i32,
 }
 
+/// T-RES-05: the percentile against AI-vs-AI runs of the same snapshot.
+#[derive(Debug, Clone, Deserialize)]
+pub struct Res05 {
+    pub runs: usize,
+    pub min: f64,
+    pub max: f64,
+    /// (lower bound of the percentile, outcome name), highest first; below the
+    /// last one — the rout.
+    pub bands: Vec<(f64, String)>,
+}
+
 #[derive(Debug, Clone, Deserialize)]
 pub struct ResultRules {
     pub key_point: i32,
     pub step: i32,
+    /// T-RES-02: standalone battles (no reference runs).
     pub thresholds: Thresholds,
     pub percentiles: BTreeMap<String, f64>,
+    pub t_res_05: Res05,
 }
 
 #[derive(Debug, Clone, Deserialize)]

@@ -396,6 +396,30 @@
       "draw": 50,
       "attacker_defeat": 30,
       "attacker_rout": 2.5
+    },
+    "t_res_05": {
+      "_comment": "T-RES-05 (designer decision 2026-11-27): the campaign battle's percentile against 40 AI-vs-AI runs of its snapshot; names on screen by percentile bands.",
+      "runs": 40,
+      "min": 2.5,
+      "max": 97.5,
+      "bands": [
+        [
+          90,
+          "attacker_decisive"
+        ],
+        [
+          65,
+          "attacker_victory"
+        ],
+        [
+          35,
+          "draw"
+        ],
+        [
+          10,
+          "attacker_defeat"
+        ]
+      ]
     }
   },
   "ai": {

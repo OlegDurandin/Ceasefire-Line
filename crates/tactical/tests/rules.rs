@@ -357,3 +357,56 @@ fn t_tech_01_replay() {
     assert_eq!(again.steps_lost, b.steps_lost);
     let _ = TacMap::at(0, 0);
 }
+
+/// T-RES-05: percentile = (below + ½ equal) / runs × 100 within [2.5, 97.5];
+/// names by bands ≥ 90 / 65–90 / 35–65 / 10–35 / < 10.
+#[test]
+fn t_res_05_percentile_against_reference_runs() {
+    use ceasefire_tactical::battle::{outcome_for_percentile, percentile_from, reference_seeds};
+    let r = rules();
+    let reference: Vec<i32> = (0..40).map(|i| i / 4 - 5).collect(); // −5..4, 4 each
+    assert_eq!(percentile_from(&r, &reference, -100), 2.5, "clamped below");
+    assert_eq!(percentile_from(&r, &reference, 100), 97.5, "clamped above");
+    // M = 0: 20 below, 4 equal → (20 + 2) / 40 = 55%.
+    assert!((percentile_from(&r, &reference, 0) - 55.0).abs() < 1e-9);
+    assert_eq!(
+        outcome_for_percentile(&r, 95.0),
+        TacticalOutcome::AttackerDecisive
+    );
+    assert_eq!(
+        outcome_for_percentile(&r, 70.0),
+        TacticalOutcome::AttackerVictory
+    );
+    assert_eq!(outcome_for_percentile(&r, 50.0), TacticalOutcome::Draw);
+    assert_eq!(
+        outcome_for_percentile(&r, 20.0),
+        TacticalOutcome::AttackerDefeat
+    );
+    assert_eq!(
+        outcome_for_percentile(&r, 5.0),
+        TacticalOutcome::AttackerRout
+    );
+    let s = reference_seeds(42, 40);
+    assert_eq!(s.len(), 40);
+    assert_eq!(s, reference_seeds(42, 40), "derived from the battle's seed");
+    assert_ne!(s, reference_seeds(43, 40));
+    // A battle with a reference scores by it.
+    let mut b = battle(
+        vec![
+            unit(1, Role::Attacker, "tank_bn", 3, 4, 12),
+            unit(2, Role::Defender, "inf_bn", 3, 4, 2),
+        ],
+        TurnMode::Alternating,
+    );
+    b.reference = Some(reference);
+    let kp = b.map.key_points[0];
+    b.control.insert(kp, Role::Attacker); // M = 3
+    let res = b.score();
+    assert_eq!(res.margin, 3);
+    assert!(
+        (res.percentile - 85.0).abs() < 1e-9,
+        "(32 + 2) / 40 = 85%: {}",
+        res.percentile
+    );
+    assert_eq!(res.outcome, TacticalOutcome::AttackerVictory);
+}

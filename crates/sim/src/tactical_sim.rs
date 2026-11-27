@@ -26,6 +26,8 @@ pub struct Options {
     modes: Vec<TurnMode>,
     report: Option<PathBuf>,
     json: Option<PathBuf>,
+    /// T-RES-05 acceptance: percentiles against 40 reference runs.
+    res05: bool,
 }
 
 pub fn parse_options(args: &[String]) -> Result<Options, String> {
@@ -34,9 +36,10 @@ pub fn parse_options(args: &[String]) -> Result<Options, String> {
         snapshots: PathBuf::from("battles"),
         games: 10,
         limit: usize::MAX,
-        modes: vec![TurnMode::Alternating, TurnMode::IgougoOverwatch],
+        modes: vec![TurnMode::default()],
         report: None,
         json: None,
+        res05: false,
     };
     let mut it = args.iter();
     while let Some(flag) = it.next() {
@@ -50,6 +53,7 @@ pub fn parse_options(args: &[String]) -> Result<Options, String> {
             "--limit" => o.limit = v.parse().map_err(|e| format!("--limit: {e}"))?,
             "--report" => o.report = Some(PathBuf::from(v)),
             "--json" => o.json = Some(PathBuf::from(v)),
+            "--res05" => o.res05 = v == "true" || v == "1",
             "--mode" => {
                 o.modes = match v.as_str() {
                     "alternating" => vec![TurnMode::Alternating],
@@ -156,6 +160,9 @@ pub fn run(o: &Options) -> Result<(), String> {
             ))
         })
         .collect::<Result<_, String>>()?;
+    if o.res05 {
+        return run_res05(o, &rules, &data, &inputs);
+    }
     let mut out = String::new();
     let mut json = serde_json::Map::new();
     let _ = writeln!(out, "# Тактические бои T1: ИИ против ИИ\n\nСгенерирован `sim tactical`: {} снимков, {} сидов на снимок.\n", inputs.len(), o.games);
@@ -270,6 +277,118 @@ pub fn run(o: &Options) -> Result<(), String> {
     }
     if let Some(p) = &o.json {
         fs::write(p, serde_json::Value::Object(json).to_string()).map_err(|e| e.to_string())?;
+    }
+    match &o.report {
+        Some(p) => fs::write(p, &out).map_err(|e| format!("{}: {e}", p.display()))?,
+        None => print!("{out}"),
+    }
+    Ok(())
+}
+
+/// T-RES-05 acceptance: for every (snapshot, seed) the reference runs (seeds
+/// derived from the battle's seed) and the «player's» battle (AI vs AI with
+/// the battle's seed); its percentile against the reference. Uniform by
+/// deciles (10 ± 2%) and mean 50 ± 2 on each theatre are the targets.
+fn run_res05(
+    o: &Options,
+    rules: &Arc<TacRules>,
+    data: &Arc<ceasefire_core::data::GameData>,
+    inputs: &[(String, BattleInput)],
+) -> Result<(), String> {
+    use ceasefire_ai::tactical::{play_out, reference_margins};
+    use ceasefire_tactical::battle::percentile_from;
+    let mode = o.modes.first().copied().unwrap_or_default();
+    // Each snapshot gets its own battle seeds (independent battles).
+    let jobs: Vec<(usize, u64)> = (0..inputs.len())
+        .flat_map(|i| (0..o.games).map(move |s| (i, (i as u64 + 1) * 1_000_003 + s + 1)))
+        .collect();
+    let threads = std::thread::available_parallelism().map_or(4, |n| n.get());
+    let chunk = jobs.len().div_ceil(threads).max(1);
+    let started = Instant::now();
+    let results: Vec<Result<(String, f64, f64), String>> = std::thread::scope(|sc| {
+        let handles: Vec<_> = jobs
+            .chunks(chunk)
+            .map(|part| {
+                sc.spawn(move || {
+                    part.iter()
+                        .map(|&(i, seed)| {
+                            let input = &inputs[i].1;
+                            let t0 = Instant::now();
+                            let reference = reference_margins(rules, data, input, seed, mode)
+                                .map_err(|e| e.to_string())?;
+                            let secs = t0.elapsed().as_secs_f64();
+                            let mut b = build_battle(Arc::clone(rules), data, input, seed, mode)
+                                .map_err(|e| e.to_string())?;
+                            play_out(&mut b, seed).map_err(|e| e.to_string())?;
+                            let m = b.result.map_or(0, |r| r.margin);
+                            Ok((
+                                inputs[i].0.clone(),
+                                percentile_from(rules, &reference, m),
+                                secs,
+                            ))
+                        })
+                        .collect::<Vec<_>>()
+                })
+            })
+            .collect();
+        handles
+            .into_iter()
+            .flat_map(|h| h.join().unwrap_or_default())
+            .collect()
+    });
+    let wall = started.elapsed().as_secs_f64();
+    let games: Vec<(String, f64, f64)> = results.into_iter().collect::<Result<_, _>>()?;
+    let n = games.len().max(1) as f64;
+    let mut deciles = [0usize; 10];
+    for g in &games {
+        deciles[((g.1 / 10.0) as usize).min(9)] += 1;
+    }
+    let mean = |prefix: &str| {
+        let xs: Vec<f64> = games
+            .iter()
+            .filter(|g| g.0.starts_with(prefix))
+            .map(|g| g.1)
+            .collect();
+        (xs.len(), xs.iter().sum::<f64>() / xs.len().max(1) as f64)
+    };
+    let ms40 = games.iter().map(|g| g.2).sum::<f64>() / n * 1000.0;
+    let mut out = String::new();
+    let _ = writeln!(out, "# T-RES-05: перцентиль против 40 прогонов снимка\n\n{} снимков × {} сидов = {} боёв, режим: {}.\n", inputs.len(), o.games, games.len(), mode_name(mode));
+    let _ = writeln!(
+        out,
+        "| дециль перцентиля | боёв | доля (цель 10 ± 2%) |\n| --- | --- | --- |"
+    );
+    for (k, c) in deciles.iter().enumerate() {
+        let share = *c as f64 / n * 100.0;
+        let ok = (8.0..=12.0).contains(&share);
+        let _ = writeln!(
+            out,
+            "| {}–{} | {c} | {share:.1}%{} |",
+            k * 10,
+            k * 10 + 10,
+            if ok { "" } else { " **вне цели**" }
+        );
+    }
+    let (ka, ma) = mean("");
+    let _ = writeln!(out, "\n| средний перцентиль (цель 50 ± 2) | боёв | значение |\n| --- | --- | --- |\n| все | {ka} | {ma:.1} |");
+    for p in ["golan67", "sinai67"] {
+        let (k, m) = mean(p);
+        if k > 0 {
+            let _ = writeln!(out, "| «{p}» | {k} | {m:.1} |");
+        }
+    }
+    let _ = writeln!(out, "\nВремя 40 опорных прогонов (native, один поток): {ms40:.0} мс в среднем на бой. Серия: {wall:.1} с на {threads} потоках.");
+    if let Some(p) = &o.json {
+        let j = serde_json::json!({
+            "battles": games.len(),
+            "deciles": deciles.iter().map(|c| *c as f64 / n).collect::<Vec<_>>(),
+            "mean": ma,
+            "golan67": mean("golan67"),
+            "sinai67": mean("sinai67"),
+            "ms_per_40_runs": ms40,
+            "wall_secs": wall,
+        });
+        fs::write(p, j.to_string()).map_err(|e| e.to_string())?;
     }
     match &o.report {
         Some(p) => fs::write(p, &out).map_err(|e| format!("{}: {e}", p.display()))?,

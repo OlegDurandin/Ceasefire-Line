@@ -342,6 +342,8 @@ pub fn build_battle(
     mode: TurnMode,
 ) -> Result<Battle, TacError> {
     let sc = &input.scenario;
+    // Small seeds (1, 2, …) give correlated first draws: mix the seed first.
+    let seed = crate::battle::reference_seeds(seed, 1)[0];
     let mut rng = Pcg32::new(seed, 0x7ac7);
     let mut map = synthetic_map(&rules, sc, &mut rng);
     let mut b = Builder {
@@ -489,6 +491,7 @@ pub fn build_battle(
         rng: Pcg32::new(seed, 0xba77),
         result: None,
         log: Vec::new(),
+        reference: None,
     };
     let mut ev = Vec::new();
     battle.start_turn(&mut ev);

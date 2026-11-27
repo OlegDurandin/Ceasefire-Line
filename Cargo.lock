@@ -106,6 +106,7 @@ version = "0.1.0"
 dependencies = [
  "ceasefire-ai",
  "ceasefire-core",
+ "ceasefire-tactical",
  "serde",
  "serde_json",
  "wasm-bindgen",

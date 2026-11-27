@@ -30,11 +30,13 @@ fn ix(r: Role) -> usize {
     }
 }
 
-/// T-TURN-01 / open question 1: alternating activations (default) or
-/// IGOUGO with overwatch (flag `igougo_overwatch`, for comparison).
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+/// T-TURN-01: alternating activations — the default (designer decision
+/// 2026-11-27, open question 1 closed); IGOUGO with overwatch stays a flag
+/// (`igougo_overwatch`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum TurnMode {
+    #[default]
     Alternating,
     IgougoOverwatch,
 }
@@ -254,6 +256,9 @@ pub struct Battle {
     pub rng: Pcg32,
     pub result: Option<TacResult>,
     pub log: Vec<TacCommand>,
+    /// T-RES-05: margins M of the reference AI-vs-AI runs of this snapshot
+    /// (a campaign battle); `None` — the T-RES-02 thresholds.
+    pub reference: Option<Vec<i32>>,
 }
 
 fn illegal(why: &str) -> TacError {
@@ -651,6 +656,18 @@ impl Battle {
         let att = r.key_point * taken as i32 + r.step * self.steps_lost[1] as i32;
         let def = r.key_point * held(Role::Defender) as i32 + r.step * self.steps_lost[0] as i32;
         let m = att - def;
+        if let Some(reference) = &self.reference {
+            let percentile = percentile_from(&self.rules, reference, m);
+            return TacResult {
+                attacker_points: att,
+                defender_points: def,
+                margin: m,
+                key_points_taken: taken,
+                outcome: outcome_for_percentile(&self.rules, percentile),
+                percentile,
+                turns: self.turn,
+            };
+        }
         let t = &r.thresholds;
         let outcome = if m >= t.decisive && taken > 0 {
             TacticalOutcome::AttackerDecisive
@@ -1327,4 +1344,45 @@ pub fn percentile_of(rules: &TacRules, o: TacticalOutcome) -> f64 {
         TacticalOutcome::AttackerRout => "attacker_rout",
     };
     rules.result.percentiles.get(key).copied().unwrap_or(50.0)
+}
+
+/// T-RES-05: seeds of the reference runs, derived from the battle's seed
+/// (SplitMix64, fixed for the battle).
+pub fn reference_seeds(seed: u64, runs: usize) -> Vec<u64> {
+    (0..runs as u64)
+        .map(|i| {
+            let mut z = seed ^ (i + 1).wrapping_mul(0x9e37_79b9_7f4a_7c15);
+            z = z.wrapping_add(0x9e37_79b9_7f4a_7c15);
+            z = (z ^ (z >> 30)).wrapping_mul(0xbf58_476d_1ce4_e5b9);
+            z = (z ^ (z >> 27)).wrapping_mul(0x94d0_49bb_1331_11eb);
+            z ^ (z >> 31)
+        })
+        .collect()
+}
+
+/// T-RES-05: (runs with M below + ½ × runs with M equal) / runs × 100,
+/// within [2.5, 97.5].
+pub fn percentile_from(rules: &TacRules, reference: &[i32], m: i32) -> f64 {
+    let r = &rules.result.t_res_05;
+    if reference.is_empty() {
+        return 50.0;
+    }
+    let below = reference.iter().filter(|x| **x < m).count() as f64;
+    let equal = reference.iter().filter(|x| **x == m).count() as f64;
+    ((below + 0.5 * equal) / reference.len() as f64 * 100.0).clamp(r.min, r.max)
+}
+
+/// T-RES-05: the name of the outcome on screen by the percentile bands.
+pub fn outcome_for_percentile(rules: &TacRules, p: f64) -> TacticalOutcome {
+    for (from, name) in &rules.result.t_res_05.bands {
+        if p >= *from {
+            return match name.as_str() {
+                "attacker_decisive" => TacticalOutcome::AttackerDecisive,
+                "attacker_victory" => TacticalOutcome::AttackerVictory,
+                "draw" => TacticalOutcome::Draw,
+                _ => TacticalOutcome::AttackerDefeat,
+            };
+        }
+    }
+    TacticalOutcome::AttackerRout
 }

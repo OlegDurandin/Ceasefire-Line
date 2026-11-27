@@ -396,6 +396,33 @@ fn undoable(c: &Command) -> bool {
     matches!(c, Command::Move { .. } | Command::Transfer { .. })
 }
 
+/// T-RES-05: margins M of the reference AI-vs-AI runs of a tactical battle
+/// (`tactical` — `data/tactical.json`, `input` — a battle input JSON), seeds
+/// derived from `seed`. For the mobile client (T2) and the T1 timing check.
+#[wasm_bindgen(js_name = tacticalReferenceMargins)]
+pub fn tactical_reference_margins(
+    core: &Core,
+    tactical: &str,
+    input: &str,
+    seed: u32,
+) -> Result<String, JsError> {
+    let rules = Arc::new(
+        ceasefire_tactical::TacRules::from_json(tactical)
+            .map_err(|e| JsError::new(&e.to_string()))?,
+    );
+    let input: ceasefire_tactical::BattleInput =
+        serde_json::from_str(input).map_err(|e| JsError::new(&e.to_string()))?;
+    let m = ceasefire_ai::tactical::reference_margins(
+        &rules,
+        &core.data,
+        &input,
+        u64::from(seed),
+        ceasefire_tactical::TurnMode::default(),
+    )
+    .map_err(|e| JsError::new(&e.to_string()))?;
+    to_json(&m)
+}
+
 #[wasm_bindgen]
 impl Game {
     #[wasm_bindgen(constructor)]
