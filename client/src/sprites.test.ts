@@ -50,3 +50,42 @@ describe("unit styles (R-UI-03)", () => {
     expect(sprites.default_style).toBe("miniature");
   });
 });
+
+describe("R-UI-03: scenario year and models", () => {
+  it.each([[1967, "isr_vautour", "isr_m50_sp"], [1968, "isr_a4", "isr_m50_sp"], [1969, "isr_a4", "isr_m50_sp"], [1970, "isr_a4", "isr_m109"]] as const)(
+    "selects strike and artillery models in %i", (year, strike, artillery) => {
+      for (const level of [1, 2, 3]) {
+        expect(pickSprite(sprites, "strike", "israel", { aviation: level }, year)?.id).toBe(strike);
+        expect(pickSprite(sprites, "artillery", "israel", {}, year)?.id).toBe(artillery);
+      }
+    },
+  );
+  it("has no A-4 or M109 for Israeli units in either 1967 scenario", () => {
+    for (const id of ["golan67", "sinai67"]) {
+      const scenario = JSON.parse(readFileSync(new URL(`../../data/scenarios/${id}/scenario.json`, import.meta.url), "utf8"));
+      for (const unit of scenario.units) {
+        if (unit.nation !== "israel") continue;
+        const tech = scenario.sides.find((side: { id: number }) => side.id === unit.side)?.tech ?? {};
+        expect(["isr_a4", "isr_m109"]).not.toContain(pickSprite(sprites, unit.class, unit.nation, tech, Number(scenario.start_date.slice(0, 4)), unit.model)?.id);
+      }
+    }
+  });
+  it.each([["israel", "isr_amx13"], ["egypt", "egy_t34_85"], ["egypt", "egy_is3"], ["egypt", "egy_su100"], ["syria", "syr_pz4"], ["syria", "syr_stug3"]])(
+    "uses an explicit %s model %s", (nation, model) => {
+      expect(pickSprite(sprites, "tank", nation, { armor: 2 }, 1967, model)?.id).toBe(model);
+      expect(pickSprite(sprites, "tank", nation, {}, 1967)?.id).toBe(nation === "israel" ? "isr_centurion" : "egy_t55");
+    },
+  );
+  it("rejects models from another nation, class or period", () => {
+    expect(pickSprite(sprites, "tank", "syria", {}, 1967, "egy_is3")?.id).toBe("egy_t55");
+    expect(pickSprite(sprites, "infantry", "israel", {}, 1967, "isr_amx13")?.id).toBe("isr_infantry");
+    expect(pickSprite(sprites, "strike", "israel", {}, 1967, "isr_a4")?.id).toBe("isr_vautour");
+  });
+  it("prepares Jordan and supports miniature-only models in either style", () => {
+    expect(spriteSide(sprites, "jordan")).toBe("jor");
+    const ref = pickSprite(sprites, "tank", "jordan", {}, 1967)!;
+    const index = miniIndex([{ side: "jor", id: "jor_m48", anchor: [0.5, 0.88] }]);
+    expect(ref.url).toBe("/assets/units_minis/jor/jor_m48.png");
+    expect(styledSprite(ref, "medallion", sprites, index).style).toBe("miniature");
+  });
+});

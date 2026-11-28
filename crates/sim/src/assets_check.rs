@@ -23,16 +23,16 @@ const UNIT_EDGE_MARGIN_PX: u32 = 1;
 /// Map objects (bridges): same format as unit medallions, top-down.
 const OBJECT_SIZE: u32 = 512;
 /// Packs v1 + v2.
-const EXPECTED_TERRAIN: usize = 10;
+const EXPECTED_TERRAIN: usize = 12;
 const EXPECTED_UNITS: usize = 37;
 const EXPECTED_OBJECTS: usize = 2;
 /// R-UI-07 illustrations (16:9): briefings and event windows.
 const BRIEFING_SIZE: (u32, u32) = (1600, 900);
 const EVENT_SIZE: (u32, u32) = (1200, 675);
-const SPRITE_SIDES: [&str; 2] = ["isr", "egy_syr"];
+const SPRITE_SIDES: [&str; 3] = ["isr", "egy_syr", "jor"];
 /// Miniatures pack (style `miniature`): `assets/units_minis/<side>/<id>.png`.
 const MINIS_DIR: &str = "units_minis";
-const EXPECTED_MINIS: usize = 32;
+const EXPECTED_MINIS: usize = 50;
 /// The model's lowest opaque row must sit at the manifest anchor ± this share.
 const ANCHOR_TOLERANCE: f64 = 0.06;
 /// Alpha from which a pixel counts as part of the model (soft shadows are lighter).
@@ -84,6 +84,13 @@ pub struct SpriteTier {
     pub sprite: String,
     #[serde(default)]
     pub variants: Vec<String>,
+    pub year_min: Option<u16>,
+    pub year_max: Option<u16>,
+    pub dir: Option<String>,
+    #[serde(default)]
+    pub model_only: bool,
+    #[serde(default)]
+    pub nations: Vec<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -91,6 +98,8 @@ pub struct SpriteClass {
     pub tech_branch: Option<String>,
     pub isr: Vec<SpriteTier>,
     pub egy_syr: Vec<SpriteTier>,
+    #[serde(default)]
+    pub jor: Vec<SpriteTier>,
 }
 
 /// A unit picture style: folder under `assets/` and the anchor (contact point).
@@ -153,7 +162,11 @@ struct UnitId {
 pub fn referenced_sprites(s: &SpritesFile) -> BTreeSet<(String, String)> {
     let mut out = BTreeSet::new();
     for class in s.units.values() {
-        for (side, tiers) in [("isr", &class.isr), ("egy_syr", &class.egy_syr)] {
+        for (side, tiers) in [
+            ("isr", &class.isr),
+            ("egy_syr", &class.egy_syr),
+            ("jor", &class.jor),
+        ] {
             for t in tiers {
                 out.insert((side.to_owned(), t.sprite.clone()));
                 for v in &t.variants {
@@ -192,15 +205,48 @@ pub fn check_sprites(data: &Path, assets: &Path) -> Result<Vec<String>, String> 
         }
     }
     for (class, c) in &sprites.units {
-        for (side, tiers) in [("isr", &c.isr), ("egy_syr", &c.egy_syr)] {
-            if !tiers.windows(2).all(|w| w[0].tech_min < w[1].tech_min) {
-                problems.push(format!("`{class}`/{side}: tech_min must increase"));
+        for (side, tiers) in [("isr", &c.isr), ("egy_syr", &c.egy_syr), ("jor", &c.jor)] {
+            if c.tech_branch.is_none() && tiers.iter().any(|t| t.tech_min != 1) {
+                problems.push(format!(
+                    "`{class}`/{side}: technology tiers need a tech_branch"
+                ));
             }
-            if tiers.first().is_some_and(|t| t.tech_min != 1) {
-                problems.push(format!("`{class}`/{side}: first tier must be tech_min 1"));
+            for t in tiers {
+                for nation in &t.nations {
+                    let declared = sprites
+                        .sprite_sides
+                        .get(side)
+                        .and_then(|v| v["nations"].as_array())
+                        .is_some_and(|ns| ns.iter().any(|n| n.as_str() == Some(nation)));
+                    if !declared {
+                        problems.push(format!(
+                            "`{class}`/{side}: unknown sprite nation `{nation}`"
+                        ));
+                    }
+                }
+                if t.tech_min == 0 || t.year_min.zip(t.year_max).is_some_and(|(a, b)| a > b) {
+                    problems.push(format!(
+                        "`{class}`/{side}: invalid technology or year range"
+                    ));
+                }
+                if t.dir
+                    .as_deref()
+                    .is_some_and(|d| d != "units" && d != MINIS_DIR)
+                {
+                    problems.push(format!("`{class}`/{side}: unsupported sprite directory"));
+                }
             }
-            if tiers.len() > 1 && c.tech_branch.is_none() {
-                problems.push(format!("`{class}`: several tiers need a tech_branch"));
+            let defaults: Vec<_> = tiers.iter().filter(|t| !t.model_only).collect();
+            for (i, a) in defaults.iter().enumerate() {
+                for b in &defaults[i + 1..] {
+                    let overlap = a.year_min.unwrap_or(0) <= b.year_max.unwrap_or(u16::MAX)
+                        && b.year_min.unwrap_or(0) <= a.year_max.unwrap_or(u16::MAX);
+                    if a.tech_min == b.tech_min && overlap {
+                        problems.push(format!(
+                            "`{class}`/{side}: overlapping year ranges at the same technology"
+                        ));
+                    }
+                }
             }
         }
     }
@@ -237,13 +283,61 @@ pub fn check_sprites(data: &Path, assets: &Path) -> Result<Vec<String>, String> 
             ));
         }
     }
-    for (side, id) in referenced_sprites(&sprites) {
-        let path = assets.join("units").join(&side).join(format!("{id}.png"));
-        if !path.is_file() {
-            problems.push(format!("sprite file missing: {}", path.display()));
+    for c in sprites.units.values() {
+        for (side, tiers) in [("isr", &c.isr), ("egy_syr", &c.egy_syr), ("jor", &c.jor)] {
+            for t in tiers {
+                for id in std::iter::once(&t.sprite).chain(&t.variants) {
+                    let path = assets
+                        .join(t.dir.as_deref().unwrap_or("units"))
+                        .join(side)
+                        .join(format!("{id}.png"));
+                    check_dimensions(&path, (UNIT_SIZE, UNIT_SIZE), &mut problems);
+                }
+            }
+        }
+    }
+    for (side, id) in &sprites.helicopter_transfer {
+        check_dimensions(
+            &assets.join("units").join(side).join(format!("{id}.png")),
+            (UNIT_SIZE, UNIT_SIZE),
+            &mut problems,
+        );
+    }
+    // Check every manifest entry, including new illustrations and unselected miniatures.
+    for manifest in [
+        assets.join("manifest.json"),
+        assets.join(MINIS_DIR).join("manifest.json"),
+    ] {
+        let entries: Vec<serde_json::Value> =
+            serde_json::from_str(&read(manifest.clone())?).map_err(|e| e.to_string())?;
+        let base = manifest.parent().ok_or("manifest has no parent")?;
+        for e in entries {
+            if let (Some(file), Some(w), Some(h)) = (
+                e["file"].as_str(),
+                e["width"].as_u64(),
+                e["height"].as_u64(),
+            ) {
+                check_dimensions(&base.join(file), (w as u32, h as u32), &mut problems);
+            } else {
+                problems.push(format!(
+                    "{}: entry missing file or dimensions",
+                    manifest.display()
+                ));
+            }
         }
     }
     Ok(problems)
+}
+
+fn check_dimensions(path: &Path, expected: (u32, u32), problems: &mut Vec<String>) {
+    match image::image_dimensions(path) {
+        Ok(actual) if actual == expected => {}
+        Ok(actual) => problems.push(format!(
+            "{}: dimensions {actual:?}, expected {expected:?}",
+            path.display()
+        )),
+        Err(e) => problems.push(format!("{}: {e}", path.display())),
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]

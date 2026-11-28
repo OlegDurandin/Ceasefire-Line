@@ -228,7 +228,7 @@ async function main() {
       const tex = new Map<number, Texture | null>();
       const tokens: Token[] = [];
       for (const u of v.units) {
-        const base = pickSprite(sprites, u.class, u.nation, v.sides.find((x) => x.id === u.side)?.tech ?? {});
+        const base = pickSprite(sprites, u.class, u.nation, v.sides.find((x) => x.id === u.side)?.tech ?? {}, scenarioMeta.start_date ? Number(scenarioMeta.start_date.slice(0, 4)) : undefined, u.model);
         const ref = base ? styledSprite(base, unitStyle, sprites, minis) : null;
         if (ref && !unitTextures.has(ref.url)) unitTextures.set(ref.url, await load(ref.url));
         tex.set(u.index, ref ? (unitTextures.get(ref.url) ?? null) : null);

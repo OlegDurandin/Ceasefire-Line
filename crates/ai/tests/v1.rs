@@ -121,6 +121,7 @@ fn v1_flies_air_strikes() {
         hq_rating: None,
         formation: None,
         nation: None,
+        model: None,
         name: None,
         offmap_base: offmap.map(Into::into),
     };

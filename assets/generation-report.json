@@ -1,0 +1,358 @@
+{
+  "assets": {
+    "isr_vautour": {
+      "attempts": 2,
+      "status": "accepted",
+      "file": "assets/units_minis/isr/isr_vautour.png",
+      "model": "image_gen",
+      "source_size_note": "Built-in tool dimensions may differ; final size validated",
+      "import_sha256": "b0c7883dcfd3e710a13ced3923da8b09405837e1909d5f63de43141b10e6c47b",
+      "reviewed_by": "user",
+      "style_reference": "user-approved pilot, 2026-11-28",
+      "format_validation": "passed"
+    },
+    "jor_m48": {
+      "attempts": 1,
+      "status": "accepted",
+      "file": "assets/units_minis/jor/jor_m48.png",
+      "model": "image_gen",
+      "source_size_note": "Built-in tool dimensions may differ; final size validated",
+      "import_sha256": "c8ee37acad391002b355d382e77121fd8823ed718ab9d3ceb4fdc5a146a64233",
+      "reviewed_by": "user",
+      "style_reference": "user-approved pilot, 2026-11-28",
+      "format_validation": "passed"
+    },
+    "briefing_sixday67": {
+      "attempts": 1,
+      "status": "accepted",
+      "file": "assets/briefing/briefing_sixday67.webp",
+      "model": "image_gen",
+      "source_size_note": "Built-in tool dimensions may differ; final size validated",
+      "import_sha256": "8ea238e5692928303df0260b59969d2a71657e1e952e5f5ee4ea86798bbab768",
+      "reviewed_by": "user",
+      "style_reference": "user-approved pilot, 2026-11-28",
+      "format_validation": "passed"
+    },
+    "isr_paratroopers": {
+      "attempts": 2,
+      "import_sha256": "8453410f46156ad15b778d66f8aabdb1189e2911b96aa7c87f6aba055c539dd7",
+      "status": "accepted",
+      "file": "assets/units_minis/isr/isr_paratroopers.png",
+      "model": "image_gen",
+      "source_size_note": "Built-in tool dimensions may differ; final size validated",
+      "reviewed_by": "agent",
+      "style_reference": "user-approved pilot, 2026-11-28",
+      "format_validation": "passed"
+    },
+    "egy_saiqa": {
+      "attempts": 1,
+      "import_sha256": "3429b8c88d1cfadda342af891ccc9d08a6d183c5069e0ca410a24947a1373813",
+      "status": "accepted",
+      "file": "assets/units_minis/egy_syr/egy_saiqa.png",
+      "model": "image_gen",
+      "source_size_note": "Built-in tool dimensions may differ; final size validated",
+      "reviewed_by": "agent",
+      "style_reference": "user-approved pilot, 2026-11-28",
+      "format_validation": "passed"
+    },
+    "isr_atgm_team": {
+      "attempts": 1,
+      "import_sha256": "310ee001eb733e9cdd8936a63c3c475c70f7e46d6c890ae8e1686126e7e0ad53",
+      "status": "accepted",
+      "file": "assets/units_minis/isr/isr_atgm_team.png",
+      "model": "image_gen",
+      "source_size_note": "Built-in tool dimensions may differ; final size validated",
+      "reviewed_by": "agent",
+      "style_reference": "user-approved pilot, 2026-11-28",
+      "format_validation": "passed"
+    },
+    "isr_hawk": {
+      "attempts": 1,
+      "import_sha256": "51bd7ff62776bdeea48919cf11c68002b1958ffb947af1784dfccbe156da9105",
+      "status": "accepted",
+      "file": "assets/units_minis/isr/isr_hawk.png",
+      "model": "image_gen",
+      "source_size_note": "Built-in tool dimensions may differ; final size validated",
+      "reviewed_by": "agent",
+      "style_reference": "user-approved pilot, 2026-11-28",
+      "format_validation": "passed"
+    },
+    "egy_mig17": {
+      "attempts": 2,
+      "import_sha256": "54e53da0b396bb0244e94be5234809ca283c339c9f5557e33c4cb40faebb8843",
+      "status": "accepted",
+      "file": "assets/units_minis/egy_syr/egy_mig17.png",
+      "model": "image_gen",
+      "source_size_note": "Built-in tool dimensions may differ; final size validated",
+      "reviewed_by": "agent",
+      "style_reference": "user-approved pilot, 2026-11-28",
+      "format_validation": "passed"
+    },
+    "isr_m50_sp": {
+      "attempts": 1,
+      "import_sha256": "10a5342e0d116cc5bb1cba3a340919a1c3400ae0410ab94d06d58d6b0347d8e4",
+      "status": "accepted",
+      "file": "assets/units_minis/isr/isr_m50_sp.png",
+      "model": "image_gen",
+      "source_size_note": "Built-in tool dimensions may differ; final size validated",
+      "reviewed_by": "agent",
+      "style_reference": "user-approved pilot, 2026-11-28",
+      "format_validation": "passed"
+    },
+    "isr_amx13": {
+      "attempts": 1,
+      "import_sha256": "4404c9cf82abea125a9bc7d9253f92e9b20169e3edbb8edb468bbad3b8ecd737",
+      "status": "accepted",
+      "file": "assets/units_minis/isr/isr_amx13.png",
+      "model": "image_gen",
+      "source_size_note": "Built-in tool dimensions may differ; final size validated",
+      "reviewed_by": "agent",
+      "style_reference": "user-approved pilot, 2026-11-28",
+      "format_validation": "passed"
+    },
+    "egy_t34_85": {
+      "attempts": 1,
+      "import_sha256": "3a1a1177cd192ef66f15108d0d251f579ac5a46a476d227f417c343747ac6434",
+      "status": "accepted",
+      "file": "assets/units_minis/egy_syr/egy_t34_85.png",
+      "model": "image_gen",
+      "source_size_note": "Built-in tool dimensions may differ; final size validated",
+      "reviewed_by": "agent",
+      "style_reference": "user-approved pilot, 2026-11-28",
+      "format_validation": "passed"
+    },
+    "egy_is3": {
+      "attempts": 1,
+      "import_sha256": "2820f7b4d9fe3d90f77f6191b2a7b225a431571616103f049b33c557199efb83",
+      "status": "accepted",
+      "file": "assets/units_minis/egy_syr/egy_is3.png",
+      "model": "image_gen",
+      "source_size_note": "Built-in tool dimensions may differ; final size validated",
+      "reviewed_by": "agent",
+      "style_reference": "user-approved pilot, 2026-11-28",
+      "format_validation": "passed"
+    },
+    "egy_su100": {
+      "attempts": 1,
+      "import_sha256": "005235ade4113c9c1e0aae480b410f298e5feff3d891c9fc56be93353bff620a",
+      "status": "accepted",
+      "file": "assets/units_minis/egy_syr/egy_su100.png",
+      "model": "image_gen",
+      "source_size_note": "Built-in tool dimensions may differ; final size validated",
+      "reviewed_by": "agent",
+      "style_reference": "user-approved pilot, 2026-11-28",
+      "format_validation": "passed"
+    },
+    "syr_pz4": {
+      "attempts": 1,
+      "import_sha256": "ee0ed0a4d018efa1ea0ef38734a7809e88d8c0dd0922d5009277e890c25b0d07",
+      "status": "accepted",
+      "file": "assets/units_minis/egy_syr/syr_pz4.png",
+      "model": "image_gen",
+      "source_size_note": "Built-in tool dimensions may differ; final size validated",
+      "reviewed_by": "agent",
+      "style_reference": "user-approved pilot, 2026-11-28",
+      "format_validation": "passed"
+    },
+    "syr_stug3": {
+      "attempts": 1,
+      "import_sha256": "30a2b8cc9985869bc4ff23b2e6ac8613d579c430f037410c847477a824e4365d",
+      "status": "accepted",
+      "file": "assets/units_minis/egy_syr/syr_stug3.png",
+      "model": "image_gen",
+      "source_size_note": "Built-in tool dimensions may differ; final size validated",
+      "reviewed_by": "agent",
+      "style_reference": "user-approved pilot, 2026-11-28",
+      "format_validation": "passed"
+    },
+    "jor_infantry": {
+      "attempts": 1,
+      "import_sha256": "2f311d72ad50cd2ef921752e83616b7c99377fc41103cb8f5f0cf1e78b0d47eb",
+      "status": "accepted",
+      "file": "assets/units_minis/jor/jor_infantry.png",
+      "model": "image_gen",
+      "source_size_note": "Built-in tool dimensions may differ; final size validated",
+      "reviewed_by": "agent",
+      "style_reference": "user-approved pilot, 2026-11-28",
+      "format_validation": "passed"
+    },
+    "jor_artillery": {
+      "attempts": 1,
+      "import_sha256": "6c145403ab262046358155f8b2925fa476b133166fa6f8c7ddbb40dfc2f3827b",
+      "status": "accepted",
+      "file": "assets/units_minis/jor/jor_artillery.png",
+      "model": "image_gen",
+      "source_size_note": "Built-in tool dimensions may differ; final size validated",
+      "reviewed_by": "agent",
+      "style_reference": "user-approved pilot, 2026-11-28",
+      "format_validation": "passed"
+    },
+    "jor_hq": {
+      "attempts": 1,
+      "import_sha256": "128ef3128e6b1406a7396ff61eeb0945507c2ca435e6cba09bc1024231781dad",
+      "status": "accepted",
+      "file": "assets/units_minis/jor/jor_hq.png",
+      "model": "image_gen",
+      "source_size_note": "Built-in tool dimensions may differ; final size validated",
+      "reviewed_by": "agent",
+      "style_reference": "user-approved pilot, 2026-11-28",
+      "format_validation": "passed"
+    },
+    "jor_hunter": {
+      "attempts": 1,
+      "import_sha256": "3dba0b455fb73b66a4eba1fd543d3698ac23ef2679c7a2144375fb017e5ac7ce",
+      "status": "accepted",
+      "file": "assets/units_minis/jor/jor_hunter.png",
+      "model": "image_gen",
+      "source_size_note": "Built-in tool dimensions may differ; final size validated",
+      "reviewed_by": "agent",
+      "style_reference": "user-approved pilot, 2026-11-28",
+      "format_validation": "passed"
+    },
+    "sixday67_first_strike": {
+      "attempts": 1,
+      "import_sha256": "3bba9149f9dd537c5fdafa4c2570c5946464e45e111fc5f66ba33194656c9787",
+      "status": "accepted",
+      "file": "assets/events/sixday67_first_strike.webp",
+      "model": "image_gen",
+      "source_size_note": "Built-in tool dimensions may differ; final size validated",
+      "reviewed_by": "agent",
+      "style_reference": "user-approved pilot, 2026-11-28",
+      "format_validation": "passed"
+    },
+    "sixday67_jordan_enters": {
+      "attempts": 1,
+      "import_sha256": "93185e648d9f8b8ccb1075e5ca5cc1e46e5f8cb3653868a129b23bbfec9d6738",
+      "status": "accepted",
+      "file": "assets/events/sixday67_jordan_enters.webp",
+      "model": "image_gen",
+      "source_size_note": "Built-in tool dimensions may differ; final size validated",
+      "reviewed_by": "agent",
+      "style_reference": "user-approved pilot, 2026-11-28",
+      "format_validation": "passed"
+    },
+    "sixday67_central_front": {
+      "attempts": 1,
+      "import_sha256": "2f2e3f05c540143cbcb5ecb8869b46eb014fcd3ffcf7cd09905df4e057dc9923",
+      "status": "accepted",
+      "file": "assets/events/sixday67_central_front.webp",
+      "model": "image_gen",
+      "source_size_note": "Built-in tool dimensions may differ; final size validated",
+      "reviewed_by": "agent",
+      "style_reference": "user-approved pilot, 2026-11-28",
+      "format_validation": "passed"
+    },
+    "sixday67_golan_decision": {
+      "attempts": 1,
+      "import_sha256": "1fd3effc1bc4a2265b9796f8a23c883a8f264944ad41fb901d8584512980d18e",
+      "status": "accepted",
+      "file": "assets/events/sixday67_golan_decision.webp",
+      "model": "image_gen",
+      "source_size_note": "Built-in tool dimensions may differ; final size validated",
+      "reviewed_by": "agent",
+      "style_reference": "user-approved pilot, 2026-11-28",
+      "format_validation": "passed"
+    },
+    "sixday67_ceasefire": {
+      "attempts": 1,
+      "import_sha256": "3f0b4cbb120996dd5b474250b9d42d2f976bc1c29e27af7eaf3e4ad881aeec73",
+      "status": "accepted",
+      "file": "assets/events/sixday67_ceasefire.webp",
+      "model": "image_gen",
+      "source_size_note": "Built-in tool dimensions may differ; final size validated",
+      "reviewed_by": "agent",
+      "style_reference": "user-approved pilot, 2026-11-28",
+      "format_validation": "passed"
+    },
+    "sinai67_superpower_pressure": {
+      "attempts": 1,
+      "import_sha256": "d66f5fa090da14004d03917c116baa46c9dc1b1c1810ef1f0bc36f1fa2abaf9a",
+      "status": "accepted",
+      "file": "assets/events/sinai67_superpower_pressure.webp",
+      "model": "image_gen",
+      "source_size_note": "Built-in tool dimensions may differ; final size validated",
+      "reviewed_by": "agent",
+      "style_reference": "user-approved pilot, 2026-11-28",
+      "format_validation": "passed"
+    },
+    "terrain_terraced_hills": {
+      "attempts": 1,
+      "import_sha256": "e47443d7a6f178d056a615cd87b0121e159d5c9891a8c2b124a96141d60ffa2e",
+      "status": "accepted",
+      "file": "assets/terrain/terrain_terraced_hills.png",
+      "model": "image_gen",
+      "source_size_note": "Built-in tool dimensions may differ; final size validated",
+      "reviewed_by": "agent",
+      "style_reference": "user-approved pilot, 2026-11-28",
+      "format_validation": "passed"
+    },
+    "terrain_orchards": {
+      "attempts": 3,
+      "import_sha256": "3e6a5dadd61a78d81e3629e3123e02aa0831fcf4fec604514d16924fe3e9e6de",
+      "status": "accepted",
+      "file": "assets/terrain/terrain_orchards.png",
+      "model": "image_gen",
+      "source_size_note": "Built-in tool dimensions may differ; final size validated",
+      "reviewed_by": "agent",
+      "style_reference": "user-approved pilot, 2026-11-28",
+      "format_validation": "passed"
+    }
+  },
+  "rejected": [
+    {
+      "id": "isr_vautour",
+      "reason": "First generation points lower-left instead of upper-left; replaced on attempt 2.",
+      "kind": "visual",
+      "resolved": true,
+      "attempt": 1
+    },
+    {
+      "id": "terrain_orchards",
+      "reason": "Coast/water strip creates a visible horizontal seam; orchard tile must be uniformly inland and seamless.",
+      "kind": "visual",
+      "resolved": true,
+      "attempt": 1
+    },
+    {
+      "id": "egy_mig17",
+      "reason": "Aircraft points lower-left; required upper-left.",
+      "kind": "visual",
+      "resolved": true,
+      "attempt": 1
+    },
+    {
+      "id": "isr_paratroopers",
+      "reason": "Right-hand figure has an AK-like rifle instead of FN FAL; regenerate with explicit Uzi/FAL silhouettes.",
+      "kind": "visual",
+      "resolved": true,
+      "attempt": 1
+    },
+    {
+      "id": "terrain_orchards",
+      "reason": "Attempt 2 has no water but opposite edges still fail seamlessness: horizontal 2.43, vertical 2.32 (limit 1.5).",
+      "kind": "visual",
+      "resolved": true,
+      "attempt": 2
+    }
+  ],
+  "summary": {
+    "accepted": 27,
+    "rejected_attempts": 5,
+    "unresolved": [],
+    "generator": "built-in image_gen",
+    "model_note": "Underlying model ID is not exposed by the built-in tool",
+    "generation_attempts": 32
+  },
+  "validation": {
+    "assets_check": "116 files passed, 0 problems",
+    "rust_workspace_release": "262 tests passed",
+    "rust_debug": "stopped the long AI series; complete suite passed in release",
+    "cargo_fmt": "passed",
+    "cargo_clippy_workspace_all_targets": "passed without warnings",
+    "data_check": "2 scenarios passed",
+    "client_tests": "90 passed",
+    "python_pipeline_tests": "5 passed",
+    "client_build": "passed",
+    "wasm_build": "passed"
+  }
+}

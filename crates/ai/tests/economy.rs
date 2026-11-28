@@ -60,6 +60,7 @@ fn unit(class: &str, side: SideId, hex: Hex, strength: u8) -> UnitSetup {
         hq_rating: None,
         formation: None,
         nation: None,
+        model: None,
         name: None,
         offmap_base: None,
     }

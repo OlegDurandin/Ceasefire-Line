@@ -29,6 +29,7 @@ export interface UnitView {
   exp: number;
   hq_rating: number | null;
   nation: string | null;
+  model?: string | null;
 }
 
 export interface ScenarioView {

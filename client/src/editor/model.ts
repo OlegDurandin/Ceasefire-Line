@@ -32,6 +32,7 @@ export interface UnitDoc {
   hq_rating?: number | null;
   formation?: string | null;
   nation?: string | null;
+  model?: string | null;
   [k: string]: unknown;
 }
 

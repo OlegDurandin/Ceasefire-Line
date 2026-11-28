@@ -53,6 +53,9 @@ struct UnitView {
     exp: u16,
     hq_rating: Option<u8>,
     nation: Option<String>,
+    /// R-UI-03: optional sprite model id; does not change unit statistics.
+    #[serde(default)]
+    model: Option<String>,
 }
 
 #[derive(Serialize)]
@@ -173,6 +176,7 @@ impl Core {
                         exp: u.exp,
                         hq_rating: u.hq_rating,
                         nation: u.nation.clone(),
+                        model: u.model.clone(),
                     }
                 })
                 .collect(),
@@ -218,6 +222,9 @@ struct LiveUnitView {
     acted: bool,
     hq_rating: Option<u8>,
     nation: Option<String>,
+    /// R-UI-03: optional sprite model id; does not change unit statistics.
+    #[serde(default)]
+    model: Option<String>,
     formation: Option<String>,
     /// R-UI-04: the formation's name, a locale key.
     name: Option<String>,
@@ -294,6 +301,9 @@ struct AirView {
     sorties: u32,
     rebased: bool,
     nation: Option<String>,
+    /// R-UI-03: optional sprite model id; does not change unit statistics.
+    #[serde(default)]
+    model: Option<String>,
     name: Option<String>,
     /// Radius of action in hexes (R-SCALE-01).
     radius_hexes: u32,
@@ -596,6 +606,7 @@ impl Game {
                         acted: u.acted,
                         hq_rating: u.hq_rating,
                         nation: u.nation.clone(),
+                        model: u.model.clone(),
                         formation: u.formation.clone(),
                         name: u.name.clone(),
                         attached_hq: u.attached_hq.map(|h| h.0),
@@ -667,6 +678,7 @@ impl Game {
                     sorties: a.sorties,
                     rebased: a.rebased,
                     nation: a.nation.clone(),
+                    model: a.model.clone(),
                     name: a.name.clone(),
                     radius_hexes: s
                         .data()

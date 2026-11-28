@@ -1,6 +1,6 @@
 # Отчёт по ассетам
 
-Сгенерирован `sim assets-check`. Файлов по манифесту: 57, в порядке: 57. PNG всего: 35.9 МБ, из них игровые (terrain + units + objects): 35.9 МБ.
+Сгенерирован `sim assets-check`. Файлов по манифесту: 66, в порядке: 66. PNG всего: 47.5 МБ, из них игровые (terrain + units + objects): 45.3 МБ.
 
 Пороги: шов — отношение средней разницы RGB противоположных краёв к средней разнице соседних пикселей внутри > 1.5; у юнитов и объектов карты прозрачная рамка 1 px. Модели техники визуально не оценивались.
 
@@ -65,12 +65,21 @@
 | golan67_superpower_pressure | `events/golan67_superpower_pressure.webp` | ок |  |
 | sinai67_egy_withdrawal_order | `events/sinai67_egy_withdrawal_order.webp` | ок |  |
 | sinai67_egy_ferdan_demolition | `events/sinai67_egy_ferdan_demolition.webp` | ок |  |
+| briefing_sixday67 | `briefing/briefing_sixday67.webp` | ок |  |
+| sixday67_first_strike | `events/sixday67_first_strike.webp` | ок |  |
+| sixday67_jordan_enters | `events/sixday67_jordan_enters.webp` | ок |  |
+| sixday67_central_front | `events/sixday67_central_front.webp` | ок |  |
+| sixday67_golan_decision | `events/sixday67_golan_decision.webp` | ок |  |
+| sixday67_ceasefire | `events/sixday67_ceasefire.webp` | ок |  |
+| sinai67_superpower_pressure | `events/sinai67_superpower_pressure.webp` | ок |  |
+| terrain_terraced_hills | `terrain/terrain_terraced_hills.png` | ок | края л–п 22.8 / внутри 16.7 = 1.36; в–н 23.2 / внутри 18.5 = 1.26 |
+| terrain_orchards | `terrain/terrain_orchards.png` | ок | края л–п 17.2 / внутри 12.6 = 1.37; в–н 16.7 / внутри 13.5 = 1.24 |
 
 ## Миниатюры (стиль `miniature`)
 
-Папка `assets/units_minis/`, файлов по манифесту: 32, в порядке: 32. Проверки как у медальонов (512 × 512, RGBA, прозрачная рамка) и якорь: самая нижняя строка модели (альфа ≥ 128) должна быть на `anchor[1]` из манифеста ± 0.06.
+Папка `assets/units_minis/`, файлов по манифесту: 50, в порядке: 50. Проверки как у медальонов (512 × 512, RGBA, прозрачная рамка) и якорь: самая нижняя строка модели (альфа ≥ 128) должна быть на `anchor[1]` из манифеста ± 0.06.
 
-Нет миниатюры — показывается медальон (запасной режим): `egy_syr/egy_mig17`, `egy_syr/egy_saiqa`, `isr/isr_atgm_team`, `isr/isr_hawk`, `isr/isr_paratroopers`.
+У всех спрайтов из `sprites.json` есть миниатюра.
 
 | id | файл | статус | детали |
 | --- | --- | --- | --- |
@@ -106,3 +115,21 @@
 | egy_su7 | `units_minis/egy_syr/egy_su7.png` | ок | низ 0.88 (якорь 0.88), центр 0.50 |
 | egy_mi8 | `units_minis/egy_syr/egy_mi8.png` | ок | низ 0.88 (якорь 0.88), центр 0.50 |
 | egy_osa | `units_minis/egy_syr/egy_osa.png` | ок | низ 0.88 (якорь 0.88), центр 0.50 |
+| isr_paratroopers | `units_minis/isr/isr_paratroopers.png` | ок | низ 0.88 (якорь 0.88), центр 0.50 |
+| egy_saiqa | `units_minis/egy_syr/egy_saiqa.png` | ок | низ 0.88 (якорь 0.88), центр 0.50 |
+| isr_atgm_team | `units_minis/isr/isr_atgm_team.png` | ок | низ 0.88 (якорь 0.88), центр 0.50 |
+| isr_hawk | `units_minis/isr/isr_hawk.png` | ок | низ 0.88 (якорь 0.88), центр 0.50 |
+| egy_mig17 | `units_minis/egy_syr/egy_mig17.png` | ок | низ 0.88 (якорь 0.88), центр 0.50 |
+| isr_vautour | `units_minis/isr/isr_vautour.png` | ок | низ 0.88 (якорь 0.88), центр 0.50 |
+| isr_m50_sp | `units_minis/isr/isr_m50_sp.png` | ок | низ 0.88 (якорь 0.88), центр 0.50 |
+| isr_amx13 | `units_minis/isr/isr_amx13.png` | ок | низ 0.88 (якорь 0.88), центр 0.50 |
+| egy_t34_85 | `units_minis/egy_syr/egy_t34_85.png` | ок | низ 0.88 (якорь 0.88), центр 0.50 |
+| egy_is3 | `units_minis/egy_syr/egy_is3.png` | ок | низ 0.88 (якорь 0.88), центр 0.50 |
+| egy_su100 | `units_minis/egy_syr/egy_su100.png` | ок | низ 0.88 (якорь 0.88), центр 0.50 |
+| syr_pz4 | `units_minis/egy_syr/syr_pz4.png` | ок | низ 0.88 (якорь 0.88), центр 0.50 |
+| syr_stug3 | `units_minis/egy_syr/syr_stug3.png` | ок | низ 0.88 (якорь 0.88), центр 0.50 |
+| jor_m48 | `units_minis/jor/jor_m48.png` | ок | низ 0.88 (якорь 0.88), центр 0.50 |
+| jor_infantry | `units_minis/jor/jor_infantry.png` | ок | низ 0.88 (якорь 0.88), центр 0.50 |
+| jor_artillery | `units_minis/jor/jor_artillery.png` | ок | низ 0.88 (якорь 0.88), центр 0.50 |
+| jor_hq | `units_minis/jor/jor_hq.png` | ок | низ 0.88 (якорь 0.88), центр 0.50 |
+| jor_hunter | `units_minis/jor/jor_hunter.png` | ок | низ 0.88 (якорь 0.88), центр 0.50 |

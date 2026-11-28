@@ -1,0 +1,5886 @@
+{
+  "audit_date": "2026-11-28",
+  "basis": "Static audit of current working tree, including uncommitted asset integration. No game logic changed; no fresh AI tournament run.",
+  "git_head": "7f6083e11c5bf6755ab741c1581f723ed8aa06d7",
+  "sources": {
+    "docs/gdd.md": "a6876abde61d6cb77126c00b73d3df72cf3ac9312938663e4527baf4d7dbd738",
+    "docs/tactical.md": "29e94cee33ad10f1b3245ddb3d208a4c947212b6a6bc967c9383e966c8d66279",
+    "docs/decisions.md": "4979f21f9c85543037558c6e240378a17b87382a1796b44bc94fb6bbbb66e80c",
+    "docs/decisions-tactical.md": "12f35265d91af0e09c69433b8c0cc08d6c85c831643961fc013d82ed22bc4a25",
+    "data/rules.json": "06b9836379b30a3a39c945461aefb8fdcf9b194417ac6f825eb81a9f372fa848",
+    "data/units.json": "609a6e9b97c2dd84be9247614aa86f7076fdc2ff2e170251d6ae2b9a648fd0c9",
+    "data/terrain.json": "c705213ed1fddc16699bbc2b25f4ced77826ed8b2755bd12046611c484678838"
+  },
+  "pdf": {
+    "path": "docs/Strategic_Command_WWII_War_in_Europe.pdf",
+    "pages": 216,
+    "indexed_part": "Part 1, sections 5–10",
+    "numbered_sections": 256,
+    "leaf_sections": 232,
+    "note": "Section counts are not counts of independent rules; summaries and parent sections overlap. Printed pages = PDF page minus 10 in this portion."
+  },
+  "summary": {
+    "strategy_ids": 55,
+    "strategy_status": {
+      "partial": 13,
+      "done": 35,
+      "missing": 6,
+      "implemented_off": 1
+    },
+    "tactical_bridge_ids": 4,
+    "tactical_bridge_status": {
+      "done": 4
+    },
+    "tactical_ids": 28,
+    "tactical_status": {
+      "done": 19,
+      "partial": 4,
+      "missing": 5
+    },
+    "sc_leaf_status": {
+      "reference": 4,
+      "partial": 14,
+      "outside": 101,
+      "candidate": 5,
+      "analogue": 88,
+      "planned": 20
+    },
+    "legacy_sc_differences": 47,
+    "ui_proposals": 33,
+    "ui_status": {
+      "partial": 9,
+      "open": 13,
+      "done": 9,
+      "outside": 1,
+      "deferred": 1
+    },
+    "technical_work_packages": 20,
+    "scenario_total": 7,
+    "scenarios_existing": 2,
+    "scenarios_missing": 5
+  },
+  "gdd_rules": [
+    {
+      "id": "R-AI-01",
+      "title": "Устройство ИИ",
+      "status": "partial",
+      "note": "ИИ v1, экономика, переброска, отход и новая роль «Рывок» есть. Нужна повторная приёмка темпа/баланса после последних правок; ПВО/флот/туман ещё не обслуживаются.",
+      "scope": "strategy",
+      "source": {
+        "path": "docs/gdd.md",
+        "line": 787
+      },
+      "evidence": [
+        {
+          "path": "crates/ai/src/v1.rs",
+          "line": 1
+        },
+        {
+          "path": "crates/ai/src/v1/transfer.rs",
+          "line": 1
+        },
+        {
+          "path": "crates/ai/src/v1/retreat.rs",
+          "line": 1
+        },
+        {
+          "path": "crates/ai/tests/dash.rs",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "id": "R-AI-02",
+      "title": "Технические требования",
+      "status": "partial",
+      "note": "Детерминизм и прогоны есть. В этом аудите нет свежего замера <=3 с в браузерном WASM на текущих 60 юнитах; 90–110 юнитов сценария 7 тем более требуют приёмки. Это непроверенный критерий, а не доказанная медленная работа.",
+      "scope": "strategy",
+      "source": {
+        "path": "docs/gdd.md",
+        "line": 804
+      },
+      "evidence": [
+        {
+          "path": "crates/ai/src/runner.rs",
+          "line": 17
+        },
+        {
+          "path": "crates/wasm/src/lib.rs",
+          "line": 507
+        },
+        {
+          "path": "client/e2e/vs-ai.mjs",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "id": "R-AIR-01",
+      "title": "Авиационные юниты",
+      "status": "done",
+      "note": "Реализовано в текущем ядре/клиенте; ограничения связанных правил отмечены отдельно.",
+      "scope": "strategy",
+      "source": {
+        "path": "docs/gdd.md",
+        "line": 474
+      },
+      "evidence": [
+        {
+          "path": "crates/core/src/game/aviation.rs",
+          "line": 1
+        },
+        {
+          "path": "crates/core/tests/aviation.rs",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "id": "R-AIR-02",
+      "title": "Миссии",
+      "status": "partial",
+      "note": "Удары по юнитам, аэродромам и мостам, перехват и эскорт есть; подавление ПВО не включено в обычный вылет.",
+      "scope": "strategy",
+      "source": {
+        "path": "docs/gdd.md",
+        "line": 482
+      },
+      "evidence": [
+        {
+          "path": "crates/core/src/game/aviation.rs",
+          "line": 1
+        },
+        {
+          "path": "crates/core/src/game/command.rs",
+          "line": 58
+        }
+      ]
+    },
+    {
+      "id": "R-AIR-03",
+      "title": "Зонтики ПВО",
+      "status": "partial",
+      "note": "sam_barrage/forecast_barrage/resolve_barrage и численный пример есть, но GameState не вызывает их при авиавылете. Нужны выбор зонтиков, потери до удара, прогноз, события и ИИ.",
+      "scope": "strategy",
+      "source": {
+        "path": "docs/gdd.md",
+        "line": 507
+      },
+      "evidence": [
+        {
+          "path": "crates/core/src/air.rs",
+          "line": 1
+        },
+        {
+          "path": "crates/core/src/game/aviation.rs",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "id": "R-AIR-04",
+      "title": "Вертолётная переброска",
+      "status": "missing",
+      "note": "Нет команды вертолётной переброски, проверки высадки под ПВО и запрета атаки после высадки.",
+      "scope": "strategy",
+      "source": {
+        "path": "docs/gdd.md",
+        "line": 519
+      },
+      "evidence": [
+        {
+          "path": "crates/core/src/game/command.rs",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "id": "R-COMBAT-01",
+      "title": "Классы целей",
+      "status": "done",
+      "note": "Реализовано в текущем ядре/клиенте; ограничения связанных правил отмечены отдельно.",
+      "scope": "strategy",
+      "source": {
+        "path": "docs/gdd.md",
+        "line": 218
+      },
+      "evidence": [
+        {
+          "path": "crates/core/src/game/attack.rs",
+          "line": 1
+        },
+        {
+          "path": "crates/core/tests/combat_rules.rs",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "id": "R-COMBAT-02",
+      "title": "Формула",
+      "status": "done",
+      "note": "Реализовано в текущем ядре/клиенте; ограничения связанных правил отмечены отдельно.",
+      "scope": "strategy",
+      "source": {
+        "path": "docs/gdd.md",
+        "line": 227
+      },
+      "evidence": [
+        {
+          "path": "crates/core/src/game/attack.rs",
+          "line": 1
+        },
+        {
+          "path": "crates/core/tests/combat_rules.rs",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "id": "R-COMBAT-03",
+      "title": "Прогноз",
+      "status": "done",
+      "note": "Реализовано в текущем ядре/клиенте; ограничения связанных правил отмечены отдельно.",
+      "scope": "strategy",
+      "source": {
+        "path": "docs/gdd.md",
+        "line": 264
+      },
+      "evidence": [
+        {
+          "path": "crates/core/src/game/attack.rs",
+          "line": 155
+        },
+        {
+          "path": "crates/core/tests/combat_rules.rs",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "id": "R-COMBAT-04",
+      "title": "Обстрел",
+      "status": "done",
+      "note": "Реализовано в текущем ядре/клиенте; ограничения связанных правил отмечены отдельно.",
+      "scope": "strategy",
+      "source": {
+        "path": "docs/gdd.md",
+        "line": 270
+      },
+      "evidence": [
+        {
+          "path": "crates/core/src/game/attack.rs",
+          "line": 530
+        },
+        {
+          "path": "crates/core/tests/combat_rules.rs",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "id": "R-COMBAT-05",
+      "title": "Окружение",
+      "status": "done",
+      "note": "Реализовано в текущем ядре/клиенте; ограничения связанных правил отмечены отдельно.",
+      "scope": "strategy",
+      "source": {
+        "path": "docs/gdd.md",
+        "line": 276
+      },
+      "evidence": [
+        {
+          "path": "crates/core/src/game/attack.rs",
+          "line": 25
+        },
+        {
+          "path": "crates/core/tests/combat_rules.rs",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "id": "R-COMBAT-06",
+      "title": "Отступление и занятие гекса",
+      "status": "done",
+      "note": "Реализовано в текущем ядре/клиенте; ограничения связанных правил отмечены отдельно.",
+      "scope": "strategy",
+      "source": {
+        "path": "docs/gdd.md",
+        "line": 282
+      },
+      "evidence": [
+        {
+          "path": "crates/core/src/game/attack.rs",
+          "line": 1
+        },
+        {
+          "path": "crates/core/tests/combat_rules.rs",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "id": "R-COMBAT-07",
+      "title": "Подготовленная атака",
+      "status": "done",
+      "note": "Реализовано в текущем ядре/клиенте; ограничения связанных правил отмечены отдельно.",
+      "scope": "strategy",
+      "source": {
+        "path": "docs/gdd.md",
+        "line": 292
+      },
+      "evidence": [
+        {
+          "path": "crates/core/src/game/attack.rs",
+          "line": 23
+        },
+        {
+          "path": "crates/core/tests/combat_rules.rs",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "id": "R-ECO-01",
+      "title": "Доход",
+      "status": "done",
+      "note": "Реализовано в текущем ядре/клиенте; ограничения связанных правил отмечены отдельно.",
+      "scope": "strategy",
+      "source": {
+        "path": "docs/gdd.md",
+        "line": 398
+      },
+      "evidence": [
+        {
+          "path": "crates/core/src/game/economy.rs",
+          "line": 1
+        },
+        {
+          "path": "crates/core/tests/economy.rs",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "id": "R-ECO-02",
+      "title": "Расходы",
+      "status": "partial",
+      "note": "Наземные покупки, пополнения и очередь работают; покупка авиации/кораблей возвращает Unsupported.",
+      "scope": "strategy",
+      "source": {
+        "path": "docs/gdd.md",
+        "line": 410
+      },
+      "evidence": [
+        {
+          "path": "crates/core/src/game/economy.rs",
+          "line": 44
+        }
+      ]
+    },
+    {
+      "id": "R-ECO-03",
+      "title": "Лимит сил",
+      "status": "done",
+      "note": "Реализовано в текущем ядре/клиенте; ограничения связанных правил отмечены отдельно.",
+      "scope": "strategy",
+      "source": {
+        "path": "docs/gdd.md",
+        "line": 428
+      },
+      "evidence": [
+        {
+          "path": "crates/core/src/game/economy.rs",
+          "line": 166
+        },
+        {
+          "path": "crates/core/tests/economy.rs",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "id": "R-EVT-01",
+      "title": "События",
+      "status": "partial",
+      "note": "Базовые триггеры/эффекты и окна событий работают. Воздушные/морские подкрепления не поддержаны; нет национального перемирия и выбора игрока для сценария 7.",
+      "scope": "strategy",
+      "source": {
+        "path": "docs/gdd.md",
+        "line": 608
+      },
+      "evidence": [
+        {
+          "path": "crates/core/src/game/events.rs",
+          "line": 1
+        },
+        {
+          "path": "client/src/history.ts",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "id": "R-HQ-01",
+      "title": "Автоприкрепление",
+      "status": "done",
+      "note": "Реализовано в текущем ядре/клиенте; ограничения связанных правил отмечены отдельно.",
+      "scope": "strategy",
+      "source": {
+        "path": "docs/gdd.md",
+        "line": 542
+      },
+      "evidence": [
+        {
+          "path": "crates/core/src/game/hq.rs",
+          "line": 1
+        },
+        {
+          "path": "crates/core/tests/hq_transfer.rs",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "id": "R-HQ-02",
+      "title": "Эффекты",
+      "status": "done",
+      "note": "Реализовано в текущем ядре/клиенте; ограничения связанных правил отмечены отдельно.",
+      "scope": "strategy",
+      "source": {
+        "path": "docs/gdd.md",
+        "line": 553
+      },
+      "evidence": [
+        {
+          "path": "crates/core/src/game/hq.rs",
+          "line": 1
+        },
+        {
+          "path": "crates/core/tests/hq_transfer.rs",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "id": "R-MODE-01",
+      "title": "Туман войны",
+      "status": "missing",
+      "note": "Стратегия выдаёт полное состояние. Нет маски видимости, скрытой силы/опыта, разведки и прогноза с неизвестными данными. Тактическая LOS не заменяет стратегический туман.",
+      "scope": "strategy",
+      "source": {
+        "path": "docs/gdd.md",
+        "line": 782
+      },
+      "evidence": [
+        {
+          "path": "client/src/game-view.ts",
+          "line": 1
+        },
+        {
+          "path": "crates/wasm/src/lib.rs",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "id": "R-MOVE-01",
+      "title": "Местность",
+      "status": "done",
+      "note": "Реализовано в текущем ядре/клиенте; ограничения связанных правил отмечены отдельно.",
+      "scope": "strategy",
+      "source": {
+        "path": "docs/gdd.md",
+        "line": 137
+      },
+      "evidence": [
+        {
+          "path": "crates/core/src/game/moves.rs",
+          "line": 1
+        },
+        {
+          "path": "crates/core/tests/combat_rules.rs",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "id": "R-MOVE-02",
+      "title": "Канал и мосты",
+      "status": "done",
+      "note": "Форсирование на лодках, постройка/ремонт моста к следующей своей фазе, разрушение мостов/паромов и снабжение уже есть.",
+      "scope": "strategy",
+      "source": {
+        "path": "docs/gdd.md",
+        "line": 159
+      },
+      "evidence": [
+        {
+          "path": "crates/core/src/game/moves.rs",
+          "line": 19
+        },
+        {
+          "path": "crates/core/tests/combat_rules.rs",
+          "line": 1
+        },
+        {
+          "path": "crates/core/src/game/bridge.rs",
+          "line": 1
+        },
+        {
+          "path": "crates/core/tests/bridge.rs",
+          "line": 1
+        },
+        {
+          "path": "crates/core/tests/ferry.rs",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "id": "R-MOVE-03",
+      "title": "Зоны контроля",
+      "status": "done",
+      "note": "Реализовано в текущем ядре/клиенте; ограничения связанных правил отмечены отдельно.",
+      "scope": "strategy",
+      "source": {
+        "path": "docs/gdd.md",
+        "line": 168
+      },
+      "evidence": [
+        {
+          "path": "crates/core/src/game/moves.rs",
+          "line": 16
+        },
+        {
+          "path": "crates/core/tests/combat_rules.rs",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "id": "R-MOVE-04",
+      "title": "Атака и очки действий",
+      "status": "done",
+      "note": "Реализовано в текущем ядре/клиенте; ограничения связанных правил отмечены отдельно.",
+      "scope": "strategy",
+      "source": {
+        "path": "docs/gdd.md",
+        "line": 180
+      },
+      "evidence": [
+        {
+          "path": "crates/core/src/game/moves.rs",
+          "line": 1
+        },
+        {
+          "path": "crates/core/tests/combat_rules.rs",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "id": "R-MOVE-05",
+      "title": "Стратегическая переброска",
+      "status": "done",
+      "note": "Наземная стратегическая переброска и синтетические проверки ИИ A/B/C есть; приёмка на «Голанах-73» остаётся сценарию.",
+      "scope": "strategy",
+      "source": {
+        "path": "docs/gdd.md",
+        "line": 184
+      },
+      "evidence": [
+        {
+          "path": "crates/core/src/game/moves.rs",
+          "line": 1
+        },
+        {
+          "path": "crates/core/tests/combat_rules.rs",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "id": "R-MOVE-06",
+      "title": "Контроль гексов",
+      "status": "done",
+      "note": "Контроль пути в ZOC уже поправлен 2026-11-27: старый открытый пункт SC #4 закрыт.",
+      "scope": "strategy",
+      "source": {
+        "path": "docs/gdd.md",
+        "line": 192
+      },
+      "evidence": [
+        {
+          "path": "crates/core/src/game/moves.rs",
+          "line": 1
+        },
+        {
+          "path": "crates/core/tests/combat_rules.rs",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "id": "R-MOVE-07",
+      "title": "Прорыв после победы",
+      "status": "done",
+      "note": "Прорыв включён; есть доплата за ZOC и остановка при контроле двумя юнитами.",
+      "scope": "strategy",
+      "source": {
+        "path": "docs/gdd.md",
+        "line": 201
+      },
+      "evidence": [
+        {
+          "path": "crates/core/src/game/moves.rs",
+          "line": 17
+        },
+        {
+          "path": "crates/core/tests/combat_rules.rs",
+          "line": 1
+        },
+        {
+          "path": "crates/core/tests/breakthrough.rs",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "id": "R-NAV-01",
+      "title": "Ракетные катера",
+      "status": "missing",
+      "note": "Класс Naval и статы есть в данных, но морские юниты не загружаются в GameState; движения и боя катеров нет.",
+      "scope": "strategy",
+      "source": {
+        "path": "docs/gdd.md",
+        "line": 532
+      },
+      "evidence": [
+        {
+          "path": "data/units.json",
+          "line": 1
+        },
+        {
+          "path": "crates/core/src/game/mod.rs",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "id": "R-NAV-02",
+      "title": "Блокада",
+      "status": "missing",
+      "note": "Нет игровой блокады порта катером, портового состояния и потери дохода от неё.",
+      "scope": "strategy",
+      "source": {
+        "path": "docs/gdd.md",
+        "line": 533
+      },
+      "evidence": [
+        {
+          "path": "crates/core/src/game/phase.rs",
+          "line": 1
+        },
+        {
+          "path": "crates/core/src/game/economy.rs",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "id": "R-NAV-03",
+      "title": "Дальняя блокада",
+      "status": "partial",
+      "note": "Можно задать серией событий с отрицательным MPP, но сценария дальней блокады нет. scheduled_income имеет u32 и не задаёт отрицательный регулярный платёж напрямую.",
+      "scope": "strategy",
+      "source": {
+        "path": "docs/gdd.md",
+        "line": 534
+      },
+      "evidence": [
+        {
+          "path": "crates/core/src/game/events.rs",
+          "line": 1
+        },
+        {
+          "path": "crates/core/src/game/mod.rs",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "id": "R-NAV-04",
+      "title": "Десант",
+      "status": "missing",
+      "note": "Нет погрузки, морского транспорта и высадки с указанными штрафами.",
+      "scope": "strategy",
+      "source": {
+        "path": "docs/gdd.md",
+        "line": 535
+      },
+      "evidence": [
+        {
+          "path": "crates/core/src/game/command.rs",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "id": "R-NM-01",
+      "title": "Национальная мораль",
+      "status": "done",
+      "note": "Реализовано в текущем ядре/клиенте; ограничения связанных правил отмечены отдельно.",
+      "scope": "strategy",
+      "source": {
+        "path": "docs/gdd.md",
+        "line": 571
+      },
+      "evidence": [
+        {
+          "path": "crates/core/src/game/nm.rs",
+          "line": 1
+        },
+        {
+          "path": "crates/core/tests/victory.rs",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "id": "R-NM-02",
+      "title": "Победа",
+      "status": "done",
+      "note": "Реализовано в текущем ядре/клиенте; ограничения связанных правил отмечены отдельно.",
+      "scope": "strategy",
+      "source": {
+        "path": "docs/gdd.md",
+        "line": 593
+      },
+      "evidence": [
+        {
+          "path": "crates/core/src/game/nm.rs",
+          "line": 1
+        },
+        {
+          "path": "crates/core/tests/victory.rs",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "id": "R-NUC-01",
+      "title": "Тактическое ядерное оружие",
+      "status": "missing",
+      "note": "Нет alternative_escalation, трека 0–3, ядерного удара, зоны поражения и связанных санкций/сдвига срока.",
+      "scope": "strategy",
+      "source": {
+        "path": "docs/gdd.md",
+        "line": 630
+      },
+      "evidence": [
+        {
+          "path": "crates/core/src/game/command.rs",
+          "line": 1
+        },
+        {
+          "path": "crates/core/src/game/events.rs",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "id": "R-SCALE-01",
+      "title": "Масштаб сценария",
+      "status": "done",
+      "note": "Км переводятся в гексы; карты 5/10 км и параметр supply_decay_ap поддержаны.",
+      "scope": "strategy",
+      "source": {
+        "path": "docs/gdd.md",
+        "line": 65
+      },
+      "evidence": [
+        {
+          "path": "crates/core/src/scale.rs",
+          "line": 1
+        },
+        {
+          "path": "crates/core/tests/gdd_examples.rs",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "id": "R-SUP-01",
+      "title": "Источники",
+      "status": "done",
+      "note": "Реализовано в текущем ядре/клиенте; ограничения связанных правил отмечены отдельно.",
+      "scope": "strategy",
+      "source": {
+        "path": "docs/gdd.md",
+        "line": 307
+      },
+      "evidence": [
+        {
+          "path": "crates/core/src/supply.rs",
+          "line": 69
+        },
+        {
+          "path": "crates/core/tests/supply_forecast.rs",
+          "line": 33
+        }
+      ]
+    },
+    {
+      "id": "R-SUP-02",
+      "title": "Распространение",
+      "status": "done",
+      "note": "Реализовано в текущем ядре/клиенте; ограничения связанных правил отмечены отдельно.",
+      "scope": "strategy",
+      "source": {
+        "path": "docs/gdd.md",
+        "line": 322
+      },
+      "evidence": [
+        {
+          "path": "crates/core/src/supply.rs",
+          "line": 1
+        },
+        {
+          "path": "crates/core/tests/supply_forecast.rs",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "id": "R-SUP-03",
+      "title": "Эффекты",
+      "status": "done",
+      "note": "Реализовано в текущем ядре/клиенте; ограничения связанных правил отмечены отдельно.",
+      "scope": "strategy",
+      "source": {
+        "path": "docs/gdd.md",
+        "line": 375
+      },
+      "evidence": [
+        {
+          "path": "crates/core/src/supply.rs",
+          "line": 1
+        },
+        {
+          "path": "crates/core/tests/supply_forecast.rs",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "id": "R-SUP-04",
+      "title": "Видимость для игрока",
+      "status": "partial",
+      "note": "Слой, числа и прогноз после входа есть; источник и полный путь снабжения игроку не объясняются.",
+      "scope": "strategy",
+      "source": {
+        "path": "docs/gdd.md",
+        "line": 390
+      },
+      "evidence": [
+        {
+          "path": "client/src/ui/hex-info.ts",
+          "line": 30
+        },
+        {
+          "path": "client/src/play.ts",
+          "line": 173
+        }
+      ]
+    },
+    {
+      "id": "R-SUP-05",
+      "title": "Инерция снабжения",
+      "status": "done",
+      "note": "Реализовано в текущем ядре/клиенте; ограничения связанных правил отмечены отдельно.",
+      "scope": "strategy",
+      "source": {
+        "path": "docs/gdd.md",
+        "line": 351
+      },
+      "evidence": [
+        {
+          "path": "crates/core/src/supply.rs",
+          "line": 1
+        },
+        {
+          "path": "crates/core/tests/supply_forecast.rs",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "id": "R-SUP-06",
+      "title": "Штаб как узел снабжения",
+      "status": "implemented_off",
+      "note": "hq_supply_node реализован и проверяется в sim, но выключен решением дизайнера. Это не отсутствующий код.",
+      "scope": "strategy",
+      "source": {
+        "path": "docs/gdd.md",
+        "line": 341
+      },
+      "evidence": [
+        {
+          "path": "crates/core/src/supply.rs",
+          "line": 28
+        },
+        {
+          "path": "data/rules.json",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "id": "R-TAC-01",
+      "title": "Расчёт боя заменяем",
+      "status": "done",
+      "note": "DeclareAttack/ResolveCombat и единая процедура последствий боя есть в ядре. Мобильный клиент — отдельный незакрытый слой.",
+      "scope": "tactical_bridge",
+      "source": {
+        "path": "docs/gdd.md",
+        "line": 912
+      },
+      "evidence": [
+        {
+          "path": "crates/core/src/game/combats.rs",
+          "line": 1
+        },
+        {
+          "path": "crates/core/tests/tactical.rs",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "id": "R-TAC-02",
+      "title": "Итог тактики — точка в распределении",
+      "status": "done",
+      "note": "Пять исходов переводятся в фиксированные перцентили. По самому R-TAC-02 реализовано; непрерывный T-RES-05 требует расширить вход ResolveCombat.",
+      "scope": "tactical_bridge",
+      "source": {
+        "path": "docs/gdd.md",
+        "line": 918
+      },
+      "evidence": [
+        {
+          "path": "crates/core/src/game/combats.rs",
+          "line": 1
+        },
+        {
+          "path": "crates/core/tests/tactical.rs",
+          "line": 124
+        }
+      ]
+    },
+    {
+      "id": "R-TAC-03",
+      "title": "Снимок боя",
+      "status": "done",
+      "note": "Снимок боя, семь гексов и данные поддержки обеих сторон сериализуются.",
+      "scope": "tactical_bridge",
+      "source": {
+        "path": "docs/gdd.md",
+        "line": 930
+      },
+      "evidence": [
+        {
+          "path": "crates/core/src/game/combats.rs",
+          "line": 1
+        },
+        {
+          "path": "crates/core/tests/tactical.rs",
+          "line": 257
+        }
+      ]
+    },
+    {
+      "id": "R-TAC-04",
+      "title": "Очередь боёв",
+      "status": "done",
+      "note": "Очередь, блокировка участников и запрет EndPhase при ожидающих боях реализованы в ядре. Телефон/онлайн не подключены.",
+      "scope": "tactical_bridge",
+      "source": {
+        "path": "docs/gdd.md",
+        "line": 942
+      },
+      "evidence": [
+        {
+          "path": "crates/core/src/game/combats.rs",
+          "line": 1
+        },
+        {
+          "path": "crates/core/tests/tactical.rs",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "id": "R-TECH-01",
+      "title": "Ветки и уровни",
+      "status": "partial",
+      "note": "Уровни и модификаторы статов есть; эффект РЭБ/подавления не завершён в вылете, пока зонтики ПВО не подключены.",
+      "scope": "strategy",
+      "source": {
+        "path": "docs/gdd.md",
+        "line": 438
+      },
+      "evidence": [
+        {
+          "path": "crates/core/src/tech.rs",
+          "line": 1
+        },
+        {
+          "path": "crates/core/src/game/aviation.rs",
+          "line": 1
+        },
+        {
+          "path": "crates/core/src/air.rs",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "id": "R-TECH-02",
+      "title": "Ускорения",
+      "status": "done",
+      "note": "Покупка ускорения, задержка, потолок и применение работают; нужно наполнение сценариев 1973 года.",
+      "scope": "strategy",
+      "source": {
+        "path": "docs/gdd.md",
+        "line": 450
+      },
+      "evidence": [
+        {
+          "path": "crates/core/src/tech.rs",
+          "line": 77
+        },
+        {
+          "path": "crates/core/tests/boosts.rs",
+          "line": 1
+        },
+        {
+          "path": "crates/core/src/game/boosts.rs",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "id": "R-TURN-01",
+      "title": "Цикл хода",
+      "status": "done",
+      "note": "Начало фазы, события, обновление снабжения/готовности/AP, конец фазы и проверка исхода реализованы.",
+      "scope": "strategy",
+      "source": {
+        "path": "docs/gdd.md",
+        "line": 86
+      },
+      "evidence": [
+        {
+          "path": "crates/core/src/game/phase.rs",
+          "line": 1
+        },
+        {
+          "path": "crates/core/tests/game.rs",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "id": "R-TURN-02",
+      "title": "День и ночь",
+      "status": "done",
+      "note": "День/ночь, штрафы движения/атаки и запрет ночных вылетов реализованы; не нужно писать заново для этапа 5.",
+      "scope": "strategy",
+      "source": {
+        "path": "docs/gdd.md",
+        "line": 82
+      },
+      "evidence": [
+        {
+          "path": "crates/core/src/game/phase.rs",
+          "line": 242
+        },
+        {
+          "path": "crates/core/tests/game.rs",
+          "line": 194
+        }
+      ]
+    },
+    {
+      "id": "R-TURN-03",
+      "title": "Раздельные наземный, воздушный и морской слои",
+      "status": "partial",
+      "note": "Наземный и воздушный слои работают; GameState отвергает корабли. Перебазирование авиации при потере базы есть.",
+      "scope": "strategy",
+      "source": {
+        "path": "docs/gdd.md",
+        "line": 96
+      },
+      "evidence": [
+        {
+          "path": "crates/core/src/game/mod.rs",
+          "line": 597
+        },
+        {
+          "path": "crates/core/src/game/aviation.rs",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "id": "R-UI-01",
+      "title": "Карта из данных рельефа",
+      "status": "done",
+      "note": "mapgen, DEM/OSM, слой исторических дорог и bake существуют для двух оперативных карт. Новые карты — отдельная работа с данными.",
+      "scope": "strategy",
+      "source": {
+        "path": "docs/gdd.md",
+        "line": 713
+      },
+      "evidence": [
+        {
+          "path": "client/src/play.ts",
+          "line": 1
+        },
+        {
+          "path": "crates/mapgen/src/bake.rs",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "id": "R-UI-02",
+      "title": "Карта на экране",
+      "status": "done",
+      "note": "Реализовано в текущем ядре/клиенте; ограничения связанных правил отмечены отдельно.",
+      "scope": "strategy",
+      "source": {
+        "path": "docs/gdd.md",
+        "line": 719
+      },
+      "evidence": [
+        {
+          "path": "client/src/play.ts",
+          "line": 150
+        }
+      ]
+    },
+    {
+      "id": "R-UI-03",
+      "title": "Юниты",
+      "status": "partial",
+      "note": "Миниатюры, медальоны, поворот и выбор модели/года есть; APP-6 существует как запасной рисунок, но не как выбираемый третий режим.",
+      "scope": "strategy",
+      "source": {
+        "path": "docs/gdd.md",
+        "line": 730
+      },
+      "evidence": [
+        {
+          "path": "client/src/sprites.ts",
+          "line": 45
+        },
+        {
+          "path": "client/src/settings.ts",
+          "line": 2
+        },
+        {
+          "path": "client/src/render/units.ts",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "id": "R-UI-04",
+      "title": "Панели",
+      "status": "partial",
+      "note": "Основной HUD работает; отсутствуют действия вертолётов/флота/эскалации, детали источника снабжения и свободный просмотр чужой карточки.",
+      "scope": "strategy",
+      "source": {
+        "path": "docs/gdd.md",
+        "line": 739
+      },
+      "evidence": [
+        {
+          "path": "client/src/play.ts",
+          "line": 5
+        },
+        {
+          "path": "client/src/ui/action-bar.ts",
+          "line": 1
+        },
+        {
+          "path": "client/src/ui/hex-info.ts",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "id": "R-UI-05",
+      "title": "Удобство",
+      "status": "partial",
+      "note": "Автосохранение, undo, горячие клавиши и показ действий ИИ есть; полного воспроизводимого реплея хода с управлением просмотром нет.",
+      "scope": "strategy",
+      "source": {
+        "path": "docs/gdd.md",
+        "line": 750
+      },
+      "evidence": [
+        {
+          "path": "client/src/save.ts",
+          "line": 1
+        },
+        {
+          "path": "client/src/phase-summary.ts",
+          "line": 1
+        },
+        {
+          "path": "client/src/trail.ts",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "id": "R-UI-06",
+      "title": "Арт-ассеты",
+      "status": "done",
+      "note": "Манифесты и проверка форматов есть; все 27 новых ассетов, включая jor, уже в рабочем дереве.",
+      "scope": "strategy",
+      "source": {
+        "path": "docs/gdd.md",
+        "line": 759
+      },
+      "evidence": [
+        {
+          "path": "client/src/play.ts",
+          "line": 1
+        },
+        {
+          "path": "crates/sim/src/assets_check.rs",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "id": "R-UI-07",
+      "title": "Историческая справка",
+      "status": "done",
+      "note": "Брифинг, окна важных событий и справка модели/класса работают; поздняя партия текстов закрыла прежние TODO.",
+      "scope": "strategy",
+      "source": {
+        "path": "docs/gdd.md",
+        "line": 768
+      },
+      "evidence": [
+        {
+          "path": "client/src/play.ts",
+          "line": 53
+        },
+        {
+          "path": "client/src/history.ts",
+          "line": 1
+        },
+        {
+          "path": "client/src/history.test.ts",
+          "line": 28
+        }
+      ]
+    },
+    {
+      "id": "R-UNIT-01",
+      "title": "Готовность",
+      "status": "done",
+      "note": "Реализовано в текущем ядре/клиенте; ограничения связанных правил отмечены отдельно.",
+      "scope": "strategy",
+      "source": {
+        "path": "docs/gdd.md",
+        "line": 114
+      },
+      "evidence": [
+        {
+          "path": "crates/core/src/unit.rs",
+          "line": 1
+        },
+        {
+          "path": "crates/core/tests/gdd_examples.rs",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "id": "R-UNIT-02",
+      "title": "Очки действий и удары",
+      "status": "done",
+      "note": "Реализовано в текущем ядре/клиенте; ограничения связанных правил отмечены отдельно.",
+      "scope": "strategy",
+      "source": {
+        "path": "docs/gdd.md",
+        "line": 128
+      },
+      "evidence": [
+        {
+          "path": "crates/core/src/unit.rs",
+          "line": 1
+        },
+        {
+          "path": "crates/core/tests/gdd_examples.rs",
+          "line": 1
+        }
+      ]
+    }
+  ],
+  "tactical_rules": [
+    {
+      "id": "T-COMBAT-01",
+      "title": "Огонь",
+      "status": "done",
+      "note": "Реализовано на уровне T1: Rust-правила, данные, ИИ и тесты; это не готовый телефонный продукт.",
+      "source": {
+        "path": "docs/tactical.md",
+        "line": 154
+      },
+      "evidence": [
+        {
+          "path": "crates/tactical/src/battle.rs",
+          "line": 1
+        },
+        {
+          "path": "crates/tactical/tests/rules.rs",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "id": "T-COMBAT-02",
+      "title": "Подавление",
+      "status": "done",
+      "note": "Реализовано на уровне T1: Rust-правила, данные, ИИ и тесты; это не готовый телефонный продукт.",
+      "source": {
+        "path": "docs/tactical.md",
+        "line": 177
+      },
+      "evidence": [
+        {
+          "path": "crates/tactical/src/battle.rs",
+          "line": 1
+        },
+        {
+          "path": "crates/tactical/tests/rules.rs",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "id": "T-COMBAT-03",
+      "title": "Штурм",
+      "status": "done",
+      "note": "Реализовано на уровне T1: Rust-правила, данные, ИИ и тесты; это не готовый телефонный продукт.",
+      "source": {
+        "path": "docs/tactical.md",
+        "line": 181
+      },
+      "evidence": [
+        {
+          "path": "crates/tactical/src/battle.rs",
+          "line": 1
+        },
+        {
+          "path": "crates/tactical/tests/rules.rs",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "id": "T-LOS-01",
+      "title": "Линия видимости",
+      "status": "done",
+      "note": "Реализовано на уровне T1: Rust-правила, данные, ИИ и тесты; это не готовый телефонный продукт.",
+      "source": {
+        "path": "docs/tactical.md",
+        "line": 133
+      },
+      "evidence": [
+        {
+          "path": "crates/tactical/src/battle.rs",
+          "line": 1
+        },
+        {
+          "path": "crates/tactical/tests/rules.rs",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "id": "T-LOS-02",
+      "title": "Обнаружение",
+      "status": "done",
+      "note": "Реализовано на уровне T1: Rust-правила, данные, ИИ и тесты; это не готовый телефонный продукт.",
+      "source": {
+        "path": "docs/tactical.md",
+        "line": 139
+      },
+      "evidence": [
+        {
+          "path": "crates/tactical/src/battle.rs",
+          "line": 1
+        },
+        {
+          "path": "crates/tactical/tests/rules.rs",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "id": "T-LOS-03",
+      "title": "Засада",
+      "status": "done",
+      "note": "Реализовано на уровне T1: Rust-правила, данные, ИИ и тесты; это не готовый телефонный продукт.",
+      "source": {
+        "path": "docs/tactical.md",
+        "line": 146
+      },
+      "evidence": [
+        {
+          "path": "crates/tactical/src/battle.rs",
+          "line": 1
+        },
+        {
+          "path": "crates/tactical/tests/rules.rs",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "id": "T-MODE-01",
+      "title": "Бой из кампании",
+      "status": "partial",
+      "note": "Есть снимок и симулятор, но нет пути «десктоп -> телефон -> результат в кампанию».",
+      "source": {
+        "path": "docs/tactical.md",
+        "line": 260
+      },
+      "evidence": [
+        {
+          "path": "crates/tactical/src/battle.rs",
+          "line": 1
+        },
+        {
+          "path": "crates/tactical/tests/rules.rs",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "id": "T-MODE-02",
+      "title": "Исторические бои",
+      "status": "missing",
+      "note": "Нет игрового клиента/контента/сервиса для режима.",
+      "source": {
+        "path": "docs/tactical.md",
+        "line": 267
+      },
+      "evidence": [
+        {
+          "path": "crates/tactical/src/battle.rs",
+          "line": 1
+        },
+        {
+          "path": "crates/tactical/tests/rules.rs",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "id": "T-MODE-03",
+      "title": "«Ситуация дня»",
+      "status": "missing",
+      "note": "Нет игрового клиента/контента/сервиса для режима.",
+      "source": {
+        "path": "docs/tactical.md",
+        "line": 282
+      },
+      "evidence": [
+        {
+          "path": "crates/tactical/src/battle.rs",
+          "line": 1
+        },
+        {
+          "path": "crates/tactical/tests/rules.rs",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "id": "T-RES-01",
+      "title": "Очки боя",
+      "status": "done",
+      "note": "Реализовано на уровне T1: Rust-правила, данные, ИИ и тесты; это не готовый телефонный продукт.",
+      "source": {
+        "path": "docs/tactical.md",
+        "line": 221
+      },
+      "evidence": [
+        {
+          "path": "crates/tactical/src/battle.rs",
+          "line": 1
+        },
+        {
+          "path": "crates/tactical/tests/rules.rs",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "id": "T-RES-02",
+      "title": "Итоги",
+      "status": "done",
+      "note": "Реализовано на уровне T1: Rust-правила, данные, ИИ и тесты; это не готовый телефонный продукт.",
+      "source": {
+        "path": "docs/tactical.md",
+        "line": 227
+      },
+      "evidence": [
+        {
+          "path": "crates/tactical/src/battle.rs",
+          "line": 1
+        },
+        {
+          "path": "crates/tactical/tests/rules.rs",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "id": "T-RES-03",
+      "title": "Почему потери тактики не переносятся напрямую",
+      "status": "done",
+      "note": "Реализовано на уровне T1: Rust-правила, данные, ИИ и тесты; это не готовый телефонный продукт.",
+      "source": {
+        "path": "docs/tactical.md",
+        "line": 250
+      },
+      "evidence": [
+        {
+          "path": "crates/tactical/src/battle.rs",
+          "line": 1
+        },
+        {
+          "path": "crates/tactical/tests/rules.rs",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "id": "T-RES-04",
+      "title": "Выход из боя",
+      "status": "done",
+      "note": "Реализовано на уровне T1: Rust-правила, данные, ИИ и тесты; это не готовый телефонный продукт.",
+      "source": {
+        "path": "docs/tactical.md",
+        "line": 254
+      },
+      "evidence": [
+        {
+          "path": "crates/tactical/src/battle.rs",
+          "line": 1
+        },
+        {
+          "path": "crates/tactical/tests/rules.rs",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "id": "T-RES-05",
+      "title": "Перцентиль по прогонам того же боя",
+      "status": "partial",
+      "note": "40 прогонов, percentile и WASM-функция есть; стратегия принимает только enum из пяти исходов, а не рассчитанный непрерывный percentile.",
+      "source": {
+        "path": "docs/tactical.md",
+        "line": 239
+      },
+      "evidence": [
+        {
+          "path": "crates/tactical/src/battle.rs",
+          "line": 1
+        },
+        {
+          "path": "crates/tactical/tests/rules.rs",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "id": "T-SCALE-01",
+      "title": "Карта",
+      "status": "partial",
+      "note": "Геометрия и синтетическая карта есть, тактического mapgen по DEM/OSM и ключевых точек по реальному рельефу нет.",
+      "source": {
+        "path": "docs/tactical.md",
+        "line": 29
+      },
+      "evidence": [
+        {
+          "path": "crates/tactical/src/battle.rs",
+          "line": 1
+        },
+        {
+          "path": "crates/tactical/tests/rules.rs",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "id": "T-SCALE-02",
+      "title": "Время",
+      "status": "done",
+      "note": "Реализовано на уровне T1: Rust-правила, данные, ИИ и тесты; это не готовый телефонный продукт.",
+      "source": {
+        "path": "docs/tactical.md",
+        "line": 42
+      },
+      "evidence": [
+        {
+          "path": "crates/tactical/src/battle.rs",
+          "line": 1
+        },
+        {
+          "path": "crates/tactical/tests/rules.rs",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "id": "T-SUP-01",
+      "title": "Источники вызовов",
+      "status": "done",
+      "note": "Реализовано на уровне T1: Rust-правила, данные, ИИ и тесты; это не готовый телефонный продукт.",
+      "source": {
+        "path": "docs/tactical.md",
+        "line": 191
+      },
+      "evidence": [
+        {
+          "path": "crates/tactical/src/battle.rs",
+          "line": 1
+        },
+        {
+          "path": "crates/tactical/tests/rules.rs",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "id": "T-SUP-02",
+      "title": "Сколько вызовов",
+      "status": "done",
+      "note": "Реализовано на уровне T1: Rust-правила, данные, ИИ и тесты; это не готовый телефонный продукт.",
+      "source": {
+        "path": "docs/tactical.md",
+        "line": 204
+      },
+      "evidence": [
+        {
+          "path": "crates/tactical/src/battle.rs",
+          "line": 1
+        },
+        {
+          "path": "crates/tactical/tests/rules.rs",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "id": "T-TECH-01",
+      "title": "Архитектура",
+      "status": "partial",
+      "note": "Чистый Rust, replay и WASM есть; сервер, очередь и защита результата ещё отсутствуют.",
+      "source": {
+        "path": "docs/tactical.md",
+        "line": 320
+      },
+      "evidence": [
+        {
+          "path": "crates/tactical/src/battle.rs",
+          "line": 1
+        },
+        {
+          "path": "crates/tactical/tests/rules.rs",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "id": "T-TECH-02",
+      "title": "Баланс",
+      "status": "done",
+      "note": "Реализовано на уровне T1: Rust-правила, данные, ИИ и тесты; это не готовый телефонный продукт.",
+      "source": {
+        "path": "docs/tactical.md",
+        "line": 340
+      },
+      "evidence": [
+        {
+          "path": "crates/tactical/src/battle.rs",
+          "line": 1
+        },
+        {
+          "path": "crates/tactical/tests/rules.rs",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "id": "T-TERR-01",
+      "title": "Местность",
+      "status": "done",
+      "note": "Реализовано на уровне T1: Rust-правила, данные, ИИ и тесты; это не готовый телефонный продукт.",
+      "source": {
+        "path": "docs/tactical.md",
+        "line": 120
+      },
+      "evidence": [
+        {
+          "path": "crates/tactical/src/battle.rs",
+          "line": 1
+        },
+        {
+          "path": "crates/tactical/tests/rules.rs",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "id": "T-TURN-01",
+      "title": "Ход",
+      "status": "done",
+      "note": "Реализовано на уровне T1: Rust-правила, данные, ИИ и тесты; это не готовый телефонный продукт.",
+      "source": {
+        "path": "docs/tactical.md",
+        "line": 95
+      },
+      "evidence": [
+        {
+          "path": "crates/tactical/src/battle.rs",
+          "line": 1
+        },
+        {
+          "path": "crates/tactical/tests/rules.rs",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "id": "T-TURN-02",
+      "title": "Действия за активацию",
+      "status": "done",
+      "note": "Реализовано на уровне T1: Rust-правила, данные, ИИ и тесты; это не готовый телефонный продукт.",
+      "source": {
+        "path": "docs/tactical.md",
+        "line": 101
+      },
+      "evidence": [
+        {
+          "path": "crates/tactical/src/battle.rs",
+          "line": 1
+        },
+        {
+          "path": "crates/tactical/tests/rules.rs",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "id": "T-UI-01",
+      "title": "Экран",
+      "status": "missing",
+      "note": "Нет игрового клиента/контента/сервиса для режима.",
+      "source": {
+        "path": "docs/tactical.md",
+        "line": 288
+      },
+      "evidence": [
+        {
+          "path": "crates/tactical/src/battle.rs",
+          "line": 1
+        },
+        {
+          "path": "crates/tactical/tests/rules.rs",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "id": "T-UI-02",
+      "title": "Жесты",
+      "status": "missing",
+      "note": "Нет игрового клиента/контента/сервиса для режима.",
+      "source": {
+        "path": "docs/tactical.md",
+        "line": 295
+      },
+      "evidence": [
+        {
+          "path": "crates/tactical/src/battle.rs",
+          "line": 1
+        },
+        {
+          "path": "crates/tactical/tests/rules.rs",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "id": "T-UI-03",
+      "title": "Telegram Mini App",
+      "status": "missing",
+      "note": "Нет игрового клиента/контента/сервиса для режима.",
+      "source": {
+        "path": "docs/tactical.md",
+        "line": 307
+      },
+      "evidence": [
+        {
+          "path": "crates/tactical/src/battle.rs",
+          "line": 1
+        },
+        {
+          "path": "crates/tactical/tests/rules.rs",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "id": "T-UNIT-01",
+      "title": "Раскладка",
+      "status": "done",
+      "note": "Реализовано на уровне T1: Rust-правила, данные, ИИ и тесты; это не готовый телефонный продукт.",
+      "source": {
+        "path": "docs/tactical.md",
+        "line": 51
+      },
+      "evidence": [
+        {
+          "path": "crates/tactical/src/battle.rs",
+          "line": 1
+        },
+        {
+          "path": "crates/tactical/tests/rules.rs",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "id": "T-UNIT-02",
+      "title": "Характеристики",
+      "status": "done",
+      "note": "Реализовано на уровне T1: Rust-правила, данные, ИИ и тесты; это не готовый телефонный продукт.",
+      "source": {
+        "path": "docs/tactical.md",
+        "line": 71
+      },
+      "evidence": [
+        {
+          "path": "crates/tactical/src/battle.rs",
+          "line": 1
+        },
+        {
+          "path": "crates/tactical/tests/rules.rs",
+          "line": 1
+        }
+      ]
+    }
+  ],
+  "strategic_command_sections": [
+    {
+      "section": "5.1",
+      "pdf_page": 49,
+      "title": "Key Areas of Gameplay",
+      "printed_page": 39,
+      "leaf": true,
+      "status": "reference",
+      "gdd_ids": [],
+      "note": "Обзор, советы, пример или поддержка; не самостоятельная механика для реализации."
+    },
+    {
+      "section": "5.2",
+      "pdf_page": 49,
+      "title": "Hotkeys",
+      "printed_page": 39,
+      "leaf": true,
+      "status": "partial",
+      "gdd_ids": [
+        "R-UI-04",
+        "R-UI-05"
+      ],
+      "note": "Базовые команды/клавиши/маркеры есть; см. отдельный реестр 33 UI-пунктов, это не новые 33 обязательных правила."
+    },
+    {
+      "section": "5.3",
+      "pdf_page": 49,
+      "title": "Major and Minor Powers",
+      "printed_page": 39,
+      "leaf": true,
+      "status": "outside",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "5.4",
+      "pdf_page": 49,
+      "title": "Indicator Sprites",
+      "printed_page": 39,
+      "leaf": true,
+      "status": "partial",
+      "gdd_ids": [
+        "R-UI-04",
+        "R-UI-05"
+      ],
+      "note": "Базовые команды/клавиши/маркеры есть; см. отдельный реестр 33 UI-пунктов, это не новые 33 обязательных правила."
+    },
+    {
+      "section": "5.5",
+      "pdf_page": 50,
+      "title": "Orders",
+      "printed_page": 40,
+      "leaf": true,
+      "status": "partial",
+      "gdd_ids": [
+        "R-UI-04",
+        "R-UI-05"
+      ],
+      "note": "Базовые команды/клавиши/маркеры есть; см. отдельный реестр 33 UI-пунктов, это не новые 33 обязательных правила."
+    },
+    {
+      "section": "5.6",
+      "pdf_page": 51,
+      "title": "Unit Modes",
+      "printed_page": 41,
+      "leaf": true,
+      "status": "candidate",
+      "gdd_ids": [
+        "R-AIR-02",
+        "R-UI-05"
+      ],
+      "note": "Сон/режимы истребителей отсутствуют; часть предложений старого SC-аудита, не самостоятельное требование текущего GDD."
+    },
+    {
+      "section": "5.7",
+      "pdf_page": 52,
+      "title": "Zones of Control",
+      "printed_page": 42,
+      "leaf": true,
+      "status": "analogue",
+      "gdd_ids": [
+        "R-MOVE-03",
+        "R-MOVE-07"
+      ],
+      "note": "Наш ZOC останавливает движение; после прорыва — налог AP. Это принятое отличие от постоянного налога SC."
+    },
+    {
+      "section": "5.8",
+      "pdf_page": 52,
+      "title": "Combat",
+      "printed_page": 42,
+      "leaf": true,
+      "status": "analogue",
+      "gdd_ids": [
+        "R-COMBAT-02",
+        "R-COMBAT-03"
+      ],
+      "note": "Своя биномиальная формула и прогноз 10/90; +/-1 из SC оставлен экспериментом sim, а не правилом игры."
+    },
+    {
+      "section": "5.9",
+      "pdf_page": 53,
+      "title": "Raiding",
+      "printed_page": 43,
+      "leaf": true,
+      "status": "outside",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "5.10",
+      "pdf_page": 53,
+      "title": "Conquering Countries",
+      "printed_page": 43,
+      "leaf": true,
+      "status": "outside",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "5.11",
+      "pdf_page": 53,
+      "title": "National Morale",
+      "printed_page": 43,
+      "leaf": true,
+      "status": "analogue",
+      "gdd_ids": [
+        "R-NM-01"
+      ],
+      "note": "Есть NM стороны, цена уничтожения и сценарные эффекты; формулы намеренно отличаются от SC."
+    },
+    {
+      "section": "5.12",
+      "pdf_page": 53,
+      "title": "HQs",
+      "printed_page": 43,
+      "leaf": true,
+      "status": "analogue",
+      "gdd_ids": [
+        "R-HQ-01",
+        "R-HQ-02"
+      ],
+      "note": "Штабы по соединениям и нациям, фиксированный рейтинг; пополнение по нашим общим правилам."
+    },
+    {
+      "section": "5.13",
+      "pdf_page": 54,
+      "title": "Supply Rules",
+      "printed_page": 44,
+      "leaf": false,
+      "content_status": "outside",
+      "status": "heading",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "5.13.1",
+      "pdf_page": 54,
+      "title": "General Notes on Supply",
+      "printed_page": 44,
+      "leaf": true,
+      "status": "analogue",
+      "gdd_ids": [
+        "R-SUP-01",
+        "R-SUP-02",
+        "R-SUP-05"
+      ],
+      "note": "Ресурсы сведены к источникам 0–10 и Dijkstra по AP; захват, изоляция и осада есть, точное копирование типов ресурсов SC не требуется."
+    },
+    {
+      "section": "5.13.2",
+      "pdf_page": 54,
+      "title": "Viewing Supply",
+      "printed_page": 44,
+      "leaf": true,
+      "status": "partial",
+      "gdd_ids": [
+        "R-SUP-04"
+      ],
+      "note": "Есть слой/прогноз; нет полного объяснения источника и маршрута снабжения."
+    },
+    {
+      "section": "5.13.3",
+      "pdf_page": 54,
+      "title": "Damage to Resources",
+      "printed_page": 44,
+      "leaf": true,
+      "status": "partial",
+      "gdd_ids": [
+        "R-SUP-01",
+        "R-AIR-02"
+      ],
+      "note": "Осада/захват источника есть; авиаудар по ресурсу и его ремонт после такого удара ещё не реализованы."
+    },
+    {
+      "section": "5.14",
+      "pdf_page": 55,
+      "title": "Partisans",
+      "printed_page": 45,
+      "leaf": true,
+      "status": "outside",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "5.15",
+      "pdf_page": 55,
+      "title": "Maintaining Units’ Combat Effectiveness",
+      "printed_page": 45,
+      "leaf": true,
+      "status": "analogue",
+      "gdd_ids": [
+        "R-UNIT-01",
+        "R-UNIT-02",
+        "R-SUP-03",
+        "R-HQ-02",
+        "R-COMBAT-02"
+      ],
+      "note": "Используем свои готовность, мораль, усталость, окопы и полосы снабжения. Различия формул не означают недописанное правило."
+    },
+    {
+      "section": "5.16",
+      "pdf_page": 55,
+      "title": "Decision Events",
+      "printed_page": 45,
+      "leaf": true,
+      "status": "planned",
+      "gdd_ids": [
+        "R-EVT-01"
+      ],
+      "note": "Общий движок событий есть; ограниченный выбор игрока нужен сценарию 7. Полная система всех решений кампании SC не планируется."
+    },
+    {
+      "section": "5.17",
+      "pdf_page": 55,
+      "title": "Building Fortifications",
+      "printed_page": 45,
+      "leaf": true,
+      "status": "planned",
+      "gdd_ids": [
+        "R-MOVE-02"
+      ],
+      "note": "Мосты инженеров готовы; строительство укреплений отдельно запланировано GDD §18, этап 5, команды пока нет."
+    },
+    {
+      "section": "5.18",
+      "pdf_page": 55,
+      "title": "Politics and Diplomacy",
+      "printed_page": 45,
+      "leaf": true,
+      "status": "outside",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "5.19",
+      "pdf_page": 56,
+      "title": "Weather",
+      "printed_page": 46,
+      "leaf": false,
+      "content_status": "outside",
+      "status": "heading",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "5.19.1",
+      "pdf_page": 56,
+      "title": "Rain",
+      "printed_page": 46,
+      "leaf": true,
+      "status": "outside",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "5.19.2",
+      "pdf_page": 56,
+      "title": "Mud",
+      "printed_page": 46,
+      "leaf": true,
+      "status": "outside",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "5.19.3",
+      "pdf_page": 56,
+      "title": "Sandstorms",
+      "printed_page": 46,
+      "leaf": true,
+      "status": "outside",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "5.19.4",
+      "pdf_page": 56,
+      "title": "Snow",
+      "printed_page": 46,
+      "leaf": true,
+      "status": "outside",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "5.19.5",
+      "pdf_page": 56,
+      "title": "Frozen",
+      "printed_page": 46,
+      "leaf": true,
+      "status": "outside",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "5.19.6",
+      "pdf_page": 56,
+      "title": "Storms",
+      "printed_page": 46,
+      "leaf": true,
+      "status": "outside",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "5.19.7",
+      "pdf_page": 56,
+      "title": "Ice",
+      "printed_page": 46,
+      "leaf": true,
+      "status": "outside",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "5.20",
+      "pdf_page": 56,
+      "title": "The Research Mechanism",
+      "printed_page": 46,
+      "leaf": true,
+      "status": "analogue",
+      "gdd_ids": [
+        "R-TECH-01",
+        "R-TECH-02"
+      ],
+      "note": "Вместо исследовательских вложений SC — поколения по датам и покупаемые сценарные ускорения."
+    },
+    {
+      "section": "5.21",
+      "pdf_page": 57,
+      "title": "Manual Upgrades",
+      "printed_page": 47,
+      "leaf": true,
+      "status": "outside",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "5.22",
+      "pdf_page": 58,
+      "title": "Automatic Upgrades",
+      "printed_page": 48,
+      "leaf": true,
+      "status": "analogue",
+      "gdd_ids": [
+        "R-TECH-01",
+        "R-TECH-02"
+      ],
+      "note": "Вместо исследовательских вложений SC — поколения по датам и покупаемые сценарные ускорения."
+    },
+    {
+      "section": "5.23",
+      "pdf_page": 58,
+      "title": "Automatic Industrial Mobilization",
+      "printed_page": 48,
+      "leaf": true,
+      "status": "outside",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "5.24",
+      "pdf_page": 58,
+      "title": "Military Production",
+      "printed_page": 48,
+      "leaf": true,
+      "status": "analogue",
+      "gdd_ids": [
+        "R-ECO-02",
+        "R-ECO-03"
+      ],
+      "note": "Покупки с задержкой два хода и жёстким лимитом резерва; промышленный цикл SC не нужен."
+    },
+    {
+      "section": "5.25",
+      "pdf_page": 59,
+      "title": "Further Gameplay Tips",
+      "printed_page": 49,
+      "leaf": true,
+      "status": "reference",
+      "gdd_ids": [],
+      "note": "Обзор, советы, пример или поддержка; не самостоятельная механика для реализации."
+    },
+    {
+      "section": "5.26",
+      "pdf_page": 59,
+      "title": "Ending a Turn",
+      "printed_page": 49,
+      "leaf": true,
+      "status": "analogue",
+      "gdd_ids": [
+        "R-TURN-01"
+      ],
+      "note": "Цикл фаз и завершение хода реализованы."
+    },
+    {
+      "section": "5.27",
+      "pdf_page": 59,
+      "title": "Saving a Game",
+      "printed_page": 49,
+      "leaf": true,
+      "status": "analogue",
+      "gdd_ids": [
+        "R-UI-05"
+      ],
+      "note": "Сохранение журналом команд, восстановление и выход в меню есть; автосохранение после каждого действия."
+    },
+    {
+      "section": "5.28",
+      "pdf_page": 59,
+      "title": "Exiting the Game",
+      "printed_page": 49,
+      "leaf": true,
+      "status": "analogue",
+      "gdd_ids": [
+        "R-UI-05"
+      ],
+      "note": "Сохранение журналом команд, восстановление и выход в меню есть; автосохранение после каждого действия."
+    },
+    {
+      "section": "5.29",
+      "pdf_page": 59,
+      "title": "Winning the Game",
+      "printed_page": 49,
+      "leaf": true,
+      "status": "analogue",
+      "gdd_ids": [
+        "R-NM-02"
+      ],
+      "note": "Победа по NM, очкам, целям, выходам и дате; условия свои для коротких сценариев."
+    },
+    {
+      "section": "5.30",
+      "pdf_page": 59,
+      "title": "Support",
+      "printed_page": 49,
+      "leaf": true,
+      "status": "reference",
+      "gdd_ids": [],
+      "note": "Обзор, советы, пример или поддержка; не самостоятельная механика для реализации."
+    },
+    {
+      "section": "6.1",
+      "pdf_page": 60,
+      "title": "Basics",
+      "printed_page": 50,
+      "leaf": false,
+      "content_status": "outside",
+      "status": "heading",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "6.1.1",
+      "pdf_page": 60,
+      "title": "Deployment Phase",
+      "printed_page": 50,
+      "leaf": true,
+      "status": "outside",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "6.1.2",
+      "pdf_page": 60,
+      "title": "Turn Activities",
+      "printed_page": 50,
+      "leaf": true,
+      "status": "analogue",
+      "gdd_ids": [
+        "R-TURN-01"
+      ],
+      "note": "Цикл фаз и завершение хода реализованы."
+    },
+    {
+      "section": "6.1.3",
+      "pdf_page": 60,
+      "title": "Turn Lengths",
+      "printed_page": 50,
+      "leaf": true,
+      "status": "analogue",
+      "gdd_ids": [
+        "R-SCALE-01",
+        "R-TURN-02"
+      ],
+      "note": "Наш фиксированный ход 12 часов, SC-календарь не переносим."
+    },
+    {
+      "section": "6.1.4",
+      "pdf_page": 60,
+      "title": "Visibility",
+      "printed_page": 50,
+      "leaf": true,
+      "status": "planned",
+      "gdd_ids": [
+        "R-MODE-01"
+      ],
+      "note": "Стратегическая видимость/разведка — этап 6; сейчас полное состояние открыто."
+    },
+    {
+      "section": "6.1.5",
+      "pdf_page": 60,
+      "title": "Air Reconnaissance Missions",
+      "printed_page": 50,
+      "leaf": true,
+      "status": "planned",
+      "gdd_ids": [
+        "R-MODE-01"
+      ],
+      "note": "Стратегическая видимость/разведка — этап 6; сейчас полное состояние открыто."
+    },
+    {
+      "section": "6.2",
+      "pdf_page": 61,
+      "title": "Moving Units",
+      "printed_page": 51,
+      "leaf": false,
+      "content_status": "outside",
+      "status": "heading",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "6.2.1",
+      "pdf_page": 61,
+      "title": "Indicator Sprites",
+      "printed_page": 51,
+      "leaf": true,
+      "status": "partial",
+      "gdd_ids": [
+        "R-UI-04",
+        "R-UI-05"
+      ],
+      "note": "Базовые команды/клавиши/маркеры есть; см. отдельный реестр 33 UI-пунктов, это не новые 33 обязательных правила."
+    },
+    {
+      "section": "6.2.2",
+      "pdf_page": 61,
+      "title": "Sleep Mode",
+      "printed_page": 51,
+      "leaf": true,
+      "status": "candidate",
+      "gdd_ids": [
+        "R-AIR-02",
+        "R-UI-05"
+      ],
+      "note": "Сон/режимы истребителей отсутствуют; часть предложений старого SC-аудита, не самостоятельное требование текущего GDD."
+    },
+    {
+      "section": "6.2.3",
+      "pdf_page": 61,
+      "title": "Dynamic Movement",
+      "printed_page": 51,
+      "leaf": true,
+      "status": "partial",
+      "gdd_ids": [
+        "R-MOVE-04",
+        "R-COMBAT-04"
+      ],
+      "note": "Танковый цикл движение-удар-движение есть. Шаг артиллерии после выстрела — отдельное отложенное предложение SC #29."
+    },
+    {
+      "section": "6.2.4",
+      "pdf_page": 61,
+      "title": "Specifying Controlled Movement Paths",
+      "printed_page": 51,
+      "leaf": true,
+      "status": "partial",
+      "gdd_ids": [
+        "R-MOVE-01",
+        "R-UI-05"
+      ],
+      "note": "Ядро принимает явный путь, клиент показывает путь Dijkstra; пользовательские промежуточные точки как в SC не выделены в UI."
+    },
+    {
+      "section": "6.2.5",
+      "pdf_page": 61,
+      "title": "Unit Spotting Ranges During Movement",
+      "printed_page": 51,
+      "leaf": true,
+      "status": "planned",
+      "gdd_ids": [
+        "R-MODE-01"
+      ],
+      "note": "Стратегическая видимость/разведка — этап 6; сейчас полное состояние открыто."
+    },
+    {
+      "section": "6.2.6",
+      "pdf_page": 62,
+      "title": "Surprise Contact",
+      "printed_page": 52,
+      "leaf": true,
+      "status": "candidate",
+      "gdd_ids": [
+        "R-MODE-01"
+      ],
+      "note": "Внезапная встреча/автоматическая атака со специальным бонусом SC не следует автоматически из нашего тумана; нужно решение дизайнера."
+    },
+    {
+      "section": "6.2.7",
+      "pdf_page": 62,
+      "title": "Zones of Control",
+      "printed_page": 52,
+      "leaf": true,
+      "status": "analogue",
+      "gdd_ids": [
+        "R-MOVE-03",
+        "R-MOVE-07"
+      ],
+      "note": "Наш ZOC останавливает движение; после прорыва — налог AP. Это принятое отличие от постоянного налога SC."
+    },
+    {
+      "section": "6.2.8",
+      "pdf_page": 63,
+      "title": "Surprise Encounters",
+      "printed_page": 53,
+      "leaf": true,
+      "status": "candidate",
+      "gdd_ids": [
+        "R-MODE-01"
+      ],
+      "note": "Внезапная встреча/автоматическая атака со специальным бонусом SC не следует автоматически из нашего тумана; нужно решение дизайнера."
+    },
+    {
+      "section": "6.3",
+      "pdf_page": 63,
+      "title": "Land Movement",
+      "printed_page": 53,
+      "leaf": false,
+      "content_status": "outside",
+      "status": "heading",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "6.3.1",
+      "pdf_page": 63,
+      "title": "Regular Movement",
+      "printed_page": 53,
+      "leaf": true,
+      "status": "analogue",
+      "gdd_ids": [
+        "R-MOVE-01",
+        "R-MOVE-05",
+        "R-MOVE-06"
+      ],
+      "note": "Движение, переброска и контроль есть; AP, дороги и правила контроля в ZOC адаптированы."
+    },
+    {
+      "section": "6.3.2",
+      "pdf_page": 63,
+      "title": "Operational Movement",
+      "printed_page": 53,
+      "leaf": true,
+      "status": "analogue",
+      "gdd_ids": [
+        "R-MOVE-01",
+        "R-MOVE-05",
+        "R-MOVE-06"
+      ],
+      "note": "Движение, переброска и контроль есть; AP, дороги и правила контроля в ZOC адаптированы."
+    },
+    {
+      "section": "6.3.3",
+      "pdf_page": 64,
+      "title": "Forced March",
+      "printed_page": 54,
+      "leaf": true,
+      "status": "outside",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "6.3.4",
+      "pdf_page": 64,
+      "title": "Swapping Units",
+      "printed_page": 54,
+      "leaf": true,
+      "status": "candidate",
+      "gdd_ids": [
+        "R-MOVE-03",
+        "R-ECO-02"
+      ],
+      "note": "Смена двух юнитов в линии отложена до ротации ИИ; отдельной команды нет."
+    },
+    {
+      "section": "6.3.5",
+      "pdf_page": 64,
+      "title": "Airborne Drop",
+      "printed_page": 54,
+      "leaf": true,
+      "status": "planned",
+      "gdd_ids": [
+        "R-AIR-04"
+      ],
+      "note": "Наш аналог воздушного десанта — вертолётная переброска. Пока отсутствует."
+    },
+    {
+      "section": "6.3.6",
+      "pdf_page": 64,
+      "title": "The Effect of Terrain on Land Movement",
+      "printed_page": 54,
+      "leaf": true,
+      "status": "analogue",
+      "gdd_ids": [
+        "R-MOVE-01",
+        "R-MOVE-05",
+        "R-MOVE-06"
+      ],
+      "note": "Движение, переброска и контроль есть; AP, дороги и правила контроля в ZOC адаптированы."
+    },
+    {
+      "section": "6.3.7",
+      "pdf_page": 65,
+      "title": "Hex Ownership",
+      "printed_page": 55,
+      "leaf": true,
+      "status": "analogue",
+      "gdd_ids": [
+        "R-MOVE-01",
+        "R-MOVE-05",
+        "R-MOVE-06"
+      ],
+      "note": "Движение, переброска и контроль есть; AP, дороги и правила контроля в ZOC адаптированы."
+    },
+    {
+      "section": "6.4",
+      "pdf_page": 65,
+      "title": "Air Movement",
+      "printed_page": 55,
+      "leaf": false,
+      "content_status": "outside",
+      "status": "heading",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "6.4.1",
+      "pdf_page": 65,
+      "title": "Rebasing",
+      "printed_page": 55,
+      "leaf": true,
+      "status": "analogue",
+      "gdd_ids": [
+        "R-AIR-01"
+      ],
+      "note": "Перебазирование занимает всю фазу и только на свою базу; это принятая модель вместо свободы SC."
+    },
+    {
+      "section": "6.4.2",
+      "pdf_page": 65,
+      "title": "Operational Movement",
+      "printed_page": 55,
+      "leaf": true,
+      "status": "analogue",
+      "gdd_ids": [
+        "R-AIR-01"
+      ],
+      "note": "Базы вне карты и перебазирование дают нужную смену фронта; отдельный платный Operate авиации SC не обязателен."
+    },
+    {
+      "section": "6.5",
+      "pdf_page": 66,
+      "title": "Naval Movement",
+      "printed_page": 56,
+      "leaf": false,
+      "content_status": "outside",
+      "status": "heading",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "6.5.1",
+      "pdf_page": 66,
+      "title": "Regular Movement",
+      "printed_page": 56,
+      "leaf": true,
+      "status": "planned",
+      "gdd_ids": [
+        "R-NAV-01"
+      ],
+      "note": "Нужен ограниченный флот ракетных катеров; большие морские системы SC не входят в проект."
+    },
+    {
+      "section": "6.5.2",
+      "pdf_page": 66,
+      "title": "Naval Cruise",
+      "printed_page": 56,
+      "leaf": true,
+      "status": "outside",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "6.5.3",
+      "pdf_page": 66,
+      "title": "Surface Raiders",
+      "printed_page": 56,
+      "leaf": true,
+      "status": "outside",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "6.5.4",
+      "pdf_page": 66,
+      "title": "Transport Movement",
+      "printed_page": 56,
+      "leaf": true,
+      "status": "planned",
+      "gdd_ids": [
+        "R-NAV-04"
+      ],
+      "note": "Транспорт/высадка нужны нашему GDD, реализации в GameState нет. Дальние десанты SC не требуются."
+    },
+    {
+      "section": "6.5.5",
+      "pdf_page": 67,
+      "title": "Amphibious Transports",
+      "printed_page": 57,
+      "leaf": true,
+      "status": "planned",
+      "gdd_ids": [
+        "R-NAV-04"
+      ],
+      "note": "Транспорт/высадка нужны нашему GDD, реализации в GameState нет. Дальние десанты SC не требуются."
+    },
+    {
+      "section": "6.5.6",
+      "pdf_page": 68,
+      "title": "Amphibious Transports (Long Range)",
+      "printed_page": 58,
+      "leaf": true,
+      "status": "outside",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "6.5.7",
+      "pdf_page": 69,
+      "title": "Submarine Movement",
+      "printed_page": 59,
+      "leaf": true,
+      "status": "outside",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "6.6",
+      "pdf_page": 70,
+      "title": "Combat",
+      "printed_page": 60,
+      "leaf": false,
+      "content_status": "outside",
+      "status": "heading",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "6.6.1",
+      "pdf_page": 70,
+      "title": "Combat Predictions",
+      "printed_page": 60,
+      "leaf": true,
+      "status": "analogue",
+      "gdd_ids": [
+        "R-COMBAT-03",
+        "R-UI-04"
+      ],
+      "note": "Прогноз и фактический результат есть; числа над фишками — отдельное предложение UI, не отсутствие боевого расчёта."
+    },
+    {
+      "section": "6.6.2",
+      "pdf_page": 70,
+      "title": "Combat Results",
+      "printed_page": 60,
+      "leaf": true,
+      "status": "analogue",
+      "gdd_ids": [
+        "R-COMBAT-03",
+        "R-UI-04"
+      ],
+      "note": "Прогноз и фактический результат есть; числа над фишками — отдельное предложение UI, не отсутствие боевого расчёта."
+    },
+    {
+      "section": "6.6.3",
+      "pdf_page": 70,
+      "title": "National Morale Bonus",
+      "printed_page": 60,
+      "leaf": true,
+      "status": "analogue",
+      "gdd_ids": [
+        "R-NM-01"
+      ],
+      "note": "Есть NM стороны, цена уничтожения и сценарные эффекты; формулы намеренно отличаются от SC."
+    },
+    {
+      "section": "6.6.4",
+      "pdf_page": 70,
+      "title": "Land Combat",
+      "printed_page": 60,
+      "leaf": true,
+      "status": "analogue",
+      "gdd_ids": [
+        "R-COMBAT-02",
+        "R-COMBAT-03"
+      ],
+      "note": "Своя биномиальная формула и прогноз 10/90; +/-1 из SC оставлен экспериментом sim, а не правилом игры."
+    },
+    {
+      "section": "6.6.5",
+      "pdf_page": 72,
+      "title": "Air Combat",
+      "printed_page": 62,
+      "leaf": true,
+      "status": "partial",
+      "gdd_ids": [
+        "R-AIR-01",
+        "R-AIR-02",
+        "R-AIR-03"
+      ],
+      "note": "Удары, перехват, эскорт и перебазирование есть; зонтики и подавление ПВО не интегрированы."
+    },
+    {
+      "section": "6.6.6",
+      "pdf_page": 75,
+      "title": "Naval Combat",
+      "printed_page": 65,
+      "leaf": true,
+      "status": "planned",
+      "gdd_ids": [
+        "R-NAV-01"
+      ],
+      "note": "Нужен ограниченный флот ракетных катеров; большие морские системы SC не входят в проект."
+    },
+    {
+      "section": "6.6.7",
+      "pdf_page": 77,
+      "title": "Purchasing Units",
+      "printed_page": 67,
+      "leaf": true,
+      "status": "partial",
+      "gdd_ids": [
+        "R-ECO-02",
+        "R-EVT-01"
+      ],
+      "note": "Наземные покупки/прибытия есть; воздушные и морские покупки/подкрепления пока отвергаются."
+    },
+    {
+      "section": "6.6.8",
+      "pdf_page": 78,
+      "title": "New Unit Arrivals",
+      "printed_page": 68,
+      "leaf": true,
+      "status": "partial",
+      "gdd_ids": [
+        "R-ECO-02",
+        "R-EVT-01"
+      ],
+      "note": "Наземные покупки/прибытия есть; воздушные и морские покупки/подкрепления пока отвергаются."
+    },
+    {
+      "section": "6.6.9",
+      "pdf_page": 79,
+      "title": "Reinforcing Units",
+      "printed_page": 69,
+      "leaf": true,
+      "status": "analogue",
+      "gdd_ids": [
+        "R-ECO-02"
+      ],
+      "note": "Пополнение есть. Цена 10% вместо SC 5% остаётся текущим решением; предложение 5–7% не равно незавершённому коду."
+    },
+    {
+      "section": "6.6.10",
+      "pdf_page": 80,
+      "title": "Upgrading Units",
+      "printed_page": 70,
+      "leaf": true,
+      "status": "outside",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "6.6.11",
+      "pdf_page": 80,
+      "title": "Renaming Units",
+      "printed_page": 70,
+      "leaf": true,
+      "status": "outside",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "6.6.12",
+      "pdf_page": 81,
+      "title": "Disbanding Units",
+      "printed_page": 71,
+      "leaf": true,
+      "status": "outside",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "7.1",
+      "pdf_page": 82,
+      "title": "General Unit Characteristics",
+      "printed_page": 72,
+      "leaf": true,
+      "status": "outside",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "7.2",
+      "pdf_page": 82,
+      "title": "Combat Target Values",
+      "printed_page": 72,
+      "leaf": true,
+      "status": "outside",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "7.3",
+      "pdf_page": 82,
+      "title": "Headquarters Attachments",
+      "printed_page": 72,
+      "leaf": false,
+      "content_status": "outside",
+      "status": "heading",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "7.3.1",
+      "pdf_page": 83,
+      "title": "HQ Modes",
+      "printed_page": 73,
+      "leaf": true,
+      "status": "analogue",
+      "gdd_ids": [
+        "R-HQ-01"
+      ],
+      "note": "Автоприкрепление и ручная булавка со следующей фазы; точные режимы SC заменены нашими правилами."
+    },
+    {
+      "section": "7.4",
+      "pdf_page": 83,
+      "title": "Building Fortifications",
+      "printed_page": 73,
+      "leaf": true,
+      "status": "planned",
+      "gdd_ids": [
+        "R-MOVE-02"
+      ],
+      "note": "Мосты инженеров готовы; строительство укреплений отдельно запланировано GDD §18, этап 5, команды пока нет."
+    },
+    {
+      "section": "7.5",
+      "pdf_page": 84,
+      "title": "Surrendering Nations",
+      "printed_page": 74,
+      "leaf": false,
+      "content_status": "outside",
+      "status": "heading",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "7.5.1",
+      "pdf_page": 84,
+      "title": "Surrendering Due to Losing the Capital",
+      "printed_page": 74,
+      "leaf": true,
+      "status": "outside",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "7.5.2",
+      "pdf_page": 84,
+      "title": "Alternative Capitals",
+      "printed_page": 74,
+      "leaf": true,
+      "status": "outside",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "7.5.3",
+      "pdf_page": 85,
+      "title": "Fighting on from Exile",
+      "printed_page": 75,
+      "leaf": true,
+      "status": "outside",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "7.5.4",
+      "pdf_page": 85,
+      "title": "Liberating Capitals",
+      "printed_page": 75,
+      "leaf": true,
+      "status": "outside",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "7.5.5",
+      "pdf_page": 85,
+      "title": "Surrendering Due to Low National Morale",
+      "printed_page": 75,
+      "leaf": true,
+      "status": "analogue",
+      "gdd_ids": [
+        "R-NM-01",
+        "R-NM-02"
+      ],
+      "note": "Низкий NM заканчивает игру стороны; независимое перемирие нации сценария 7 ещё требует расширения."
+    },
+    {
+      "section": "7.6",
+      "pdf_page": 85,
+      "title": "Capturing Enemy Supply Centers",
+      "printed_page": 75,
+      "leaf": true,
+      "status": "analogue",
+      "gdd_ids": [
+        "R-SUP-01",
+        "R-MOVE-06"
+      ],
+      "note": "Захват источника и восстановление его значения реализованы."
+    },
+    {
+      "section": "7.7",
+      "pdf_page": 85,
+      "title": "Plunder",
+      "printed_page": 75,
+      "leaf": true,
+      "status": "outside",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "7.8",
+      "pdf_page": 85,
+      "title": "Victory Conditions",
+      "printed_page": 75,
+      "leaf": true,
+      "status": "analogue",
+      "gdd_ids": [
+        "R-NM-02"
+      ],
+      "note": "Победа по NM, очкам, целям, выходам и дате; условия свои для коротких сценариев."
+    },
+    {
+      "section": "7.9",
+      "pdf_page": 86,
+      "title": "The Game Engine’s Turn Sequence",
+      "printed_page": 76,
+      "leaf": true,
+      "status": "analogue",
+      "gdd_ids": [
+        "R-TURN-01"
+      ],
+      "note": "Своя детерминированная последовательность фаз; погода/дипломатия/партизаны SC отсутствуют намеренно."
+    },
+    {
+      "section": "7.10",
+      "pdf_page": 86,
+      "title": "Collecting Military Production Points",
+      "printed_page": 76,
+      "leaf": true,
+      "status": "analogue",
+      "gdd_ids": [
+        "R-ECO-01"
+      ],
+      "note": "Единый MPP, доход источников/сценария и расписание; индустрия и мобилизация SC не нужны."
+    },
+    {
+      "section": "7.11",
+      "pdf_page": 86,
+      "title": "Supply",
+      "printed_page": 76,
+      "leaf": true,
+      "status": "analogue",
+      "gdd_ids": [
+        "R-SUP-01",
+        "R-SUP-02",
+        "R-SUP-05"
+      ],
+      "note": "Ресурсы сведены к источникам 0–10 и Dijkstra по AP; захват, изоляция и осада есть, точное копирование типов ресурсов SC не требуется."
+    },
+    {
+      "section": "7.12",
+      "pdf_page": 87,
+      "title": "Resource Definitions",
+      "printed_page": 77,
+      "leaf": false,
+      "content_status": "outside",
+      "status": "heading",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "7.12.1",
+      "pdf_page": 87,
+      "title": "Major Powers’ Capitals",
+      "printed_page": 77,
+      "leaf": true,
+      "status": "analogue",
+      "gdd_ids": [
+        "R-SUP-01",
+        "R-SUP-02",
+        "R-SUP-05"
+      ],
+      "note": "Ресурсы сведены к источникам 0–10 и Dijkstra по AP; захват, изоляция и осада есть, точное копирование типов ресурсов SC не требуется."
+    },
+    {
+      "section": "7.12.2",
+      "pdf_page": 87,
+      "title": "Industrial Centers",
+      "printed_page": 77,
+      "leaf": true,
+      "status": "analogue",
+      "gdd_ids": [
+        "R-SUP-01",
+        "R-SUP-02",
+        "R-SUP-05"
+      ],
+      "note": "Ресурсы сведены к источникам 0–10 и Dijkstra по AP; захват, изоляция и осада есть, точное копирование типов ресурсов SC не требуется."
+    },
+    {
+      "section": "7.12.3",
+      "pdf_page": 88,
+      "title": "Primary Supply Centers",
+      "printed_page": 78,
+      "leaf": true,
+      "status": "analogue",
+      "gdd_ids": [
+        "R-SUP-01",
+        "R-SUP-02",
+        "R-SUP-05"
+      ],
+      "note": "Ресурсы сведены к источникам 0–10 и Dijkstra по AP; захват, изоляция и осада есть, точное копирование типов ресурсов SC не требуется."
+    },
+    {
+      "section": "7.12.4",
+      "pdf_page": 88,
+      "title": "Secondary Supply Centers",
+      "printed_page": 78,
+      "leaf": true,
+      "status": "analogue",
+      "gdd_ids": [
+        "R-SUP-01",
+        "R-SUP-02",
+        "R-SUP-05"
+      ],
+      "note": "Ресурсы сведены к источникам 0–10 и Dijkstra по AP; захват, изоляция и осада есть, точное копирование типов ресурсов SC не требуется."
+    },
+    {
+      "section": "7.12.5",
+      "pdf_page": 88,
+      "title": "Minor’s Capitals",
+      "printed_page": 78,
+      "leaf": true,
+      "status": "analogue",
+      "gdd_ids": [
+        "R-SUP-01",
+        "R-SUP-02",
+        "R-SUP-05"
+      ],
+      "note": "Ресурсы сведены к источникам 0–10 и Dijkstra по AP; захват, изоляция и осада есть, точное копирование типов ресурсов SC не требуется."
+    },
+    {
+      "section": "7.12.6",
+      "pdf_page": 88,
+      "title": "Key Resources",
+      "printed_page": 78,
+      "leaf": true,
+      "status": "analogue",
+      "gdd_ids": [
+        "R-SUP-01",
+        "R-SUP-02",
+        "R-SUP-05"
+      ],
+      "note": "Ресурсы сведены к источникам 0–10 и Dijkstra по AP; захват, изоляция и осада есть, точное копирование типов ресурсов SC не требуется."
+    },
+    {
+      "section": "7.13",
+      "pdf_page": 88,
+      "title": "Maximum Resource Strengths",
+      "printed_page": 78,
+      "leaf": false,
+      "content_status": "outside",
+      "status": "heading",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "7.13.1",
+      "pdf_page": 88,
+      "title": "Connected Resources",
+      "printed_page": 78,
+      "leaf": true,
+      "status": "analogue",
+      "gdd_ids": [
+        "R-SUP-01",
+        "R-SUP-02",
+        "R-SUP-05"
+      ],
+      "note": "Ресурсы сведены к источникам 0–10 и Dijkstra по AP; захват, изоляция и осада есть, точное копирование типов ресурсов SC не требуется."
+    },
+    {
+      "section": "7.13.2",
+      "pdf_page": 88,
+      "title": "Unconnected Resources",
+      "printed_page": 78,
+      "leaf": true,
+      "status": "analogue",
+      "gdd_ids": [
+        "R-SUP-01",
+        "R-SUP-02",
+        "R-SUP-05"
+      ],
+      "note": "Ресурсы сведены к источникам 0–10 и Dijkstra по AP; захват, изоляция и осада есть, точное копирование типов ресурсов SC не требуется."
+    },
+    {
+      "section": "7.13.3",
+      "pdf_page": 88,
+      "title": "Captured but Unconnected Enemy Resources",
+      "printed_page": 78,
+      "leaf": true,
+      "status": "analogue",
+      "gdd_ids": [
+        "R-SUP-01",
+        "R-SUP-02",
+        "R-SUP-05"
+      ],
+      "note": "Ресурсы сведены к источникам 0–10 и Dijkstra по AP; захват, изоляция и осада есть, точное копирование типов ресурсов SC не требуется."
+    },
+    {
+      "section": "7.14",
+      "pdf_page": 88,
+      "title": "Supply Connection Rules",
+      "printed_page": 78,
+      "leaf": true,
+      "status": "analogue",
+      "gdd_ids": [
+        "R-SUP-01",
+        "R-SUP-02",
+        "R-SUP-05"
+      ],
+      "note": "Ресурсы сведены к источникам 0–10 и Dijkstra по AP; захват, изоляция и осада есть, точное копирование типов ресурсов SC не требуется."
+    },
+    {
+      "section": "7.15",
+      "pdf_page": 89,
+      "title": "Besieging Resources",
+      "printed_page": 79,
+      "leaf": true,
+      "status": "analogue",
+      "gdd_ids": [
+        "R-SUP-01",
+        "R-SUP-02",
+        "R-SUP-05"
+      ],
+      "note": "Ресурсы сведены к источникам 0–10 и Dijkstra по AP; захват, изоляция и осада есть, точное копирование типов ресурсов SC не требуется."
+    },
+    {
+      "section": "7.16",
+      "pdf_page": 89,
+      "title": "Port Supply to Land Forces",
+      "printed_page": 79,
+      "leaf": true,
+      "status": "planned",
+      "gdd_ids": [
+        "R-NAV-02"
+      ],
+      "note": "Снабжение порта обобщено источником; блокада кораблём и соответствующий доход ещё отсутствуют."
+    },
+    {
+      "section": "7.17",
+      "pdf_page": 89,
+      "title": "Artillery with Zero Supply",
+      "printed_page": 79,
+      "leaf": true,
+      "status": "outside",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "7.18",
+      "pdf_page": 89,
+      "title": "Damage to Resources",
+      "printed_page": 79,
+      "leaf": true,
+      "status": "partial",
+      "gdd_ids": [
+        "R-SUP-01",
+        "R-AIR-02"
+      ],
+      "note": "Осада/захват источника есть; авиаудар по ресурсу и его ремонт после такого удара ещё не реализованы."
+    },
+    {
+      "section": "7.19",
+      "pdf_page": 89,
+      "title": "Resource MPP Values",
+      "printed_page": 79,
+      "leaf": true,
+      "status": "analogue",
+      "gdd_ids": [
+        "R-ECO-01"
+      ],
+      "note": "Единый MPP, доход источников/сценария и расписание; индустрия и мобилизация SC не нужны."
+    },
+    {
+      "section": "7.20",
+      "pdf_page": 90,
+      "title": "Industrial Modifier",
+      "printed_page": 80,
+      "leaf": true,
+      "status": "outside",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "7.21",
+      "pdf_page": 90,
+      "title": "Unit Production",
+      "printed_page": 80,
+      "leaf": true,
+      "status": "analogue",
+      "gdd_ids": [
+        "R-ECO-02",
+        "R-ECO-03"
+      ],
+      "note": "Покупки с задержкой два хода и жёстким лимитом резерва; промышленный цикл SC не нужен."
+    },
+    {
+      "section": "7.22",
+      "pdf_page": 91,
+      "title": "Reinforcement Costs",
+      "printed_page": 81,
+      "leaf": true,
+      "status": "analogue",
+      "gdd_ids": [
+        "R-ECO-02"
+      ],
+      "note": "Пополнение есть. Цена 10% вместо SC 5% остаётся текущим решением; предложение 5–7% не равно незавершённому коду."
+    },
+    {
+      "section": "7.23",
+      "pdf_page": 91,
+      "title": "The Cost of Upgrading Units",
+      "printed_page": 81,
+      "leaf": true,
+      "status": "outside",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "7.24",
+      "pdf_page": 92,
+      "title": "Decision Events",
+      "printed_page": 82,
+      "leaf": true,
+      "status": "planned",
+      "gdd_ids": [
+        "R-EVT-01"
+      ],
+      "note": "Общий движок событий есть; ограниченный выбор игрока нужен сценарию 7. Полная система всех решений кампании SC не планируется."
+    },
+    {
+      "section": "7.25",
+      "pdf_page": 92,
+      "title": "Factors Influencing Combat Effectiveness",
+      "printed_page": 82,
+      "leaf": false,
+      "content_status": "outside",
+      "status": "heading",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "7.25.1",
+      "pdf_page": 92,
+      "title": "Experience",
+      "printed_page": 82,
+      "leaf": true,
+      "status": "analogue",
+      "gdd_ids": [
+        "R-UNIT-01",
+        "R-UNIT-02",
+        "R-SUP-03",
+        "R-HQ-02",
+        "R-COMBAT-02"
+      ],
+      "note": "Используем свои готовность, мораль, усталость, окопы и полосы снабжения. Различия формул не означают недописанное правило."
+    },
+    {
+      "section": "7.25.2",
+      "pdf_page": 92,
+      "title": "Factors Influencing Action Points",
+      "printed_page": 82,
+      "leaf": true,
+      "status": "analogue",
+      "gdd_ids": [
+        "R-UNIT-01",
+        "R-UNIT-02",
+        "R-SUP-03",
+        "R-HQ-02",
+        "R-COMBAT-02"
+      ],
+      "note": "Используем свои готовность, мораль, усталость, окопы и полосы снабжения. Различия формул не означают недописанное правило."
+    },
+    {
+      "section": "7.25.3",
+      "pdf_page": 93,
+      "title": "Roads and Supply",
+      "printed_page": 83,
+      "leaf": true,
+      "status": "analogue",
+      "gdd_ids": [
+        "R-SUP-01",
+        "R-SUP-02",
+        "R-SUP-05"
+      ],
+      "note": "Ресурсы сведены к источникам 0–10 и Dijkstra по AP; захват, изоляция и осада есть, точное копирование типов ресурсов SC не требуется."
+    },
+    {
+      "section": "7.25.4",
+      "pdf_page": 93,
+      "title": "HQ Supply",
+      "printed_page": 83,
+      "leaf": true,
+      "status": "analogue",
+      "gdd_ids": [
+        "R-SUP-02",
+        "R-SUP-06"
+      ],
+      "note": "Бонус штаба есть; альтернативный штаб-узел реализован, но выключен. Цепочки штабов SC не копируем буквально."
+    },
+    {
+      "section": "7.25.5",
+      "pdf_page": 93,
+      "title": "The Supply Value of Low Strength HQs",
+      "printed_page": 83,
+      "leaf": true,
+      "status": "analogue",
+      "gdd_ids": [
+        "R-SUP-02",
+        "R-SUP-06"
+      ],
+      "note": "Бонус штаба есть; альтернативный штаб-узел реализован, но выключен. Цепочки штабов SC не копируем буквально."
+    },
+    {
+      "section": "7.25.6",
+      "pdf_page": 93,
+      "title": "Reinforcing HQs",
+      "printed_page": 83,
+      "leaf": true,
+      "status": "analogue",
+      "gdd_ids": [
+        "R-HQ-01",
+        "R-HQ-02"
+      ],
+      "note": "Штабы по соединениям и нациям, фиксированный рейтинг; пополнение по нашим общим правилам."
+    },
+    {
+      "section": "7.25.7",
+      "pdf_page": 93,
+      "title": "Raising HQs’ Minimum Supply Value",
+      "printed_page": 83,
+      "leaf": true,
+      "status": "analogue",
+      "gdd_ids": [
+        "R-SUP-02",
+        "R-SUP-06"
+      ],
+      "note": "Бонус штаба есть; альтернативный штаб-узел реализован, но выключен. Цепочки штабов SC не копируем буквально."
+    },
+    {
+      "section": "7.25.8",
+      "pdf_page": 93,
+      "title": "Boosting HQ Supply",
+      "printed_page": 83,
+      "leaf": true,
+      "status": "analogue",
+      "gdd_ids": [
+        "R-SUP-02",
+        "R-SUP-06"
+      ],
+      "note": "Бонус штаба есть; альтернативный штаб-узел реализован, но выключен. Цепочки штабов SC не копируем буквально."
+    },
+    {
+      "section": "7.26",
+      "pdf_page": 94,
+      "title": "HQ Supply During Amphibious Invasions",
+      "printed_page": 84,
+      "leaf": true,
+      "status": "outside",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "7.27",
+      "pdf_page": 94,
+      "title": "Naval Supply",
+      "printed_page": 84,
+      "leaf": true,
+      "status": "outside",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "7.28",
+      "pdf_page": 94,
+      "title": "Supply and Action Points Table",
+      "printed_page": 84,
+      "leaf": true,
+      "status": "analogue",
+      "gdd_ids": [
+        "R-UNIT-01",
+        "R-UNIT-02",
+        "R-SUP-03",
+        "R-HQ-02",
+        "R-COMBAT-02"
+      ],
+      "note": "Используем свои готовность, мораль, усталость, окопы и полосы снабжения. Различия формул не означают недописанное правило."
+    },
+    {
+      "section": "7.29",
+      "pdf_page": 94,
+      "title": "Supply & Reinforcements Table",
+      "printed_page": 84,
+      "leaf": false,
+      "content_status": "outside",
+      "status": "heading",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "7.29.1",
+      "pdf_page": 95,
+      "title": "Reinforcing Damaged HQs",
+      "printed_page": 85,
+      "leaf": true,
+      "status": "analogue",
+      "gdd_ids": [
+        "R-UNIT-01",
+        "R-UNIT-02",
+        "R-SUP-03",
+        "R-HQ-02",
+        "R-COMBAT-02"
+      ],
+      "note": "Используем свои готовность, мораль, усталость, окопы и полосы снабжения. Различия формул не означают недописанное правило."
+    },
+    {
+      "section": "7.29.2",
+      "pdf_page": 95,
+      "title": "Low Supply & Attrition Losses",
+      "printed_page": 85,
+      "leaf": true,
+      "status": "analogue",
+      "gdd_ids": [
+        "R-UNIT-01",
+        "R-UNIT-02",
+        "R-SUP-03",
+        "R-HQ-02",
+        "R-COMBAT-02"
+      ],
+      "note": "Используем свои готовность, мораль, усталость, окопы и полосы снабжения. Различия формул не означают недописанное правило."
+    },
+    {
+      "section": "7.30",
+      "pdf_page": 95,
+      "title": "Morale and Readiness",
+      "printed_page": 85,
+      "leaf": false,
+      "content_status": "outside",
+      "status": "heading",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "7.30.1",
+      "pdf_page": 95,
+      "title": "Morale Losses Due To Movement",
+      "printed_page": 85,
+      "leaf": true,
+      "status": "analogue",
+      "gdd_ids": [
+        "R-UNIT-01",
+        "R-UNIT-02",
+        "R-SUP-03",
+        "R-HQ-02",
+        "R-COMBAT-02"
+      ],
+      "note": "Используем свои готовность, мораль, усталость, окопы и полосы снабжения. Различия формул не означают недописанное правило."
+    },
+    {
+      "section": "7.30.2",
+      "pdf_page": 96,
+      "title": "Unit Attacks Inflicting Morale Losses",
+      "printed_page": 86,
+      "leaf": true,
+      "status": "analogue",
+      "gdd_ids": [
+        "R-UNIT-01",
+        "R-UNIT-02",
+        "R-SUP-03",
+        "R-HQ-02",
+        "R-COMBAT-02"
+      ],
+      "note": "Используем свои готовность, мораль, усталость, окопы и полосы снабжения. Различия формул не означают недописанное правило."
+    },
+    {
+      "section": "7.30.3",
+      "pdf_page": 96,
+      "title": "Morale Bonuses and Penalties",
+      "printed_page": 86,
+      "leaf": true,
+      "status": "analogue",
+      "gdd_ids": [
+        "R-NM-01"
+      ],
+      "note": "Есть NM стороны, цена уничтожения и сценарные эффекты; формулы намеренно отличаются от SC."
+    },
+    {
+      "section": "7.30.4",
+      "pdf_page": 96,
+      "title": "Unit Readiness and Its Effect on Combat",
+      "printed_page": 86,
+      "leaf": true,
+      "status": "analogue",
+      "gdd_ids": [
+        "R-UNIT-01",
+        "R-UNIT-02",
+        "R-SUP-03",
+        "R-HQ-02",
+        "R-COMBAT-02"
+      ],
+      "note": "Используем свои готовность, мораль, усталость, окопы и полосы снабжения. Различия формул не означают недописанное правило."
+    },
+    {
+      "section": "7.30.5",
+      "pdf_page": 97,
+      "title": "The Effect of Entrenchment",
+      "printed_page": 87,
+      "leaf": true,
+      "status": "analogue",
+      "gdd_ids": [
+        "R-UNIT-01",
+        "R-UNIT-02",
+        "R-SUP-03",
+        "R-HQ-02",
+        "R-COMBAT-02"
+      ],
+      "note": "Используем свои готовность, мораль, усталость, окопы и полосы снабжения. Различия формул не означают недописанное правило."
+    },
+    {
+      "section": "7.30.6",
+      "pdf_page": 97,
+      "title": "Gaining Entrenchment",
+      "printed_page": 87,
+      "leaf": true,
+      "status": "analogue",
+      "gdd_ids": [
+        "R-UNIT-01",
+        "R-UNIT-02",
+        "R-SUP-03",
+        "R-HQ-02",
+        "R-COMBAT-02"
+      ],
+      "note": "Используем свои готовность, мораль, усталость, окопы и полосы снабжения. Различия формул не означают недописанное правило."
+    },
+    {
+      "section": "7.30.7",
+      "pdf_page": 98,
+      "title": "Combat Losses",
+      "printed_page": 88,
+      "leaf": true,
+      "status": "analogue",
+      "gdd_ids": [
+        "R-COMBAT-02",
+        "R-COMBAT-03"
+      ],
+      "note": "Своя биномиальная формула и прогноз 10/90; +/-1 из SC оставлен экспериментом sim, а не правилом игры."
+    },
+    {
+      "section": "7.30.8",
+      "pdf_page": 99,
+      "title": "Variability in the Combat Results",
+      "printed_page": 89,
+      "leaf": true,
+      "status": "analogue",
+      "gdd_ids": [
+        "R-COMBAT-02",
+        "R-COMBAT-03"
+      ],
+      "note": "Своя биномиальная формула и прогноз 10/90; +/-1 из SC оставлен экспериментом sim, а не правилом игры."
+    },
+    {
+      "section": "7.31",
+      "pdf_page": 99,
+      "title": "Supply Values",
+      "printed_page": 89,
+      "leaf": false,
+      "content_status": "outside",
+      "status": "heading",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "7.31.1",
+      "pdf_page": 99,
+      "title": "Land/Air Units",
+      "printed_page": 89,
+      "leaf": true,
+      "status": "analogue",
+      "gdd_ids": [
+        "R-SUP-01",
+        "R-SUP-02",
+        "R-SUP-05"
+      ],
+      "note": "Ресурсы сведены к источникам 0–10 и Dijkstra по AP; захват, изоляция и осада есть, точное копирование типов ресурсов SC не требуется."
+    },
+    {
+      "section": "7.31.2",
+      "pdf_page": 99,
+      "title": "Naval Units",
+      "printed_page": 89,
+      "leaf": true,
+      "status": "outside",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "8.1",
+      "pdf_page": 100,
+      "title": "Land Units",
+      "printed_page": 90,
+      "leaf": false,
+      "content_status": "outside",
+      "status": "heading",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "8.1.1",
+      "pdf_page": 100,
+      "title": "Target Types",
+      "printed_page": 90,
+      "leaf": true,
+      "status": "analogue",
+      "gdd_ids": [
+        "R-COMBAT-01",
+        "R-UNIT-01"
+      ],
+      "note": "Классы целей и максимальная сила 10 есть."
+    },
+    {
+      "section": "8.1.2",
+      "pdf_page": 100,
+      "title": "Default Maximum Strength",
+      "printed_page": 90,
+      "leaf": true,
+      "status": "analogue",
+      "gdd_ids": [
+        "R-COMBAT-01",
+        "R-UNIT-01"
+      ],
+      "note": "Классы целей и максимальная сила 10 есть."
+    },
+    {
+      "section": "8.1.3",
+      "pdf_page": 100,
+      "title": "Headquarters",
+      "printed_page": 90,
+      "leaf": true,
+      "status": "analogue",
+      "gdd_ids": [
+        "R-HQ-01",
+        "R-HQ-02"
+      ],
+      "note": "Штабы по соединениям и нациям, фиксированный рейтинг; пополнение по нашим общим правилам."
+    },
+    {
+      "section": "8.1.4",
+      "pdf_page": 100,
+      "title": "Garrison",
+      "printed_page": 90,
+      "leaf": true,
+      "status": "analogue",
+      "gdd_ids": [
+        "R-COMBAT-01",
+        "R-COMBAT-04",
+        "R-TECH-01"
+      ],
+      "note": "Классы/роли сведены к бригадному масштабу, укреплению как местности и вариантам моделей; это не список недостающих WWII-юнитов."
+    },
+    {
+      "section": "8.1.5",
+      "pdf_page": 100,
+      "title": "Brigade",
+      "printed_page": 90,
+      "leaf": true,
+      "status": "analogue",
+      "gdd_ids": [
+        "R-COMBAT-01",
+        "R-COMBAT-04",
+        "R-TECH-01"
+      ],
+      "note": "Классы/роли сведены к бригадному масштабу, укреплению как местности и вариантам моделей; это не список недостающих WWII-юнитов."
+    },
+    {
+      "section": "8.1.6",
+      "pdf_page": 101,
+      "title": "Division",
+      "printed_page": 91,
+      "leaf": true,
+      "status": "outside",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "8.1.7",
+      "pdf_page": 101,
+      "title": "Corps",
+      "printed_page": 91,
+      "leaf": true,
+      "status": "outside",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "8.1.8",
+      "pdf_page": 101,
+      "title": "Army",
+      "printed_page": 91,
+      "leaf": true,
+      "status": "outside",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "8.1.9",
+      "pdf_page": 101,
+      "title": "Mechanized",
+      "printed_page": 91,
+      "leaf": true,
+      "status": "analogue",
+      "gdd_ids": [
+        "R-COMBAT-01",
+        "R-COMBAT-04",
+        "R-TECH-01"
+      ],
+      "note": "Классы/роли сведены к бригадному масштабу, укреплению как местности и вариантам моделей; это не список недостающих WWII-юнитов."
+    },
+    {
+      "section": "8.1.10",
+      "pdf_page": 101,
+      "title": "Special Forces",
+      "printed_page": 91,
+      "leaf": true,
+      "status": "analogue",
+      "gdd_ids": [
+        "R-COMBAT-01",
+        "R-COMBAT-04",
+        "R-TECH-01"
+      ],
+      "note": "Классы/роли сведены к бригадному масштабу, укреплению как местности и вариантам моделей; это не список недостающих WWII-юнитов."
+    },
+    {
+      "section": "8.1.11",
+      "pdf_page": 101,
+      "title": "Engineers",
+      "printed_page": 91,
+      "leaf": true,
+      "status": "partial",
+      "gdd_ids": [
+        "R-MOVE-02"
+      ],
+      "note": "Инженеры строят мосты; укрепления — будущая добавка этапа 5."
+    },
+    {
+      "section": "8.1.12",
+      "pdf_page": 101,
+      "title": "Paratroops",
+      "printed_page": 91,
+      "leaf": true,
+      "status": "planned",
+      "gdd_ids": [
+        "R-AIR-04"
+      ],
+      "note": "Наш аналог воздушного десанта — вертолётная переброска. Пока отсутствует."
+    },
+    {
+      "section": "8.1.13",
+      "pdf_page": 101,
+      "title": "Cavalry Brigade",
+      "printed_page": 91,
+      "leaf": true,
+      "status": "outside",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "8.1.14",
+      "pdf_page": 101,
+      "title": "Cavalry Division",
+      "printed_page": 91,
+      "leaf": true,
+      "status": "outside",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "8.1.15",
+      "pdf_page": 101,
+      "title": "Cavalry Corps",
+      "printed_page": 91,
+      "leaf": true,
+      "status": "outside",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "8.1.16",
+      "pdf_page": 102,
+      "title": "Partisans",
+      "printed_page": 92,
+      "leaf": true,
+      "status": "outside",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "8.1.17",
+      "pdf_page": 102,
+      "title": "Pillbox",
+      "printed_page": 92,
+      "leaf": true,
+      "status": "analogue",
+      "gdd_ids": [
+        "R-COMBAT-01",
+        "R-COMBAT-04",
+        "R-TECH-01"
+      ],
+      "note": "Классы/роли сведены к бригадному масштабу, укреплению как местности и вариантам моделей; это не список недостающих WWII-юнитов."
+    },
+    {
+      "section": "8.1.18",
+      "pdf_page": 102,
+      "title": "Anti-Aircraft",
+      "printed_page": 92,
+      "leaf": true,
+      "status": "partial",
+      "gdd_ids": [
+        "R-AIR-03"
+      ],
+      "note": "ЗРК как класс/формула есть; стратегический зенитный зонтик не подключён к вылетам."
+    },
+    {
+      "section": "8.1.19",
+      "pdf_page": 102,
+      "title": "Rocket Artillery",
+      "printed_page": 92,
+      "leaf": true,
+      "status": "outside",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "8.1.20",
+      "pdf_page": 102,
+      "title": "Artillery and Heavy Artillery",
+      "printed_page": 92,
+      "leaf": true,
+      "status": "analogue",
+      "gdd_ids": [
+        "R-COMBAT-01",
+        "R-COMBAT-04",
+        "R-TECH-01"
+      ],
+      "note": "Классы/роли сведены к бригадному масштабу, укреплению как местности и вариантам моделей; это не список недостающих WWII-юнитов."
+    },
+    {
+      "section": "8.1.21",
+      "pdf_page": 102,
+      "title": "Rail Gun",
+      "printed_page": 92,
+      "leaf": true,
+      "status": "outside",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "8.1.22",
+      "pdf_page": 102,
+      "title": "Coastal Gun",
+      "printed_page": 92,
+      "leaf": true,
+      "status": "outside",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "8.1.23",
+      "pdf_page": 102,
+      "title": "Rockets",
+      "printed_page": 92,
+      "leaf": true,
+      "status": "outside",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "8.1.24",
+      "pdf_page": 103,
+      "title": "Reconnaissance",
+      "printed_page": 93,
+      "leaf": true,
+      "status": "outside",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "8.1.25",
+      "pdf_page": 103,
+      "title": "Armored Train",
+      "printed_page": 93,
+      "leaf": true,
+      "status": "outside",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "8.1.26",
+      "pdf_page": 103,
+      "title": "Anti-Tank",
+      "printed_page": 93,
+      "leaf": true,
+      "status": "analogue",
+      "gdd_ids": [
+        "R-COMBAT-01",
+        "R-COMBAT-04",
+        "R-TECH-01"
+      ],
+      "note": "Классы/роли сведены к бригадному масштабу, укреплению как местности и вариантам моделей; это не список недостающих WWII-юнитов."
+    },
+    {
+      "section": "8.1.27",
+      "pdf_page": 103,
+      "title": "Light Tanks",
+      "printed_page": 93,
+      "leaf": true,
+      "status": "analogue",
+      "gdd_ids": [
+        "R-COMBAT-01",
+        "R-COMBAT-04",
+        "R-TECH-01"
+      ],
+      "note": "Классы/роли сведены к бригадному масштабу, укреплению как местности и вариантам моделей; это не список недостающих WWII-юнитов."
+    },
+    {
+      "section": "8.1.28",
+      "pdf_page": 103,
+      "title": "Tanks and Heavy Tanks",
+      "printed_page": 93,
+      "leaf": true,
+      "status": "analogue",
+      "gdd_ids": [
+        "R-COMBAT-01",
+        "R-COMBAT-04",
+        "R-TECH-01"
+      ],
+      "note": "Классы/роли сведены к бригадному масштабу, укреплению как местности и вариантам моделей; это не список недостающих WWII-юнитов."
+    },
+    {
+      "section": "8.2",
+      "pdf_page": 103,
+      "title": "Air Units",
+      "printed_page": 93,
+      "leaf": false,
+      "content_status": "outside",
+      "status": "heading",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "8.2.1",
+      "pdf_page": 103,
+      "title": "Airships",
+      "printed_page": 93,
+      "leaf": true,
+      "status": "outside",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "8.2.2",
+      "pdf_page": 103,
+      "title": "Fighters",
+      "printed_page": 93,
+      "leaf": true,
+      "status": "analogue",
+      "gdd_ids": [
+        "R-AIR-01",
+        "R-AIR-02"
+      ],
+      "note": "Истребитель и ударное крыло; отдельный класс среднего бомбардировщика не требуется."
+    },
+    {
+      "section": "8.2.3",
+      "pdf_page": 103,
+      "title": "Tactical Bombers",
+      "printed_page": 93,
+      "leaf": true,
+      "status": "analogue",
+      "gdd_ids": [
+        "R-AIR-01",
+        "R-AIR-02"
+      ],
+      "note": "Истребитель и ударное крыло; отдельный класс среднего бомбардировщика не требуется."
+    },
+    {
+      "section": "8.2.4",
+      "pdf_page": 104,
+      "title": "Medium Bombers",
+      "printed_page": 94,
+      "leaf": true,
+      "status": "analogue",
+      "gdd_ids": [
+        "R-AIR-01",
+        "R-AIR-02"
+      ],
+      "note": "Истребитель и ударное крыло; отдельный класс среднего бомбардировщика не требуется."
+    },
+    {
+      "section": "8.2.5",
+      "pdf_page": 104,
+      "title": "Strategic Bombers",
+      "printed_page": 94,
+      "leaf": true,
+      "status": "outside",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "8.2.6",
+      "pdf_page": 104,
+      "title": "Maritime Bombers",
+      "printed_page": 94,
+      "leaf": true,
+      "status": "outside",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "8.2.7",
+      "pdf_page": 104,
+      "title": "Kamikazes",
+      "printed_page": 94,
+      "leaf": true,
+      "status": "outside",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "8.3",
+      "pdf_page": 104,
+      "title": "Naval Units",
+      "printed_page": 94,
+      "leaf": false,
+      "content_status": "outside",
+      "status": "heading",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "8.3.1",
+      "pdf_page": 104,
+      "title": "Resisting Amphibious Invasions",
+      "printed_page": 94,
+      "leaf": true,
+      "status": "planned",
+      "gdd_ids": [
+        "R-NAV-04"
+      ],
+      "note": "Транспорт/высадка нужны нашему GDD, реализации в GameState нет. Дальние десанты SC не требуются."
+    },
+    {
+      "section": "8.3.2",
+      "pdf_page": 104,
+      "title": "Raiding Ports",
+      "printed_page": 94,
+      "leaf": true,
+      "status": "planned",
+      "gdd_ids": [
+        "R-NAV-02"
+      ],
+      "note": "Снабжение порта обобщено источником; блокада кораблём и соответствующий доход ещё отсутствуют."
+    },
+    {
+      "section": "8.3.3",
+      "pdf_page": 105,
+      "title": "Dreadnoughts",
+      "printed_page": 95,
+      "leaf": true,
+      "status": "outside",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "8.3.4",
+      "pdf_page": 105,
+      "title": "Battleships",
+      "printed_page": 95,
+      "leaf": true,
+      "status": "outside",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "8.3.5",
+      "pdf_page": 105,
+      "title": "Cruisers",
+      "printed_page": 95,
+      "leaf": true,
+      "status": "outside",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "8.3.6",
+      "pdf_page": 105,
+      "title": "Destroyers",
+      "printed_page": 95,
+      "leaf": true,
+      "status": "outside",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "8.3.7",
+      "pdf_page": 105,
+      "title": "Carriers and Escort Carriers",
+      "printed_page": 95,
+      "leaf": true,
+      "status": "outside",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "8.3.8",
+      "pdf_page": 106,
+      "title": "Subs",
+      "printed_page": 96,
+      "leaf": true,
+      "status": "outside",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "8.3.9",
+      "pdf_page": 106,
+      "title": "Motor Torpedo Boats",
+      "printed_page": 96,
+      "leaf": true,
+      "status": "planned",
+      "gdd_ids": [
+        "R-NAV-01"
+      ],
+      "note": "Нужен ограниченный флот ракетных катеров; большие морские системы SC не входят в проект."
+    },
+    {
+      "section": "8.3.10",
+      "pdf_page": 106,
+      "title": "Transports",
+      "printed_page": 96,
+      "leaf": true,
+      "status": "planned",
+      "gdd_ids": [
+        "R-NAV-04"
+      ],
+      "note": "Транспорт/высадка нужны нашему GDD, реализации в GameState нет. Дальние десанты SC не требуются."
+    },
+    {
+      "section": "8.3.11",
+      "pdf_page": 106,
+      "title": "Amphibious Transports",
+      "printed_page": 96,
+      "leaf": true,
+      "status": "planned",
+      "gdd_ids": [
+        "R-NAV-04"
+      ],
+      "note": "Транспорт/высадка нужны нашему GDD, реализации в GameState нет. Дальние десанты SC не требуются."
+    },
+    {
+      "section": "8.3.12",
+      "pdf_page": 106,
+      "title": "Amphibious Transports (Long Range)",
+      "printed_page": 96,
+      "leaf": true,
+      "status": "outside",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "8.3.13",
+      "pdf_page": 106,
+      "title": "Using Transports and Amphibious Transports",
+      "printed_page": 96,
+      "leaf": true,
+      "status": "planned",
+      "gdd_ids": [
+        "R-NAV-04"
+      ],
+      "note": "Транспорт/высадка нужны нашему GDD, реализации в GameState нет. Дальние десанты SC не требуются."
+    },
+    {
+      "section": "9.1",
+      "pdf_page": 107,
+      "title": "Introduction",
+      "printed_page": 97,
+      "leaf": false,
+      "content_status": "outside",
+      "status": "heading",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "9.1.1",
+      "pdf_page": 107,
+      "title": "In Brief: The Research Mechanism",
+      "printed_page": 97,
+      "leaf": true,
+      "status": "outside",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "9.2",
+      "pdf_page": 107,
+      "title": "In Depth: The Research Mechanism",
+      "printed_page": 97,
+      "leaf": false,
+      "content_status": "outside",
+      "status": "heading",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "9.2.1",
+      "pdf_page": 107,
+      "title": "Progression every Turn",
+      "printed_page": 97,
+      "leaf": true,
+      "status": "outside",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "9.2.2",
+      "pdf_page": 108,
+      "title": "Research Breakthroughs",
+      "printed_page": 98,
+      "leaf": true,
+      "status": "outside",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "9.2.3",
+      "pdf_page": 108,
+      "title": "Catch Up Bonus",
+      "printed_page": 98,
+      "leaf": true,
+      "status": "outside",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "9.2.4",
+      "pdf_page": 108,
+      "title": "Research Sharing",
+      "printed_page": 98,
+      "leaf": true,
+      "status": "outside",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "9.2.5",
+      "pdf_page": 108,
+      "title": "Spying & Intelligence",
+      "printed_page": 98,
+      "leaf": true,
+      "status": "outside",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "9.2.6",
+      "pdf_page": 109,
+      "title": "Examples",
+      "printed_page": 99,
+      "leaf": true,
+      "status": "reference",
+      "gdd_ids": [],
+      "note": "Обзор, советы, пример или поддержка; не самостоятельная механика для реализации."
+    },
+    {
+      "section": "9.3",
+      "pdf_page": 109,
+      "title": "Viewing Progress",
+      "printed_page": 99,
+      "leaf": true,
+      "status": "outside",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "9.4",
+      "pdf_page": 109,
+      "title": "Progressing to the Next Level",
+      "printed_page": 99,
+      "leaf": true,
+      "status": "outside",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "9.5",
+      "pdf_page": 110,
+      "title": "Research Limits",
+      "printed_page": 100,
+      "leaf": true,
+      "status": "outside",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "9.6",
+      "pdf_page": 110,
+      "title": "Research Categories",
+      "printed_page": 100,
+      "leaf": true,
+      "status": "outside",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "9.7",
+      "pdf_page": 110,
+      "title": "Applying Manual Upgrades",
+      "printed_page": 100,
+      "leaf": true,
+      "status": "outside",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "9.8",
+      "pdf_page": 110,
+      "title": "Manual Upgrades",
+      "printed_page": 100,
+      "leaf": false,
+      "content_status": "outside",
+      "status": "heading",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "9.8.1",
+      "pdf_page": 110,
+      "title": "Infantry Weapons",
+      "printed_page": 100,
+      "leaf": true,
+      "status": "outside",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "9.8.2",
+      "pdf_page": 111,
+      "title": "Anti-Tank Weapons",
+      "printed_page": 101,
+      "leaf": true,
+      "status": "analogue",
+      "gdd_ids": [
+        "R-TECH-01"
+      ],
+      "note": "Аналог боевых технологий — наши ветки ПТУР, броня, авиация, ПВО. Исследовательская система SC не переносится."
+    },
+    {
+      "section": "9.8.3",
+      "pdf_page": 111,
+      "title": "Advanced Tanks",
+      "printed_page": 101,
+      "leaf": true,
+      "status": "analogue",
+      "gdd_ids": [
+        "R-TECH-01"
+      ],
+      "note": "Аналог боевых технологий — наши ветки ПТУР, броня, авиация, ПВО. Исследовательская система SC не переносится."
+    },
+    {
+      "section": "9.8.4",
+      "pdf_page": 111,
+      "title": "Advanced Aircraft",
+      "printed_page": 101,
+      "leaf": true,
+      "status": "analogue",
+      "gdd_ids": [
+        "R-TECH-01"
+      ],
+      "note": "Аналог боевых технологий — наши ветки ПТУР, броня, авиация, ПВО. Исследовательская система SC не переносится."
+    },
+    {
+      "section": "9.8.5",
+      "pdf_page": 111,
+      "title": "Heavy Bombers",
+      "printed_page": 101,
+      "leaf": true,
+      "status": "outside",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "9.8.6",
+      "pdf_page": 111,
+      "title": "Naval Weaponry",
+      "printed_page": 101,
+      "leaf": true,
+      "status": "outside",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "9.8.7",
+      "pdf_page": 112,
+      "title": "Long Range Aircraft",
+      "printed_page": 102,
+      "leaf": true,
+      "status": "outside",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "9.8.8",
+      "pdf_page": 112,
+      "title": "Advanced Subs",
+      "printed_page": 102,
+      "leaf": true,
+      "status": "outside",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "9.8.9",
+      "pdf_page": 112,
+      "title": "Artillery Weapons",
+      "printed_page": 102,
+      "leaf": true,
+      "status": "outside",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "9.8.10",
+      "pdf_page": 113,
+      "title": "Rocket Weapons",
+      "printed_page": 103,
+      "leaf": true,
+      "status": "outside",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "9.8.11",
+      "pdf_page": 113,
+      "title": "Ground Attack Weapons",
+      "printed_page": 103,
+      "leaf": true,
+      "status": "analogue",
+      "gdd_ids": [
+        "R-TECH-01"
+      ],
+      "note": "Аналог боевых технологий — наши ветки ПТУР, броня, авиация, ПВО. Исследовательская система SC не переносится."
+    },
+    {
+      "section": "9.8.12",
+      "pdf_page": 113,
+      "title": "Mobility",
+      "printed_page": 103,
+      "leaf": true,
+      "status": "outside",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "9.8.13",
+      "pdf_page": 113,
+      "title": "Anti-Submarine Warfare",
+      "printed_page": 103,
+      "leaf": true,
+      "status": "outside",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "9.8.14",
+      "pdf_page": 114,
+      "title": "Anti-Aircraft Defense",
+      "printed_page": 104,
+      "leaf": true,
+      "status": "analogue",
+      "gdd_ids": [
+        "R-TECH-01"
+      ],
+      "note": "Аналог боевых технологий — наши ветки ПТУР, броня, авиация, ПВО. Исследовательская система SC не переносится."
+    },
+    {
+      "section": "9.9",
+      "pdf_page": 114,
+      "title": "Automatic Upgrades",
+      "printed_page": 104,
+      "leaf": false,
+      "content_status": "outside",
+      "status": "heading",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "9.9.1",
+      "pdf_page": 114,
+      "title": "Command and Control",
+      "printed_page": 104,
+      "leaf": true,
+      "status": "outside",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "9.9.2",
+      "pdf_page": 115,
+      "title": "Infantry Warfare",
+      "printed_page": 105,
+      "leaf": true,
+      "status": "outside",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "9.9.3",
+      "pdf_page": 115,
+      "title": "Armored Warfare",
+      "printed_page": 105,
+      "leaf": true,
+      "status": "outside",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "9.9.4",
+      "pdf_page": 115,
+      "title": "Aerial Warfare",
+      "printed_page": 105,
+      "leaf": true,
+      "status": "outside",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "9.9.5",
+      "pdf_page": 115,
+      "title": "Naval Warfare",
+      "printed_page": 105,
+      "leaf": true,
+      "status": "outside",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "9.9.6",
+      "pdf_page": 115,
+      "title": "Amphibious Warfare",
+      "printed_page": 105,
+      "leaf": true,
+      "status": "outside",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "9.9.7",
+      "pdf_page": 116,
+      "title": "Spying & Intelligence",
+      "printed_page": 106,
+      "leaf": true,
+      "status": "outside",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "9.9.8",
+      "pdf_page": 116,
+      "title": "Logistics",
+      "printed_page": 106,
+      "leaf": true,
+      "status": "outside",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "9.9.9",
+      "pdf_page": 116,
+      "title": "Production Technology",
+      "printed_page": 106,
+      "leaf": true,
+      "status": "outside",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "9.9.10",
+      "pdf_page": 116,
+      "title": "Industrial Technology",
+      "printed_page": 106,
+      "leaf": true,
+      "status": "outside",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "9.9.11",
+      "pdf_page": 117,
+      "title": "Automatic Industrial Mobilization",
+      "printed_page": 107,
+      "leaf": true,
+      "status": "outside",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "10.1",
+      "pdf_page": 117,
+      "title": "Alignment Status & Mobilization Values",
+      "printed_page": 107,
+      "leaf": false,
+      "content_status": "outside",
+      "status": "heading",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "10.1.1",
+      "pdf_page": 117,
+      "title": "Non-Cooperative Majors",
+      "printed_page": 107,
+      "leaf": true,
+      "status": "outside",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "10.1.2",
+      "pdf_page": 117,
+      "title": "Minor Combatants",
+      "printed_page": 107,
+      "leaf": true,
+      "status": "outside",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "10.2",
+      "pdf_page": 118,
+      "title": "The Diplomatic Mechanism",
+      "printed_page": 108,
+      "leaf": true,
+      "status": "outside",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "10.3",
+      "pdf_page": 118,
+      "title": "Diplomacy and Franco’s Spain",
+      "printed_page": 108,
+      "leaf": true,
+      "status": "outside",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "10.4",
+      "pdf_page": 119,
+      "title": "Ireland",
+      "printed_page": 109,
+      "leaf": true,
+      "status": "outside",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "10.5",
+      "pdf_page": 119,
+      "title": "Switzerland",
+      "printed_page": 109,
+      "leaf": true,
+      "status": "outside",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "10.6",
+      "pdf_page": 119,
+      "title": "Contested Diplomacy",
+      "printed_page": 109,
+      "leaf": true,
+      "status": "outside",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "10.7",
+      "pdf_page": 119,
+      "title": "Impending War Entry",
+      "printed_page": 109,
+      "leaf": true,
+      "status": "outside",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "10.8",
+      "pdf_page": 119,
+      "title": "Belligerence",
+      "printed_page": 109,
+      "leaf": true,
+      "status": "outside",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    },
+    {
+      "section": "10.9",
+      "pdf_page": 120,
+      "title": "The Wider Impact of Declarations of War",
+      "printed_page": 110,
+      "leaf": true,
+      "status": "outside",
+      "gdd_ids": [],
+      "note": "Не требуется выбранному GDD: система глобальной войны, отдельный WWII-класс, погода, политика, индустрия или исследовательская процедура SC."
+    }
+  ],
+  "sc_difference_register": [
+    {
+      "number": 1,
+      "area": "ZOC",
+      "sc_reference": "ZOC — +1 AP за вход и шаг внутри, не стоп; вспомогательным нужно вдвоём (5.7, 6.2.7; стр. 52, 62–63)",
+      "prior_status": "**частично взято** через R-MOVE-07 (флаг вкл.)",
+      "current_status": "**частично взято** через R-MOVE-07 (флаг вкл.)",
+      "note": "Сверено с текущими вариантами/выбранной моделью. Не включать отличия автоматически в обязательный бэклог.",
+      "gdd_ids": [
+        "R-MOVE-03",
+        "R-MOVE-07"
+      ]
+    },
+    {
+      "number": 2,
+      "area": "Форсированный марш",
+      "sc_reference": "+50% хода, мораль −50…65%, без атаки (5.5, 6.3.3, 7.30.1; стр. 50, 64, 95)",
+      "prior_status": "**отклонено** (вернуться, если на «Голанах-73» резервы не успевают)",
+      "current_status": "**отклонено** (вернуться, если на «Голанах-73» резервы не успевают)",
+      "note": "Сверено с текущими вариантами/выбранной моделью. Не включать отличия автоматически в обязательный бэклог.",
+      "gdd_ids": [
+        "R-MOVE-05"
+      ]
+    },
+    {
+      "number": 3,
+      "area": "Смена юнитов в линии",
+      "sc_reference": "мораль −15…20%, у обоих ≤ 1 AP, после смены можно пополнить (6.3.4, 4.3.3; стр. 64, 47)",
+      "prior_status": "**отложено** до ротации в ИИ; с `reinforce_locks` (вкл.) стала нужнее",
+      "current_status": "**отложено** до ротации в ИИ; с `reinforce_locks` (вкл.) стала нужнее",
+      "note": "Дополнение старого SC-аудита; команда/режим отсутствует. Отделено от 55 нормативных R-ID.",
+      "gdd_ids": [
+        "R-MOVE-03",
+        "R-ECO-02"
+      ]
+    },
+    {
+      "number": 4,
+      "area": "Оспариваемые гексы",
+      "sc_reference": "пустой гекс рядом с противником не меняет владельца (6.3.7, стр. 65)",
+      "prior_status": "**открыто снова**: прорыв R-MOVE-07 сделал «лассо» возможным",
+      "current_status": "Закрыто",
+      "note": "В R-MOVE-06/07 и тестах breakthrough уже есть запрет захвата промежуточных гексов пути в ZOC.",
+      "gdd_ids": [
+        "R-MOVE-06",
+        "R-MOVE-07"
+      ]
+    },
+    {
+      "number": 5,
+      "area": "AP и снабжение",
+      "sc_reference": "−1 при **1–5**, −2 при 0 (7.28, стр. 94)",
+      "prior_status": "оставить наше; цитата и числа исправлены",
+      "current_status": "оставить наше; цитата и числа исправлены",
+      "note": "Сверено с текущими вариантами/выбранной моделью. Не включать отличия автоматически в обязательный бэклог.",
+      "gdd_ids": [
+        "R-UNIT-02"
+      ]
+    },
+    {
+      "number": 6,
+      "area": "Дороги",
+      "sc_reference": "1 AP, гасит штраф местности; пустыня 3 AP (6.3.6, стр. 64–65)",
+      "prior_status": "оставить наше",
+      "current_status": "оставить наше",
+      "note": "Сверено с текущими вариантами/выбранной моделью. Не включать отличия автоматически в обязательный бэклог.",
+      "gdd_ids": [
+        "R-MOVE-01"
+      ]
+    },
+    {
+      "number": 7,
+      "area": "Атака через воду",
+      "sc_reference": "готовность атакующего −20 / −35 / −10 (6.6.4, 3.6.7; стр. 71, 30)",
+      "prior_status": "оставить наше",
+      "current_status": "оставить наше",
+      "note": "Сверено с текущими вариантами/выбранной моделью. Не включать отличия автоматически в обязательный бэклог.",
+      "gdd_ids": [
+        "R-COMBAT-02"
+      ]
+    },
+    {
+      "number": 8,
+      "area": "Броня в городе",
+      "sc_reference": "броня уязвима к пехоте в городах (5.25, 8.1.9; ч. 2, 2.4.26; стр. 59, 101, 146)",
+      "prior_status": "**флаг вкл.** (защита); штраф атаки брони по городу не взят",
+      "current_status": "**флаг вкл.** (защита); штраф атаки брони по городу не взят",
+      "note": "Сверено с текущими вариантами/выбранной моделью. Не включать отличия автоматически в обязательный бэклог.",
+      "gdd_ids": [
+        "R-MOVE-01",
+        "R-COMBAT-02"
+      ]
+    },
+    {
+      "number": 9,
+      "area": "Деморализация от атак",
+      "sc_reference": "мораль цели −N% по классу × сила / 10 (7.30.2, стр. 96)",
+      "prior_status": "**отклонено** (это делает усталость)",
+      "current_status": "**отклонено** (это делает усталость)",
+      "note": "Сверено с текущими вариантами/выбранной моделью. Не включать отличия автоматически в обязательный бэклог.",
+      "gdd_ids": [
+        "R-UNIT-01"
+      ]
+    },
+    {
+      "number": 10,
+      "area": "Окопы",
+      "sc_reference": "10% за уровень шанс погасить потерю, взамен −10% морали (7.30.5, стр. 97)",
+      "prior_status": "оставить наше; см. примечание о темпе",
+      "current_status": "оставить наше; см. примечание о темпе",
+      "note": "Сверено с текущими вариантами/выбранной моделью. Не включать отличия автоматически в обязательный бэклог.",
+      "gdd_ids": [
+        "R-COMBAT-02"
+      ]
+    },
+    {
+      "number": 11,
+      "area": "Снятие окопов по классу",
+      "sc_reference": "истребители, разведка, бригады 0 (7.30.6, стр. 98)",
+      "prior_status": "**данные**, но истребителям 0 не поставлено",
+      "current_status": "Решение по данным ещё нужно",
+      "note": "fighter не имеет strips_entrenchment: 0; действует default 1. Текущий GDD допускает default 1, поэтому SC-изменение требует решения.",
+      "gdd_ids": [
+        "R-COMBAT-02",
+        "R-AIR-02"
+      ]
+    },
+    {
+      "number": 12,
+      "area": "Окопы в укреплении сразу",
+      "sc_reference": "сразу ½ максимума (7.30.6, стр. 97)",
+      "prior_status": "**флаг выкл.** (A/B: «Голаны» 45% у Израиля)",
+      "current_status": "**флаг выкл.** (A/B: «Голаны» 45% у Израиля)",
+      "note": "Сверено с текущими вариантами/выбранной моделью. Не включать отличия автоматически в обязательный бэклог.",
+      "gdd_ids": [
+        "R-MOVE-01"
+      ]
+    },
+    {
+      "number": 13,
+      "area": "Инженеры укрепляют",
+      "sc_reference": "укрепление за несколько ходов (5.17, 7.4; стр. 55, 83–84)",
+      "prior_status": "**отложено** на этап 5",
+      "current_status": "В плане этапа 5",
+      "note": "Прямо перечислено в GDD §18; команд укрепления/удара по источнику нет.",
+      "gdd_ids": []
+    },
+    {
+      "number": 14,
+      "area": "Готовность и сила",
+      "sc_reference": "((Str + рейтинг) / 2 + мораль / 10 + опыт штаба) / 2 × 10 (7.30.4, стр. 96)",
+      "prior_status": "оставить наше",
+      "current_status": "оставить наше",
+      "note": "Сверено с текущими вариантами/выбранной моделью. Не включать отличия автоматически в обязательный бэклог.",
+      "gdd_ids": [
+        "R-UNIT-01"
+      ]
+    },
+    {
+      "number": 15,
+      "area": "Бонус штаба по силе",
+      "sc_reference": "рейтинг ∝ силе штаба (7.30.4, стр. 97)",
+      "prior_status": "**флаг выкл.** (эффекта нет; проверить на «Голанах-73»)",
+      "current_status": "**флаг выкл.** (эффекта нет; проверить на «Голанах-73»)",
+      "note": "Сверено с текущими вариантами/выбранной моделью. Не включать отличия автоматически в обязательный бэклог.",
+      "gdd_ids": [
+        "R-HQ-02"
+      ]
+    },
+    {
+      "number": 16,
+      "area": "Опыт штаба",
+      "sc_reference": "+0,1 / −0,05 за бой подчинённых (7.25.1, 8.1.3; стр. 92, 100)",
+      "prior_status": "оставить наше",
+      "current_status": "оставить наше",
+      "note": "Сверено с текущими вариантами/выбранной моделью. Не включать отличия автоматически в обязательный бэклог.",
+      "gdd_ids": [
+        "R-HQ-01"
+      ]
+    },
+    {
+      "number": 17,
+      "area": "Приоритет прикрепления",
+      "sc_reference": "приоритет юнитам рядом с противником (7.3, стр. 83)",
+      "prior_status": "**флаг выкл.** (эффекта нет)",
+      "current_status": "**флаг выкл.** (эффекта нет)",
+      "note": "Сверено с текущими вариантами/выбранной моделью. Не включать отличия автоматически в обязательный бэклог.",
+      "gdd_ids": [
+        "R-HQ-01"
+      ]
+    },
+    {
+      "number": 18,
+      "area": "NM и мораль",
+      "sc_reference": "множители ×0,95 / 0,90 / 0,85 (7.30.4, стр. 97)",
+      "prior_status": "**флаг выкл.** `nm_morale_multiplier`; повторить после починки темпа",
+      "current_status": "**флаг выкл.** `nm_morale_multiplier`; повторить после починки темпа",
+      "note": "Сверено с текущими вариантами/выбранной моделью. Не включать отличия автоматически в обязательный бэклог.",
+      "gdd_ids": [
+        "R-NM-01"
+      ]
+    },
+    {
+      "number": 19,
+      "area": "Формула морали",
+      "sc_reference": "плавная формула (7.30, стр. 95)",
+      "prior_status": "оставить наше",
+      "current_status": "оставить наше",
+      "note": "Сверено с текущими вариантами/выбранной моделью. Не включать отличия автоматически в обязательный бэклог.",
+      "gdd_ids": [
+        "R-SUP-05"
+      ]
+    },
+    {
+      "number": 20,
+      "area": "Распад в котле",
+      "sc_reference": "50% при 0, 20% при 1 за каждого соседа; мораль −50% / −25% (7.29.2, стр. 95)",
+      "prior_status": "**флаг выкл.** (эффекта почти нет)",
+      "current_status": "**флаг выкл.** (эффекта почти нет)",
+      "note": "Сверено с текущими вариантами/выбранной моделью. Не включать отличия автоматически в обязательный бэклог.",
+      "gdd_ids": [
+        "R-SUP-03"
+      ]
+    },
+    {
+      "number": 21,
+      "area": "Отрезанные источники",
+      "sc_reference": "≤ 3, порт ≤ 5; связь только по дороге ≤ 5 (7.12.6, 7.14; стр. 88–89)",
+      "prior_status": "**флаг вкл.**",
+      "current_status": "**флаг вкл.**",
+      "note": "Сверено с текущими вариантами/выбранной моделью. Не включать отличия автоматически в обязательный бэклог.",
+      "gdd_ids": [
+        "R-SUP-01"
+      ]
+    },
+    {
+      "number": 22,
+      "area": "Осада источника",
+      "sc_reference": "≥ 2 юнита (7.15, стр. 89); в 5.13.3 (стр. 54) — «4 or more»",
+      "prior_status": "**флаг вкл.** (часть `source_isolation`)",
+      "current_status": "**флаг вкл.** (часть `source_isolation`)",
+      "note": "Сверено с текущими вариантами/выбранной моделью. Не включать отличия автоматически в обязательный бэклог.",
+      "gdd_ids": [
+        "R-SUP-01"
+      ]
+    },
+    {
+      "number": 23,
+      "area": "Цена и потолок пополнения",
+      "sc_reference": "5% за шаг; потолок силы по снабжению; окружённые до 5 (6.6.9, 7.22, 7.29; стр. 79–80, 91, 94)",
+      "prior_status": "**открыто**, по решению — на перебалансировке «числа»",
+      "current_status": "Открытое предложение чисел",
+      "note": "reinforce_cost_pct = 10. Механика пополнения работает; не считать замену на 5% обязательным исправлением без решения.",
+      "gdd_ids": [
+        "R-ECO-02"
+      ]
+    },
+    {
+      "number": 24,
+      "area": "Элитное пополнение",
+      "sc_reference": "только при полной силе, снабжение ≥ 6, не рядом с противником (6.6.9, 4.3.4; стр. 80, 48)",
+      "prior_status": "**частично**: запрет рядом с противником — П8 (вкл.)",
+      "current_status": "**частично**: запрет рядом с противником — П8 (вкл.)",
+      "note": "Сверено с текущими вариантами/выбранной моделью. Не включать отличия автоматически в обязательный бэклог.",
+      "gdd_ids": [
+        "R-ECO-02"
+      ]
+    },
+    {
+      "number": 25,
+      "area": "Переформирование погибших",
+      "sc_reference": "60% цены, если погиб при снабжении ≥ 5 (6.6.7, стр. 78)",
+      "prior_status": "**отклонено** (только событиями)",
+      "current_status": "**отклонено** (только событиями)",
+      "note": "Сверено с текущими вариантами/выбранной моделью. Не включать отличия автоматически в обязательный бэклог.",
+      "gdd_ids": [
+        "R-ECO-03"
+      ]
+    },
+    {
+      "number": 26,
+      "area": "Прибытие покупок",
+      "sc_reference": "место выбирает игрок; новый юнит не ходит; мораль 50% (6.6.8, 7.30; стр. 79, 95)",
+      "prior_status": "**флаг выкл.** (эффекта нет); запрет хода и мораль 50% отклонены",
+      "current_status": "**флаг выкл.** (эффекта нет); запрет хода и мораль 50% отклонены",
+      "note": "Сверено с текущими вариантами/выбранной моделью. Не включать отличия автоматически в обязательный бэклог.",
+      "gdd_ids": [
+        "R-ECO-02"
+      ]
+    },
+    {
+      "number": 27,
+      "area": "Отступление и местность",
+      "sc_reference": "шанс по гексу, при отступлении атакующий несёт 50% потерь (6.6.4, стр. 71–72)",
+      "prior_status": "**флаг выкл.** (A/B: сильный сдвиг к обороне)",
+      "current_status": "**флаг выкл.** (A/B: сильный сдвиг к обороне)",
+      "note": "Сверено с текущими вариантами/выбранной моделью. Не включать отличия автоматически в обязательный бэклог.",
+      "gdd_ids": [
+        "R-COMBAT-06"
+      ]
+    },
+    {
+      "number": 28,
+      "area": "Оборонительный огонь артиллерии",
+      "sc_reference": "запас снарядов, огонь в фазу противника (6.6.4, 8.1.20; стр. 71, 102)",
+      "prior_status": "**отклонено** (R-TURN-01)",
+      "current_status": "**отклонено** (R-TURN-01)",
+      "note": "Сверено с текущими вариантами/выбранной моделью. Не включать отличия автоматически в обязательный бэклог.",
+      "gdd_ids": [
+        "R-COMBAT-04"
+      ]
+    },
+    {
+      "number": 29,
+      "area": "Артиллерия: шаг после выстрела",
+      "sc_reference": "«move 1 hex after firing» (6.2.3, 6.6.4; стр. 61, 71)",
+      "prior_status": "**отложено**, бэклог этапа 5",
+      "current_status": "**отложено**, бэклог этапа 5",
+      "note": "Дополнение старого SC-аудита; команда/режим отсутствует. Отделено от 55 нормативных R-ID.",
+      "gdd_ids": [
+        "R-COMBAT-04"
+      ]
+    },
+    {
+      "number": 30,
+      "area": "Режимы истребителей",
+      "sc_reference": "Auto / Intercept / Escort / Ground, порог силы 5 (5.6, 6.6.5; стр. 51, 74)",
+      "prior_status": "**флаг выкл.** (порог); режимов нет",
+      "current_status": "**флаг выкл.** (порог); режимов нет",
+      "note": "Дополнение старого SC-аудита; команда/режим отсутствует. Отделено от 55 нормативных R-ID.",
+      "gdd_ids": [
+        "R-AIR-02"
+      ]
+    },
+    {
+      "number": 31,
+      "area": "Перехватчик после эскорта",
+      "sc_reference": "перехватчик с силой ≥ 5 бьёт вполсилы (5.6, 6.6.5; стр. 51, 74)",
+      "prior_status": "оставить наше (решение дизайнера)",
+      "current_status": "оставить наше (решение дизайнера)",
+      "note": "Сверено с текущими вариантами/выбранной моделью. Не включать отличия автоматически в обязательный бэклог.",
+      "gdd_ids": [
+        "R-AIR-02"
+      ]
+    },
+    {
+      "number": 32,
+      "area": "Авиаудар по источнику",
+      "sc_reference": "урон ресурсу, ремонт +1 за ход (6.6.5, 7.18; стр. 73–74, 89)",
+      "prior_status": "**отложено** на этап 5 (с зонтиками ПВО)",
+      "current_status": "В плане этапа 5",
+      "note": "Прямо перечислено в GDD §18; команд укрепления/удара по источнику нет.",
+      "gdd_ids": [
+        "R-AIR-02",
+        "R-SUP-01"
+      ]
+    },
+    {
+      "number": 33,
+      "area": "Порядок «атака — перелёт»",
+      "sc_reference": "атака, затем ¼ хода (5.5, 6.4, 6.6.5; стр. 50, 65, 72)",
+      "prior_status": "оставить наше",
+      "current_status": "оставить наше",
+      "note": "Сверено с текущими вариантами/выбранной моделью. Не включать отличия автоматически в обязательный бэклог.",
+      "gdd_ids": [
+        "R-AIR-01"
+      ]
+    },
+    {
+      "number": 34,
+      "area": "Снабжение для переброски",
+      "sc_reference": "≥ 5, путь через ресурсы силы ≥ 5 (6.3.2, стр. 63)",
+      "prior_status": "**флаг выкл.** (эффекта нет)",
+      "current_status": "**флаг выкл.** (эффекта нет)",
+      "note": "Сверено с текущими вариантами/выбранной моделью. Не включать отличия автоматически в обязательный бэклог.",
+      "gdd_ids": [
+        "R-MOVE-05"
+      ]
+    },
+    {
+      "number": 35,
+      "area": "Добыча",
+      "sc_reference": "добыча при капитуляции (7.7, стр. 85)",
+      "prior_status": "**отклонено** как правило; делается событием «контроль гекса → +MPP»",
+      "current_status": "**отклонено** как правило; делается событием «контроль гекса → +MPP»",
+      "note": "Сверено с текущими вариантами/выбранной моделью. Не включать отличия автоматически в обязательный бэклог.",
+      "gdd_ids": [
+        "R-EVT-01"
+      ]
+    },
+    {
+      "number": 36,
+      "area": "Подготовка десанта",
+      "sc_reference": "подготовка за ход, 30% потерь в «non-clear» (6.3.5, стр. 64)",
+      "prior_status": "оставить наше",
+      "current_status": "оставить наше",
+      "note": "Сверено с текущими вариантами/выбранной моделью. Не включать отличия автоматически в обязательный бэклог.",
+      "gdd_ids": [
+        "R-AIR-04"
+      ]
+    },
+    {
+      "number": 37,
+      "area": "Прорыв против блица SC",
+      "sc_reference": "ZOC для всех — налог +1 AP; блиц «move, attack, move, attack» (6.6.4, стр. 71); число юнитов для ZOC — параметр (ч. 2, 2.4.22, стр. 145)",
+      "prior_status": "новое; флаг вкл.",
+      "current_status": "новое; флаг вкл.",
+      "note": "Сверено с текущими вариантами/выбранной моделью. Не включать отличия автоматически в обязательный бэклог.",
+      "gdd_ids": [
+        "R-MOVE-07"
+      ]
+    },
+    {
+      "number": 38,
+      "area": "Укрепрайон слабее холмов",
+      "sc_reference": "укрепление не хуже местности: иначе «terrain's Defense Bonus +1» (7.4, стр. 84)",
+      "prior_status": "новое",
+      "current_status": "Закрыто выбранными данными",
+      "note": "fortified.defense_mult = 1.3, как hills = 1.3; старое значение 1.25 устарело. Это не универсальное укрепление поверх любой местности.",
+      "gdd_ids": [
+        "R-MOVE-01"
+      ]
+    },
+    {
+      "number": 39,
+      "area": "NM за уничтожение",
+      "sc_reference": "бонус NM убийце, если снабжение цели **< 5** (5.11, 6.6.3; стр. 53, 70)",
+      "prior_status": "новое",
+      "current_status": "Открытое предложение",
+      "note": "Окружение для NM по-прежнему определяется supply == 0; порог <5 не принят в код.",
+      "gdd_ids": [
+        "R-NM-01"
+      ]
+    },
+    {
+      "number": 40,
+      "area": "Опыт при пополнении",
+      "sc_reference": "потеря = шаги × опыт / 10 (7.25.1, стр. 92)",
+      "prior_status": "новое",
+      "current_status": "новое",
+      "note": "Сверено с текущими вариантами/выбранной моделью. Не включать отличия автоматически в обязательный бэклог.",
+      "gdd_ids": [
+        "R-ECO-02"
+      ]
+    },
+    {
+      "number": 41,
+      "area": "Пополнение штаба",
+      "sc_reference": "ступенями: сила 1 → 4, … 5 → 8, 6–9 → 10 (5.12, 7.29.1; стр. 54, 95)",
+      "prior_status": "новое",
+      "current_status": "новое",
+      "note": "Сверено с текущими вариантами/выбранной моделью. Не включать отличия автоматически в обязательный бэклог.",
+      "gdd_ids": [
+        "R-ECO-02",
+        "R-HQ-02"
+      ]
+    },
+    {
+      "number": 42,
+      "area": "Снабжение от слабого штаба",
+      "sc_reference": "у штаба минимум 3; штаб подпитывает другой штаб (5.12, 7.25.4–7.25.8; стр. 54, 93–94)",
+      "prior_status": "новое",
+      "current_status": "новое",
+      "note": "Сверено с текущими вариантами/выбранной моделью. Не включать отличия автоматически в обязательный бэклог.",
+      "gdd_ids": [
+        "R-SUP-02",
+        "R-SUP-06"
+      ]
+    },
+    {
+      "number": 43,
+      "area": "Атака из плохой местности",
+      "sc_reference": "атака ×0,5 из гекса с отрицательным бонусом защиты (7.30.7; ч. 2, 2.4.20; стр. 98, 144)",
+      "prior_status": "новое",
+      "current_status": "новое",
+      "note": "Сверено с текущими вариантами/выбранной моделью. Не включать отличия автоматически в обязательный бэклог.",
+      "gdd_ids": [
+        "R-COMBAT-02"
+      ]
+    },
+    {
+      "number": 44,
+      "area": "Технологии в бою",
+      "sc_reference": "считается только разница уровней сторон (7.30.7, стр. 98)",
+      "prior_status": "новое",
+      "current_status": "новое",
+      "note": "Сверено с текущими вариантами/выбранной моделью. Не включать отличия автоматически в обязательный бэклог.",
+      "gdd_ids": [
+        "R-TECH-01",
+        "R-COMBAT-02"
+      ]
+    },
+    {
+      "number": 45,
+      "area": "Шок при потере столицы",
+      "sc_reference": "мораль юнитов −20…30%, у захватчика +10…20% (7.5.2, 7.30.3; стр. 84, 96)",
+      "prior_status": "новое",
+      "current_status": "новое",
+      "note": "Сверено с текущими вариантами/выбранной моделью. Не включать отличия автоматически в обязательный бэклог.",
+      "gdd_ids": [
+        "R-EVT-01",
+        "R-NM-01"
+      ]
+    },
+    {
+      "number": 46,
+      "area": "Порт рядом с противником",
+      "sc_reference": "порт с юнитом противника рядом не снабжает наземные войска (5.13.3, 7.16; стр. 55, 89)",
+      "prior_status": "новое",
+      "current_status": "новое",
+      "note": "Сверено с текущими вариантами/выбранной моделью. Не включать отличия автоматически в обязательный бэклог.",
+      "gdd_ids": [
+        "R-SUP-01",
+        "R-NAV-02"
+      ]
+    },
+    {
+      "number": 47,
+      "area": "Когда действует прикрепление",
+      "sc_reference": "смена прикрепления сразу меняет готовность, мораль — со следующего хода; только для не действовавших (7.3.1, стр. 83)",
+      "prior_status": "новое",
+      "current_status": "новое",
+      "note": "Сверено с текущими вариантами/выбранной моделью. Не включать отличия автоматически в обязательный бэклог.",
+      "gdd_ids": [
+        "R-HQ-01"
+      ]
+    }
+  ],
+  "ui_review_register": [
+    {
+      "number": 1,
+      "title": "Маркер «может ещё действовать»",
+      "sc_reference": "5.4, 6.2.1, 3.6.16 (стр. 49–50, 61, 34)",
+      "status": "partial",
+      "note": "Предложение старого UI-аудита; приоритет и обязательность определяет дизайнер, не равно новому правилу."
+    },
+    {
+      "number": 2,
+      "title": "Карточка любого юнита, в том числе противника",
+      "sc_reference": "3.5.5, 5.5 (стр. 27, 50)",
+      "status": "open",
+      "note": "Произвольный щелчок по противнику по-прежнему не открывает независимую карточку; прогноз по выбранной цели есть."
+    },
+    {
+      "number": 3,
+      "title": "Источники снабжения на карте: значение, изоляция, осада",
+      "sc_reference": "3.4.1 Resource Strength Values (стр. 19); 6.6.5 «Atkr=1 : Dfdr=2(0)» (стр. 73)",
+      "status": "open",
+      "note": "Предложение старого UI-аудита; приоритет и обязательность определяет дизайнер, не равно новому правилу."
+    },
+    {
+      "number": 4,
+      "title": "Прорыв и ZOC у зоны хода",
+      "sc_reference": "3.6.21 (стр. 35), 6.3.3 оранжевая граница (стр. 64)",
+      "status": "open",
+      "note": "Предложение старого UI-аудита; приоритет и обязательность определяет дизайнер, не равно новому правилу."
+    },
+    {
+      "number": 5,
+      "title": "Победные очки и условия победы во время партии",
+      "sc_reference": "3.5.3 Victory, 5.29 (стр. 26, 59)",
+      "status": "partial",
+      "note": "Брифинг уже показывает условия победы, но постоянного счёта VP в верхней панели нет."
+    },
+    {
+      "number": 6,
+      "title": "Важные события — окном до щелчка",
+      "sc_reference": "4.1.2 (стр. 36–37)",
+      "status": "done",
+      "note": "Закрыто R-UI-07: important, EventWindow и текст/иллюстрации есть."
+    },
+    {
+      "number": 7,
+      "title": "Штаб и его юниты при выборе; булавка щелчком по штабу",
+      "sc_reference": "3.4.1, 3.6.15, 3.6.20, 7.3 (стр. 19, 34–35, 83)",
+      "status": "open",
+      "note": "Предложение старого UI-аудита; приоритет и обязательность определяет дизайнер, не равно новому правилу."
+    },
+    {
+      "number": 8,
+      "title": "«Пропустить» и «Охранение»",
+      "sc_reference": "6.2.2, 3.6.22 (стр. 61, 35)",
+      "status": "open",
+      "note": "Предложение старого UI-аудита; приоритет и обязательность определяет дизайнер, не равно новому правилу."
+    },
+    {
+      "number": 9,
+      "title": "Слабая готовность видна без щелчка",
+      "sc_reference": "4.1.7, 4.1.3 (стр. 39, 37)",
+      "status": "open",
+      "note": "Предложение старого UI-аудита; приоритет и обязательность определяет дизайнер, не равно новому правилу."
+    },
+    {
+      "number": 10,
+      "title": "Горячие клавиши и «кого пополнить» (R)",
+      "sc_reference": "5.2 (стр. 49)",
+      "status": "partial",
+      "note": "Предложение старого UI-аудита; приоритет и обязательность определяет дизайнер, не равно новому правилу."
+    },
+    {
+      "number": 11,
+      "title": "Потери над юнитами и прогноз у курсора",
+      "sc_reference": "6.6.1, 6.6.2, 3.6.26, 4.1.7 (стр. 70, 36, 38)",
+      "status": "open",
+      "note": "Предложение старого UI-аудита; приоритет и обязательность определяет дизайнер, не равно новому правилу."
+    },
+    {
+      "number": 12,
+      "title": "Экран закупки и место прибытия на карте",
+      "sc_reference": "3.5.2 Purchase, New Units; 6.6.7–6.6.8 (стр. 23–24, 77–79)",
+      "status": "partial",
+      "note": "Предложение старого UI-аудита; приоритет и обязательность определяет дизайнер, не равно новому правилу."
+    },
+    {
+      "number": 13,
+      "title": "Путь на касаниях и стоимость в гексе",
+      "sc_reference": "6.3.1, 4.1.8, 3.6.24 (стр. 63, 40, 35)",
+      "status": "partial",
+      "note": "Предложение старого UI-аудита; приоритет и обязательность определяет дизайнер, не равно новому правилу."
+    },
+    {
+      "number": 14,
+      "title": "Радиусы перехвата и эскорта",
+      "sc_reference": "3.4.1, 3.6.19, 6.6.5 Highlights (стр. 19, 34, 72)",
+      "status": "open",
+      "note": "Предложение старого UI-аудита; приоритет и обязательность определяет дизайнер, не равно новому правилу."
+    },
+    {
+      "number": 15,
+      "title": "Снабжение юнита против снабжения гекса",
+      "sc_reference": "5.13.2 (стр. 54)",
+      "status": "open",
+      "note": "Предложение старого UI-аудита; приоритет и обязательность определяет дизайнер, не равно новому правилу."
+    },
+    {
+      "number": 16,
+      "title": "Отчёты: графики потерь, NM, MPP",
+      "sc_reference": "3.5.2 Reports (стр. 26)",
+      "status": "open",
+      "note": "Предложение старого UI-аудита; приоритет и обязательность определяет дизайнер, не равно новому правилу."
+    },
+    {
+      "number": 17,
+      "title": "Список войск",
+      "sc_reference": "нет в SC; Production table (3.5.1, 3.6.17; стр. 21, 34)",
+      "status": "open",
+      "note": "Предложение старого UI-аудита; приоритет и обязательность определяет дизайнер, не равно новому правилу."
+    },
+    {
+      "number": 18,
+      "title": "Настройки",
+      "sc_reference": "3.1.2, 3.3.2–3.4.3 (стр. 16, 18–20)",
+      "status": "partial",
+      "note": "Предложение старого UI-аудита; приоритет и обязательность определяет дизайнер, не равно новому правилу."
+    },
+    {
+      "number": 19,
+      "title": "Значки факторов прогноза",
+      "sc_reference": "3.5.5, 3.6.7 (стр. 28, 30)",
+      "status": "partial",
+      "note": "Предложение старого UI-аудита; приоритет и обязательность определяет дизайнер, не равно новому правилу."
+    },
+    {
+      "number": 20,
+      "title": "Скрыть юниты (H) и сетку (G)",
+      "sc_reference": "5.2, 3.6.8 (стр. 49, 30)",
+      "status": "open",
+      "note": "Предложение старого UI-аудита; приоритет и обязательность определяет дизайнер, не равно новому правилу."
+    },
+    {
+      "number": 21,
+      "title": "Итоги фазы в хотсите и экономика",
+      "sc_reference": "3.3.2 (стр. 18)",
+      "status": "partial",
+      "note": "Предложение старого UI-аудита; приоритет и обязательность определяет дизайнер, не равно новому правилу."
+    },
+    {
+      "number": 22,
+      "title": "Правый щелчок",
+      "sc_reference": "3.4.3 (стр. 20): без меню — «cancel/deselect»",
+      "status": "open",
+      "note": "Предложение старого UI-аудита; приоритет и обязательность определяет дизайнер, не равно новому правилу."
+    },
+    {
+      "number": 23,
+      "title": "Ход ИИ",
+      "sc_reference": "3.3.4 (стр. 18–19)",
+      "status": "done",
+      "note": "Предложение старого UI-аудита; приоритет и обязательность определяет дизайнер, не равно новому правилу."
+    },
+    {
+      "number": 24,
+      "title": "Прогноз снабжения в целевом гексе",
+      "sc_reference": "5.2 S, 5.13.2 (стр. 49, 54)",
+      "status": "done",
+      "note": "Предложение старого UI-аудита; приоритет и обязательность определяет дизайнер, не равно новому правилу."
+    },
+    {
+      "number": 25,
+      "title": "Следующий юнит",
+      "sc_reference": "3.5.5, 5.2 Page Up/Down (стр. 28, 49)",
+      "status": "done",
+      "note": "Предложение старого UI-аудита; приоритет и обязательность определяет дизайнер, не равно новому правилу."
+    },
+    {
+      "number": 26,
+      "title": "Отмена",
+      "sc_reference": "3.3.3, 3.6.23 (стр. 18, 35)",
+      "status": "done",
+      "note": "Предложение старого UI-аудита; приоритет и обязательность определяет дизайнер, не равно новому правилу."
+    },
+    {
+      "number": 27,
+      "title": "Миникарта",
+      "sc_reference": "3.5.5 (стр. 27)",
+      "status": "done",
+      "note": "Предложение старого UI-аудита; приоритет и обязательность определяет дизайнер, не равно новому правилу."
+    },
+    {
+      "number": 28,
+      "title": "Предупреждение в конце фазы",
+      "sc_reference": "в SC нет",
+      "status": "done",
+      "note": "Предложение старого UI-аудита; приоритет и обязательность определяет дизайнер, не равно новому правилу."
+    },
+    {
+      "number": 29,
+      "title": "Линия фронта",
+      "sc_reference": "3.6.25 (стр. 36)",
+      "status": "done",
+      "note": "Предложение старого UI-аудита; приоритет и обязательность определяет дизайнер, не равно новому правилу."
+    },
+    {
+      "number": 30,
+      "title": "Автосохранение",
+      "sc_reference": "5.27 (стр. 59): в начале каждого хода",
+      "status": "done",
+      "note": "Предложение старого UI-аудита; приоритет и обязательность определяет дизайнер, не равно новому правилу."
+    },
+    {
+      "number": 31,
+      "title": "Переброска (Operate)",
+      "sc_reference": "5.5, 6.3.2 (стр. 50, 63)",
+      "status": "partial",
+      "note": "Предложение старого UI-аудита; приоритет и обязательность определяет дизайнер, не равно новому правилу."
+    },
+    {
+      "number": 32,
+      "title": "Опыт на фишке",
+      "sc_reference": "3.5.4 (стр. 27)",
+      "status": "outside",
+      "note": "Предложение старого UI-аудита; приоритет и обязательность определяет дизайнер, не равно новому правилу."
+    },
+    {
+      "number": 33,
+      "title": "Передача хода в хотсите",
+      "sc_reference": "пароли (3.3.3, стр. 18)",
+      "status": "deferred",
+      "note": "Предложение старого UI-аудита; приоритет и обязательность определяет дизайнер, не равно новому правилу."
+    }
+  ],
+  "remaining_packages": [
+    {
+      "id": "P01",
+      "title": "Зонтики ПВО, РЭБ и подавление",
+      "stage": "5",
+      "gdd_ids": [
+        "R-AIR-02",
+        "R-AIR-03",
+        "R-TECH-01"
+      ],
+      "remaining": "Подключить расчёт к вылету, прогнозу, событиям, интерфейсу и ИИ."
+    },
+    {
+      "id": "P02",
+      "title": "Вертолётная переброска",
+      "stage": "5",
+      "gdd_ids": [
+        "R-AIR-04"
+      ],
+      "remaining": "Команда, доступность, высадка, ПВО, штрафы и ИИ."
+    },
+    {
+      "id": "P03",
+      "title": "Катера: состояние, движение и огонь",
+      "stage": "5",
+      "gdd_ids": [
+        "R-NAV-01",
+        "R-TURN-03"
+      ],
+      "remaining": "Завести морской слой в GameState; данные Naval уже есть."
+    },
+    {
+      "id": "P04",
+      "title": "Блокада порта",
+      "stage": "5",
+      "gdd_ids": [
+        "R-NAV-02"
+      ],
+      "remaining": "Связать положение катера, снабжение источника и MPP."
+    },
+    {
+      "id": "P05",
+      "title": "Морской транспорт и высадка",
+      "stage": "5",
+      "gdd_ids": [
+        "R-NAV-04"
+      ],
+      "remaining": "Погрузка, ожидание фазы, движение, высадка и атака берега."
+    },
+    {
+      "id": "P06",
+      "title": "Дальняя блокада как событие",
+      "stage": "5",
+      "gdd_ids": [
+        "R-NAV-03"
+      ],
+      "remaining": "Наполнить сценарий; использовать серию событий либо расширить периодический отрицательный доход."
+    },
+    {
+      "id": "P07",
+      "title": "Воздушные/морские покупки и подкрепления",
+      "stage": "5",
+      "gdd_ids": [
+        "R-ECO-02",
+        "R-EVT-01"
+      ],
+      "remaining": "Убрать Unsupported корректной реализацией баз/портов и прибытия."
+    },
+    {
+      "id": "P08",
+      "title": "Укрепления инженеров",
+      "stage": "5",
+      "gdd_ids": [],
+      "remaining": "Прямой пункт очереди GDD §18, без отдельного R-ID; не путать с уже работающими мостами."
+    },
+    {
+      "id": "P09",
+      "title": "Авиаудар по источнику снабжения",
+      "stage": "5",
+      "gdd_ids": [],
+      "remaining": "Прямой пункт очереди GDD §18: повреждение ресурса и восстановление."
+    },
+    {
+      "id": "P10",
+      "title": "Стратегический туман",
+      "stage": "6",
+      "gdd_ids": [
+        "R-MODE-01"
+      ],
+      "remaining": "Видимость, разведка, скрытые статы, прогноз неизвестного и ограниченный view ИИ."
+    },
+    {
+      "id": "P11",
+      "title": "Эскалация и ядерное применение",
+      "stage": "6",
+      "gdd_ids": [
+        "R-NUC-01"
+      ],
+      "remaining": "Трек, предупреждение, срок, удар, лимиты и последствия только в alternative_escalation."
+    },
+    {
+      "id": "P12",
+      "title": "Выбираемый APP-6",
+      "stage": "6",
+      "gdd_ids": [
+        "R-UI-03"
+      ],
+      "remaining": "Третий режим отображения в настройках/клавишах."
+    },
+    {
+      "id": "P13",
+      "title": "Объяснение снабжения",
+      "stage": "4/6",
+      "gdd_ids": [
+        "R-SUP-04"
+      ],
+      "remaining": "Показывать источник, маршрут, изоляцию/осаду; не менять алгоритм снабжения."
+    },
+    {
+      "id": "P14",
+      "title": "Панели и действия новых механик",
+      "stage": "5/6",
+      "gdd_ids": [
+        "R-UI-04"
+      ],
+      "remaining": "Доступность и объяснения команд 1973 года; независимая карточка врага."
+    },
+    {
+      "id": "P15",
+      "title": "Полный реплей",
+      "stage": "6",
+      "gdd_ids": [
+        "R-UI-05"
+      ],
+      "remaining": "Журнал уже есть; сделать отдельный просмотр с шагами/перемоткой."
+    },
+    {
+      "id": "P16",
+      "title": "Полный редактор сценариев/событий",
+      "stage": "6",
+      "gdd_ids": [],
+      "remaining": "В GDD §18; текущий редактор карт не закрывает редактор сценарных условий/эффектов."
+    },
+    {
+      "id": "P17",
+      "title": "Нации, отдельный NM и перемирие фронта",
+      "stage": "4б",
+      "gdd_ids": [
+        "R-EVT-01",
+        "R-NM-01",
+        "R-NM-02"
+      ],
+      "remaining": "Прекращать атаки пары наций, замораживать фронт без завершения всей игры; сейчас NM на сторону."
+    },
+    {
+      "id": "P18",
+      "title": "Выбор игрока и открытие Голан",
+      "stage": "4б",
+      "gdd_ids": [
+        "R-EVT-01"
+      ],
+      "remaining": "Ранний штурм/цена NM/сдвиг перемирия и запрет входа на закрытый фронт."
+    },
+    {
+      "id": "P19",
+      "title": "Приёмка ИИ и темпа",
+      "stage": "4/4б/5",
+      "gdd_ids": [
+        "R-AI-01"
+      ],
+      "remaining": "Роль «Рывок» уже есть; свежие серии на изменённых данных, затем переброска на «Голанах-73»."
+    },
+    {
+      "id": "P20",
+      "title": "Приёмка производительности WASM",
+      "stage": "4/4б",
+      "gdd_ids": [
+        "R-AI-02"
+      ],
+      "remaining": "Измерить текущие 60 и будущие 90–110 юнитов; не выводить браузерное время из native."
+    }
+  ],
+  "scenarios": [
+    {
+      "id": "golan67",
+      "status": "exists",
+      "title": "Голаны-67",
+      "id_note": "Реальная папка data/scenarios."
+    },
+    {
+      "id": "sinai67",
+      "status": "exists",
+      "title": "Синай-67",
+      "id_note": "Реальная папка data/scenarios."
+    },
+    {
+      "id": "golan73",
+      "status": "missing",
+      "title": "Голаны-73",
+      "id_note": "Рабочий идентификатор аудита; отсутствующие сценарии ещё не имеют утверждённого имени папки."
+    },
+    {
+      "id": "crossing73",
+      "status": "missing",
+      "title": "Переправа",
+      "id_note": "Рабочий идентификатор аудита; отсутствующие сценарии ещё не имеют утверждённого имени папки."
+    },
+    {
+      "id": "across_canal73",
+      "status": "missing",
+      "title": "Через канал",
+      "id_note": "Рабочий идентификатор аудита; отсутствующие сценарии ещё не имеют утверждённого имени папки."
+    },
+    {
+      "id": "escalation73",
+      "status": "missing",
+      "title": "Эскалация-73",
+      "id_note": "Рабочий идентификатор аудита; отсутствующие сценарии ещё не имеют утверждённого имени папки."
+    },
+    {
+      "id": "sixday67",
+      "status": "missing",
+      "title": "Шестидневная война",
+      "id_note": "Рабочий идентификатор аудита; отсутствующие сценарии ещё не имеют утверждённого имени папки."
+    }
+  ],
+  "integration_gap": {
+    "title": "T-RES-05 continuous percentile cannot yet be passed to strategic ResolveCombat",
+    "producer": {
+      "path": "crates/tactical/src/battle.rs",
+      "symbol": "Battle::score / TacResult.percentile"
+    },
+    "consumer": {
+      "path": "crates/core/src/game/command.rs",
+      "symbol": "Command::ResolveCombat { outcome: Option<TacticalOutcome> }"
+    },
+    "resolution": {
+      "path": "crates/core/src/game/attack.rs",
+      "symbol": "combat_losses selects rules.tactical.percentiles[outcome]"
+    },
+    "scope": "Mobile campaign integration; not a blocker for the current auto-resolved desktop scenario."
+  }
+}

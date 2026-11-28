@@ -446,5 +446,432 @@
       0.88
     ],
     "prompt": "Photo of a painted tabletop wargame miniature (15 mm scale), hand-painted matte model, crisp edge highlights, light dry-brush weathering, slightly chunky proportions; soft studio lighting from upper-left, entire model sharp; isolated, transparent background, small soft contact shadow, no base, ground or scenery except specified sculpted water for naval units; historically accurate 1967–1973 equipment; no text, numbers, flags, insignia, markings or watermarks. One model or specified figure group, square image. Subject: Egyptian Osa class missile boat on a small patch of sculpted water. Three-quarter view from above (camera about 40 degrees above the table), facing lower-left, centered, filling about 75% of the frame."
+  },
+  {
+    "id": "isr_paratroopers",
+    "file": "isr/isr_paratroopers.png",
+    "side": "isr",
+    "template": "ground",
+    "style": "miniature",
+    "width": 512,
+    "height": 512,
+    "anchor": [
+      0.5,
+      0.88
+    ],
+    "prompt": "Photo of a painted tabletop wargame miniature (15 mm scale), hand-painted matte model, crisp edge highlights, light dry-brush weathering, slightly chunky proportions; soft studio lighting from upper-left, entire model sharp; isolated, transparent background, small soft contact shadow, no base, ground or scenery except specified sculpted water for naval units; historically accurate 1967–1973 equipment; no text, numbers, flags, insignia, markings or watermarks. One model or specified figure group, square image. Subject: Israeli paratrooper squad, June 1967, three figures in sand-coloured uniforms and helmets with Uzi submachine guns and FN FAL rifles, one kneeling. Three-quarter view from above (camera about 40 degrees above the table), facing lower-left, centered, filling about 75% of the frame.",
+    "model": "image_gen",
+    "generation_backend": "image_gen",
+    "model_note": "Built-in image_gen does not expose the underlying model ID",
+    "generation_prompts": [
+      "Photo of a painted tabletop wargame miniature (15 mm scale), hand-painted matte model, crisp edge highlights, light dry-brush weathering, slightly chunky proportions; soft studio lighting from upper-left, entire model sharp; isolated, transparent background, small soft contact shadow, no base, ground or scenery except specified sculpted water for naval units; historically accurate 1967–1973 equipment; no text, numbers, flags, insignia, markings or watermarks. One model or specified figure group, square image. Subject: Israeli paratrooper squad, June 1967, three figures in sand-coloured uniforms and helmets with Uzi submachine guns and FN FAL rifles, one kneeling. Three-quarter view from above (camera about 40 degrees above the table), facing lower-left, centered, filling about 75% of the frame. Generate square 1024x1024 RGBA with genuinely transparent background, clear transparent margins. Match the approved painted 15mm tabletop miniatures: matte sandy earth tones, fine drybrush, soft upper-left studio light. No base or diorama.",
+      "Photo of a painted tabletop wargame miniature (15 mm scale), hand-painted matte model, crisp edge highlights, light dry-brush weathering, slightly chunky proportions; soft studio lighting from upper-left, entire model sharp; isolated, transparent background, small soft contact shadow, no base, ground or scenery except specified sculpted water for naval units; historically accurate 1967–1973 equipment; no text, numbers, flags, insignia, markings or watermarks. One model or specified figure group, square image. Subject: Israeli paratrooper squad, June 1967, three figures in sand-coloured uniforms and helmets with Uzi submachine guns and FN FAL rifles, one kneeling. Three-quarter view from above (camera about 40 degrees above the table), facing lower-left, centered, filling about 75% of the frame. Weapon silhouettes are essential: two figures carry compact UZI submachine guns with straight vertical magazines inside the pistol grips, the third carries an FN FAL with a straight box magazine and long slim barrel. NO AK-47, NO curved rifle magazines. All three figures oriented toward lower-left. Painted 15mm tabletop miniatures, matte sand uniforms and olive helmets, clear transparent RGBA background, square1024x1024."
+    ],
+    "generated_source_size": [
+      1254,
+      1254
+    ]
+  },
+  {
+    "id": "egy_saiqa",
+    "file": "egy_syr/egy_saiqa.png",
+    "side": "egy_syr",
+    "template": "ground",
+    "style": "miniature",
+    "width": 512,
+    "height": 512,
+    "anchor": [
+      0.5,
+      0.88
+    ],
+    "prompt": "Photo of a painted tabletop wargame miniature (15 mm scale), hand-painted matte model, crisp edge highlights, light dry-brush weathering, slightly chunky proportions; soft studio lighting from upper-left, entire model sharp; isolated, transparent background, small soft contact shadow, no base, ground or scenery except specified sculpted water for naval units; historically accurate 1967–1973 equipment; no text, numbers, flags, insignia, markings or watermarks. One model or specified figure group, square image. Subject: Egyptian commando (Sa'iqa) squad, 1967–1973, three figures in camouflage uniforms with AK-47 rifles and an RPG-7, one kneeling. Three-quarter view from above (camera about 40 degrees above the table), facing lower-left, centered, filling about 75% of the frame.",
+    "model": "image_gen",
+    "generation_backend": "image_gen",
+    "model_note": "Built-in image_gen does not expose the underlying model ID",
+    "generation_prompts": [
+      "Photo of a painted tabletop wargame miniature (15 mm scale), hand-painted matte model, crisp edge highlights, light dry-brush weathering, slightly chunky proportions; soft studio lighting from upper-left, entire model sharp; isolated, transparent background, small soft contact shadow, no base, ground or scenery except specified sculpted water for naval units; historically accurate 1967–1973 equipment; no text, numbers, flags, insignia, markings or watermarks. One model or specified figure group, square image. Subject: Egyptian commando (Sa'iqa) squad, 1967–1973, three figures in camouflage uniforms with AK-47 rifles and an RPG-7, one kneeling. Three-quarter view from above (camera about 40 degrees above the table), facing lower-left, centered, filling about 75% of the frame. Generate square 1024x1024 RGBA with genuinely transparent background, clear transparent margins. Match the approved painted 15mm tabletop miniatures: matte sandy earth tones, fine drybrush, soft upper-left studio light. No base or diorama."
+    ],
+    "generated_source_size": [
+      1254,
+      1254
+    ]
+  },
+  {
+    "id": "isr_atgm_team",
+    "file": "isr/isr_atgm_team.png",
+    "side": "isr",
+    "template": "ground",
+    "style": "miniature",
+    "width": 512,
+    "height": 512,
+    "anchor": [
+      0.5,
+      0.88
+    ],
+    "prompt": "Photo of a painted tabletop wargame miniature (15 mm scale), hand-painted matte model, crisp edge highlights, light dry-brush weathering, slightly chunky proportions; soft studio lighting from upper-left, entire model sharp; isolated, transparent background, small soft contact shadow, no base, ground or scenery except specified sculpted water for naval units; historically accurate 1967–1973 equipment; no text, numbers, flags, insignia, markings or watermarks. One model or specified figure group, square image. Subject: Israeli infantry anti-tank team, 1973: jeep with an M40 106 mm recoilless rifle and two crew figures. Three-quarter view from above (camera about 40 degrees above the table), facing lower-left, centered, filling about 75% of the frame.",
+    "model": "image_gen",
+    "generation_backend": "image_gen",
+    "model_note": "Built-in image_gen does not expose the underlying model ID",
+    "generation_prompts": [
+      "Photo of a painted tabletop wargame miniature (15 mm scale), hand-painted matte model, crisp edge highlights, light dry-brush weathering, slightly chunky proportions; soft studio lighting from upper-left, entire model sharp; isolated, transparent background, small soft contact shadow, no base, ground or scenery except specified sculpted water for naval units; historically accurate 1967–1973 equipment; no text, numbers, flags, insignia, markings or watermarks. One model or specified figure group, square image. Subject: Israeli infantry anti-tank team, 1973: jeep with an M40 106 mm recoilless rifle and two crew figures. Three-quarter view from above (camera about 40 degrees above the table), facing lower-left, centered, filling about 75% of the frame. Generate square 1024x1024 RGBA with genuinely transparent background, clear transparent margins. Match the approved painted 15mm tabletop miniatures: matte sandy earth tones, fine drybrush, soft upper-left studio light. No base or diorama."
+    ],
+    "generated_source_size": [
+      1254,
+      1254
+    ]
+  },
+  {
+    "id": "isr_hawk",
+    "file": "isr/isr_hawk.png",
+    "side": "isr",
+    "template": "ground",
+    "style": "miniature",
+    "width": 512,
+    "height": 512,
+    "anchor": [
+      0.5,
+      0.88
+    ],
+    "prompt": "Photo of a painted tabletop wargame miniature (15 mm scale), hand-painted matte model, crisp edge highlights, light dry-brush weathering, slightly chunky proportions; soft studio lighting from upper-left, entire model sharp; isolated, transparent background, small soft contact shadow, no base, ground or scenery except specified sculpted water for naval units; historically accurate 1967–1973 equipment; no text, numbers, flags, insignia, markings or watermarks. One model or specified figure group, square image. Subject: Israeli MIM-23 Hawk surface-to-air missile launcher with three missiles raised on a towed launcher. Three-quarter view from above (camera about 40 degrees above the table), facing lower-left, centered, filling about 75% of the frame.",
+    "model": "image_gen",
+    "generation_backend": "image_gen",
+    "model_note": "Built-in image_gen does not expose the underlying model ID",
+    "generation_prompts": [
+      "Photo of a painted tabletop wargame miniature (15 mm scale), hand-painted matte model, crisp edge highlights, light dry-brush weathering, slightly chunky proportions; soft studio lighting from upper-left, entire model sharp; isolated, transparent background, small soft contact shadow, no base, ground or scenery except specified sculpted water for naval units; historically accurate 1967–1973 equipment; no text, numbers, flags, insignia, markings or watermarks. One model or specified figure group, square image. Subject: Israeli MIM-23 Hawk surface-to-air missile launcher with three missiles raised on a towed launcher. Three-quarter view from above (camera about 40 degrees above the table), facing lower-left, centered, filling about 75% of the frame. Generate square 1024x1024 RGBA with genuinely transparent background, clear transparent margins. Match the approved painted 15mm tabletop miniatures: matte sandy earth tones, fine drybrush, soft upper-left studio light. No base or diorama."
+    ],
+    "generated_source_size": [
+      1254,
+      1254
+    ]
+  },
+  {
+    "id": "egy_mig17",
+    "file": "egy_syr/egy_mig17.png",
+    "side": "egy_syr",
+    "template": "air",
+    "style": "miniature",
+    "width": 512,
+    "height": 512,
+    "anchor": [
+      0.5,
+      0.88
+    ],
+    "prompt": "Photo of a painted tabletop wargame miniature (15 mm scale), hand-painted matte model, crisp edge highlights, light dry-brush weathering, slightly chunky proportions; soft studio lighting from upper-left, entire model sharp; isolated, transparent background, small soft contact shadow, no base, ground or scenery except specified sculpted water for naval units; historically accurate 1967–1973 equipment; no text, numbers, flags, insignia, markings or watermarks. One model or specified figure group, square image. Subject: Egyptian MiG-17 fighter-bomber in natural metal finish. In flight on an invisible stand, seen from above at a slight angle, heading toward upper-left, centered, filling about 75% of the frame.",
+    "model": "image_gen",
+    "generation_backend": "image_gen",
+    "model_note": "Built-in image_gen does not expose the underlying model ID",
+    "generation_prompts": [
+      "Photo of a painted tabletop wargame miniature (15 mm scale), hand-painted matte model, crisp edge highlights, light dry-brush weathering, slightly chunky proportions; soft studio lighting from upper-left, entire model sharp; isolated, transparent background, small soft contact shadow, no base, ground or scenery except specified sculpted water for naval units; historically accurate 1967–1973 equipment; no text, numbers, flags, insignia, markings or watermarks. One model or specified figure group, square image. Subject: Egyptian MiG-17 fighter-bomber in natural metal finish. In flight on an invisible stand, seen from above at a slight angle, heading toward upper-left, centered, filling about 75% of the frame. Generate square 1024x1024 RGBA with genuinely transparent background, clear transparent margins. Match the approved painted 15mm tabletop miniatures: matte colors, fine drybrush, soft upper-left studio light. No base or diorama.",
+      "Photo of a painted tabletop wargame miniature (15 mm scale), hand-painted matte model, crisp edge highlights, light dry-brush weathering, slightly chunky proportions; soft studio lighting from upper-left, entire model sharp; isolated, transparent background, small soft contact shadow, no base, ground or scenery except specified sculpted water for naval units; historically accurate 1967–1973 equipment; no text, numbers, flags, insignia, markings or watermarks. One model or specified figure group, square image. Subject: Egyptian MiG-17 fighter-bomber in natural metal finish. In flight on an invisible stand, seen from above at a slight angle, heading toward upper-left, centered, filling about 75% of the frame. CRITICAL ORIENTATION: the nose and air intake point toward the UPPER LEFT corner of the square; the tail points to LOWER RIGHT. View predominantly from above, not a side profile. Single silver aircraft, natural metal finish. Square 1024x1024, genuinely transparent RGBA background with generous transparent margin, no stand or terrain."
+    ],
+    "generated_source_size": [
+      1254,
+      1254
+    ]
+  },
+  {
+    "id": "isr_vautour",
+    "file": "isr/isr_vautour.png",
+    "side": "isr",
+    "template": "air",
+    "style": "miniature",
+    "width": 512,
+    "height": 512,
+    "anchor": [
+      0.5,
+      0.88
+    ],
+    "prompt": "Photo of a painted tabletop wargame miniature (15 mm scale), hand-painted matte model, crisp edge highlights, light dry-brush weathering, slightly chunky proportions; soft studio lighting from upper-left, entire model sharp; isolated, transparent background, small soft contact shadow, no base, ground or scenery except specified sculpted water for naval units; historically accurate 1967–1973 equipment; no text, numbers, flags, insignia, markings or watermarks. One model or specified figure group, square image. Subject: Israeli Sud Aviation Vautour twin-engine jet bomber, 1967. In flight on an invisible stand, seen from above at a slight angle, heading toward upper-left, centered, filling about 75% of the frame.",
+    "model": "image_gen",
+    "generation_backend": "image_gen",
+    "model_note": "Built-in image_gen does not expose the underlying model ID",
+    "generation_prompts": [
+      "Photo of a painted tabletop wargame miniature (15 mm scale), hand-painted matte model, crisp edge highlights, light dry-brush weathering, slightly chunky proportions; soft studio lighting from upper-left, entire model sharp; isolated, transparent background, small soft contact shadow, no base, ground or scenery except specified sculpted water for naval units; historically accurate 1967–1973 equipment; no text, numbers, flags, insignia, markings or watermarks. One model or specified figure group, square image. Subject: Israeli Sud Aviation Vautour twin-engine jet bomber, 1967. In flight on an invisible stand, seen from above at a slight angle, heading toward upper-left, centered, filling about 75% of the frame. Generate 1024x1024 RGBA with genuinely transparent background.",
+      "Edit the Vautour miniature image. Keep the same aircraft type, painted tabletop miniature style, colors, lighting, transparent RGBA background, no markings and single aircraft. Correct orientation: nose must point toward the UPPER-LEFT corner of the square, tail toward LOWER-RIGHT. View from above at a slight angle. Keep the entire aircraft and both wings inside the frame with generous clear transparent margins, about 75% frame occupancy. Invisible flight stand. Output square 1024x1024."
+    ]
+  },
+  {
+    "id": "isr_m50_sp",
+    "file": "isr/isr_m50_sp.png",
+    "side": "isr",
+    "template": "ground",
+    "style": "miniature",
+    "width": 512,
+    "height": 512,
+    "anchor": [
+      0.5,
+      0.88
+    ],
+    "prompt": "Photo of a painted tabletop wargame miniature (15 mm scale), hand-painted matte model, crisp edge highlights, light dry-brush weathering, slightly chunky proportions; soft studio lighting from upper-left, entire model sharp; isolated, transparent background, small soft contact shadow, no base, ground or scenery except specified sculpted water for naval units; historically accurate 1967–1973 equipment; no text, numbers, flags, insignia, markings or watermarks. One model or specified figure group, square image. Subject: Israeli M50 155 mm self-propelled howitzer on a Sherman chassis with an open-topped gun compartment, 1967. Three-quarter view from above (camera about 40 degrees above the table), facing lower-left, centered, filling about 75% of the frame.",
+    "model": "image_gen",
+    "generation_backend": "image_gen",
+    "model_note": "Built-in image_gen does not expose the underlying model ID",
+    "generation_prompts": [
+      "Photo of a painted tabletop wargame miniature (15 mm scale), hand-painted matte model, crisp edge highlights, light dry-brush weathering, slightly chunky proportions; soft studio lighting from upper-left, entire model sharp; isolated, transparent background, small soft contact shadow, no base, ground or scenery except specified sculpted water for naval units; historically accurate 1967–1973 equipment; no text, numbers, flags, insignia, markings or watermarks. One model or specified figure group, square image. Subject: Israeli M50 155 mm self-propelled howitzer on a Sherman chassis with an open-topped gun compartment, 1967. Three-quarter view from above (camera about 40 degrees above the table), facing lower-left, centered, filling about 75% of the frame. Generate square 1024x1024 RGBA with genuinely transparent background, clear transparent margins. Match the approved painted 15mm tabletop miniatures: matte colors, fine drybrush, soft upper-left studio light. No base or diorama."
+    ],
+    "generated_source_size": [
+      1254,
+      1254
+    ]
+  },
+  {
+    "id": "isr_amx13",
+    "file": "isr/isr_amx13.png",
+    "side": "isr",
+    "template": "ground",
+    "style": "miniature",
+    "width": 512,
+    "height": 512,
+    "anchor": [
+      0.5,
+      0.88
+    ],
+    "prompt": "Photo of a painted tabletop wargame miniature (15 mm scale), hand-painted matte model, crisp edge highlights, light dry-brush weathering, slightly chunky proportions; soft studio lighting from upper-left, entire model sharp; isolated, transparent background, small soft contact shadow, no base, ground or scenery except specified sculpted water for naval units; historically accurate 1967–1973 equipment; no text, numbers, flags, insignia, markings or watermarks. One model or specified figure group, square image. Subject: Israeli AMX-13 light tank with oscillating turret and 75 mm gun, 1967. Three-quarter view from above (camera about 40 degrees above the table), facing lower-left, centered, filling about 75% of the frame.",
+    "model": "image_gen",
+    "generation_backend": "image_gen",
+    "model_note": "Built-in image_gen does not expose the underlying model ID",
+    "generation_prompts": [
+      "Photo of a painted tabletop wargame miniature (15 mm scale), hand-painted matte model, crisp edge highlights, light dry-brush weathering, slightly chunky proportions; soft studio lighting from upper-left, entire model sharp; isolated, transparent background, small soft contact shadow, no base, ground or scenery except specified sculpted water for naval units; historically accurate 1967–1973 equipment; no text, numbers, flags, insignia, markings or watermarks. One model or specified figure group, square image. Subject: Israeli AMX-13 light tank with oscillating turret and 75 mm gun, 1967. Three-quarter view from above (camera about 40 degrees above the table), facing lower-left, centered, filling about 75% of the frame. Generate square 1024x1024 RGBA with genuinely transparent background, clear transparent margins. Match the approved painted 15mm tabletop miniatures: matte colors, fine drybrush, soft upper-left studio light. No base or diorama."
+    ],
+    "generated_source_size": [
+      1254,
+      1254
+    ]
+  },
+  {
+    "id": "egy_t34_85",
+    "file": "egy_syr/egy_t34_85.png",
+    "side": "egy_syr",
+    "template": "ground",
+    "style": "miniature",
+    "width": 512,
+    "height": 512,
+    "anchor": [
+      0.5,
+      0.88
+    ],
+    "prompt": "Photo of a painted tabletop wargame miniature (15 mm scale), hand-painted matte model, crisp edge highlights, light dry-brush weathering, slightly chunky proportions; soft studio lighting from upper-left, entire model sharp; isolated, transparent background, small soft contact shadow, no base, ground or scenery except specified sculpted water for naval units; historically accurate 1967–1973 equipment; no text, numbers, flags, insignia, markings or watermarks. One model or specified figure group, square image. Subject: Egyptian T-34-85 medium tank, 1967. Three-quarter view from above (camera about 40 degrees above the table), facing lower-left, centered, filling about 75% of the frame.",
+    "model": "image_gen",
+    "generation_backend": "image_gen",
+    "model_note": "Built-in image_gen does not expose the underlying model ID",
+    "generation_prompts": [
+      "Photo of a painted tabletop wargame miniature (15 mm scale), hand-painted matte model, crisp edge highlights, light dry-brush weathering, slightly chunky proportions; soft studio lighting from upper-left, entire model sharp; isolated, transparent background, small soft contact shadow, no base, ground or scenery except specified sculpted water for naval units; historically accurate 1967–1973 equipment; no text, numbers, flags, insignia, markings or watermarks. One model or specified figure group, square image. Subject: Egyptian T-34-85 medium tank, 1967. Three-quarter view from above (camera about 40 degrees above the table), facing lower-left, centered, filling about 75% of the frame. Generate square 1024x1024 RGBA with genuinely transparent background, clear transparent margins. Match the approved painted 15mm tabletop miniatures: matte colors, fine drybrush, soft upper-left studio light. No base or diorama."
+    ],
+    "generated_source_size": [
+      1254,
+      1254
+    ]
+  },
+  {
+    "id": "egy_is3",
+    "file": "egy_syr/egy_is3.png",
+    "side": "egy_syr",
+    "template": "ground",
+    "style": "miniature",
+    "width": 512,
+    "height": 512,
+    "anchor": [
+      0.5,
+      0.88
+    ],
+    "prompt": "Photo of a painted tabletop wargame miniature (15 mm scale), hand-painted matte model, crisp edge highlights, light dry-brush weathering, slightly chunky proportions; soft studio lighting from upper-left, entire model sharp; isolated, transparent background, small soft contact shadow, no base, ground or scenery except specified sculpted water for naval units; historically accurate 1967–1973 equipment; no text, numbers, flags, insignia, markings or watermarks. One model or specified figure group, square image. Subject: Egyptian IS-3 heavy tank with 122 mm gun, 1967. Three-quarter view from above (camera about 40 degrees above the table), facing lower-left, centered, filling about 75% of the frame.",
+    "model": "image_gen",
+    "generation_backend": "image_gen",
+    "model_note": "Built-in image_gen does not expose the underlying model ID",
+    "generation_prompts": [
+      "Photo of a painted tabletop wargame miniature (15 mm scale), hand-painted matte model, crisp edge highlights, light dry-brush weathering, slightly chunky proportions; soft studio lighting from upper-left, entire model sharp; isolated, transparent background, small soft contact shadow, no base, ground or scenery except specified sculpted water for naval units; historically accurate 1967–1973 equipment; no text, numbers, flags, insignia, markings or watermarks. One model or specified figure group, square image. Subject: Egyptian IS-3 heavy tank with 122 mm gun, 1967. Three-quarter view from above (camera about 40 degrees above the table), facing lower-left, centered, filling about 75% of the frame. Generate square 1024x1024 RGBA with genuinely transparent background, clear transparent margins. Match the approved painted 15mm tabletop miniatures: matte sandy colors, fine drybrush, soft upper-left studio light. No base or diorama."
+    ],
+    "generated_source_size": [
+      1254,
+      1254
+    ]
+  },
+  {
+    "id": "egy_su100",
+    "file": "egy_syr/egy_su100.png",
+    "side": "egy_syr",
+    "template": "ground",
+    "style": "miniature",
+    "width": 512,
+    "height": 512,
+    "anchor": [
+      0.5,
+      0.88
+    ],
+    "prompt": "Photo of a painted tabletop wargame miniature (15 mm scale), hand-painted matte model, crisp edge highlights, light dry-brush weathering, slightly chunky proportions; soft studio lighting from upper-left, entire model sharp; isolated, transparent background, small soft contact shadow, no base, ground or scenery except specified sculpted water for naval units; historically accurate 1967–1973 equipment; no text, numbers, flags, insignia, markings or watermarks. One model or specified figure group, square image. Subject: Egyptian SU-100 self-propelled tank destroyer, 1967. Three-quarter view from above (camera about 40 degrees above the table), facing lower-left, centered, filling about 75% of the frame.",
+    "model": "image_gen",
+    "generation_backend": "image_gen",
+    "model_note": "Built-in image_gen does not expose the underlying model ID",
+    "generation_prompts": [
+      "Photo of a painted tabletop wargame miniature (15 mm scale), hand-painted matte model, crisp edge highlights, light dry-brush weathering, slightly chunky proportions; soft studio lighting from upper-left, entire model sharp; isolated, transparent background, small soft contact shadow, no base, ground or scenery except specified sculpted water for naval units; historically accurate 1967–1973 equipment; no text, numbers, flags, insignia, markings or watermarks. One model or specified figure group, square image. Subject: Egyptian SU-100 self-propelled tank destroyer, 1967. Three-quarter view from above (camera about 40 degrees above the table), facing lower-left, centered, filling about 75% of the frame. Generate square 1024x1024 RGBA with genuinely transparent background, clear transparent margins. Match the approved painted 15mm tabletop miniatures: matte sandy colors, fine drybrush, soft upper-left studio light. No base or diorama."
+    ],
+    "generated_source_size": [
+      1254,
+      1254
+    ]
+  },
+  {
+    "id": "syr_pz4",
+    "file": "egy_syr/syr_pz4.png",
+    "side": "egy_syr",
+    "template": "ground",
+    "style": "miniature",
+    "width": 512,
+    "height": 512,
+    "anchor": [
+      0.5,
+      0.88
+    ],
+    "prompt": "Photo of a painted tabletop wargame miniature (15 mm scale), hand-painted matte model, crisp edge highlights, light dry-brush weathering, slightly chunky proportions; soft studio lighting from upper-left, entire model sharp; isolated, transparent background, small soft contact shadow, no base, ground or scenery except specified sculpted water for naval units; historically accurate 1967–1973 equipment; no text, numbers, flags, insignia, markings or watermarks. One model or specified figure group, square image. Subject: Syrian Panzer IV tank (late model with long 75 mm gun) in faded sand camouflage, 1967. Three-quarter view from above (camera about 40 degrees above the table), facing lower-left, centered, filling about 75% of the frame.",
+    "model": "image_gen",
+    "generation_backend": "image_gen",
+    "model_note": "Built-in image_gen does not expose the underlying model ID",
+    "generation_prompts": [
+      "Photo of a painted tabletop wargame miniature (15 mm scale), hand-painted matte model, crisp edge highlights, light dry-brush weathering, slightly chunky proportions; soft studio lighting from upper-left, entire model sharp; isolated, transparent background, small soft contact shadow, no base, ground or scenery except specified sculpted water for naval units; historically accurate 1967–1973 equipment; no text, numbers, flags, insignia, markings or watermarks. One model or specified figure group, square image. Subject: Syrian Panzer IV tank (late model with long 75 mm gun) in faded sand camouflage, 1967. Three-quarter view from above (camera about 40 degrees above the table), facing lower-left, centered, filling about 75% of the frame. Generate square 1024x1024 RGBA with genuinely transparent background, clear transparent margins. Match the approved painted 15mm tabletop miniatures: matte sandy colors, fine drybrush, soft upper-left studio light. No base or diorama."
+    ],
+    "generated_source_size": [
+      1254,
+      1254
+    ]
+  },
+  {
+    "id": "syr_stug3",
+    "file": "egy_syr/syr_stug3.png",
+    "side": "egy_syr",
+    "template": "ground",
+    "style": "miniature",
+    "width": 512,
+    "height": 512,
+    "anchor": [
+      0.5,
+      0.88
+    ],
+    "prompt": "Photo of a painted tabletop wargame miniature (15 mm scale), hand-painted matte model, crisp edge highlights, light dry-brush weathering, slightly chunky proportions; soft studio lighting from upper-left, entire model sharp; isolated, transparent background, small soft contact shadow, no base, ground or scenery except specified sculpted water for naval units; historically accurate 1967–1973 equipment; no text, numbers, flags, insignia, markings or watermarks. One model or specified figure group, square image. Subject: Syrian StuG III assault gun in faded sand camouflage, 1967. Three-quarter view from above (camera about 40 degrees above the table), facing lower-left, centered, filling about 75% of the frame.",
+    "model": "image_gen",
+    "generation_backend": "image_gen",
+    "model_note": "Built-in image_gen does not expose the underlying model ID",
+    "generation_prompts": [
+      "Photo of a painted tabletop wargame miniature (15 mm scale), hand-painted matte model, crisp edge highlights, light dry-brush weathering, slightly chunky proportions; soft studio lighting from upper-left, entire model sharp; isolated, transparent background, small soft contact shadow, no base, ground or scenery except specified sculpted water for naval units; historically accurate 1967–1973 equipment; no text, numbers, flags, insignia, markings or watermarks. One model or specified figure group, square image. Subject: Syrian StuG III assault gun in faded sand camouflage, 1967. Three-quarter view from above (camera about 40 degrees above the table), facing lower-left, centered, filling about 75% of the frame. Generate square 1024x1024 RGBA with genuinely transparent background, clear transparent margins. Match the approved painted 15mm tabletop miniatures: matte sandy colors, fine drybrush, soft upper-left studio light. No base or diorama."
+    ],
+    "generated_source_size": [
+      1254,
+      1254
+    ]
+  },
+  {
+    "id": "jor_m48",
+    "file": "jor/jor_m48.png",
+    "side": "jor",
+    "template": "ground",
+    "style": "miniature",
+    "width": 512,
+    "height": 512,
+    "anchor": [
+      0.5,
+      0.88
+    ],
+    "prompt": "Photo of a painted tabletop wargame miniature (15 mm scale), hand-painted matte model, crisp edge highlights, light dry-brush weathering, slightly chunky proportions; soft studio lighting from upper-left, entire model sharp; isolated, transparent background, small soft contact shadow, no base, ground or scenery except specified sculpted water for naval units; historically accurate 1967–1973 equipment; no text, numbers, flags, insignia, markings or watermarks. One model or specified figure group, square image. Subject: Jordanian M48 Patton tank, 1967. Three-quarter view from above (camera about 40 degrees above the table), facing lower-left, centered, filling about 75% of the frame.",
+    "model": "image_gen",
+    "generation_backend": "image_gen",
+    "model_note": "Built-in image_gen does not expose the underlying model ID",
+    "generation_prompts": [
+      "Photo of a painted tabletop wargame miniature (15 mm scale), hand-painted matte model, crisp edge highlights, light dry-brush weathering, slightly chunky proportions; soft studio lighting from upper-left, entire model sharp; isolated, transparent background, small soft contact shadow, no base, ground or scenery except specified sculpted water for naval units; historically accurate 1967–1973 equipment; no text, numbers, flags, insignia, markings or watermarks. One model or specified figure group, square image. Subject: Jordanian M48 Patton tank, 1967. Three-quarter view from above (camera about 40 degrees above the table), facing lower-left, centered, filling about 75% of the frame. Generate 1024x1024 RGBA with genuinely transparent background. Contact point of model about 88% down image; keep a transparent border."
+    ]
+  },
+  {
+    "id": "jor_infantry",
+    "file": "jor/jor_infantry.png",
+    "side": "jor",
+    "template": "ground",
+    "style": "miniature",
+    "width": 512,
+    "height": 512,
+    "anchor": [
+      0.5,
+      0.88
+    ],
+    "prompt": "Photo of a painted tabletop wargame miniature (15 mm scale), hand-painted matte model, crisp edge highlights, light dry-brush weathering, slightly chunky proportions; soft studio lighting from upper-left, entire model sharp; isolated, transparent background, small soft contact shadow, no base, ground or scenery except specified sculpted water for naval units; historically accurate 1967–1973 equipment; no text, numbers, flags, insignia, markings or watermarks. One model or specified figure group, square image. Subject: Jordanian Arab Legion infantry squad, 1967, three figures in khaki uniforms with red-and-white keffiyeh-style headdress, Lee-Enfield and M1 rifles, one kneeling. Three-quarter view from above (camera about 40 degrees above the table), facing lower-left, centered, filling about 75% of the frame.",
+    "model": "image_gen",
+    "generation_backend": "image_gen",
+    "model_note": "Built-in image_gen does not expose the underlying model ID",
+    "generation_prompts": [
+      "Photo of a painted tabletop wargame miniature (15 mm scale), hand-painted matte model, crisp edge highlights, light dry-brush weathering, slightly chunky proportions; soft studio lighting from upper-left, entire model sharp; isolated, transparent background, small soft contact shadow, no base, ground or scenery except specified sculpted water for naval units; historically accurate 1967–1973 equipment; no text, numbers, flags, insignia, markings or watermarks. One model or specified figure group, square image. Subject: Jordanian Arab Legion infantry squad, 1967, three figures in khaki uniforms with red-and-white keffiyeh-style headdress, Lee-Enfield and M1 rifles, one kneeling. Three-quarter view from above (camera about 40 degrees above the table), facing lower-left, centered, filling about 75% of the frame. Generate square 1024x1024 RGBA with genuinely transparent background, clear transparent margins. Match the approved painted 15mm tabletop miniatures: matte sandy colors, fine drybrush, soft upper-left studio light. No base or diorama."
+    ],
+    "generated_source_size": [
+      1254,
+      1254
+    ]
+  },
+  {
+    "id": "jor_artillery",
+    "file": "jor/jor_artillery.png",
+    "side": "jor",
+    "template": "ground",
+    "style": "miniature",
+    "width": 512,
+    "height": 512,
+    "anchor": [
+      0.5,
+      0.88
+    ],
+    "prompt": "Photo of a painted tabletop wargame miniature (15 mm scale), hand-painted matte model, crisp edge highlights, light dry-brush weathering, slightly chunky proportions; soft studio lighting from upper-left, entire model sharp; isolated, transparent background, small soft contact shadow, no base, ground or scenery except specified sculpted water for naval units; historically accurate 1967–1973 equipment; no text, numbers, flags, insignia, markings or watermarks. One model or specified figure group, square image. Subject: Jordanian towed 25-pounder field gun with two crew figures, 1967. Three-quarter view from above (camera about 40 degrees above the table), facing lower-left, centered, filling about 75% of the frame.",
+    "model": "image_gen",
+    "generation_backend": "image_gen",
+    "model_note": "Built-in image_gen does not expose the underlying model ID",
+    "generation_prompts": [
+      "Photo of a painted tabletop wargame miniature (15 mm scale), hand-painted matte model, crisp edge highlights, light dry-brush weathering, slightly chunky proportions; soft studio lighting from upper-left, entire model sharp; isolated, transparent background, small soft contact shadow, no base, ground or scenery except specified sculpted water for naval units; historically accurate 1967–1973 equipment; no text, numbers, flags, insignia, markings or watermarks. One model or specified figure group, square image. Subject: Jordanian towed 25-pounder field gun with two crew figures, 1967. Three-quarter view from above (camera about 40 degrees above the table), facing lower-left, centered, filling about 75% of the frame. Generate square 1024x1024 RGBA with genuinely transparent background, clear transparent margins. Match the approved painted 15mm tabletop miniatures: matte sandy colors, fine drybrush, soft upper-left studio light. No base or diorama."
+    ],
+    "generated_source_size": [
+      1254,
+      1254
+    ]
+  },
+  {
+    "id": "jor_hq",
+    "file": "jor/jor_hq.png",
+    "side": "jor",
+    "template": "ground",
+    "style": "miniature",
+    "width": 512,
+    "height": 512,
+    "anchor": [
+      0.5,
+      0.88
+    ],
+    "prompt": "Photo of a painted tabletop wargame miniature (15 mm scale), hand-painted matte model, crisp edge highlights, light dry-brush weathering, slightly chunky proportions; soft studio lighting from upper-left, entire model sharp; isolated, transparent background, small soft contact shadow, no base, ground or scenery except specified sculpted water for naval units; historically accurate 1967–1973 equipment; no text, numbers, flags, insignia, markings or watermarks. One model or specified figure group, square image. Subject: Jordanian field command vehicle: Land Rover with radio antennas and a map board, two officer figures, 1967. Three-quarter view from above (camera about 40 degrees above the table), facing lower-left, centered, filling about 75% of the frame.",
+    "model": "image_gen",
+    "generation_backend": "image_gen",
+    "model_note": "Built-in image_gen does not expose the underlying model ID",
+    "generation_prompts": [
+      "Photo of a painted tabletop wargame miniature (15 mm scale), hand-painted matte model, crisp edge highlights, light dry-brush weathering, slightly chunky proportions; soft studio lighting from upper-left, entire model sharp; isolated, transparent background, small soft contact shadow, no base, ground or scenery except specified sculpted water for naval units; historically accurate 1967–1973 equipment; no text, numbers, flags, insignia, markings or watermarks. One model or specified figure group, square image. Subject: Jordanian field command vehicle: Land Rover with radio antennas and a map board, two officer figures, 1967. Three-quarter view from above (camera about 40 degrees above the table), facing lower-left, centered, filling about 75% of the frame. Generate square 1024x1024 RGBA with genuinely transparent background, clear transparent margins. Match the approved painted 15mm tabletop miniatures: matte sandy colors, fine drybrush, soft upper-left studio light. No base or diorama."
+    ],
+    "generated_source_size": [
+      1254,
+      1254
+    ]
+  },
+  {
+    "id": "jor_hunter",
+    "file": "jor/jor_hunter.png",
+    "side": "jor",
+    "template": "air",
+    "style": "miniature",
+    "width": 512,
+    "height": 512,
+    "anchor": [
+      0.5,
+      0.88
+    ],
+    "prompt": "Photo of a painted tabletop wargame miniature (15 mm scale), hand-painted matte model, crisp edge highlights, light dry-brush weathering, slightly chunky proportions; soft studio lighting from upper-left, entire model sharp; isolated, transparent background, small soft contact shadow, no base, ground or scenery except specified sculpted water for naval units; historically accurate 1967–1973 equipment; no text, numbers, flags, insignia, markings or watermarks. One model or specified figure group, square image. Subject: Royal Jordanian Air Force Hawker Hunter jet fighter, 1967. In flight on an invisible stand, seen from above at a slight angle, heading toward upper-left, centered, filling about 75% of the frame.",
+    "model": "image_gen",
+    "generation_backend": "image_gen",
+    "model_note": "Built-in image_gen does not expose the underlying model ID",
+    "generation_prompts": [
+      "Photo of a painted tabletop wargame miniature (15 mm scale), hand-painted matte model, crisp edge highlights, light dry-brush weathering, slightly chunky proportions; soft studio lighting from upper-left, entire model sharp; isolated, transparent background, small soft contact shadow, no base, ground or scenery except specified sculpted water for naval units; historically accurate 1967–1973 equipment; no text, numbers, flags, insignia, markings or watermarks. One model or specified figure group, square image. Subject: Royal Jordanian Air Force Hawker Hunter jet fighter, 1967. In flight on an invisible stand, seen from above at a slight angle, heading toward upper-left, centered, filling about 75% of the frame. Generate square 1024x1024 RGBA with genuinely transparent background, clear transparent margins. Match the approved painted 15mm tabletop miniatures: matte sandy colors, fine drybrush, soft upper-left studio light. No base or diorama. Aircraft nose pointing to UPPER-LEFT corner; tail points LOWER-RIGHT, clearly viewed from above."
+    ],
+    "generated_source_size": [
+      1254,
+      1254
+    ]
   }
 ]

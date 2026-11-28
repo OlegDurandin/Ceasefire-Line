@@ -58,6 +58,9 @@ pub struct AirUnit {
     /// Hundredths of a star.
     pub exp: u16,
     pub nation: Option<String>,
+    /// R-UI-03: optional sprite model id; does not change unit statistics.
+    #[serde(default)]
+    pub model: Option<String>,
     pub name: Option<String>,
     /// R-AIR-01: −10 per sortie, +20 back after an own phase without one.
     pub fatigue_pct: u8,

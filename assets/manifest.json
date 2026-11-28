@@ -447,7 +447,14 @@
     "template": "ground",
     "width": 512,
     "height": 512,
-    "prompt": "Painterly gouache realism, muted natural colors, upper-left lighting, no text, flags or insignia. Unit token, 512×512, PNG RGBA with transparent background, three-quarter view, facing lower-left, 1967–1973 era, all four corners fully transparent, at least 8 px transparent padding, no ground, no scenery. Subject: MIM-23 HAWK surface-to-air missile launcher with three missiles, towed battery"
+    "prompt": "Painterly gouache realism, muted natural colors, upper-left lighting, no text, flags or insignia. Unit token, 512×512, PNG RGBA with transparent background, three-quarter view, facing lower-left, 1967–1973 era, all four corners fully transparent, at least 8 px transparent padding, no ground, no scenery. Subject: MIM-23 HAWK surface-to-air missile launcher with three missiles, towed battery",
+    "generation_prompts": [
+      "Photo of a painted tabletop wargame miniature (15 mm scale), hand-painted matte model, crisp edge highlights, light dry-brush weathering, slightly chunky proportions; soft studio lighting from upper-left, entire model sharp; isolated, transparent background, small soft contact shadow, no base, ground or scenery except specified sculpted water for naval units; historically accurate 1967–1973 equipment; no text, numbers, flags, insignia, markings or watermarks. One model or specified figure group, square image. Subject: Israeli MIM-23 Hawk surface-to-air missile launcher with three missiles raised on a towed launcher. Three-quarter view from above (camera about 40 degrees above the table), facing lower-left, centered, filling about 75% of the frame. Generate square 1024x1024 RGBA with genuinely transparent background, clear transparent margins. Match the approved painted 15mm tabletop miniatures: matte sandy earth tones, fine drybrush, soft upper-left studio light. No base or diorama."
+    ],
+    "generated_source_size": [
+      1254,
+      1254
+    ]
   },
   {
     "id": "isr_atgm_team",
@@ -457,7 +464,14 @@
     "template": "ground",
     "width": 512,
     "height": 512,
-    "prompt": "Painterly gouache realism, muted natural colors, upper-left lighting, no text, flags or insignia. Unit token, 512×512, PNG RGBA with transparent background, three-quarter view, facing lower-left, 1967–1973 era, all four corners fully transparent, at least 8 px transparent padding, no ground, no scenery. Subject: Israeli infantry anti-tank team with TOW launcher and M72 LAW, 1973"
+    "prompt": "Painterly gouache realism, muted natural colors, upper-left lighting, no text, flags or insignia. Unit token, 512×512, PNG RGBA with transparent background, three-quarter view, facing lower-left, 1967–1973 era, all four corners fully transparent, at least 8 px transparent padding, no ground, no scenery. Subject: Israeli infantry anti-tank team with TOW launcher and M72 LAW, 1973",
+    "generation_prompts": [
+      "Photo of a painted tabletop wargame miniature (15 mm scale), hand-painted matte model, crisp edge highlights, light dry-brush weathering, slightly chunky proportions; soft studio lighting from upper-left, entire model sharp; isolated, transparent background, small soft contact shadow, no base, ground or scenery except specified sculpted water for naval units; historically accurate 1967–1973 equipment; no text, numbers, flags, insignia, markings or watermarks. One model or specified figure group, square image. Subject: Israeli infantry anti-tank team, 1973: jeep with an M40 106 mm recoilless rifle and two crew figures. Three-quarter view from above (camera about 40 degrees above the table), facing lower-left, centered, filling about 75% of the frame. Generate square 1024x1024 RGBA with genuinely transparent background, clear transparent margins. Match the approved painted 15mm tabletop miniatures: matte sandy earth tones, fine drybrush, soft upper-left studio light. No base or diorama."
+    ],
+    "generated_source_size": [
+      1254,
+      1254
+    ]
   },
   {
     "id": "isr_paratroopers",
@@ -467,7 +481,15 @@
     "template": "ground",
     "width": 512,
     "height": 512,
-    "prompt": "Painterly gouache realism, muted natural colors, upper-left lighting, no text, flags or insignia. Unit token, 512×512, PNG RGBA with transparent background, three-quarter view, facing lower-left, 1967–1973 era, all four corners fully transparent, at least 8 px transparent padding, no ground, no scenery. Subject: Israeli paratroopers squad in combat gear, light weapons, 1967"
+    "prompt": "Painterly gouache realism, muted natural colors, upper-left lighting, no text, flags or insignia. Unit token, 512×512, PNG RGBA with transparent background, three-quarter view, facing lower-left, 1967–1973 era, all four corners fully transparent, at least 8 px transparent padding, no ground, no scenery. Subject: Israeli paratroopers squad in combat gear, light weapons, 1967",
+    "generation_prompts": [
+      "Photo of a painted tabletop wargame miniature (15 mm scale), hand-painted matte model, crisp edge highlights, light dry-brush weathering, slightly chunky proportions; soft studio lighting from upper-left, entire model sharp; isolated, transparent background, small soft contact shadow, no base, ground or scenery except specified sculpted water for naval units; historically accurate 1967–1973 equipment; no text, numbers, flags, insignia, markings or watermarks. One model or specified figure group, square image. Subject: Israeli paratrooper squad, June 1967, three figures in sand-coloured uniforms and helmets with Uzi submachine guns and FN FAL rifles, one kneeling. Three-quarter view from above (camera about 40 degrees above the table), facing lower-left, centered, filling about 75% of the frame. Generate square 1024x1024 RGBA with genuinely transparent background, clear transparent margins. Match the approved painted 15mm tabletop miniatures: matte sandy earth tones, fine drybrush, soft upper-left studio light. No base or diorama.",
+      "Photo of a painted tabletop wargame miniature (15 mm scale), hand-painted matte model, crisp edge highlights, light dry-brush weathering, slightly chunky proportions; soft studio lighting from upper-left, entire model sharp; isolated, transparent background, small soft contact shadow, no base, ground or scenery except specified sculpted water for naval units; historically accurate 1967–1973 equipment; no text, numbers, flags, insignia, markings or watermarks. One model or specified figure group, square image. Subject: Israeli paratrooper squad, June 1967, three figures in sand-coloured uniforms and helmets with Uzi submachine guns and FN FAL rifles, one kneeling. Three-quarter view from above (camera about 40 degrees above the table), facing lower-left, centered, filling about 75% of the frame. Weapon silhouettes are essential: two figures carry compact UZI submachine guns with straight vertical magazines inside the pistol grips, the third carries an FN FAL with a straight box magazine and long slim barrel. NO AK-47, NO curved rifle magazines. All three figures oriented toward lower-left. Painted 15mm tabletop miniatures, matte sand uniforms and olive helmets, clear transparent RGBA background, square1024x1024."
+    ],
+    "generated_source_size": [
+      1254,
+      1254
+    ]
   },
   {
     "id": "egy_saiqa",
@@ -477,7 +499,14 @@
     "template": "ground",
     "width": 512,
     "height": 512,
-    "prompt": "Painterly gouache realism, muted natural colors, upper-left lighting, no text, flags or insignia. Unit token, 512×512, PNG RGBA with transparent background, three-quarter view, facing lower-left, 1967–1973 era, all four corners fully transparent, at least 8 px transparent padding, no ground, no scenery. Subject: Egyptian Saiqa commando squad with AK-47 and RPG-7, 1973"
+    "prompt": "Painterly gouache realism, muted natural colors, upper-left lighting, no text, flags or insignia. Unit token, 512×512, PNG RGBA with transparent background, three-quarter view, facing lower-left, 1967–1973 era, all four corners fully transparent, at least 8 px transparent padding, no ground, no scenery. Subject: Egyptian Saiqa commando squad with AK-47 and RPG-7, 1973",
+    "generation_prompts": [
+      "Photo of a painted tabletop wargame miniature (15 mm scale), hand-painted matte model, crisp edge highlights, light dry-brush weathering, slightly chunky proportions; soft studio lighting from upper-left, entire model sharp; isolated, transparent background, small soft contact shadow, no base, ground or scenery except specified sculpted water for naval units; historically accurate 1967–1973 equipment; no text, numbers, flags, insignia, markings or watermarks. One model or specified figure group, square image. Subject: Egyptian commando (Sa'iqa) squad, 1967–1973, three figures in camouflage uniforms with AK-47 rifles and an RPG-7, one kneeling. Three-quarter view from above (camera about 40 degrees above the table), facing lower-left, centered, filling about 75% of the frame. Generate square 1024x1024 RGBA with genuinely transparent background, clear transparent margins. Match the approved painted 15mm tabletop miniatures: matte sandy earth tones, fine drybrush, soft upper-left studio light. No base or diorama."
+    ],
+    "generated_source_size": [
+      1254,
+      1254
+    ]
   },
   {
     "id": "egy_mig17",
@@ -487,7 +516,15 @@
     "template": "air",
     "width": 512,
     "height": 512,
-    "prompt": "Painterly gouache realism, muted natural colors, upper-left lighting, no text, flags or insignia. Air unit token, 512×512, PNG RGBA with transparent background, three-quarter aerial view, heading upper-left, 1967–1973 era, all four corners fully transparent, at least 8 px transparent padding, no clouds, no ground, no scenery. Subject: MiG-17 fighter-bomber in flight, carrying rockets"
+    "prompt": "Painterly gouache realism, muted natural colors, upper-left lighting, no text, flags or insignia. Air unit token, 512×512, PNG RGBA with transparent background, three-quarter aerial view, heading upper-left, 1967–1973 era, all four corners fully transparent, at least 8 px transparent padding, no clouds, no ground, no scenery. Subject: MiG-17 fighter-bomber in flight, carrying rockets",
+    "generation_prompts": [
+      "Photo of a painted tabletop wargame miniature (15 mm scale), hand-painted matte model, crisp edge highlights, light dry-brush weathering, slightly chunky proportions; soft studio lighting from upper-left, entire model sharp; isolated, transparent background, small soft contact shadow, no base, ground or scenery except specified sculpted water for naval units; historically accurate 1967–1973 equipment; no text, numbers, flags, insignia, markings or watermarks. One model or specified figure group, square image. Subject: Egyptian MiG-17 fighter-bomber in natural metal finish. In flight on an invisible stand, seen from above at a slight angle, heading toward upper-left, centered, filling about 75% of the frame. Generate square 1024x1024 RGBA with genuinely transparent background, clear transparent margins. Match the approved painted 15mm tabletop miniatures: matte colors, fine drybrush, soft upper-left studio light. No base or diorama.",
+      "Photo of a painted tabletop wargame miniature (15 mm scale), hand-painted matte model, crisp edge highlights, light dry-brush weathering, slightly chunky proportions; soft studio lighting from upper-left, entire model sharp; isolated, transparent background, small soft contact shadow, no base, ground or scenery except specified sculpted water for naval units; historically accurate 1967–1973 equipment; no text, numbers, flags, insignia, markings or watermarks. One model or specified figure group, square image. Subject: Egyptian MiG-17 fighter-bomber in natural metal finish. In flight on an invisible stand, seen from above at a slight angle, heading toward upper-left, centered, filling about 75% of the frame. CRITICAL ORIENTATION: the nose and air intake point toward the UPPER LEFT corner of the square; the tail points to LOWER RIGHT. View predominantly from above, not a side profile. Single silver aircraft, natural metal finish. Square 1024x1024, genuinely transparent RGBA background with generous transparent margin, no stand or terrain."
+    ],
+    "generated_source_size": [
+      1254,
+      1254
+    ]
   },
   {
     "id": "briefing_golan67",
@@ -584,5 +621,183 @@
     "source": "сгенерировано (ChatGPT, 2026-11-28)",
     "prompt_version": "r-ui-07 v1",
     "prompt": "Painterly gouache realism, muted natural colors, soft upper-left lighting, visible brush texture, mid-century military history book plate; no text, flags, insignia or identifiable people; neutral tone, no gore; period-correct June 1967 equipment. Generated 1536×1024, cropped to 16:9. Subject: A steel swing bridge over the Suez Canal, its span broken and sagging into the water after a demolition."
+  },
+  {
+    "id": "briefing_sixday67",
+    "file": "briefing/briefing_sixday67.webp",
+    "group": "briefing",
+    "side": null,
+    "template": "illustration",
+    "width": 1600,
+    "height": 900,
+    "prompt": "Painterly gouache realism, muted natural colors, soft upper-left lighting, visible brush texture, mid-century military history book plate; no text, flags, insignia or identifiable people; neutral tone, no gore; period-correct June 1967 equipment. Generate 1536×1024. Subject: Six-Day War, June 1967: wide panorama from the Sinai desert in the foreground across the Judean hills to the Golan escarpment on the horizon, armoured columns and dust trails on three distant fronts, jets high in the sky",
+    "model": "image_gen",
+    "generation_backend": "image_gen",
+    "model_note": "Built-in image_gen does not expose the underlying model ID",
+    "generation_prompts": [
+      "Painterly gouache realism, muted natural colors, soft upper-left lighting, visible brush texture, mid-century military history book plate; no text, flags, insignia or identifiable people; neutral tone, no gore; period-correct June 1967 equipment. Generate 1536×1024. Subject: Six-Day War, June 1967: wide panorama from the Sinai desert in the foreground across the Judean hills to the Golan escarpment on the horizon, armoured columns and dust trails on three distant fronts, jets high in the sky. Keep important composition inside the central 16:9 crop."
+    ]
+  },
+  {
+    "id": "sixday67_first_strike",
+    "file": "events/sixday67_first_strike.webp",
+    "group": "event",
+    "side": null,
+    "template": "illustration",
+    "width": 1200,
+    "height": 675,
+    "prompt": "Painterly gouache realism, muted natural colors, soft upper-left lighting, visible brush texture, mid-century military history book plate; no text, flags, insignia or identifiable people; neutral tone, no gore; period-correct June 1967 equipment. Generate 1536×1024. Subject: Morning of 5 June 1967: an Egyptian air base after an air strike, cratered runway, burning parked jet fighters in revetments, smoke columns, no people in close-up",
+    "model": "image_gen",
+    "generation_backend": "image_gen",
+    "model_note": "Built-in image_gen does not expose the underlying model ID",
+    "generation_prompts": [
+      "Painterly gouache realism, muted natural colors, soft upper-left lighting, visible brush texture, mid-century military history book plate; no text, flags, insignia or identifiable people; neutral tone, no gore; period-correct June 1967 equipment. Generate 1536×1024. Subject: Morning of 5 June 1967: an Egyptian air base after an air strike, cratered runway, burning parked jet fighters in revetments, smoke columns, no people in close-up Keep key subjects inside central 16:9 crop. Match the approved briefing: soft dusty ochres and muted blue-grey distant hills, painterly gouache brush texture, historical book illustration, atmospheric distance, no captions or symbols."
+    ],
+    "generated_source_size": [
+      1672,
+      941
+    ]
+  },
+  {
+    "id": "sixday67_jordan_enters",
+    "file": "events/sixday67_jordan_enters.webp",
+    "group": "event",
+    "side": null,
+    "template": "illustration",
+    "width": 1200,
+    "height": 675,
+    "prompt": "Painterly gouache realism, muted natural colors, soft upper-left lighting, visible brush texture, mid-century military history book plate; no text, flags, insignia or identifiable people; neutral tone, no gore; period-correct June 1967 equipment. Generate 1536×1024. Subject: Artillery fire over terraced limestone hills at dawn, gun flashes on a distant ridge, a stone village below",
+    "model": "image_gen",
+    "generation_backend": "image_gen",
+    "model_note": "Built-in image_gen does not expose the underlying model ID",
+    "generation_prompts": [
+      "Painterly gouache realism, muted natural colors, soft upper-left lighting, visible brush texture, mid-century military history book plate; no text, flags, insignia or identifiable people; neutral tone, no gore; period-correct June 1967 equipment. Generate 1536×1024. Subject: Artillery fire over terraced limestone hills at dawn, gun flashes on a distant ridge, a stone village below Keep key subjects inside central 16:9 crop. Match the approved briefing: soft dusty ochres and muted blue-grey distant hills, painterly gouache brush texture, historical book illustration, atmospheric distance, no captions or symbols."
+    ],
+    "generated_source_size": [
+      1672,
+      941
+    ]
+  },
+  {
+    "id": "sixday67_central_front",
+    "file": "events/sixday67_central_front.webp",
+    "group": "event",
+    "side": null,
+    "template": "illustration",
+    "width": 1200,
+    "height": 675,
+    "prompt": "Painterly gouache realism, muted natural colors, soft upper-left lighting, visible brush texture, mid-century military history book plate; no text, flags, insignia or identifiable people; neutral tone, no gore; period-correct June 1967 equipment. Generate 1536×1024. Subject: Armoured half-tracks and infantry advance up a winding road between terraced olive groves on limestone hills, smoke over a hilltop position",
+    "model": "image_gen",
+    "generation_backend": "image_gen",
+    "model_note": "Built-in image_gen does not expose the underlying model ID",
+    "generation_prompts": [
+      "Painterly gouache realism, muted natural colors, soft upper-left lighting, visible brush texture, mid-century military history book plate; no text, flags, insignia or identifiable people; neutral tone, no gore; period-correct June 1967 equipment. Generate 1536×1024. Subject: Armoured half-tracks and infantry advance up a winding road between terraced olive groves on limestone hills, smoke over a hilltop position Keep key subjects inside central 16:9 crop. Match the approved briefing: soft dusty ochres and muted blue-grey distant hills, painterly gouache brush texture, historical book illustration, atmospheric distance, no captions or symbols."
+    ],
+    "generated_source_size": [
+      1672,
+      941
+    ]
+  },
+  {
+    "id": "sixday67_golan_decision",
+    "file": "events/sixday67_golan_decision.webp",
+    "group": "event",
+    "side": null,
+    "template": "illustration",
+    "width": 1200,
+    "height": 675,
+    "prompt": "Painterly gouache realism, muted natural colors, soft upper-left lighting, visible brush texture, mid-century military history book plate; no text, flags, insignia or identifiable people; neutral tone, no gore; period-correct June 1967 equipment. Generate 1536×1024. Subject: Tanks and bulldozers gather at the foot of a steep basalt escarpment at first light, fortified positions on the crest above",
+    "model": "image_gen",
+    "generation_backend": "image_gen",
+    "model_note": "Built-in image_gen does not expose the underlying model ID",
+    "generation_prompts": [
+      "Painterly gouache realism, muted natural colors, soft upper-left lighting, visible brush texture, mid-century military history book plate; no text, flags, insignia or identifiable people; neutral tone, no gore; period-correct June 1967 equipment. Generate 1536×1024. Subject: Tanks and bulldozers gather at the foot of a steep basalt escarpment at first light, fortified positions on the crest above Keep key subjects inside central 16:9 crop. Match the approved briefing: soft dusty ochres and muted blue-grey distant hills, painterly gouache brush texture, historical book illustration, atmospheric distance, no captions or symbols."
+    ],
+    "generated_source_size": [
+      1672,
+      941
+    ]
+  },
+  {
+    "id": "sixday67_ceasefire",
+    "file": "events/sixday67_ceasefire.webp",
+    "group": "event",
+    "side": null,
+    "template": "illustration",
+    "width": 1200,
+    "height": 675,
+    "prompt": "Painterly gouache realism, muted natural colors, soft upper-left lighting, visible brush texture, mid-century military history book plate; no text, flags, insignia or identifiable people; neutral tone, no gore; period-correct June 1967 equipment. Generate 1536×1024. Subject: Quiet battlefield at sunset after the ceasefire: stopped tank column on a desert road, crews resting beside their vehicles, long shadows",
+    "model": "image_gen",
+    "generation_backend": "image_gen",
+    "model_note": "Built-in image_gen does not expose the underlying model ID",
+    "generation_prompts": [
+      "Painterly gouache realism, muted natural colors, soft upper-left lighting, visible brush texture, mid-century military history book plate; no text, flags, insignia or identifiable people; neutral tone, no gore; period-correct June 1967 equipment. Generate 1536×1024. Subject: Quiet battlefield at sunset after the ceasefire: stopped tank column on a desert road, crews resting beside their vehicles, long shadows Keep key subjects inside central 16:9 crop. Match the approved briefing: soft dusty ochres and muted blue-grey, painterly gouache brush texture, historical book illustration, no captions or symbols."
+    ],
+    "generated_source_size": [
+      1672,
+      941
+    ]
+  },
+  {
+    "id": "sinai67_superpower_pressure",
+    "file": "events/sinai67_superpower_pressure.webp",
+    "group": "event",
+    "side": null,
+    "template": "illustration",
+    "width": 1200,
+    "height": 675,
+    "prompt": "Painterly gouache realism, muted natural colors, soft upper-left lighting, visible brush texture, mid-century military history book plate; no text, flags, insignia or identifiable people; neutral tone, no gore; period-correct June 1967 equipment. Generate 1536×1024. Subject: Night: a radio and telex room with teleprinters, a world map on the wall, figures in silhouette reading dispatches by lamplight",
+    "model": "image_gen",
+    "generation_backend": "image_gen",
+    "model_note": "Built-in image_gen does not expose the underlying model ID",
+    "generation_prompts": [
+      "Painterly gouache realism, muted natural colors, soft upper-left lighting, visible brush texture, mid-century military history book plate; no text, flags, insignia or identifiable people; neutral tone, no gore; period-correct June 1967 equipment. Generate 1536×1024. Subject: Night: a radio and telex room with teleprinters, a world map on the wall, figures in silhouette reading dispatches by lamplight Keep key subjects inside central 16:9 crop. Match the approved briefing: soft dusty ochres and muted blue-grey, painterly gouache brush texture, historical book illustration, no captions or symbols."
+    ],
+    "generated_source_size": [
+      1672,
+      941
+    ]
+  },
+  {
+    "id": "terrain_terraced_hills",
+    "file": "terrain/terrain_terraced_hills.png",
+    "group": "terrain",
+    "side": null,
+    "template": "terrain",
+    "width": 1024,
+    "height": 1024,
+    "prompt": "Painterly gouache realism, muted natural colors, upper-left lighting, no text, flags or insignia. Seamless square orthographic top-down terrain: limestone hills with dry-stone terraces and olive trees",
+    "model": "image_gen",
+    "generation_backend": "image_gen",
+    "model_note": "Built-in image_gen does not expose the underlying model ID",
+    "generation_prompts": [
+      "Painterly gouache realism, muted natural colors, upper-left lighting, no text, flags or insignia. Seamless square orthographic top-down terrain: limestone hills with dry-stone terraces and olive trees Generate 1024x1024. Strictly orthographic from directly overhead, NO horizon or perspective. A seamless repeatable terrain material tile, left/right and top/bottom edges match perfectly. Uniform fine-scale detail across whole tile including edges, no vignette, no border, no central focal subject. Natural small-scale stony soil texture and brush grain."
+    ],
+    "generated_source_size": [
+      1254,
+      1254
+    ]
+  },
+  {
+    "id": "terrain_orchards",
+    "file": "terrain/terrain_orchards.png",
+    "group": "terrain",
+    "side": null,
+    "template": "terrain",
+    "width": 1024,
+    "height": 1024,
+    "prompt": "Painterly gouache realism, muted natural colors, upper-left lighting, no text, flags or insignia. Seamless square orthographic top-down terrain: coastal plain citrus orchards in regular rows with dirt tracks",
+    "model": "image_gen",
+    "generation_backend": "image_gen",
+    "model_note": "Built-in image_gen does not expose the underlying model ID",
+    "generation_prompts": [
+      "Painterly gouache realism, muted natural colors, upper-left lighting, no text, flags or insignia. Seamless square orthographic top-down terrain: coastal plain citrus orchards in regular rows with dirt tracks Generate 1024x1024. Strictly orthographic from directly overhead, NO horizon or perspective. A seamless repeatable terrain material tile, left/right and top/bottom edges match perfectly. Uniform fine-scale detail across whole tile including edges, no vignette, no border, no central focal subject. Natural small-scale stony soil texture and brush grain.",
+      "Painterly gouache realism, muted natural colors, upper-left lighting, no text, flags or insignia. Seamless square orthographic top-down terrain: coastal plain citrus orchards in regular rows with dirt tracks. CRITICAL: inland orchard only, absolutely NO sea, NO water, NO coastline, NO blue strip, NO horizon. Uniform orchard texture from edge to edge; all four borders are identical repeatable orchard terrain. Small trees, fine stony soil and many orderly rows. Top-down material tile with matching opposite edges. 1024x1024.",
+      "Create a seamless tileable square game terrain MATERIAL TEXTURE, orthographic straight overhead. 1024x1024. Painterly gouache realism with fine stippled brush grain, muted olive greens and ochre sandy soil. Inland citrus orchard of tiny trees in an exact regular repeating grid, 12 rows by 12 columns. Each tree centered in its square grid cell. Small round crowns with ample finely stippled sandy ground between them; same spacing at every row and column. The first and last half-cell of ground join to form one normal-width dirt track when repeated. All four image edges therefore show only the SAME evenly lit granular sandy soil; NO large trees crossing an edge, no special border, no frame, no dark edge shadow. Fine high-frequency soil and grass grain everywhere. Identical lighting and mean color on opposing edges. Repeats seamlessly horizontally and vertically, like an albedo map. No coast, water, horizon, perspective, central subject, buildings, text, labels or vignette."
+    ],
+    "generated_source_size": [
+      1254,
+      1254
+    ]
   }
 ]

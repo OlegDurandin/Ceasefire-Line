@@ -18,6 +18,7 @@ export interface LiveUnit {
   acted: boolean;
   hq_rating: number | null;
   nation: string | null;
+  model?: string | null;
   formation: string | null;
   /** R-UI-04: the formation's name, a locale key (`formation.*`); null — show the class. */
   name: string | null;
@@ -83,6 +84,7 @@ export interface AirUnitView {
   sorties: number;
   rebased: boolean;
   nation: string | null;
+  model?: string | null;
   name: string | null;
   radius_hexes: number;
 }

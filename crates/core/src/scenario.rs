@@ -231,6 +231,9 @@ struct UnitFile {
     formation: Option<String>,
     #[serde(default)]
     nation: Option<String>,
+    /// R-UI-03: optional sprite model id; does not change unit statistics.
+    #[serde(default)]
+    model: Option<String>,
     /// R-UI-04: the formation's name, a locale key (`formation.*`).
     #[serde(default)]
     name: Option<String>,
@@ -440,6 +443,7 @@ fn unit_setup(u: UnitFile) -> UnitSetup {
         hq_rating: u.hq_rating,
         formation: u.formation,
         nation: u.nation,
+        model: u.model,
         name: u.name,
         offmap_base: u.offmap_base,
     }

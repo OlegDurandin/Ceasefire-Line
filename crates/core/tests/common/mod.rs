@@ -82,6 +82,7 @@ pub mod scenario {
             hq_rating: None,
             formation: None,
             nation: None,
+            model: None,
             name: None,
             offmap_base: None,
         }

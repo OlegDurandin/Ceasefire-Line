@@ -10,6 +10,11 @@
         "egypt",
         "syria"
       ]
+    },
+    "jor": {
+      "nations": [
+        "jordan"
+      ]
     }
   },
   "styles": {
@@ -43,7 +48,9 @@
   },
   "unused_terrain_textures": [
     "terrain_basalt_plateau",
-    "terrain_farmland"
+    "terrain_farmland",
+    "terrain_terraced_hills",
+    "terrain_orchards"
   ],
   "units": {
     "tank": {
@@ -60,6 +67,17 @@
         {
           "tech_min": 2,
           "sprite": "isr_m60"
+        },
+        {
+          "tech_min": 1,
+          "sprite": "isr_amx13",
+          "year_min": 1967,
+          "year_max": 1967,
+          "nations": [
+            "israel"
+          ],
+          "dir": "units_minis",
+          "model_only": true
         }
       ],
       "egy_syr": [
@@ -70,6 +88,68 @@
         {
           "tech_min": 2,
           "sprite": "egy_t62"
+        },
+        {
+          "tech_min": 1,
+          "sprite": "egy_t34_85",
+          "year_min": 1967,
+          "year_max": 1967,
+          "nations": [
+            "egypt"
+          ],
+          "dir": "units_minis",
+          "model_only": true
+        },
+        {
+          "tech_min": 1,
+          "sprite": "egy_is3",
+          "year_min": 1967,
+          "year_max": 1967,
+          "nations": [
+            "egypt"
+          ],
+          "dir": "units_minis",
+          "model_only": true
+        },
+        {
+          "tech_min": 1,
+          "sprite": "egy_su100",
+          "year_min": 1967,
+          "year_max": 1967,
+          "nations": [
+            "egypt"
+          ],
+          "dir": "units_minis",
+          "model_only": true
+        },
+        {
+          "tech_min": 1,
+          "sprite": "syr_pz4",
+          "year_min": 1967,
+          "year_max": 1967,
+          "nations": [
+            "syria"
+          ],
+          "dir": "units_minis",
+          "model_only": true
+        },
+        {
+          "tech_min": 1,
+          "sprite": "syr_stug3",
+          "year_min": 1967,
+          "year_max": 1967,
+          "nations": [
+            "syria"
+          ],
+          "dir": "units_minis",
+          "model_only": true
+        }
+      ],
+      "jor": [
+        {
+          "tech_min": 1,
+          "sprite": "jor_m48",
+          "dir": "units_minis"
         }
       ]
     },
@@ -120,6 +200,13 @@
           "tech_min": 2,
           "sprite": "egy_atgm_team"
         }
+      ],
+      "jor": [
+        {
+          "tech_min": 1,
+          "sprite": "jor_infantry",
+          "dir": "units_minis"
+        }
       ]
     },
     "commando": {
@@ -142,13 +229,27 @@
       "isr": [
         {
           "tech_min": 1,
-          "sprite": "isr_m109"
+          "sprite": "isr_m50_sp",
+          "year_max": 1969,
+          "dir": "units_minis"
+        },
+        {
+          "tech_min": 1,
+          "sprite": "isr_m109",
+          "year_min": 1970
         }
       ],
       "egy_syr": [
         {
           "tech_min": 1,
           "sprite": "egy_m46"
+        }
+      ],
+      "jor": [
+        {
+          "tech_min": 1,
+          "sprite": "jor_artillery",
+          "dir": "units_minis"
         }
       ]
     },
@@ -179,6 +280,13 @@
         {
           "tech_min": 1,
           "sprite": "egy_hq"
+        }
+      ],
+      "jor": [
+        {
+          "tech_min": 1,
+          "sprite": "jor_hq",
+          "dir": "units_minis"
         }
       ]
     },
@@ -227,6 +335,13 @@
           "tech_min": 1,
           "sprite": "egy_mig21"
         }
+      ],
+      "jor": [
+        {
+          "tech_min": 1,
+          "sprite": "jor_hunter",
+          "dir": "units_minis"
+        }
       ]
     },
     "strike": {
@@ -234,7 +349,14 @@
       "isr": [
         {
           "tech_min": 1,
-          "sprite": "isr_a4"
+          "sprite": "isr_vautour",
+          "year_max": 1967,
+          "dir": "units_minis"
+        },
+        {
+          "tech_min": 1,
+          "sprite": "isr_a4",
+          "year_min": 1968
         }
       ],
       "egy_syr": [

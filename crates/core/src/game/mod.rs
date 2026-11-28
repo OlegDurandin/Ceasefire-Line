@@ -93,6 +93,9 @@ pub struct Unit {
     pub formation: Option<String>,
     /// R-HQ-01: units attach only to HQs of the same nation.
     pub nation: Option<String>,
+    /// R-UI-03: optional sprite model id; does not change unit statistics.
+    #[serde(default)]
+    pub model: Option<String>,
     /// R-UI-04: the formation's name (a locale key); the rules ignore it.
     pub name: Option<String>,
     /// R-HQ-01: optional manual pin.
@@ -147,6 +150,7 @@ impl Unit {
             hq_rating: u.hq_rating,
             formation: u.formation.clone(),
             nation: u.nation.clone(),
+            model: u.model.clone(),
             name: u.name.clone(),
             pinned_hq: None,
             attached_hq: None,
@@ -309,6 +313,9 @@ pub struct UnitSetup {
     pub hq_rating: Option<u8>,
     pub formation: Option<String>,
     pub nation: Option<String>,
+    /// R-UI-03: optional sprite model id; does not change unit statistics.
+    #[serde(default)]
+    pub model: Option<String>,
     /// R-UI-04: the formation's name (a locale key).
     pub name: Option<String>,
     /// R-AIR-01: aircraft based off the map (id of an `OffMapBase`).
@@ -577,6 +584,7 @@ impl GameState {
                         morale_pct: u.morale_pct.min(100),
                         exp: u.exp,
                         nation: u.nation.clone(),
+                        model: u.model.clone(),
                         name: u.name.clone(),
                         fatigue_pct: 0,
                         sorties: 0,

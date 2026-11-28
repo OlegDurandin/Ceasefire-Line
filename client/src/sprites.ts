@@ -4,12 +4,19 @@ export interface SpriteTier {
   tech_min: number;
   sprite: string;
   variants?: string[];
+  year_min?: number;
+  year_max?: number;
+  nations?: string[];
+  /** Preferred source when a model has no medallion. */
+  dir?: string;
+  model_only?: boolean;
 }
 
 export interface SpriteClass {
   tech_branch: string | null;
   isr: SpriteTier[];
   egy_syr: SpriteTier[];
+  jor?: SpriteTier[];
 }
 
 /** A unit picture style (data/sprites.json `styles`). */
@@ -44,6 +51,7 @@ export function styledSprite(ref: SpriteRef, style: UnitStyle, sprites: SpritesF
   if (style === "miniature" && def && anchor) {
     return { ...ref, url: `/assets/${def.dir}/${ref.side}/${ref.id}.png`, style, anchor };
   }
+  if (ref.url.includes("/units_minis/") && anchor) return { ...ref, style: "miniature", anchor };
   return { ...ref, style: "medallion", anchor: sprites.styles?.medallion?.anchor ?? [0.5, 0.5] };
 }
 
@@ -80,6 +88,8 @@ export function pickSprite(
   unitClass: string,
   nation: string | null | undefined,
   tech: TechLevels,
+  year?: number,
+  model?: string | null,
 ): SpriteRef | null {
   const side = spriteSide(sprites, nation);
   const cls = sprites.units[unitClass];
@@ -87,8 +97,18 @@ export function pickSprite(
   const tiers = (cls as unknown as Record<string, SpriteTier[] | undefined>)[side] ?? [];
   const level = cls.tech_branch ? (tech[cls.tech_branch] ?? 1) : 1;
   let best: SpriteTier | null = null;
-  for (const t of tiers) if (t.tech_min <= level) best = t;
-  return best ? { side, id: best.sprite, url: `/assets/units/${side}/${best.sprite}.png` } : null;
+  const inPeriod = (t: SpriteTier) =>
+    (year === undefined || ((t.year_min === undefined || year >= t.year_min) && (t.year_max === undefined || year <= t.year_max))) &&
+    (!t.nations || (nation != null && t.nations.includes(nation)));
+  // An explicit model overrides technology within its nation and historical period.
+  if (model) {
+    const tier = tiers.find((t) => inPeriod(t) && (t.sprite === model || t.variants?.includes(model)));
+    if (tier) return { side, id: model, url: `/assets/${tier.dir ?? "units"}/${side}/${model}.png` };
+  }
+  for (const t of tiers) {
+    if (!t.model_only && inPeriod(t) && t.tech_min <= level && (!best || t.tech_min >= best.tech_min)) best = t;
+  }
+  return best ? { side, id: best.sprite, url: `/assets/${best.dir ?? "units"}/${side}/${best.sprite}.png` } : null;
 }
 
 export function terrainTextureUrl(sprites: SpritesFile, terrain: string): string | null {

@@ -334,3 +334,22 @@ fn golan67_victory_thresholds_historical_and_passive() {
     assert_eq!(o.level, VictoryLevel::Decisive, "{o:?}");
     assert_eq!(o.reason, EndReason::Date);
 }
+
+#[test]
+fn r_ui_03_model_survives_scenario_loading_and_state_serialization() {
+    let mut doc: serde_json::Value = serde_json::from_str(SCENARIO).unwrap();
+    doc["units"][0]["model"] = "isr_amx13".into();
+    let setup = load_scenario(&doc.to_string(), MAP, Some(EVENTS)).unwrap();
+    assert_eq!(setup.units[0].model.as_deref(), Some("isr_amx13"));
+    let (game, _) = GameState::new(Arc::new(common::data()), setup).unwrap();
+    let unit = game.unit(UnitId(1)).unwrap();
+    assert_eq!(unit.model.as_deref(), Some("isr_amx13"));
+    let encoded = serde_json::to_string(unit).unwrap();
+    let restored: ceasefire_core::game::Unit = serde_json::from_str(&encoded).unwrap();
+    assert_eq!(restored.model, unit.model);
+    // Old saves without the visual metadata still load.
+    let mut old: serde_json::Value = serde_json::from_str(&encoded).unwrap();
+    old.as_object_mut().unwrap().remove("model");
+    let restored: ceasefire_core::game::Unit = serde_json::from_value(old).unwrap();
+    assert_eq!(restored.model, None);
+}

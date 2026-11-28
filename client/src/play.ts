@@ -367,7 +367,7 @@ export class Play {
     const tex = new Map<number, Texture | null>();
     for (const u of this.state.units) {
       const tech = this.state.sides.find((s) => s.id === u.side)?.tech ?? {};
-      const base = pickSprite(this.sprites, u.class, u.nation, tech);
+      const base = pickSprite(this.sprites, u.class, u.nation, tech, this.ctx.startDate ? Number(this.ctx.startDate.slice(0, 4)) : undefined, u.model);
       const ref = base ? styledSprite(base, this.ctx.style, this.sprites, this.ctx.minis) : null;
       if (ref && !this.textures.has(ref.url)) this.textures.set(ref.url, await Assets.load<Texture>(ref.url));
       tex.set(u.id, ref ? (this.textures.get(ref.url) ?? null) : null);
@@ -835,7 +835,7 @@ export class Play {
   /** R-UI-04 card data of a unit for the attack window. */
   private card(u: LiveUnit): CardData {
     const tech = this.state.sides.find((x) => x.id === u.side)?.tech ?? {};
-    const base = pickSprite(this.sprites, u.class, u.nation, tech);
+    const base = pickSprite(this.sprites, u.class, u.nation, tech, this.ctx.startDate ? Number(this.ctx.startDate.slice(0, 4)) : undefined, u.model);
     const ref = base ? styledSprite(base, "miniature", this.sprites, this.ctx.minis) : null;
     const nation = (u.nation ? this.t(`nation.${u.nation}`, "") : "") || this.sideName(u.side);
     // «Страна · модель (или ПТУР ур. N у пехоты) · штаб».
@@ -1209,7 +1209,7 @@ export class Play {
       const slot = slots.get(`${col},${row}`) ?? 0;
       slots.set(`${col},${row}`, slot + 1);
       const tech = this.state.sides.find((s) => s.id === a.side)?.tech ?? {};
-      const base = pickSprite(this.sprites, a.class, a.nation, tech);
+      const base = pickSprite(this.sprites, a.class, a.nation, tech, this.ctx.startDate ? Number(this.ctx.startDate.slice(0, 4)) : undefined, a.model);
       if (base && !this.textures.has(base.url)) this.textures.set(base.url, await Assets.load<Texture>(base.url));
       tex.set(a.id, base ? (this.textures.get(base.url) ?? null) : null);
       const mine = a.side === this.state.active_side;
@@ -1246,7 +1246,7 @@ export class Play {
 
   private airCard(a: AirUnitView): AirCardData {
     const tech = this.state.sides.find((x) => x.id === a.side)?.tech ?? {};
-    const base = pickSprite(this.sprites, a.class, a.nation, tech);
+    const base = pickSprite(this.sprites, a.class, a.nation, tech, this.ctx.startDate ? Number(this.ctx.startDate.slice(0, 4)) : undefined, a.model);
     const nation = (a.nation ? this.t(`nation.${a.nation}`, "") : "") || this.sideName(a.side);
     const model = base ? this.ru[`model.${base.id}`] : undefined;
     const portrait = tokenHtml({
@@ -1678,7 +1678,7 @@ export class Play {
   private unitInfo(u: LiveUnit) {
     const h = this.ctx.history;
     const tech = this.state.sides.find((x) => x.id === u.side)?.tech ?? {};
-    const base = pickSprite(this.sprites, u.class, u.nation, tech);
+    const base = pickSprite(this.sprites, u.class, u.nation, tech, this.ctx.startDate ? Number(this.ctx.startDate.slice(0, 4)) : undefined, u.model);
     const key = (base && h?.modelInfo[base.id]) || h?.classInfo.get(u.class);
     const text = key && this.ru[key] ? paragraphs(this.ru, key) : `<p class="muted">${this.t("ui.no_info")}</p>`;
     const c = this.card(u);
