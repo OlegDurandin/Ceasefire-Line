@@ -116,6 +116,7 @@
     "tile_px": 512,
     "texture_km_per_px": 0.015,
     "blend_blur_hex": 0.25,
+    "river_clear_hex": 0.25,
     "shade_strength": 0.75,
     "tint": [
       {

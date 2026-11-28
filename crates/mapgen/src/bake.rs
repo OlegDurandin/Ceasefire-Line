@@ -5,9 +5,10 @@
 //!    types (box blur ×3 ≈ Gaussian, about a quarter of a hex wide);
 //! 2. relief shading (multiply, normalised so flat ground is unchanged) and a
 //!    light hypsometric tint;
-//! 3. lakes and rivers from the original OSM geometry, outlined (the rules
-//!    keep rivers on hex sides);
-//! 4. forests and orchards from OSM landuse, trees scattered by a seed;
+//! 3. forests and orchards from OSM landuse, trees scattered by a seed, none
+//!    within `river_clear_hex` of a river line;
+//! 4. lakes and rivers from the original OSM geometry, outlined (the rules
+//!    keep rivers on hex sides), over the forest so channels stay visible;
 //! 5. roads from the original OSM lines, wider for bigger classes;
 //! 6. city icons on the map's city hexes.
 //!
@@ -102,8 +103,9 @@ pub fn bake(i: &BakeInput<'_>) -> Result<RgbImage, String> {
             .ok_or("bake: colour")?;
     }
     drop(rgbf);
-    water_layer(i, &mut pm)?;
+    // R-UI-01: rivers over the forest (and the forest-typed terrain blend).
     vegetation_layer(i, &mut pm)?;
+    water_layer(i, &mut pm)?;
     road_layer(i, &mut pm)?;
     city_layer(i, &mut pm)?;
     let mut out = RgbImage::new(w, h);
@@ -453,7 +455,7 @@ fn rgba_pixmap(img: &RgbaImage) -> Option<Pixmap> {
     Some(pm)
 }
 
-// ---- 3. water -------------------------------------------------------------
+// ---- 4. water -------------------------------------------------------------
 
 fn water_layer(i: &BakeInput<'_>, pm: &mut Pixmap) -> Result<(), String> {
     let style = &i.cfg.water;
@@ -586,19 +588,132 @@ fn area_km2(i: &BakeInput<'_>, a: &Area) -> f64 {
     2.0 * outer - rings_km.iter().sum::<f64>()
 }
 
-// ---- 4. vegetation --------------------------------------------------------
+// ---- 3. vegetation --------------------------------------------------------
+
+/// River lines in km, bucketed on a grid of `buffer`-sized cells, to keep
+/// trees off the channel (R-UI-01).
+pub struct RiverClear {
+    buffer: f64,
+    cells: BTreeMap<(i64, i64), Vec<[Km; 2]>>,
+}
+
+impl RiverClear {
+    pub fn new(rivers: &[Vec<Km>], buffer: f64) -> Self {
+        let mut cells: BTreeMap<(i64, i64), Vec<[Km; 2]>> = BTreeMap::new();
+        if buffer > 0.0 {
+            let cell = |v: f64| (v / buffer).floor() as i64;
+            for l in rivers {
+                for s in l.windows(2) {
+                    let (a, b) = (s[0], s[1]);
+                    for cx in cell(a.x.min(b.x))..=cell(a.x.max(b.x)) {
+                        for cy in cell(a.y.min(b.y))..=cell(a.y.max(b.y)) {
+                            cells.entry((cx, cy)).or_default().push([a, b]);
+                        }
+                    }
+                }
+            }
+        }
+        Self { buffer, cells }
+    }
+
+    /// True when `c` is at least `buffer` away from every river line.
+    pub fn clear(&self, c: Km) -> bool {
+        if self.cells.is_empty() {
+            return true;
+        }
+        let (cx, cy) = (
+            (c.x / self.buffer).floor() as i64,
+            (c.y / self.buffer).floor() as i64,
+        );
+        let b2 = self.buffer * self.buffer;
+        for dx in -1..=1 {
+            for dy in -1..=1 {
+                let Some(segs) = self.cells.get(&(cx + dx, cy + dy)) else {
+                    continue;
+                };
+                if segs.iter().any(|&[a, b]| dist2(c, a, b) < b2) {
+                    return false;
+                }
+            }
+        }
+        true
+    }
+}
+
+/// Squared distance from `p` to the segment `a`–`b`.
+fn dist2(p: Km, a: Km, b: Km) -> f64 {
+    let (dx, dy) = (b.x - a.x, b.y - a.y);
+    let len2 = dx * dx + dy * dy;
+    let t = if len2 > 0.0 {
+        (((p.x - a.x) * dx + (p.y - a.y) * dy) / len2).clamp(0.0, 1.0)
+    } else {
+        0.0
+    };
+    let (ex, ey) = (a.x + t * dx - p.x, a.y + t * dy - p.y);
+    ex * ex + ey * ey
+}
+
+/// R-UI-01: tree centres (km) and size factors over the bounds `min`–`max`
+/// (km): a staggered grid with seeded jitter, inside the area and off the
+/// rivers. The PRNG is drawn for every grid point, kept or not.
+pub fn scatter_trees(
+    rule: &crate::config::VegetationRule,
+    min: Km,
+    max: Km,
+    inside: impl Fn(Km) -> bool,
+    rivers: &RiverClear,
+    rng: &mut Pcg32,
+) -> Vec<(Km, f64)> {
+    let step = rule.spacing_km;
+    let mut out = Vec::new();
+    let mut y = min.y;
+    while y <= max.y {
+        let mut x = min.x;
+        while x <= max.x {
+            let jx = (rng.next_f64() - 0.5) * rule.jitter * step;
+            let jy = (rng.next_f64() - 0.5) * rule.jitter * step;
+            let size = 0.8 + 0.4 * rng.next_f64();
+            let c = Km {
+                x: x + jx,
+                y: y + jy,
+            };
+            if inside(c) && rivers.clear(c) {
+                out.push((c, size));
+            }
+            x += step;
+        }
+        y += step * SQRT3 / 2.0;
+    }
+    out
+}
+
+/// Kept river lines (those `water.river_km` draws) in km.
+fn river_lines_km(i: &BakeInput<'_>) -> Vec<Vec<Km>> {
+    i.osm
+        .rivers
+        .iter()
+        .filter(|l| i.cfg.water.river_km.contains_key(&l.kind))
+        .map(|l| {
+            l.pts
+                .iter()
+                .map(|&(lon, lat)| i.proj.to_km(lon, lat))
+                .collect()
+        })
+        .collect()
+}
 
 fn vegetation_layer(i: &BakeInput<'_>, pm: &mut Pixmap) -> Result<(), String> {
     let p = i.cfg.px_per_km;
     let tree = i.art.tree.and_then(rgba_pixmap);
     let mut rng = Pcg32::new(i.cfg.seed, 7);
+    let hex_km = i.grid.radius_km * SQRT3;
+    let clear = RiverClear::new(&river_lines_km(i), i.cfg.river_clear_hex * hex_km);
     for rule in &i.cfg.vegetation {
         let kind = format!("{VEG}{}", rule.kind);
         let ground = solid(color(rgb(&rule.ground_color)?, rule.ground_alpha as f32));
         let crown = solid(color(rgb(&rule.crown_color)?, 1.0));
         let light = solid(color(rgb(&rule.highlight_color)?, 0.7));
         let shadow = solid(color([0.0, 0.0, 0.0], 0.3));
-        let step = rule.spacing_km;
         for a in i.osm.areas.iter().filter(|a| a.terrain == kind) {
             let Some(path) = area_path(i, a) else {
                 continue;
@@ -612,52 +727,43 @@ fn vegetation_layer(i: &BakeInput<'_>, pm: &mut Pixmap) -> Result<(), String> {
             );
             let ak = AreaKm::new(a, i.proj);
             let b = path.bounds();
-            let (x0, y0) = (f64::from(b.left()) / p, f64::from(b.top()) / p);
-            let (x1, y1) = (f64::from(b.right()) / p, f64::from(b.bottom()) / p);
-            let mut y = y0;
-            while y <= y1 {
-                let mut x = x0;
-                while x <= x1 {
-                    let jx = (rng.next_f64() - 0.5) * rule.jitter * step;
-                    let jy = (rng.next_f64() - 0.5) * rule.jitter * step;
-                    let size = 0.8 + 0.4 * rng.next_f64();
-                    let c = Km {
-                        x: x + jx,
-                        y: y + jy,
-                    };
-                    if ak.contains(c) {
-                        let (cx, cy) = ((c.x * p) as f32, (c.y * p) as f32);
-                        let r = (rule.crown_km * p * size) as f32;
-                        match &tree {
-                            Some(t) => {
-                                let s = 2.0 * r / t.width().max(1) as f32;
-                                let tr = Transform::from_row(s, 0.0, 0.0, s, cx - r, cy - r);
-                                pm.draw_pixmap(0, 0, t.as_ref(), &PixmapPaint::default(), tr, None);
-                            }
-                            None => {
-                                for (dx, dy, rr, paint) in [
-                                    (0.35, 0.35, 1.0, &shadow),
-                                    (0.0, 0.0, 1.0, &crown),
-                                    (-0.3, -0.3, 0.5, &light),
-                                ] {
-                                    if let Some(c) =
-                                        PathBuilder::from_circle(cx + dx * r, cy + dy * r, rr * r)
-                                    {
-                                        pm.fill_path(
-                                            &c,
-                                            paint,
-                                            FillRule::Winding,
-                                            Transform::identity(),
-                                            None,
-                                        );
-                                    }
-                                }
+            let min = Km {
+                x: f64::from(b.left()) / p,
+                y: f64::from(b.top()) / p,
+            };
+            let max = Km {
+                x: f64::from(b.right()) / p,
+                y: f64::from(b.bottom()) / p,
+            };
+            for (c, size) in scatter_trees(rule, min, max, |c| ak.contains(c), &clear, &mut rng) {
+                let (cx, cy) = ((c.x * p) as f32, (c.y * p) as f32);
+                let r = (rule.crown_km * p * size) as f32;
+                match &tree {
+                    Some(t) => {
+                        let s = 2.0 * r / t.width().max(1) as f32;
+                        let tr = Transform::from_row(s, 0.0, 0.0, s, cx - r, cy - r);
+                        pm.draw_pixmap(0, 0, t.as_ref(), &PixmapPaint::default(), tr, None);
+                    }
+                    None => {
+                        for (dx, dy, rr, paint) in [
+                            (0.35, 0.35, 1.0, &shadow),
+                            (0.0, 0.0, 1.0, &crown),
+                            (-0.3, -0.3, 0.5, &light),
+                        ] {
+                            if let Some(c) =
+                                PathBuilder::from_circle(cx + dx * r, cy + dy * r, rr * r)
+                            {
+                                pm.fill_path(
+                                    &c,
+                                    paint,
+                                    FillRule::Winding,
+                                    Transform::identity(),
+                                    None,
+                                );
                             }
                         }
                     }
-                    x += step;
                 }
-                y += step * SQRT3 / 2.0;
             }
         }
     }
@@ -808,6 +914,43 @@ mod tests {
         assert_eq!(r.len(), 1);
         assert_eq!(r[0].len(), 5);
         assert_eq!(r[0].first(), r[0].last());
+    }
+
+    /// R-UI-01: no tree within the buffer of a river line, trees elsewhere;
+    /// the seed's draws do not depend on the river.
+    #[test]
+    fn r_ui_01_bake_no_trees_within_the_river_buffer() {
+        let cfg =
+            crate::config::Config::from_json(include_str!("../../../data/mapgen.json")).unwrap();
+        let rule = &cfg.bake.vegetation[0];
+        let river = vec![
+            Km { x: 5.0, y: 0.0 },
+            Km { x: 5.0, y: 4.0 },
+            Km { x: 7.0, y: 10.0 },
+        ];
+        let buffer = 1.25;
+        let clear = RiverClear::new(std::slice::from_ref(&river), buffer);
+        let (min, max) = (Km { x: 0.0, y: 0.0 }, Km { x: 10.0, y: 10.0 });
+        let trees = scatter_trees(rule, min, max, |_| true, &clear, &mut Pcg32::new(1, 7));
+        let all = scatter_trees(
+            rule,
+            min,
+            max,
+            |_| true,
+            &RiverClear::new(&[], buffer),
+            &mut Pcg32::new(1, 7),
+        );
+        assert!(trees.len() < all.len() && trees.len() > all.len() / 2);
+        for (c, _) in &trees {
+            let d = river
+                .windows(2)
+                .map(|s| dist2(*c, s[0], s[1]))
+                .fold(f64::INFINITY, f64::min)
+                .sqrt();
+            assert!(d >= buffer, "tree at {c:?} is {d} km from the river");
+        }
+        // Same grid points, same jitter: the kept trees are a subset.
+        assert!(trees.iter().all(|t| all.contains(t)));
     }
 
     #[test]

@@ -1143,6 +1143,91 @@ mod tests {
         assert!(last.width() <= 64 && last.height() <= 64);
     }
 
+    /// R-UI-01: a river through a forest is painted over it, and the forest
+    /// keeps a tree-free band of `river_clear_hex` along the channel.
+    #[test]
+    fn r_ui_01_bake_river_over_forest_with_a_clear_buffer() {
+        use osm::{Area, Line};
+        let mut cfg = cfg();
+        cfg.bake.px_per_km = 12.0;
+        let bbox = BBox::parse("35.30,32.70,36.10,33.45").unwrap();
+        let proj = Projection::new(bbox, cfg.earth_radius_km);
+        let grid = Grid::fit(proj.size_km(), 5.0).unwrap();
+        let terrain = vec![vec!["forest".to_owned(); grid.cols as usize]; grid.rows as usize];
+        let data = OsmData {
+            areas: vec![Area {
+                terrain: format!("{}forest", bake::VEG),
+                segments: square(35.40, 32.75, 35.75, 33.05),
+            }],
+            rivers: vec![Line {
+                kind: "river".into(),
+                pts: vec![(35.575, 33.10), (35.575, 32.72)],
+            }],
+            ..OsmData::default()
+        };
+        let textures = BTreeMap::new();
+        let a = bake::bake(&bake::BakeInput {
+            dem: &Synthetic,
+            osm: &data,
+            map: &bake::HexMap { terrain },
+            grid: &grid,
+            proj: &proj,
+            cities: &[],
+            roads: &[],
+            road_styles: &cfg.bake.roads,
+            art: bake::Art {
+                terrain: &textures,
+                tree: None,
+                city: None,
+            },
+            cfg: &cfg.bake,
+            shade: &cfg.hillshade,
+        })
+        .unwrap();
+        let p = cfg.bake.px_per_km;
+        let river = proj.to_km(35.575, 32.90);
+        let at = |dx_km: f64| {
+            a.get_pixel(((river.x + dx_km) * p) as u32, (river.y * p) as u32)
+                .0
+        };
+        let water = bake::rgb(&cfg.bake.water.color).unwrap();
+        let on = at(0.0);
+        for ch in 0..3 {
+            let want = (water[ch] * 255.0).round() as i32;
+            assert!(
+                (i32::from(on[ch]) - want).abs() <= 2,
+                "river pixel {on:?} is the water colour"
+            );
+        }
+        // Crown pixels in a row across the river: none inside the buffer.
+        let crown = bake::rgb(&cfg.bake.vegetation[0].crown_color).unwrap();
+        let is_crown =
+            |c: [u8; 3]| (0..3).all(|ch| (f32::from(c[ch]) / 255.0 - crown[ch]).abs() < 0.03);
+        let buffer = cfg.bake.river_clear_hex * grid.radius_km * 3f64.sqrt();
+        let step = 1.0 / p;
+        let count = |from: f64, to: f64| {
+            let mut n = 0;
+            let mut d = from;
+            while d < to {
+                for y in -20..=20 {
+                    let c = a
+                        .get_pixel(
+                            ((river.x + d) * p) as u32,
+                            ((river.y + f64::from(y) * step) * p) as u32,
+                        )
+                        .0;
+                    n += usize::from(is_crown(c));
+                }
+                d += step;
+            }
+            n
+        };
+        let rule = &cfg.bake.vegetation[0];
+        let near = buffer - rule.crown_km * 1.2 - step;
+        assert_eq!(count(-near, near), 0, "no trees within the buffer");
+        assert!(count(buffer + 0.3, buffer + 2.0) > 0, "trees beyond it");
+    }
+
     /// `mapgen procgen` twice gives the same files; `mapgen bake` works on
     /// the directory without DEM or OSM, also with no texture files at all.
     #[test]

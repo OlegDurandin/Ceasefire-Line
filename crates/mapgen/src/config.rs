@@ -250,6 +250,9 @@ pub struct BakeConfig {
     pub texture_km_per_px: f64,
     /// Width of the soft border between terrain types, in hexes (distance between centres).
     pub blend_blur_hex: f64,
+    /// No trees closer to a river line than this share of a hex (distance
+    /// between centres), so the channel shows through forest.
+    pub river_clear_hex: f64,
     /// Multiply strength of the relief shading (0 = none).
     pub shade_strength: f64,
     /// Hypsometric tint, stops by elevation.
