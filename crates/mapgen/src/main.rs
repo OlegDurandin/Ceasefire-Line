@@ -4,6 +4,20 @@
 //! `mapgen --dem <tif|dir>... --bbox W,S,E,N --hex-km 5 [--config data/mapgen.json] --out <dir>`
 //! `mapgen bake --map <dir> --dem <tif|dir>... [--osm <pbf>...] [--config ...] [--assets assets] [--sprites data/sprites.json]`
 //!
+//! `mapgen procgen --params <procgen.json> [--config data/mapgen.json] [--terrain data/terrain.json] --out <dir>`:
+//! procedural relief for the fictional scenarios (R-UI-01, GDD section 14
+//! «Срединные земли»): heights by seed, lakes and rivers by drainage, forest
+//! by moisture, cities from the parameters, roads between them. Writes a
+//! plain `map.json` (edited in the map editor like any other), `elevation.png`
+//! (16 bit) and `procedural.json` (rivers, lakes, forest in lon/lat), plus the
+//! hillshade. Parameters: `seed`, `cols`, `rows`, `hex_km`, `biome`
+//! (`temperate` | `steppe` | `foothills`), `origin` [lon, lat] of the
+//! north-west corner, `cities` [{`name` (locale key), `hint` [col, row]?,
+//! `size` `large` | `small`}]; the tunable numbers are in `mapgen.json`
+//! `procgen` (example: `data/procgen/example-temperate.json`).
+//! `mapgen bake --map <dir>` on such a directory needs no `--dem`/`--osm`:
+//! it reads elevation.png and procedural.json and the biome's textures.
+//!
 //! Deterministic: inputs are sorted, outputs depend only on them.
 
 mod bake;
@@ -12,8 +26,10 @@ mod dem;
 mod features;
 mod geo;
 mod hillshade;
+mod noise;
 mod osm;
 mod output;
+mod procgen;
 mod relief;
 mod roads_layer;
 
@@ -303,6 +319,9 @@ fn run(args: &[String]) -> Result<(), String> {
     if args.first().map(String::as_str) == Some("airfields") {
         return run_airfields(&args[1..]);
     }
+    if args.first().map(String::as_str) == Some("procgen") {
+        return run_procgen(&args[1..]);
+    }
     let a = parse(args)?;
     let cfg = Config::from_json(
         &fs::read_to_string(&a.config).map_err(|e| format!("{}: {e}", a.config.display()))?,
@@ -375,7 +394,7 @@ fn parse_bake(args: &[String]) -> Result<BakeArgs, String> {
             _ => return Err(format!("unknown option {flag}\n{usage}")),
         }
     }
-    if a.map.as_os_str().is_empty() || a.dem.is_empty() {
+    if a.map.as_os_str().is_empty() {
         return Err(usage.into());
     }
     a.osm.sort();
@@ -547,6 +566,46 @@ fn run_airfields(args: &[String]) -> Result<(), String> {
     Ok(())
 }
 
+/// `mapgen procgen --params FILE [--config …] [--terrain …] --out DIR`.
+fn run_procgen(args: &[String]) -> Result<(), String> {
+    let usage = "usage: mapgen procgen --params FILE.json [--config data/mapgen.json] [--terrain data/terrain.json] --out DIR";
+    let (mut params, mut out) = (None, None);
+    let (mut config, mut terrain) = (
+        PathBuf::from("data/mapgen.json"),
+        PathBuf::from("data/terrain.json"),
+    );
+    let mut it = args.iter();
+    while let Some(flag) = it.next() {
+        let v = PathBuf::from(
+            it.next()
+                .ok_or_else(|| format!("missing value for {flag}\n{usage}"))?,
+        );
+        match flag.as_str() {
+            "--params" => params = Some(v),
+            "--config" => config = v,
+            "--terrain" => terrain = v,
+            "--out" => out = Some(v),
+            _ => return Err(format!("unknown option {flag}\n{usage}")),
+        }
+    }
+    let (params, out) = (params.ok_or(usage)?, out.ok_or(usage)?);
+    let read = |p: &Path| fs::read_to_string(p).map_err(|e| format!("{}: {e}", p.display()));
+    let cfg = Config::from_json(&read(&config)?)?;
+    let p = procgen::Params::from_json(&read(&params)?)?;
+    let costs = procgen::TerrainCosts::from_json(&read(&terrain)?)?;
+    let g = procgen::generate(&p, &cfg, &costs)?;
+    procgen::write(&out, &g)?;
+    eprintln!(
+        "{} × {} hexes, biome {}, seed {} → {}",
+        g.map["width"],
+        g.map["height"],
+        p.biome,
+        p.seed,
+        out.join("map.json").display()
+    );
+    Ok(())
+}
+
 fn run_bake(args: &[String]) -> Result<(), String> {
     let a = parse_bake(args)?;
     let cfg = Config::from_json(
@@ -555,6 +614,18 @@ fn run_bake(args: &[String]) -> Result<(), String> {
     let map = read_json(&a.map.join("map.json"))?;
     let (bbox, proj, grid) = map_geometry(&map, &cfg)?;
     let terrain = hex_terrain(&map)?;
+    if a.map.join(procgen::PROCEDURAL_JSON).exists() {
+        let pc = cfg
+            .procgen
+            .as_ref()
+            .ok_or("procedural map, but the config has no `procgen` section")?;
+        let pd = procgen::load_for_bake(&a.map, &proj, pc, bake::VEG)?
+            .ok_or("procedural.json disappeared")?;
+        return bake_procedural(&a, &cfg, pc, &map, &proj, &grid, terrain, pd);
+    }
+    if a.dem.is_empty() {
+        return Err("mapgen bake: --dem is required (not a procedural map)".into());
+    }
     let tiles = tiff_files(&a.dem)?
         .iter()
         .map(|f| Tile::open(f))
@@ -608,22 +679,11 @@ fn run_bake(args: &[String]) -> Result<(), String> {
     }
     // Art from sprites.json; missing pictures are drawn procedurally.
     let sprites = read_json(&a.sprites)?;
-    let mut textures = BTreeMap::new();
-    if let Some(t) = sprites["terrain"].as_object() {
-        for (id, file) in t {
-            let Some(file) = file.as_str() else { continue };
-            let p = a.assets.join("terrain").join(format!("{file}.png"));
-            let img = image::open(&p).map_err(|e| format!("{}: {e}", p.display()))?;
-            textures.insert(id.clone(), img.to_rgb8());
-        }
-    }
-    let object = |role: &str| -> Option<image::RgbaImage> {
-        let id = sprites["map_objects"][role].as_str()?;
-        image::open(a.assets.join("objects").join(format!("{id}.png")))
-            .ok()
-            .map(|i| i.to_rgba8())
-    };
-    let (tree, city) = (object("tree"), object("city"));
+    let textures = load_textures(&sprites, &a.assets, None)?;
+    let (tree, city) = (
+        map_object(&sprites, &a.assets, "tree"),
+        map_object(&sprites, &a.assets, "city"),
+    );
     // Roads: the historical layer when the map uses it, otherwise OSM lines.
     let historical = map["roads_from"].as_str() == Some(roads_layer::FROM_HISTORICAL);
     let (road_lines, road_styles) = if historical {
@@ -651,10 +711,133 @@ fn run_bake(args: &[String]) -> Result<(), String> {
         cfg: &cfg.bake,
         shade: &cfg.hillshade,
     })?;
+    write_tiles(&a.map, img, &cfg.bake, &grid)?;
+    let srcs: Vec<&str> = sources.iter().map(String::as_str).collect();
+    fs::write(a.map.join("LICENSE-DATA.md"), license_text(&srcs)).map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+/// Terrain textures named by sprites.json. `overrides` (a procedural biome's
+/// set) come first and fall back to sprites.json, and a missing file is then
+/// skipped (drawn procedurally); without overrides a missing file is an error.
+fn load_textures(
+    sprites: &serde_json::Value,
+    assets: &Path,
+    overrides: Option<&BTreeMap<String, String>>,
+) -> Result<BTreeMap<String, image::RgbImage>, String> {
+    let mut files: BTreeMap<String, Vec<String>> = BTreeMap::new();
+    if let Some(o) = overrides {
+        for (id, f) in o {
+            files.entry(id.clone()).or_default().push(f.clone());
+        }
+    }
+    if let Some(t) = sprites["terrain"].as_object() {
+        for (id, f) in t {
+            if let Some(f) = f.as_str() {
+                files.entry(id.clone()).or_default().push(f.to_owned());
+            }
+        }
+    }
+    let mut textures = BTreeMap::new();
+    for (id, list) in files {
+        let mut found = false;
+        for f in &list {
+            let p = assets.join("terrain").join(format!("{f}.png"));
+            if overrides.is_some() && !p.exists() {
+                eprintln!("texture {} missing for `{id}`", p.display());
+                continue;
+            }
+            let img = image::open(&p).map_err(|e| format!("{}: {e}", p.display()))?;
+            textures.insert(id.clone(), img.to_rgb8());
+            found = true;
+            break;
+        }
+        if !found && overrides.is_some() {
+            eprintln!("no texture for `{id}`: drawn procedurally");
+        }
+    }
+    Ok(textures)
+}
+
+fn map_object(sprites: &serde_json::Value, assets: &Path, role: &str) -> Option<image::RgbaImage> {
+    let id = sprites["map_objects"][role].as_str()?;
+    image::open(assets.join("objects").join(format!("{id}.png")))
+        .ok()
+        .map(|i| i.to_rgba8())
+}
+
+/// `mapgen bake` of a `mapgen procgen` directory: elevation.png and the
+/// rivers, lakes and forest of procedural.json instead of DEM and OSM; roads
+/// from map.json (as edited); the biome's texture set; no licence file (no
+/// third-party data).
+#[allow(clippy::too_many_arguments)]
+fn bake_procedural(
+    a: &BakeArgs,
+    cfg: &Config,
+    pc: &config::ProcgenConfig,
+    map: &serde_json::Value,
+    proj: &Projection,
+    grid: &Grid,
+    terrain: Vec<Vec<String>>,
+    pd: procgen::BakeData,
+) -> Result<(), String> {
+    let mut bc = cfg.bake.clone();
+    bc.px_per_km = pc.bake_px_per_km;
+    for w in bc.water.river_km.values_mut() {
+        *w *= pc.bake_line_scale;
+    }
+    let mut road_styles = cfg.bake.historical_roads.clone();
+    for st in &mut road_styles {
+        st.width_km *= pc.bake_line_scale;
+    }
+    let mut cities = Vec::new();
+    for (row, line) in terrain.iter().enumerate() {
+        for (col, t) in line.iter().enumerate() {
+            if *t == pc.city_terrain {
+                cities.push(grid.center(col as u32, row as u32));
+            }
+        }
+    }
+    let sprites = read_json(&a.sprites)?;
+    let empty = BTreeMap::new();
+    let overrides = pc.biomes.get(&pd.biome).map_or(&empty, |b| &b.textures);
+    let textures = load_textures(&sprites, &a.assets, Some(overrides))?;
+    let (tree, city) = (
+        map_object(&sprites, &a.assets, "tree"),
+        map_object(&sprites, &a.assets, "city"),
+    );
+    let roads = procgen::road_lines(map, grid, proj, pc);
+    let img = bake::bake(&bake::BakeInput {
+        dem: &pd.dem,
+        osm: &pd.osm,
+        map: &bake::HexMap { terrain },
+        grid,
+        proj,
+        cities: &cities,
+        roads: &roads,
+        road_styles: &road_styles,
+        art: bake::Art {
+            terrain: &textures,
+            tree: tree.as_ref(),
+            city: city.as_ref(),
+        },
+        cfg: &bc,
+        shade: &cfg.hillshade,
+    })?;
+    write_tiles(&a.map, img, &bc, grid)
+}
+
+/// Tile pyramid and tiles.json of a baked map.
+fn write_tiles(
+    map_dir: &Path,
+    img: image::RgbImage,
+    bc: &config::BakeConfig,
+    grid: &Grid,
+) -> Result<(), String> {
     let digest = fnv1a(img.as_raw());
     let (width, height) = img.dimensions();
-    let tile = cfg.bake.tile_px;
-    let dir = a.map.join("tiles");
+    let tile = bc.tile_px;
+    let dir = map_dir.join("tiles");
     if dir.exists() {
         fs::remove_dir_all(&dir).map_err(|e| format!("{}: {e}", dir.display()))?;
     }
@@ -685,7 +868,7 @@ fn run_bake(args: &[String]) -> Result<(), String> {
         "_comment": "mapgen bake: painted map tiles (R-UI-01). tiles/<z>/<x>_<y>.webp; level z is 2^z times smaller.",
         "format": "webp",
         "tile_px": tile,
-        "px_per_km": cfg.bake.px_per_km,
+        "px_per_km": bc.px_per_km,
         "hex_radius_km": r,
         "top_left_from_hex00_km": [-r, -r * 3f64.sqrt() / 2.0],
         "width_px": width,
@@ -694,9 +877,7 @@ fn run_bake(args: &[String]) -> Result<(), String> {
         "fnv1a64": format!("{digest:016x}"),
     });
     let pretty = serde_json::to_string_pretty(&meta).map_err(|e| e.to_string())? + "\n";
-    fs::write(a.map.join("tiles.json"), pretty).map_err(|e| e.to_string())?;
-    let srcs: Vec<&str> = sources.iter().map(String::as_str).collect();
-    fs::write(a.map.join("LICENSE-DATA.md"), license_text(&srcs)).map_err(|e| e.to_string())?;
+    fs::write(map_dir.join("tiles.json"), pretty).map_err(|e| e.to_string())?;
     eprintln!(
         "{width} × {height} px, {} levels, fnv1a64 {digest:016x} → {}",
         meta["levels"].as_array().map_or(0, Vec::len),
@@ -953,6 +1134,82 @@ mod tests {
         let levels = bake::pyramid(a, 64);
         let last = levels.last().unwrap();
         assert!(last.width() <= 64 && last.height() <= 64);
+    }
+
+    /// `mapgen procgen` twice gives the same files; `mapgen bake` works on
+    /// the directory without DEM or OSM, also with no texture files at all.
+    #[test]
+    fn r_ui_01_procgen_cli_and_bake_end_to_end() {
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+        let tmp = std::env::temp_dir().join(format!("mapgen-procgen-{}", std::process::id()));
+        fs::create_dir_all(&tmp).unwrap();
+        let params = tmp.join("params.json");
+        fs::write(
+            &params,
+            r#"{ "seed": 7, "cols": 8, "rows": 6, "hex_km": 10, "biome": "temperate",
+                 "origin": [20.0, 50.0],
+                 "cities": [ { "name": "place.test.a", "hint": [1, 2], "size": "large" },
+                             { "name": "place.test.b", "size": "small" } ] }"#,
+        )
+        .unwrap();
+        let s = |p: &Path| p.to_string_lossy().into_owned();
+        let cfg = s(&root.join("data/mapgen.json"));
+        let procgen = |out: &Path| {
+            let args = [
+                "procgen",
+                "--params",
+                &s(&params),
+                "--config",
+                &cfg,
+                "--terrain",
+                &s(&root.join("data/terrain.json")),
+                "--out",
+                &s(out),
+            ];
+            run(&args.map(String::from)).unwrap();
+        };
+        let (a, b) = (tmp.join("a"), tmp.join("b"));
+        procgen(&a);
+        procgen(&b);
+        for f in [
+            "map.json",
+            "procedural.json",
+            "elevation.png",
+            "hillshade.png",
+        ] {
+            assert_eq!(
+                fs::read(a.join(f)).unwrap(),
+                fs::read(b.join(f)).unwrap(),
+                "{f} is byte-identical"
+            );
+        }
+        let bake = |assets: &Path| {
+            let args = [
+                "bake",
+                "--map",
+                &s(&a),
+                "--config",
+                &cfg,
+                "--assets",
+                &s(assets),
+                "--sprites",
+                &s(&root.join("data/sprites.json")),
+            ];
+            run(&args.map(String::from)).unwrap();
+            read_json(&a.join("tiles.json")).unwrap()["fnv1a64"].clone()
+        };
+        let with_art = bake(&root.join("assets"));
+        assert_eq!(with_art, bake(&root.join("assets")), "same pixels");
+        assert!(a.join("tiles/0/0_0.webp").exists());
+        assert!(!a.join("LICENSE-DATA.md").exists(), "no third-party data");
+        let empty = tmp.join("no-assets");
+        fs::create_dir_all(&empty).unwrap();
+        assert_ne!(
+            with_art,
+            bake(&empty),
+            "missing textures: drawn procedurally"
+        );
+        fs::remove_dir_all(&tmp).ok();
     }
 
     #[test]

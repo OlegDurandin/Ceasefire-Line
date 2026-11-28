@@ -109,6 +109,136 @@ pub struct Config {
     pub auto_bridges: bool,
     pub hillshade: HillshadeConfig,
     pub bake: BakeConfig,
+    /// `mapgen procgen`: procedural relief for fictional scenarios (R-UI-01).
+    #[serde(default)]
+    pub procgen: Option<ProcgenConfig>,
+}
+
+/// `mapgen procgen` (R-UI-01, section 14 «Срединные земли»): shared numbers
+/// and one block per biome.
+#[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ProcgenConfig {
+    #[serde(default, rename = "_comment")]
+    _comment: Option<String>,
+    /// Elevation raster cell, km.
+    pub raster_km: f64,
+    /// `mapgen bake` resolution for procedural maps (they are large, 10 km hexes).
+    pub bake_px_per_km: f64,
+    /// Rivers and roads are drawn this many times wider (the coarser bake).
+    pub bake_line_scale: f64,
+    /// Share of a hex's samples in lake cells that makes it `water`.
+    pub lake_min_share: f64,
+    /// Share of a hex's samples in forest cells that makes it `forest`.
+    pub forest_min_share: f64,
+    /// Terrain ids written for water, forest, city, mountains.
+    pub water_terrain: String,
+    pub forest_terrain: String,
+    pub city_terrain: String,
+    pub mountain_terrain: String,
+    /// `waterway` kinds of the procedural rivers (widths in `bake.water.river_km`).
+    pub stream_kind: String,
+    pub river_kind: String,
+    /// Major rivers become impassable hex sides (`canals`) along their course
+    /// like OSM rivers (`features::river_edges`).
+    pub major_river_min_length_km: f64,
+    pub major_river_line_weight: f64,
+    /// Chaikin passes over the river polylines drawn by bake.
+    pub river_smooth_iterations: u32,
+    /// `bake.vegetation` kind of the procedural forest.
+    pub forest_vegetation: String,
+    /// Forest areas are cut into squares of this many raster cells (fast tree scatter).
+    pub forest_area_tile_cells: u32,
+    pub cities: CityPlacement,
+    pub roads: ProcRoads,
+    pub biomes: BTreeMap<String, BiomeConfig>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct CityPlacement {
+    /// Search radius around a hint, hexes.
+    pub hint_radius_hex: u32,
+    pub min_spacing_hex: u32,
+    /// Cities without a hint stay this far from the map edge.
+    pub border_margin_hex: u32,
+    /// Score terms (higher is better).
+    pub weight_hint_distance: f64,
+    pub weight_river: f64,
+    pub weight_lowland: f64,
+    pub weight_spread: f64,
+    pub spread_cap_hex: f64,
+    pub weight_jitter: f64,
+    /// Terrains a city may not stand on (besides water).
+    pub forbidden_terrain: Vec<String>,
+    /// `geo.places` kind per size.
+    pub kind_large: String,
+    pub kind_small: String,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ProcRoads {
+    /// Added to the AP of entering a mountain hex (roads keep out of mountains).
+    pub mountain_extra_cost: f64,
+    /// Added for crossing a major river side.
+    pub river_crossing_cost: f64,
+    /// Cost multiplier on sides that already carry a road (roads merge).
+    pub reuse_factor: f64,
+    /// Links added beyond the spanning tree.
+    pub extra_links: u32,
+    /// An extra link is added when the network route is this many times longer.
+    pub extra_detour_ratio: f64,
+    /// Kinds of the roads drawn by bake (`bake.historical_roads`).
+    pub bake_road_kind: String,
+    pub bake_track_kind: String,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct BiomeConfig {
+    #[serde(default, rename = "_comment")]
+    _comment: Option<String>,
+    pub elevation_min_m: f64,
+    pub elevation_max_m: f64,
+    pub base: crate::noise::NoiseConfig,
+    pub base_weight: f64,
+    pub ridge: crate::noise::NoiseConfig,
+    pub ridge_weight: f64,
+    /// Ridges only where this mask is high (mountain ranges, not everywhere).
+    pub ridge_mask: crate::noise::NoiseConfig,
+    pub ridge_mask_low: f64,
+    pub ridge_mask_high: f64,
+    /// Regional slope across the map (share of the height range).
+    pub tilt: f64,
+    /// 0 = linear heights, 1 = squared (wider lowlands).
+    pub lowland_curve: f64,
+    /// Filled depressions deeper than this are lakes.
+    pub lake_min_depth_m: f64,
+    /// Smaller lakes are left dry.
+    pub lake_min_area_km2: f64,
+    /// Deepest lakes first, until they cover this share of the map; the
+    /// other depressions stay dry (flat ground).
+    pub lake_max_share: f64,
+    /// Drained area for a drawn stream and for a major river (impassable side).
+    pub river_min_area_km2: f64,
+    pub major_river_min_area_km2: f64,
+    pub relief_rules: Vec<ReliefRule>,
+    pub default_terrain: String,
+    pub moisture: crate::noise::NoiseConfig,
+    pub moisture_noise_weight: f64,
+    pub moisture_water_weight: f64,
+    pub moisture_water_reach_km: f64,
+    /// Negative: drier with height (share of the height range).
+    pub moisture_altitude_weight: f64,
+    /// Negative: less forest on steep ground; positive: more (foothills).
+    pub moisture_slope_weight: f64,
+    pub moisture_slope_ref_deg: f64,
+    pub forest_threshold: f64,
+    /// Terrains that turn into forest where it grows.
+    pub forest_on: Vec<String>,
+    /// Terrain id → texture file in `assets/terrain` (over `sprites.json`).
+    pub textures: BTreeMap<String, String>,
 }
 
 /// `mapgen bake`: the painted map under the hexes (R-UI-01, R-UI-02).
@@ -217,6 +347,28 @@ impl Config {
                 return Err(format!(
                     "mapgen.json: terrain `{t}` has no legend character"
                 ));
+            }
+        }
+        if let Some(p) = &c.procgen {
+            for (name, b) in &p.biomes {
+                for t in b
+                    .relief_rules
+                    .iter()
+                    .map(|r| &r.terrain)
+                    .chain([&b.default_terrain])
+                    .chain([
+                        &p.water_terrain,
+                        &p.forest_terrain,
+                        &p.city_terrain,
+                        &p.mountain_terrain,
+                    ])
+                {
+                    if !c.legend.contains_key(t) {
+                        return Err(format!(
+                            "mapgen.json: procgen.biomes.{name}: terrain `{t}` has no legend character"
+                        ));
+                    }
+                }
             }
         }
         if c.samples_per_hex_side < 2 {

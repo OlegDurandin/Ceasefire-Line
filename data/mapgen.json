@@ -24,7 +24,8 @@
     "marsh": "s",
     "city": "c",
     "fortified": "f",
-    "water": "w"
+    "water": "w",
+    "forest": "t"
   },
   "pass_char": "P",
   "osm": {
@@ -150,7 +151,8 @@
       "min_lake_km2": 0.5,
       "river_km": {
         "river": 0.14,
-        "canal": 0.07
+        "canal": 0.07,
+        "stream": 0.07
       }
     },
     "vegetation": [
@@ -230,5 +232,270 @@
         "width_km": 0.22
       }
     ]
+  },
+  "procgen": {
+    "_comment": "mapgen procgen (R-UI-01, GDD section 14 «Срединные земли»): procedural relief for fictional scenarios. Heights = base fBm + ridged fBm under a range mask + regional tilt, on a raster of raster_km; depressions filled (priority-flood), lakes where deeper than lake_min_depth_m; D8 flow on the filled surface; streams from river_min_area_km2 drained, major rivers (impassable hex sides, `canals`) from major_river_min_area_km2. Hex terrain by relief rules per biome, forest by moisture (noise + water nearby + height + slope). Roads: least-cost hex paths (terrain.json AP) over a spanning tree of the cities plus extra links; large–large links are roads (highway), the rest tracks. Textures per biome: placeholders until the designer adds terrain_forest, terrain_forest_pine, terrain_steppe, terrain_alpine_meadow, terrain_town_temperate — intended: temperate plain terrain_farmland, forest terrain_forest, city terrain_town_temperate; steppe plain terrain_steppe, forest terrain_forest; foothills hills/mountains terrain_alpine_meadow, forest terrain_forest_pine, city terrain_town_temperate.",
+    "raster_km": 0.5,
+    "bake_px_per_km": 8,
+    "lake_min_share": 0.5,
+    "forest_min_share": 0.45,
+    "water_terrain": "water",
+    "forest_terrain": "forest",
+    "city_terrain": "city",
+    "mountain_terrain": "mountains",
+    "stream_kind": "stream",
+    "river_kind": "river",
+    "major_river_min_length_km": 5,
+    "major_river_line_weight": 20,
+    "river_smooth_iterations": 2,
+    "forest_vegetation": "forest",
+    "forest_area_tile_cells": 16,
+    "cities": {
+      "hint_radius_hex": 3,
+      "min_spacing_hex": 4,
+      "border_margin_hex": 2,
+      "weight_hint_distance": -1.0,
+      "weight_river": 1.5,
+      "weight_lowland": 2.0,
+      "weight_spread": 2.0,
+      "spread_cap_hex": 10,
+      "weight_jitter": 0.5,
+      "forbidden_terrain": [
+        "mountains",
+        "marsh"
+      ],
+      "kind_large": "city",
+      "kind_small": "town"
+    },
+    "roads": {
+      "mountain_extra_cost": 6,
+      "river_crossing_cost": 3,
+      "reuse_factor": 0.4,
+      "extra_links": 2,
+      "extra_detour_ratio": 1.6,
+      "bake_road_kind": "primary",
+      "bake_track_kind": "track"
+    },
+    "biomes": {
+      "temperate": {
+        "_comment": "Temperate lowland and low hills; forest on wet ground and gentle slopes.",
+        "elevation_min_m": 60,
+        "elevation_max_m": 1400,
+        "base": {
+          "scale_km": 80,
+          "octaves": 6,
+          "lacunarity": 2.0,
+          "gain": 0.6
+        },
+        "base_weight": 0.75,
+        "ridge": {
+          "scale_km": 40,
+          "octaves": 5,
+          "lacunarity": 2.1,
+          "gain": 0.55
+        },
+        "ridge_weight": 0.45,
+        "ridge_mask": {
+          "scale_km": 140,
+          "octaves": 2,
+          "lacunarity": 2.0,
+          "gain": 0.5
+        },
+        "ridge_mask_low": 0.45,
+        "ridge_mask_high": 0.62,
+        "tilt": 0.25,
+        "lowland_curve": 0.5,
+        "lake_min_depth_m": 30,
+        "lake_min_area_km2": 20,
+        "river_min_area_km2": 400,
+        "major_river_min_area_km2": 2500,
+        "relief_rules": [
+          {
+            "terrain": "mountains",
+            "min_relief_m": 650,
+            "min_slope_deg": 14
+          },
+          {
+            "terrain": "hills",
+            "min_relief_m": 280,
+            "min_slope_deg": 7
+          }
+        ],
+        "default_terrain": "plain",
+        "moisture": {
+          "scale_km": 35,
+          "octaves": 3,
+          "lacunarity": 2.0,
+          "gain": 0.5
+        },
+        "moisture_noise_weight": 0.7,
+        "moisture_water_weight": 0.25,
+        "moisture_water_reach_km": 5,
+        "moisture_altitude_weight": -0.25,
+        "moisture_slope_weight": -0.15,
+        "moisture_slope_ref_deg": 12,
+        "forest_threshold": 0.42,
+        "forest_on": [
+          "plain",
+          "hills"
+        ],
+        "textures": {
+          "plain": "terrain_farmland",
+          "forest": "terrain_farmland",
+          "hills": "terrain_hills_rocky",
+          "mountains": "terrain_mountains",
+          "city": "terrain_town",
+          "water": "terrain_water",
+          "marsh": "terrain_saltmarsh"
+        },
+        "lake_max_share": 0.03
+      },
+      "steppe": {
+        "_comment": "Dry steppe: flat, few ridges, almost no forest (only along rivers).",
+        "elevation_min_m": 80,
+        "elevation_max_m": 900,
+        "base": {
+          "scale_km": 80,
+          "octaves": 6,
+          "lacunarity": 2.0,
+          "gain": 0.6
+        },
+        "base_weight": 0.8,
+        "ridge": {
+          "scale_km": 40,
+          "octaves": 5,
+          "lacunarity": 2.1,
+          "gain": 0.55
+        },
+        "ridge_weight": 0.25,
+        "ridge_mask": {
+          "scale_km": 140,
+          "octaves": 2,
+          "lacunarity": 2.0,
+          "gain": 0.5
+        },
+        "ridge_mask_low": 0.6,
+        "ridge_mask_high": 0.85,
+        "tilt": 0.25,
+        "lowland_curve": 0.7,
+        "lake_min_depth_m": 30,
+        "lake_min_area_km2": 20,
+        "river_min_area_km2": 400,
+        "major_river_min_area_km2": 2500,
+        "relief_rules": [
+          {
+            "terrain": "mountains",
+            "min_relief_m": 650,
+            "min_slope_deg": 14
+          },
+          {
+            "terrain": "hills",
+            "min_relief_m": 200,
+            "min_slope_deg": 4
+          }
+        ],
+        "default_terrain": "plain",
+        "moisture": {
+          "scale_km": 35,
+          "octaves": 3,
+          "lacunarity": 2.0,
+          "gain": 0.5
+        },
+        "moisture_noise_weight": 0.35,
+        "moisture_water_weight": 0.25,
+        "moisture_water_reach_km": 5,
+        "moisture_altitude_weight": -0.3,
+        "moisture_slope_weight": -0.2,
+        "moisture_slope_ref_deg": 12,
+        "forest_threshold": 0.4,
+        "forest_on": [
+          "plain"
+        ],
+        "textures": {
+          "plain": "terrain_desert_flat",
+          "forest": "terrain_farmland",
+          "hills": "terrain_hills_rocky",
+          "mountains": "terrain_mountains",
+          "city": "terrain_town",
+          "water": "terrain_water",
+          "marsh": "terrain_saltmarsh"
+        },
+        "lake_max_share": 0.03
+      },
+      "foothills": {
+        "_comment": "Foothills: strong ridges, more forest on slopes.",
+        "elevation_min_m": 200,
+        "elevation_max_m": 2600,
+        "base": {
+          "scale_km": 80,
+          "octaves": 6,
+          "lacunarity": 2.0,
+          "gain": 0.6
+        },
+        "base_weight": 0.6,
+        "ridge": {
+          "scale_km": 40,
+          "octaves": 5,
+          "lacunarity": 2.1,
+          "gain": 0.55
+        },
+        "ridge_weight": 0.7,
+        "ridge_mask": {
+          "scale_km": 140,
+          "octaves": 2,
+          "lacunarity": 2.0,
+          "gain": 0.5
+        },
+        "ridge_mask_low": 0.45,
+        "ridge_mask_high": 0.7,
+        "tilt": 0.25,
+        "lowland_curve": 0.3,
+        "lake_min_depth_m": 30,
+        "lake_min_area_km2": 20,
+        "river_min_area_km2": 400,
+        "major_river_min_area_km2": 2500,
+        "relief_rules": [
+          {
+            "terrain": "mountains",
+            "min_relief_m": 800,
+            "min_slope_deg": 16
+          },
+          {
+            "terrain": "hills",
+            "min_relief_m": 320,
+            "min_slope_deg": 7
+          }
+        ],
+        "default_terrain": "plain",
+        "moisture": {
+          "scale_km": 35,
+          "octaves": 3,
+          "lacunarity": 2.0,
+          "gain": 0.5
+        },
+        "moisture_noise_weight": 0.6,
+        "moisture_water_weight": 0.25,
+        "moisture_water_reach_km": 5,
+        "moisture_altitude_weight": -0.2,
+        "moisture_slope_weight": 0.3,
+        "moisture_slope_ref_deg": 12,
+        "forest_threshold": 0.45,
+        "forest_on": [
+          "plain",
+          "hills"
+        ],
+        "textures": {
+          "plain": "terrain_farmland",
+          "forest": "terrain_farmland",
+          "hills": "terrain_basalt_plateau",
+          "mountains": "terrain_mountains",
+          "city": "terrain_town",
+          "water": "terrain_water",
+          "marsh": "terrain_saltmarsh"
+        },
+        "lake_max_share": 0.03
+      }
+    },
+    "bake_line_scale": 2.5
   }
 }

@@ -1,0 +1,16 @@
+{
+  "_comment": "Example for `mapgen procgen --params data/procgen/example-temperate.json --out <dir>` (R-UI-01, section 14 «Срединные земли»): 30 × 24 hexes of 10 km, temperate biome. City names are locale keys (no texts yet); hint = preferred hex [col, row], the city goes to the best hex nearby; cities without a hint are placed by the generator. origin = lon/lat of the north-west corner (geometry only).",
+  "seed": 20261128,
+  "cols": 30,
+  "rows": 24,
+  "hex_km": 10,
+  "biome": "temperate",
+  "origin": [21.0, 52.0],
+  "cities": [
+    { "name": "place.example.velen", "hint": [7, 8], "size": "large" },
+    { "name": "place.example.darsk", "hint": [22, 15], "size": "large" },
+    { "name": "place.example.mirow", "hint": [15, 4], "size": "small" },
+    { "name": "place.example.kalen", "size": "small" },
+    { "name": "place.example.tessa", "size": "small" }
+  ]
+}

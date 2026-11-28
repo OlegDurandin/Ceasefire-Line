@@ -122,6 +122,9 @@ struct GeoFile {
     /// Extent of the bbox in km (east, south).
     #[serde(default)]
     size_km: Option<[f64; 2]>,
+    /// R-UI-01: made by `mapgen procgen` (fictional land, no geodata).
+    #[serde(default)]
+    procedural: bool,
 }
 
 #[derive(Debug, Deserialize)]
