@@ -799,9 +799,16 @@ fn bake_procedural(
         }
     }
     let sprites = read_json(&a.sprites)?;
-    let empty = BTreeMap::new();
-    let overrides = pc.biomes.get(&pd.biome).map_or(&empty, |b| &b.textures);
-    let textures = load_textures(&sprites, &a.assets, Some(overrides))?;
+    // R-UI-01: the biome's texture set (sprites.json `biome_terrain`) over `terrain`.
+    let overrides: BTreeMap<String, String> = sprites["biome_terrain"][&pd.biome]
+        .as_object()
+        .map(|m| {
+            m.iter()
+                .filter_map(|(k, v)| Some((k.clone(), v.as_str()?.to_owned())))
+                .collect()
+        })
+        .unwrap_or_default();
+    let textures = load_textures(&sprites, &a.assets, Some(&overrides))?;
     let (tree, city) = (
         map_object(&sprites, &a.assets, "tree"),
         map_object(&sprites, &a.assets, "city"),

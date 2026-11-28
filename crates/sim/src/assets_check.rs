@@ -22,8 +22,6 @@ const SEAM_MAX_RATIO: f64 = 1.5;
 const UNIT_EDGE_MARGIN_PX: u32 = 1;
 /// Map objects (bridges): same format as unit medallions, top-down.
 const OBJECT_SIZE: u32 = 512;
-/// Packs v1 + v2 + Midlands.
-const EXPECTED_TERRAIN: usize = 17;
 const EXPECTED_UNITS: usize = 37;
 const EXPECTED_OBJECTS: usize = 3;
 /// R-UI-07 illustrations (16:9): briefings and event windows.
@@ -138,6 +136,9 @@ pub struct SpritesFile {
     /// Textures kept for later terrain types or variants.
     #[serde(default)]
     pub unused_terrain_textures: Vec<String>,
+    /// R-UI-01: per procedural biome, terrain id → texture over `terrain`.
+    #[serde(default)]
+    pub biome_terrain: BTreeMap<String, BTreeMap<String, String>>,
     pub units: BTreeMap<String, SpriteClass>,
     pub helicopter_transfer: BTreeMap<String, String>,
     /// Map object role → id in assets/objects.
@@ -288,6 +289,20 @@ pub fn check_sprites(data: &Path, assets: &Path) -> Result<Vec<String>, String> 
     for tex in &sprites.unused_terrain_textures {
         if !assets.join("terrain").join(format!("{tex}.png")).is_file() {
             problems.push(format!("unused terrain texture `{tex}.png` missing"));
+        }
+    }
+    for (biome, set) in &sprites.biome_terrain {
+        for (id, tex) in set {
+            if !terrain.terrain.iter().any(|t| &t.id == id) {
+                problems.push(format!(
+                    "sprites.json biome `{biome}`: terrain `{id}` is not in terrain.json"
+                ));
+            }
+            if !assets.join("terrain").join(format!("{tex}.png")).is_file() {
+                problems.push(format!(
+                    "biome `{biome}`, terrain `{id}`: texture file `{tex}.png` missing"
+                ));
+            }
         }
     }
     for (role, id) in &sprites.map_objects {
@@ -710,11 +725,7 @@ pub fn run(o: &Options) -> Result<(), String> {
     }
 
     let mut problems = Vec::new();
-    if terrain_n != EXPECTED_TERRAIN {
-        problems.push(format!(
-            "manifest: {terrain_n} terrain entries, expected {EXPECTED_TERRAIN}"
-        ));
-    }
+    let _ = terrain_n;
     if unit_n != EXPECTED_UNITS {
         problems.push(format!(
             "manifest: {unit_n} unit entries, expected {EXPECTED_UNITS}"
@@ -732,6 +743,14 @@ pub fn run(o: &Options) -> Result<(), String> {
             .map_err(|e| format!("{}: {e}", sprites_path.display()))?,
     )
     .map_err(|e| format!("sprites.json: {e}"))?;
+    let (texture_problems, warnings) = texture_bindings(
+        &sprites,
+        manifest
+            .iter()
+            .filter(|e| e.group == "terrain")
+            .map(|e| e.id.as_str()),
+    );
+    problems.extend(texture_problems);
     // R-UI-07: reference notes only for unit pictures — in the manifest, or a
     // sprite of a tier (miniature-only models; their files are checked above).
     let tier_sprite = |id: &str| {
@@ -763,22 +782,54 @@ pub fn run(o: &Options) -> Result<(), String> {
         .chain(&minis)
         .filter(|r| r.statuses != [Status::Ok])
         .count();
-    let mut report = render(&rows, &problems, total, game);
+    let mut report = render(&rows, &problems, &warnings, total, game);
     report.push_str(&render_minis(&minis, &fallback));
     if let Some(dir) = o.report.parent() {
         fs::create_dir_all(dir).map_err(|e| e.to_string())?;
     }
     fs::write(&o.report, report).map_err(|e| format!("{}: {e}", o.report.display()))?;
+    for w in &warnings {
+        eprintln!("warning: {w}");
+    }
     eprintln!(
-        "{} files, {bad} with problems, {} other problems; report: {}",
+        "{} files, {bad} with problems, {} other problems, {} warnings; report: {}",
         rows.len() + minis.len(),
         problems.len(),
+        warnings.len(),
         o.report.display()
     );
     if bad > 0 || !problems.is_empty() {
         return Err("asset check failed".into());
     }
     Ok(())
+}
+
+/// R-UI-06: every texture bound to terrain or a biome (or kept for later) must
+/// be a manifest terrain entry (problems); manifest textures bound nowhere are
+/// warnings. The number of textures is not fixed.
+pub fn texture_bindings<'a>(
+    sprites: &SpritesFile,
+    manifest_terrain: impl Iterator<Item = &'a str>,
+) -> (Vec<String>, Vec<String>) {
+    let bound: BTreeSet<&str> = sprites
+        .terrain
+        .values()
+        .chain(sprites.biome_terrain.values().flat_map(|m| m.values()))
+        .chain(&sprites.unused_terrain_textures)
+        .map(String::as_str)
+        .collect();
+    let listed: BTreeSet<&str> = manifest_terrain.collect();
+    let problems = bound
+        .iter()
+        .filter(|t| !listed.contains(*t))
+        .map(|t| format!("terrain texture `{t}` is bound in sprites.json but not in the manifest"))
+        .collect();
+    let warnings = listed
+        .iter()
+        .filter(|t| !bound.contains(*t))
+        .map(|t| format!("manifest texture `{t}` is not bound in sprites.json"))
+        .collect();
+    (problems, warnings)
 }
 
 fn mb(bytes: u64) -> String {
@@ -825,7 +876,7 @@ fn render_minis(rows: &[Row], fallback: &[String]) -> String {
     s
 }
 
-fn render(rows: &[Row], problems: &[String], total: u64, game: u64) -> String {
+fn render(rows: &[Row], problems: &[String], warnings: &[String], total: u64, game: u64) -> String {
     let mut s = String::new();
     let ok = rows.iter().filter(|r| r.statuses == [Status::Ok]).count();
     let _ = writeln!(s, "# Отчёт по ассетам\n");
@@ -846,6 +897,13 @@ fn render(rows: &[Row], problems: &[String], total: u64, game: u64) -> String {
         let _ = writeln!(s, "## Замечания\n");
         for p in problems {
             let _ = writeln!(s, "- {p}");
+        }
+        let _ = writeln!(s);
+    }
+    if !warnings.is_empty() {
+        let _ = writeln!(s, "## Предупреждения (не ошибки)\n");
+        for w in warnings {
+            let _ = writeln!(s, "- {w}");
         }
         let _ = writeln!(s);
     }

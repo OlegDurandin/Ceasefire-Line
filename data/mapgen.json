@@ -234,7 +234,7 @@
     ]
   },
   "procgen": {
-    "_comment": "mapgen procgen (R-UI-01, GDD section 14 «Срединные земли»): procedural relief for fictional scenarios. Heights = base fBm + ridged fBm under a range mask + regional tilt, on a raster of raster_km; depressions filled (priority-flood), lakes where deeper than lake_min_depth_m; D8 flow on the filled surface; streams from river_min_area_km2 drained, major rivers (impassable hex sides, `canals`) from major_river_min_area_km2. Hex terrain by relief rules per biome, forest by moisture (noise + water nearby + height + slope). Roads: least-cost hex paths (terrain.json AP) over a spanning tree of the cities plus extra links; large–large links are roads (highway), the rest tracks. Textures per biome: placeholders until the designer adds terrain_forest, terrain_forest_pine, terrain_steppe, terrain_alpine_meadow, terrain_town_temperate — intended: temperate plain terrain_farmland, forest terrain_forest, city terrain_town_temperate; steppe plain terrain_steppe, forest terrain_forest; foothills hills/mountains terrain_alpine_meadow, forest terrain_forest_pine, city terrain_town_temperate.",
+    "_comment": "mapgen procgen (R-UI-01, GDD section 14 «Срединные земли»): procedural relief for fictional scenarios. Heights = base fBm + ridged fBm under a range mask + regional tilt, on a raster of raster_km; depressions filled (priority-flood), lakes where deeper than lake_min_depth_m; D8 flow on the filled surface; streams from river_min_area_km2 drained, major rivers (impassable hex sides, `canals`) from major_river_min_area_km2. Hex terrain by relief rules per biome, forest by moisture (noise + water nearby + height + slope). Roads: least-cost hex paths (terrain.json AP) over a spanning tree of the cities plus extra links; large–large links are roads (highway), the rest tracks. Textures per biome: data/sprites.json `biome_terrain` over `terrain`.",
     "raster_km": 0.5,
     "bake_px_per_km": 8,
     "lake_min_share": 0.5,
@@ -339,15 +339,6 @@
           "plain",
           "hills"
         ],
-        "textures": {
-          "plain": "terrain_farmland",
-          "forest": "terrain_farmland",
-          "hills": "terrain_hills_rocky",
-          "mountains": "terrain_mountains",
-          "city": "terrain_town",
-          "water": "terrain_water",
-          "marsh": "terrain_saltmarsh"
-        },
         "lake_max_share": 0.03
       },
       "steppe": {
@@ -411,15 +402,6 @@
         "forest_on": [
           "plain"
         ],
-        "textures": {
-          "plain": "terrain_desert_flat",
-          "forest": "terrain_farmland",
-          "hills": "terrain_hills_rocky",
-          "mountains": "terrain_mountains",
-          "city": "terrain_town",
-          "water": "terrain_water",
-          "marsh": "terrain_saltmarsh"
-        },
         "lake_max_share": 0.03
       },
       "foothills": {
@@ -484,15 +466,6 @@
           "plain",
           "hills"
         ],
-        "textures": {
-          "plain": "terrain_farmland",
-          "forest": "terrain_farmland",
-          "hills": "terrain_basalt_plateau",
-          "mountains": "terrain_mountains",
-          "city": "terrain_town",
-          "water": "terrain_water",
-          "marsh": "terrain_saltmarsh"
-        },
         "lake_max_share": 0.03
       }
     },

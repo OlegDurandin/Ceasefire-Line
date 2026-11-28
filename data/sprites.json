@@ -47,14 +47,31 @@
     "city": "terrain_town",
     "fortified": "terrain_fortified",
     "water": "terrain_water",
-    "forest": "terrain_farmland"
+    "forest": "terrain_forest"
   },
   "unused_terrain_textures": [
     "terrain_basalt_plateau",
-    "terrain_farmland",
     "terrain_terraced_hills",
     "terrain_orchards"
   ],
+  "biome_terrain": {
+    "temperate": {
+      "plain": "terrain_farmland",
+      "forest": "terrain_forest",
+      "city": "terrain_town_temperate"
+    },
+    "steppe": {
+      "plain": "terrain_steppe",
+      "forest": "terrain_forest",
+      "city": "terrain_town"
+    },
+    "foothills": {
+      "plain": "terrain_farmland",
+      "hills": "terrain_alpine_meadow",
+      "forest": "terrain_forest_pine",
+      "city": "terrain_town_temperate"
+    }
+  },
   "units": {
     "tank": {
       "tech_branch": "armor",

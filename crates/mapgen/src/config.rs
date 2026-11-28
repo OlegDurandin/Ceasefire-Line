@@ -237,8 +237,6 @@ pub struct BiomeConfig {
     pub forest_threshold: f64,
     /// Terrains that turn into forest where it grows.
     pub forest_on: Vec<String>,
-    /// Terrain id → texture file in `assets/terrain` (over `sprites.json`).
-    pub textures: BTreeMap<String, String>,
 }
 
 /// `mapgen bake`: the painted map under the hexes (R-UI-01, R-UI-02).
