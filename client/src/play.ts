@@ -15,7 +15,9 @@ import { encodeSave } from "./save";
 import { fill, formatEvent, type UnitRef } from "./log";
 import { drawControl } from "./render/control";
 import { drawHqLinks, drawIntent, drawObjectives, drawSupply, drawTrail, drawUmbrellas, drawZoc, type AiPlanView } from "./render/layers";
-import { AI_SPEEDS, aiTiming, storeSetting, type AiSpeed } from "./settings";
+import { aiTiming, isOn, storeSetting, type AiSpeed, type Settings } from "./settings";
+import { editOptions } from "./start";
+import { optionsFrom } from "./ui/options-screen";
 import { focusOf, trailOf, type TrailMark } from "./trail";
 import { PhaseLog } from "./phase-summary";
 import { phaseSummaryHtml } from "./ui/phase-summary";
@@ -74,6 +76,10 @@ export interface PlayContext {
   settingsKey: string;
   /** R-UI-05: speed of the AI's phase on screen. */
   aiSpeed: AiSpeed;
+  /** Options screen switches (stored per browser). */
+  settings: Settings;
+  /** Menu «Новая игра»: the scenario screen (with «Отмена»). */
+  newGame: () => Promise<void>;
   /** R-UI-03: default facing per side id (scenario.json `sides[].facing`). */
   sideFacing: Facing[];
   /** R-UI-03: facing restored from the save (unit id → facing). */
@@ -206,7 +212,7 @@ export class Play {
     world.addChild(this.airLayer);
     this.facing = new Map(ctx.savedFacing);
     // Against the AI its moves are traced on the map by default.
-    if (ctx.aiSide !== null) this.layers.add("trail");
+    if (ctx.aiSide !== null && isOn(ctx.settings, "trail")) this.layers.add("trail");
     camera.onTap = (x, y) => this.tap(x, y);
     window.addEventListener("keydown", (e) => this.key(e));
     this.aw = new AttackWindow(document.getElementById("attack")!, ru, ctx.rules);
@@ -311,7 +317,7 @@ export class Play {
     }
     if (this.aiTurn() && !this.state.outcome) void this.playAi();
     // Back to the player: what the AI's phase did.
-    else if (!this.state.outcome && this.phases.lastOpponent(this.state.active_side)) this.showSummary();
+    else if (!this.state.outcome && isOn(this.ctx.settings, "summary") && this.phases.lastOpponent(this.state.active_side)) this.showSummary();
   }
 
   /** R-UI-04 «Итоги фазы противника» (key L); hexes take the camera there. */
@@ -1480,7 +1486,7 @@ export class Play {
     const unused = this.state.units.filter(
       (u) => u.side === this.state.active_side && u.strikes_left > 0 && (JSON.parse(this.game.targets(u.id)) as Target[]).length > 0,
     );
-    if (!unused.length) {
+    if (!unused.length || !isOn(this.ctx.settings, "warnUnused")) {
       void this.run(() => this.game.endPhase(), true);
       return;
     }
@@ -1500,25 +1506,29 @@ export class Play {
     document.getElementById("m-close")!.onclick = () => (modal.style.display = "none");
   }
 
-  /** Settings: how units look on the map (R-UI-03). */
-  private settings() {
-    const opt = (s: UnitStyle) =>
-      `<label class="opt"><input type="radio" name="units" value="${s}"${this.ctx.style === s ? " checked" : ""}> ${this.t(`ui.settings.${s}`)}</label>`;
-    const speed = (s: AiSpeed) =>
-      `<label class="opt"><input type="radio" name="ai-speed" value="${s}"${this.ctx.aiSpeed === s ? " checked" : ""}> ${this.t(`ui.settings.ai.${s}`)}</label>`;
-    this.modal(
-      `<h2>${this.t("ui.settings")}</h2><fieldset class="settings"><legend>${this.t("ui.settings.units")} (U)</legend>${opt("miniature")}${opt("medallion")}</fieldset>` +
-        `<fieldset class="settings"><legend>${this.t("ui.settings.ai")}</legend>${AI_SPEEDS.map(speed).join("")}</fieldset>`,
-    );
-    for (const r of document.querySelectorAll<HTMLInputElement>('#modal input[name="units"]')) {
-      r.onchange = () => this.setStyle(r.value as UnitStyle);
+  /** Options screen (SC «Options»): switches, unit counters, AI speed; applied on «ОК». */
+  private async settings() {
+    const preview = (style: UnitStyle) => {
+      const side = this.state.active_side;
+      const nation = this.state.units.find((u) => u.side === side && u.nation)?.nation;
+      const tech = this.state.sides.find((x) => x.id === side)?.tech ?? {};
+      const year = this.ctx.startDate ? Number(this.ctx.startDate.slice(0, 4)) : undefined;
+      const base = pickSprite(this.sprites, "tank", nation, tech, year);
+      const ref = base ? styledSprite(base, style, this.sprites, this.ctx.minis) : null;
+      return ref ? `<img src="${ref.url}" alt="">` : "";
+    };
+    const o = await editOptions(optionsFrom(this.ctx.settings, this.ctx.style, this.ctx.aiSpeed), this.ru, preview);
+    if (!o) return;
+    this.ctx.aiSpeed = o.aiSpeed;
+    this.ctx.settings = { ...this.ctx.settings, ...o.switches, aiSpeed: o.aiSpeed };
+    storeSetting(this.ctx.settingsKey, { ...o.switches, aiSpeed: o.aiSpeed });
+    if (this.ctx.history) this.ctx.history.windows = o.switches.windows;
+    if (this.ctx.aiSide !== null) {
+      if (o.switches.trail) this.layers.add("trail");
+      else this.layers.delete("trail");
     }
-    for (const r of document.querySelectorAll<HTMLInputElement>('#modal input[name="ai-speed"]')) {
-      r.onchange = () => {
-        this.ctx.aiSpeed = r.value as AiSpeed;
-        storeSetting(this.ctx.settingsKey, { aiSpeed: this.ctx.aiSpeed });
-      };
-    }
+    if (o.style !== this.ctx.style) this.setStyle(o.style);
+    else await this.refresh();
   }
 
   private help() {
@@ -1535,6 +1545,7 @@ export class Play {
       <div class="menu"><button id="m-continue">${this.t("ui.continue")}</button>
       ${this.ctx.history?.briefing ? `<button id="m-briefing">${this.t("ui.briefing")}</button>` : ""}
       <button id="m-new">${this.t("ui.new_game")}</button>
+      <button id="m-options">${this.t("ui.opt.title")}</button>
       <button id="m-editor">${this.t("ui.open_editor")}</button></div>`;
     modal.style.display = "flex";
     document.getElementById("m-continue")!.onclick = () => (modal.style.display = "none");
@@ -1545,12 +1556,12 @@ export class Play {
         void this.ctx.history?.briefing?.();
       };
     document.getElementById("m-new")!.onclick = () => {
-      try {
-        localStorage.removeItem(this.ctx.saveKey);
-      } catch {
-        // no storage: nothing to clear
-      }
-      location.reload();
+      modal.style.display = "none";
+      void this.ctx.newGame();
+    };
+    document.getElementById("m-options")!.onclick = () => {
+      modal.style.display = "none";
+      void this.settings();
     };
     document.getElementById("m-editor")!.onclick = () => {
       const p = new URLSearchParams(location.search);

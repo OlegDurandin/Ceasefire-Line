@@ -1,6 +1,6 @@
 // Stage 2: the client plays (hotseat) or edits (?mode=edit) a scenario on the rules core (WASM).
 
-import { parseSettings, type Settings } from "./settings";
+import { isOn, parseSettings, type Settings } from "./settings";
 import { Application, Assets, Container, Graphics, Sprite, type Texture } from "pixi.js";
 
 import { Editor } from "./editor/editor";
@@ -22,6 +22,8 @@ import { drawUnits, expStars, sideColors, type Token } from "./render/units";
 import { miniIndex, pickSprite, styledSprite, terrainTextureUrl, type MiniIndex, type SpritesFile, type UnitStyle } from "./sprites";
 import type { ScenarioView } from "./view";
 import { briefingWindow, showStory, type BriefingFile, type EventWindow, type ScenarioFacts } from "./history";
+import { chooseScenario, loadCards } from "./start";
+import { modeKey } from "./ui/scenario-screen";
 import init, { Core, Game } from "./wasm/ceasefire_wasm.js";
 
 /** Hex corner radius in world pixels. */
@@ -304,11 +306,35 @@ async function main() {
     }
     // R-AI-01: a new game asks who plays (or `?vs=hotseat|<side key>`).
     const newGame = aiSide === undefined;
+    const suddenDeathPct = (JSON.parse(rules) as { national_morale: { sudden_death_pct: number } }).national_morale.sudden_death_pct;
+    // A new game: the scenario screen (or `?vs=hotseat|<side key>`, consumed once).
+    const startNew = async (cancel: boolean): Promise<void> => {
+      const cards = await loadCards(SCENARIO, ru, suddenDeathPct);
+      const c = await chooseScenario(cards, SCENARIO, ru, cancel);
+      if (!c) return;
+      try {
+        localStorage.removeItem(`cl.save.${c.id}`);
+      } catch {
+        // no storage: nothing to clear
+      }
+      const url = new URL(location.href);
+      url.searchParams.set("scenario", c.id);
+      url.searchParams.set("vs", modeKey(c.mode));
+      location.assign(url.toString());
+      await new Promise(() => undefined);
+    };
     if (aiSide === undefined) {
-      const index = await optionalText("/data/scenarios/index.json");
-      const scenarios = index ? ((JSON.parse(index) as { scenarios?: string[] }).scenarios ?? [SCENARIO]) : [SCENARIO];
-      aiSide = await chooseMode(ru, sideKeys, PARAMS.get("vs"), scenarios);
+      const vs = PARAMS.get("vs");
+      if (vs === "hotseat") aiSide = null;
+      else if (vs && sideKeys.includes(vs) && sideKeys.length === 2) aiSide = 1 - sideKeys.indexOf(vs);
+      else await startNew(false);
+      if (vs) {
+        const url = new URL(location.href);
+        url.searchParams.delete("vs");
+        history.replaceState(null, "", url.toString());
+      }
     }
+    aiSide ??= null;
     // A new game draws the AI's seed; a resumed one keeps it (R-AI-01).
     if (aiSeed === null) aiSeed = crypto.getRandomValues(new Uint32Array(1))[0]!;
     game.setAi(aiText, scenario, aiSeed);
@@ -316,7 +342,7 @@ async function main() {
     const facts = JSON.parse(scenario) as ScenarioFacts;
     const sideLabel = (id: number) => ru[`side.${sideKeys[id] ?? ""}`] ?? String(id);
     const objectiveName = (hex: [number, number]) => ru[`place.${SCENARIO}.${hex[0]}_${hex[1]}`] ?? `[${hex[0]}, ${hex[1]}]`;
-    const suddenDeath = (JSON.parse(rules) as { national_morale: { sudden_death_pct: number } }).national_morale.sudden_death_pct;
+    const suddenDeath = suddenDeathPct;
     const showBriefing = briefing
       ? () =>
           showStory(
@@ -336,11 +362,13 @@ async function main() {
       ),
       startDate: scenarioMeta.start_date,
       startTurn: scenarioMeta.start_turn ?? 1,
-      suddenDeathPct: (JSON.parse(rules) as { national_morale: { sudden_death_pct: number } }).national_morale.sudden_death_pct,
+      suddenDeathPct,
       style: unitStyle,
       minis,
       saveKey,
       settingsKey,
+      settings: stored,
+      newGame: () => startNew(true),
       aiSpeed: stored.aiSpeed ?? "x1",
       sideFacing,
       savedFacing,
@@ -366,7 +394,7 @@ async function main() {
           (JSON.parse(units) as { units: { id: string; info?: string }[] }).units.filter((u) => u.info).map((u) => [u.id, u.info!] as const),
         ),
         modelInfo: (sprites as { model_info?: Record<string, string> }).model_info ?? {},
-        windows: stories,
+        windows: stories && isOn(stored, "windows"),
       },
     });
     const onCamera = camera.onChange;
@@ -407,54 +435,6 @@ async function main() {
       },
     };
   }
-}
-
-/**
- * R-AI-01: hotseat, or against the AI for one side. `vs` from the URL skips
- * the question: `hotseat`, or the key of the side the player takes.
- */
-function chooseMode(ru: Record<string, string>, sideKeys: string[], vs: string | null, scenarios: string[] = [SCENARIO]): Promise<number | null> {
-  const human = (key: string) => sideKeys.indexOf(key);
-  if (vs === "hotseat") return Promise.resolve(null);
-  if (vs && human(vs) >= 0 && sideKeys.length === 2) return Promise.resolve(1 - human(vs));
-  const modal = document.getElementById("modal")!;
-  const box = modal.querySelector(".panel")!;
-  const sideName = (k: string) => ru[`side.${k}`] ?? k;
-  // The scenario: another one reloads the page with `?scenario=<id>`.
-  const pick =
-    scenarios.length > 1
-      ? `<div class="scenario-pick" role="tablist" aria-label="${ru["ui.scenario"] ?? "Scenario"}">${scenarios
-          .map(
-            (id) =>
-              `<button data-scenario="${id}" role="tab" aria-selected="${id === SCENARIO}"${id === SCENARIO ? ' class="on"' : ""}>${ru[`scenario.${id}.name`] ?? id}</button>`,
-          )
-          .join("")}</div>`
-      : "";
-  box.innerHTML = `<h2>${ru["ui.mode.title"] ?? "New game"}</h2>${pick}<div class="menu">
-    <button id="mode-hotseat">${ru["ui.mode.hotseat"] ?? "Hotseat"}</button>
-    ${sideKeys
-      .map((k, i) => `<button id="mode-play-${k}" data-ai="${sideKeys.length === 2 ? 1 - i : ""}">${(ru["ui.mode.vs_ai"] ?? "{side}").replace("{side}", sideName(k))}</button>`)
-      .join("")}</div>`;
-  modal.style.display = "flex";
-  return new Promise((resolve) => {
-    const done = (v: number | null) => {
-      modal.style.display = "none";
-      resolve(v);
-    };
-    document.getElementById("mode-hotseat")!.onclick = () => done(null);
-    for (const b of box.querySelectorAll<HTMLButtonElement>("[data-scenario]")) {
-      b.onclick = () => {
-        if (b.dataset.scenario === SCENARIO) return;
-        const url = new URL(location.href);
-        url.searchParams.set("scenario", b.dataset.scenario!);
-        url.searchParams.delete("vs");
-        location.assign(url.toString());
-      };
-    }
-    for (const b of box.querySelectorAll<HTMLButtonElement>("[data-ai]")) {
-      b.onclick = () => done(b.dataset.ai === "" ? null : Number(b.dataset.ai));
-    }
-  });
 }
 
 /** «Continue the saved game?» in the modal; resolves with the choice. */

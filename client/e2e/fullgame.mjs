@@ -22,8 +22,9 @@ await page.goto(URL, { waitUntil: "networkidle0", timeout: 60000 });
 await page.evaluate(() => localStorage.clear());
 await page.reload({ waitUntil: "networkidle0" });
 // A new game asks for the mode (R-AI-01): hotseat here, `npm run e2e:ai` plays the AI.
-await page.waitForSelector("#mode-hotseat", { visible: true, timeout: 60000 });
-await page.click("#mode-hotseat");
+// The scenario screen opens on a new game; hotseat is the default mode.
+await page.waitForSelector("#ss-play", { visible: true, timeout: 60000 });
+await page.click("#ss-play");
 await page.waitForFunction(() => document.getElementById("top")?.textContent?.includes("Ход"));
 await new Promise(r => setTimeout(r, 600));
 // R-UI-07: a new game opens with the briefing (picture, victory conditions from the data).
@@ -74,11 +75,12 @@ async function hudTour() {
     const before = await on(); await click(`#layer-${l}`); const after = await on(); await click(`#layer-${l}`);
     check(`layer ${l}`, before !== after);
   }
-  await click("#settings");
-  await page.click('#modal input[value="medallion"]'); await wait(200);
-  await page.click('#modal input[value="miniature"]'); await wait(200);
-  check("settings", await page.evaluate(() => JSON.parse(localStorage.getItem("cl.settings") ?? "{}").units === "miniature"));
-  await click("#m-close");
+  // Options screen: counter style ▼ → medallions, OK; then back to miniatures.
+  const units = () => page.evaluate(() => JSON.parse(localStorage.getItem("cl.settings") ?? "{}").units);
+  await click("#settings"); await page.click('[data-step="style:1"]'); await page.click("#op-ok"); await wait(300);
+  const medallion = await units();
+  await click("#settings"); await page.click('[data-step="style:-1"]'); await page.click("#op-ok"); await wait(300);
+  check("settings", medallion === "medallion" && (await units()) === "miniature");
   await click("#help"); check("help", (await page.evaluate(() => document.querySelector("#modal .panel")?.innerText ?? "")).includes("Enter")); await click("#m-close");
   await click("#save-game"); check("save", await page.evaluate(() => !!localStorage.getItem("cl.save.golan67")));
   await click("#to-menu"); check("menu", await visible("#m-continue")); await click("#m-continue");

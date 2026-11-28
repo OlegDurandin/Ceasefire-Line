@@ -7,7 +7,22 @@ export const AI_SPEEDS: AiSpeed[] = ["x1", "x2", "x4", "instant"];
 export interface Settings {
   units?: string;
   aiSpeed?: AiSpeed;
+  /** R-UI-07: important scenario events in a window (off — a notice). */
+  windows?: boolean;
+  /** R-UI-04: the opponent's phase summary opens by itself. */
+  summary?: boolean;
+  /** R-UI-05: warn before ending the phase with strikes left. */
+  warnUnused?: boolean;
+  /** R-UI-05: the «следы хода» layer is on in games against the AI. */
+  trail?: boolean;
 }
+
+/** Switches of the options screen; all on unless switched off. */
+export const SWITCHES = ["windows", "summary", "warnUnused", "trail"] as const;
+export type Switch = (typeof SWITCHES)[number];
+
+/** A switch's value, on by default. */
+export const isOn = (s: Settings, k: Switch) => s[k] !== false;
 
 /** Pause before each AI command and how long its combat result stays, ms. */
 export interface AiTiming {
@@ -32,6 +47,7 @@ export function parseSettings(text: string | null): Settings {
     const out: Settings = {};
     if (typeof v.units === "string") out.units = v.units;
     if (AI_SPEEDS.includes(v.aiSpeed as AiSpeed)) out.aiSpeed = v.aiSpeed as AiSpeed;
+    for (const k of SWITCHES) if (typeof v[k] === "boolean") out[k] = v[k];
     return out;
   } catch {
     return {};
