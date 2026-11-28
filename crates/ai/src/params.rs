@@ -51,6 +51,22 @@ pub struct MoveWeights {
     /// more units (rebalancing 2026-11-28; before, the sequence alone decided).
     #[serde(default = "default_sequence_weight")]
     pub sequence_weight: f64,
+    /// R-AI-01 role «Рывок»: a tank or mech brigade whose goal is an objective
+    /// not held at least this many hexes away goes round enemy ZOC and fights
+    /// only what bars its way (rebalancing 2026-11-28).
+    #[serde(default = "default_dash_min_distance")]
+    pub dash_min_distance: u32,
+    /// «Рывок»: a hex in enemy ZOC counts as this many hexes further from the goal.
+    #[serde(default = "default_dash_zoc_penalty")]
+    pub dash_zoc_penalty: f64,
+}
+
+fn default_dash_min_distance() -> u32 {
+    4
+}
+
+fn default_dash_zoc_penalty() -> f64 {
+    2.0
 }
 
 fn default_sequence_weight() -> f64 {

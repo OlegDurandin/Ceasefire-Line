@@ -652,6 +652,73 @@ impl AiV1 {
     }
 
     /// Bombardments first, then attacks; the best score above the side's bar.
+    /// R-AI-01 role «Рывок»: units heading for a far objective not held
+    /// (tank and mech brigades, goal at least `dash_min_distance` away), with
+    /// their goal hex.
+    /// The role holds only while the unit can get past the enemy around it
+    /// this phase: some hex it reaches out of enemy ZOC is closer to the goal
+    /// than every enemy ground unit within 3 hexes (a solid line — no role).
+    fn dash(&self, b: &Board) -> BTreeMap<UnitId, Hex> {
+        let min = self.params.moves.dash_min_distance;
+        let zoc = Self::enemy_zoc(b);
+        self.goals(b)
+            .into_iter()
+            .filter(|(id, goal)| {
+                b.s.unit(*id).is_some_and(|u| {
+                    if !is_mobile(b.s, u)
+                        || !b.objectives.contains_key(goal)
+                        || b.s.controller(*goal) == Some(b.side)
+                        || u.hex.distance(*goal) < min
+                    {
+                        return false;
+                    }
+                    let front = b
+                        .enemy
+                        .iter()
+                        .filter(|e| e.hex.distance(u.hex) <= 3)
+                        .map(|e| e.hex.distance(*goal))
+                        .min()
+                        .unwrap_or(u32::MAX);
+                    b.s.reachable(u.id).is_ok_and(|r| {
+                        r.keys()
+                            .any(|h| !zoc.contains(h) && h.distance(*goal) < front)
+                    })
+                })
+            })
+            .collect()
+    }
+
+    /// Hexes in the ZOC of the enemy's ground units (R-MOVE-03 threshold).
+    fn enemy_zoc(b: &Board) -> BTreeSet<Hex> {
+        let min = b.s.data().rules.movement.zoc_min_strength;
+        b.enemy
+            .iter()
+            .filter(|e| {
+                e.strength >= min && b.s.data().units.get(&e.class).is_ok_and(|c| c.exerts_zoc)
+            })
+            .flat_map(|e| e.hex.neighbors())
+            .collect()
+    }
+
+    /// «Рывок»: may `u` strike `e`? Only the goal's defender, or one the unit
+    /// cannot get past: no hex out of enemy ZOC it reaches this phase is
+    /// closer to the goal than `e` is.
+    fn dash_may_strike(b: &Board, dash: &BTreeMap<UnitId, Hex>, u: &Unit, e: &Unit) -> bool {
+        let Some(goal) = dash.get(&u.id) else {
+            return true;
+        };
+        if e.hex == *goal {
+            return true;
+        }
+        let zoc = Self::enemy_zoc(b);
+        let past = e.hex.distance(*goal);
+        let bypass = b.s.reachable(u.id).is_ok_and(|r| {
+            r.keys()
+                .any(|h| !zoc.contains(h) && h.distance(*goal) < past)
+        });
+        !bypass
+    }
+
     fn strike(&self, b: &Board) -> Option<Command> {
         let mut best: Option<(u8, f64, Command)> = None;
         for (rank, score, cmd) in self.strike_options(b) {
@@ -672,10 +739,14 @@ impl AiV1 {
         let aggr = self.aggressiveness(b.side);
         let bar = w.min_score_defensive + (w.min_score_aggressive - w.min_score_defensive) * aggr;
         let retreat_at = f64::from(b.s.data().rules.retreat.max_strength);
+        let dash = self.dash(b);
         let mut options: Vec<(u8, f64, Command)> = Vec::new();
         for u in b.own.iter().filter(|u| u.strikes_left > 0) {
             let own_step = step_value(b.s, u);
             for e in &b.enemy {
+                if !Self::dash_may_strike(b, &dash, u, e) {
+                    continue;
+                }
                 let def_step = step_value(b.s, e);
                 let on_objective = if b.objectives.contains_key(&e.hex) {
                     w.objective_bonus * own_step
@@ -984,6 +1055,8 @@ impl AiV1 {
     /// The single move with the largest gain over staying put.
     fn best_move(&self, b: &Board) -> Option<Command> {
         let goals = self.goals(b);
+        let dash = self.dash(b);
+        let zoc = Self::enemy_zoc(b);
         let mut best: Option<(f64, UnitId, Hex)> = None;
         let plan = self.plan.as_ref();
         let drop = b.s.data().rules.supply.max_drop_per_phase;
@@ -1003,7 +1076,23 @@ impl AiV1 {
             let Ok(reach) = b.s.reachable(u.id) else {
                 continue;
             };
-            let stay = self.hex_score(b, u, u.hex, goal);
+            // «Рывок»: progress to the goal, a ZOC hex counts further away
+            // (it stops the move), threat as usual — no contact or terrain terms.
+            let m = &self.params.moves;
+            let score = |h: Hex| -> f64 {
+                if dash.contains_key(&u.id) {
+                    let d = f64::from(h.distance(goal))
+                        + if zoc.contains(&h) {
+                            m.dash_zoc_penalty
+                        } else {
+                            0.0
+                        };
+                    -m.goal_weight * d - m.threat_weight * b.threat.get(&h).copied().unwrap_or(0.0)
+                } else {
+                    self.hex_score(b, u, h, goal)
+                }
+            };
+            let stay = score(u.hex);
             for h in reach.keys() {
                 // No stranding: own supply a phase later below the floor, unless a chokepoint.
                 if let Some(p) = plan {
@@ -1012,7 +1101,7 @@ impl AiV1 {
                         continue;
                     }
                 }
-                let gain = self.hex_score(b, u, *h, goal) - stay;
+                let gain = score(*h) - stay;
                 if gain < self.params.moves.min_gain {
                     continue;
                 }
@@ -1202,13 +1291,15 @@ impl AiV1 {
                         }
                     }
                 }
-                // 3. Infantry from place, then 4. tanks and mechs.
+                // 3. Infantry from place, then 4. tanks and mechs (a unit in a
+                // «Рывок» only when the defender bars its way).
+                let dash = self.dash(b);
                 for mobile in [false, true] {
-                    for u in b
-                        .own
-                        .iter()
-                        .filter(|u| u.strikes_left > 0 && is_mobile(b.s, u) == mobile)
-                    {
+                    for u in b.own.iter().filter(|u| {
+                        u.strikes_left > 0
+                            && is_mobile(b.s, u) == mobile
+                            && Self::dash_may_strike(b, &dash, u, def)
+                    }) {
                         if b.s.forecast_attack(u.id, def.id).is_ok() {
                             let cmd = Command::Attack {
                                 unit: u.id,

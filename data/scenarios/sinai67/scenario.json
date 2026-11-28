@@ -43,8 +43,22 @@
       "mpp": 60,
       "base_income": 5,
       "loss_sensitivity": 2,
-      "purchase_limits": { "commando": { "count": 1, "alt": true }, "mech": { "count": 1, "alt": true }, "artillery": 1, "infantry": 1 },
-      "night_combat": ["infantry", "commando"],
+      "purchase_limits": {
+        "commando": {
+          "count": 1,
+          "alt": true
+        },
+        "mech": {
+          "count": 1,
+          "alt": true
+        },
+        "artillery": 1,
+        "infantry": 1
+      },
+      "night_combat": [
+        "infantry",
+        "commando"
+      ],
       "night_combat_source": "Ночные штурмы Израиля в 1967 году — пехота и парашютисты: Умм-Катеф / Абу-Агейла в ночь 5–6 июня (38-я дивизия), Аммуниционная горка в Иерусалиме 6 июня (55-я парашютная бригада); M. Oren, «Six Days of War», 2002; T. N. Dupuy, «Elusive Victory», 1978 (без страниц). Танкам и мех. бригадам — нет (решение дизайнера 2026-11-27)."
     },
     {
@@ -71,7 +85,13 @@
       "mpp": 60,
       "base_income": 15,
       "loss_sensitivity": 1,
-      "purchase_limits": { "infantry": 1, "commando": { "count": 1, "alt": true } }
+      "purchase_limits": {
+        "infantry": 1,
+        "commando": {
+          "count": 1,
+          "alt": true
+        }
+      }
     }
   ],
   "sources": [
@@ -259,12 +279,12 @@
   "victory": [
     {
       "side": 0,
-      "decisive": 80,
-      "victory": 10
+      "decisive": 45,
+      "victory": 11
     },
     {
       "side": 1,
-      "decisive": 30,
+      "decisive": 43,
       "victory": 6
     }
   ],
@@ -678,7 +698,8 @@
       "name": "formation.egy_11th_infantry_brigade",
       "confirmed": true,
       "source": "he.wikipedia 'קרב רפיח (1967)' (Carta Atlas maps 62-64; A. Zohar, Shiryon 35, 2010) https://he.wikipedia.org/wiki/קרב_רפיח_(1967); H. Barasch, 'The Arab-Israeli 67 War: the history as the game', Moves #15 (SPI, 1974) http://russgifford.net/MovesScans/Moves15/sinaifl.pdf; Avalanche Press, Panzer Grenadier Modern '1967: Sword of Israel' scenario book (2013, wargame) https://gamers-hq.de/media/pdf/64/eb/7d/NEW_1967_book.pdf",
-      "_comment": "Reduced brigade (hewiki)."
+      "_comment": "Reduced brigade: hewiki «חטיבה מוקטנת חי\"ר 11 (מדרום לצומת רפיח)» — no battalion count given. Strength 7 = assumption (two battalions of three), not confirmed by a source (rebalancing 2026-11-28, designer decision on the belt check).",
+      "strength": 7
     },
     {
       "class": "infantry",
@@ -738,10 +759,10 @@
       "morale_pct": 75,
       "formation": "egy_7th_infantry_division",
       "nation": "egypt",
-      "name": "formation.egy_49th_field_artillery_brigade_and_57th_ar",
+      "name": "formation.egy_7th_division_artillery",
       "confirmed": false,
       "source": "H. Barasch, 'The Arab-Israeli 67 War: the history as the game', Moves #15 (SPI, 1974) http://russgifford.net/MovesScans/Moves15/sinaifl.pdf; he.wikipedia 'קרב רפיח (1967)' (Carta Atlas maps 62-64; A. Zohar, Shiryon 35, 2010) https://he.wikipedia.org/wiki/קרב_רפיח_(1967)",
-      "_comment": "Moves: 49th FA Bde (36×122 mm + 1 bn 100 mm) behind Rafah, 57th Arty Bde at Jiradi. Hewiki: 'an artillery brigade between the positions'. Numbers unconfirmed; folded into one unit."
+      "_comment": "Moves: 49th FA Bde (36×122 mm + 1 bn 100 mm) behind Rafah, 57th Arty Bde at Jiradi. Hewiki: 'an artillery brigade between the positions'. Numbers unconfirmed; folded into one unit. Shown without a number (designer decision 2026-11-28): hewiki only says «an artillery brigade between the positions»; division 7 had 112 guns (hewiki)."
     },
     {
       "class": "hq",
