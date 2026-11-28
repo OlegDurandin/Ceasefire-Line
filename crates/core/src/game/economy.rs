@@ -17,8 +17,8 @@ pub(super) fn div_half_up(num: u64, den: u64) -> u64 {
 }
 
 impl GameState {
-    /// R-ECO-01: `base + Σ value × supply / max + scheduled`, cities summed
-    /// before rounding (half up).
+    /// R-ECO-01: `base + Σ value × supply / max + scheduled + held objectives'
+    /// income`, cities summed before rounding (half up).
     pub(super) fn income(&self, side: SideId, supply: &SupplyMap) -> u32 {
         let Ok(state) = self.side_state(side) else {
             return 0;
@@ -37,7 +37,13 @@ impl GameState {
             .filter(|e| e.until_turn.is_none_or(|u| self.turn <= u))
             .map(|e| u64::from(e.amount))
             .sum();
-        let total = u64::from(state.base_income) + city_income + scheduled;
+        let objectives: u64 = self
+            .objectives
+            .iter()
+            .filter(|o| self.control.get(&o.hex) == Some(&side))
+            .map(|o| u64::from(o.income))
+            .sum();
+        let total = u64::from(state.base_income) + city_income + scheduled + objectives;
         u32::try_from(total).unwrap_or(u32::MAX)
     }
 

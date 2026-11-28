@@ -98,6 +98,7 @@ fn setup(units: Vec<UnitSetup>, last_turn: u32, mpp: u32) -> ScenarioSetup {
             hex: Hex::new(3, 2),
             nm_value: 10,
             vp: 10,
+            income: 0,
         }],
         key_hexes: vec![],
         last_turn: Some(last_turn),

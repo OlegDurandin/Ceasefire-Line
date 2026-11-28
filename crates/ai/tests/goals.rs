@@ -103,11 +103,13 @@ fn board(far_vp: i32) -> GameState {
                 hex: NEAR,
                 nm_value: 5,
                 vp: 10,
+                income: 0,
             },
             Objective {
                 hex: FAR,
                 nm_value: 5,
                 vp: far_vp,
+                income: 0,
             },
         ],
         key_hexes: vec![],

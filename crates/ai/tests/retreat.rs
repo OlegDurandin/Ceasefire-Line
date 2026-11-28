@@ -101,6 +101,7 @@ fn board(objective: bool) -> GameState {
                 hex: Hex::new(5, 0),
                 nm_value: 15,
                 vp: 60,
+                income: 0,
             }]
         } else {
             vec![]

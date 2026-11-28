@@ -220,6 +220,9 @@ pub struct Objective {
     pub nm_value: u8,
     /// Victory points for the side holding it at the end.
     pub vp: i32,
+    /// R-ECO-01: MPP each own phase to the side holding it (GDD section 14).
+    #[serde(default)]
+    pub income: u32,
 }
 
 /// R-NM-01: "+1 per turn for holding a bridgehead or key hex".

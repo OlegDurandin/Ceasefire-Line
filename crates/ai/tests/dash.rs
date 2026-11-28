@@ -105,6 +105,7 @@ fn board() -> GameState {
             hex: GOAL,
             nm_value: 5,
             vp: 50,
+            income: 0,
         }],
         key_hexes: vec![],
         last_turn: None,

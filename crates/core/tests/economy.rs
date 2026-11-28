@@ -2,11 +2,13 @@
 
 mod common;
 
-use ceasefire_core::game::{CityValue, Command, Event, GameState, ScheduledIncome, UnitId};
+use ceasefire_core::game::{
+    CityValue, Command, Event, GameState, Objective, ScheduledIncome, UnitId,
+};
 use ceasefire_core::hex::Hex;
 use ceasefire_core::{EconomyError, RuleError};
 
-use common::scenario::{board, setup, start, unit, A};
+use common::scenario::{board, setup, start, unit, A, B};
 
 fn mpp(s: &GameState) -> u32 {
     s.side(A).unwrap().mpp
@@ -64,6 +66,34 @@ fn r_eco_01_income_base_cities_and_airlift() {
     assert_eq!(mpp(&s), 49);
     end_turn(&mut s);
     assert_eq!(mpp(&s), 49 + 49 + 15, "airlift from turn 2");
+}
+
+/// Objective `income` (GDD section 14, scenario 9): MPP each own phase to
+/// the side holding the hex, flat — not scaled by supply; nothing to the other side.
+#[test]
+fn r_eco_01_objective_income_while_held() {
+    let (map, control) = board();
+    let mut sc = setup(map, control, vec![unit("mech", B, Hex::new(3, 0))]);
+    sc.objectives = vec![
+        Objective {
+            hex: Hex::new(2, 2), // A's, supply below 10
+            nm_value: 5,
+            vp: 0,
+            income: 7,
+        },
+        Objective {
+            hex: Hex::new(4, 0), // B's
+            nm_value: 5,
+            vp: 0,
+            income: 4,
+        },
+    ];
+    let mut s = start(sc);
+    assert_eq!(mpp(&s), 7, "A holds one field");
+    s.apply(Command::EndPhase).unwrap();
+    assert_eq!(s.side(B).unwrap().mpp, 4, "B holds the other");
+    s.apply(Command::EndPhase).unwrap();
+    assert_eq!(mpp(&s), 14);
 }
 
 #[test]

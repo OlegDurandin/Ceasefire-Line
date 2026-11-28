@@ -267,6 +267,9 @@ struct ObjectiveFile {
     hex: [i32; 2],
     nm_value: u8,
     vp: i32,
+    /// R-ECO-01: MPP each own phase while held.
+    #[serde(default)]
+    income: u32,
 }
 
 #[derive(Debug, Deserialize)]
@@ -748,6 +751,7 @@ pub fn load_scenario(
                 hex: hex(o.hex),
                 nm_value: o.nm_value,
                 vp: o.vp,
+                income: o.income,
             })
             .collect(),
         key_hexes: file

@@ -21,6 +21,7 @@ fn objective(q: i32, r: i32, nm_value: u8, vp: i32) -> Objective {
         hex: Hex::new(q, r),
         nm_value,
         vp,
+        income: 0,
     }
 }
 
