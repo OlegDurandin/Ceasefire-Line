@@ -1101,6 +1101,16 @@ fn summary(o: &Options, games: &[Game]) -> serde_json::Value {
         })
         .collect();
     vp_margins.sort_unstable();
+    // The same for the games ended by the date only (thresholds decide just these).
+    let mut vp_margins_by_date: Vec<i32> = games
+        .iter()
+        .filter(|g| !g.sudden_death)
+        .map(|g| {
+            let v = |s: u8| g.vp.iter().find(|x| x.0 .0 == s).map_or(0, |x| x.1);
+            v(0) - v(1)
+        })
+        .collect();
+    vp_margins_by_date.sort_unstable();
     // Mean VP parts per side: NM, held objectives, exits, enemy steps (the rest).
     let vp_parts: Vec<serde_json::Value> = (0u8..2)
         .map(|side| {
@@ -1121,6 +1131,7 @@ fn summary(o: &Options, games: &[Game]) -> serde_json::Value {
         "variance": format!("{:?}", o.variance),
         "wins": sides.iter().map(|s| share(*s)).collect::<Vec<_>>(),
         "vp_margins": vp_margins,
+        "vp_margins_by_date": vp_margins_by_date,
         "vp_parts": vp_parts,
         "vp_mean": sides.iter().map(|side| games.iter().map(|g| f64::from(g.vp.iter().find(|x| x.0 == *side).map_or(0, |x| x.1))).sum::<f64>() / n).collect::<Vec<_>>(),
         "nm_end": sides.iter().map(|side| games.iter().map(|g| f64::from(g.nm_end.iter().find(|x| x.0 == *side).map_or(0, |x| x.1))).sum::<f64>() / n).collect::<Vec<_>>(),
