@@ -231,7 +231,7 @@ impl GameState {
                 hq_pct: hq_readiness,
             };
 
-            // R-UNIT-02: AP penalties for low supply and night, minimum AP;
+            // R-UNIT-02: AP penalties for low supply, minimum AP (night: R-TURN-02 below);
             // with the `zero_supply_ap` variant supply 0 costs more.
             let mut ap = class_ap;
             if unit.supply == 0 {
