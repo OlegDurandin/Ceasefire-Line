@@ -45,6 +45,16 @@ pub struct MoveWeights {
     /// attachment radius (R-HQ-01) and the HQ's supply bonus (R-SUP-02) allow
     /// (step 7, «оборона»); 0 = off (default until the designer decides).
     pub hq_min_enemy_distance: u32,
+    /// R-AI-01 «следующая цель»: × on the value of the next objective of the
+    /// hint `sequence`; each attacking unit picks the objective not held with
+    /// the best value × this / (1 + distance), so a dearer objective draws
+    /// more units (rebalancing 2026-11-28; before, the sequence alone decided).
+    #[serde(default = "default_sequence_weight")]
+    pub sequence_weight: f64,
+}
+
+fn default_sequence_weight() -> f64 {
+    4.0
 }
 
 /// R-AI-01 «поиск котлов».

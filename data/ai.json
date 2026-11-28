@@ -26,7 +26,8 @@
     "influence_radius": 4,
     "defend_radius": 3,
     "attack_from_aggressiveness": 0.35,
-    "hq_min_enemy_distance": 0
+    "hq_min_enemy_distance": 0,
+    "sequence_weight": 4.0
   },
   "economy": {
     "_comment": "R-AI-01 п. 3 «экономика» (step 7, designer task 2026-11-27): reinforcements, purchases and boosts valued in expected VP per MPP, greedy; a transfer reserve with two sectors.",

@@ -512,6 +512,14 @@ impl AiV1 {
         }
     }
 
+    /// R-AI-01: the goal hex of every own unit this phase (operations,
+    /// «следующая цель»); for checks of the AI's choices.
+    pub fn goal_hexes(&mut self, s: &GameState) -> BTreeMap<UnitId, Hex> {
+        self.plan_for(s);
+        let b = self.board(s);
+        self.goals(&b)
+    }
+
     pub fn max_commands(&self) -> u32 {
         self.params.max_commands_per_phase
     }
@@ -767,17 +775,23 @@ impl AiV1 {
                 .find(|hex| b.s.controller(**hex) != Some(b.side))
                 .copied()
         });
-        let target = next.or_else(|| {
+        // Each unit: the objective not held with the best value / (1 + distance);
+        // the sequence's next objective counts `sequence_weight` times its value.
+        let target_for = |u: &Unit| -> Option<Hex> {
             b.objectives
                 .iter()
                 .filter(|(h, _)| b.s.controller(**h) != Some(b.side))
                 .map(|(h, v)| {
-                    let d = movers.iter().map(|u| u.hex.distance(*h)).min().unwrap_or(0);
-                    (v / f64::from(1 + d), *h)
+                    let w = if Some(*h) == next {
+                        m.sequence_weight
+                    } else {
+                        1.0
+                    };
+                    (v * w / f64::from(1 + u.hex.distance(*h)), *h)
                 })
                 .max_by(|a, c| a.0.total_cmp(&c.0).then(c.1.cmp(&a.1)))
                 .map(|(_, h)| h)
-        });
+        };
         let idle = self
             .hints
             .sides
@@ -799,7 +813,7 @@ impl AiV1 {
             if taken.contains(&u.id) {
                 continue;
             }
-            let goal = match (attack, target) {
+            let goal = match (attack, target_for(u)) {
                 (true, Some(t)) => t,
                 // Hint `idle_to_objectives`: a defending side's free unit goes to
                 // the nearest threatened own objective, else holds.

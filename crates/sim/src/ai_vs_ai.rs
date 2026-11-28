@@ -54,6 +54,8 @@ pub struct Options {
     script: Option<PathBuf>,
     /// JSON lines: side 0's attacks and bombardments of the first turns.
     battle_log: Option<PathBuf>,
+    /// `--unit-log`: scripted formations' units at the end of each scripted phase.
+    unit_log: Option<PathBuf>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -94,6 +96,7 @@ struct Shared {
     scenario: String,
     script: Option<crate::script::Script>,
     battle_log: bool,
+    unit_log: bool,
 }
 
 pub fn parse_options(args: &[String]) -> Result<Options, String> {
@@ -113,6 +116,7 @@ pub fn parse_options(args: &[String]) -> Result<Options, String> {
         dump: None,
         script: None,
         battle_log: None,
+        unit_log: None,
     };
     let mut it = args.iter();
     while let Some(flag) = it.next() {
@@ -141,6 +145,7 @@ pub fn parse_options(args: &[String]) -> Result<Options, String> {
             "--dump-battles" => o.dump = Some(PathBuf::from(value)),
             "--script" => o.script = Some(PathBuf::from(value)),
             "--battle-log" => o.battle_log = Some(PathBuf::from(value)),
+            "--unit-log" => o.unit_log = Some(PathBuf::from(value)),
             "--watch" => {
                 for cr in value.split(';').filter(|x| !x.is_empty()) {
                     let (c, r) = cr
@@ -230,6 +235,8 @@ struct Game {
     hq_attacks_in_contact: u32,
     /// R-MOVE-07 per side: moves made in a breakthrough and hexes entered by them.
     breakthrough: BTreeMap<u8, (u32, u32)>,
+    /// `--unit-log` entries.
+    unit_log: Vec<serde_json::Value>,
     /// R-NM-02 per side at the end: VP of held objectives and of exits.
     vp_objectives: BTreeMap<u8, i32>,
     vp_exits: BTreeMap<u8, i32>,
@@ -432,6 +439,19 @@ fn play_one(sh: &Shared, seed: u64) -> Result<Game, String> {
             .and_then(|x| x.orders(&s))
             .map(<[_]>::to_vec);
         let scripted = |st: &GameState| orders.as_deref().and_then(|o| crate::script::next(st, o));
+        // `--unit-log`: where the scripted units start the phase.
+        let starts: BTreeMap<UnitId, (ceasefire_core::hex::Hex, u32)> = match (&orders, sh.unit_log)
+        {
+            (Some(o), true) => s
+                .units()
+                .filter(|u| {
+                    o.iter()
+                        .any(|x| u.formation.as_deref() == Some(x.formation.as_str()))
+                })
+                .map(|u| (u.id, (u.hex, u.ap_halves)))
+                .collect(),
+            _ => BTreeMap::new(),
+        };
         let r = match player {
             Player::Greedy => play_phase(
                 &mut s,
@@ -465,6 +485,11 @@ fn play_one(sh: &Shared, seed: u64) -> Result<Game, String> {
         g.ground_attacks += hq_seen.0;
         g.hq_attacks += hq_seen.1;
         g.hq_attacks_in_contact += hq_seen.2;
+        if let Some(o) = &orders {
+            if sh.unit_log {
+                g.unit_log.extend(unit_entries(&s, seed, o, &starts));
+            }
+        }
         // The closing EndPhase: losses up to the next side's phase start (attrition).
         look(&s, &mut steps);
         if g.watch_turn.is_none() && sh.watch.iter().any(|h| s.controller(*h) == Some(SideId(0))) {
@@ -670,6 +695,7 @@ pub fn run(o: &Options) -> Result<(), String> {
         dump: o.dump.clone(),
         scenario: o.scenario.clone(),
         battle_log: o.battle_log.is_some(),
+        unit_log: o.unit_log.is_some(),
         script: o
             .script
             .as_deref()
@@ -706,6 +732,14 @@ pub fn run(o: &Options) -> Result<(), String> {
         .into_iter()
         .map(|g| g.unwrap_or_else(|| Err("not played".into())))
         .collect::<Result<_, _>>()?;
+    if let Some(path) = &o.unit_log {
+        let text: String = games
+            .iter()
+            .flat_map(|g| &g.unit_log)
+            .map(|v| format!("{v}\n"))
+            .collect();
+        fs::write(path, text).map_err(|e| format!("{}: {e}", path.display()))?;
+    }
     if let Some(path) = &o.battle_log {
         let mut text = String::new();
         for b in games.iter().flat_map(|g| &g.battles) {
@@ -1080,4 +1114,66 @@ fn calibration(games: &[Game]) -> serde_json::Value {
             })
             .collect(),
     )
+}
+
+/// `--unit-log`: each scripted unit after its phase — where it went, AP and
+/// strikes left, enemy ZOC around it, the distance to its order's hex.
+fn unit_entries(
+    s: &GameState,
+    seed: u64,
+    orders: &[crate::script::Order],
+    starts: &BTreeMap<UnitId, (ceasefire_core::hex::Hex, u32)>,
+) -> Vec<serde_json::Value> {
+    use ceasefire_core::scenario::axial_to_offset;
+    let min = s.data().rules.movement.zoc_min_strength;
+    let side = SideId(0);
+    let zoc = |h: ceasefire_core::hex::Hex| {
+        s.units()
+            .filter(|e| {
+                e.side != side
+                    && e.strength >= min
+                    && s.data().units.get(&e.class).is_ok_and(|c| c.exerts_zoc)
+                    && e.hex.is_adjacent(h)
+            })
+            .count()
+    };
+    let mut out = Vec::new();
+    for (id, (from, ap0)) in starts {
+        let order = s.unit(*id).and_then(|u| {
+            orders
+                .iter()
+                .find(|o| u.formation.as_deref() == Some(o.formation.as_str()))
+        });
+        let Some(u) = s.unit(*id) else {
+            out.push(serde_json::json!({"seed": seed, "turn": s.turn() - u32::from(s.active_side() == side), "unit": id.0, "destroyed": true}));
+            continue;
+        };
+        let Some(order) = order else { continue };
+        out.push(serde_json::json!({
+            "seed": seed,
+            // The phase just played (the side-1 phase of the same turn has begun).
+            "turn": s.turn(),
+            "night": s.is_night(),
+            "formation": order.formation,
+            "unit": id.0,
+            "name": u.name,
+            "class": u.class,
+            "from": axial_to_offset(*from),
+            "at": axial_to_offset(u.hex),
+            "target": axial_to_offset(order.target),
+            "dist_from": from.distance(order.target),
+            "dist": u.hex.distance(order.target),
+            "ap_start": f64::from(*ap0) / 2.0,
+            "ap_left": f64::from(u.ap_halves) / 2.0,
+            "strikes_left": u.strikes_left,
+            "can_move": u.can_move,
+            "moved": u.moved,
+            "fought": u.fought,
+            "breakthrough": u.breakthrough,
+            "zoc_here": zoc(u.hex),
+            "strength": u.strength,
+            "supply": u.supply,
+        }));
+    }
+    out
 }

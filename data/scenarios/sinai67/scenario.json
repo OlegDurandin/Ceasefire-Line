@@ -260,12 +260,12 @@
     {
       "side": 0,
       "decisive": 80,
-      "victory": 40
+      "victory": 10
     },
     {
       "side": 1,
       "decisive": 30,
-      "victory": 1
+      "victory": 6
     }
   ],
   "scheduled_income": [],
@@ -1422,10 +1422,5 @@
       "open": false
     }
   ],
-  "vp_per_enemy_step": [
-    {
-      "side": 0,
-      "vp": 1
-    }
-  ]
+  "vp_per_enemy_step": []
 }
