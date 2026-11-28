@@ -139,7 +139,7 @@ impl GameState {
     }
 
     /// R-NM-02: VP = objectives held + NM + steps taken out through exits +
-    /// VP for the enemy's lost steps (scenario conditions).
+    /// VP for the enemy's lost steps + supply corridors (scenario conditions).
     pub fn victory_points(&self) -> Vec<(SideId, i32)> {
         let mut vp: BTreeMap<SideId, i32> = self
             .sides
@@ -163,7 +163,28 @@ impl GameState {
                 .sum();
             *vp.entry(*side).or_insert(0) += per.for_steps(lost);
         }
+        for (side, gained) in self.supply_vp_now() {
+            *vp.entry(side).or_insert(0) += gained;
+        }
         self.sides.iter().map(|s| (s.id, vp[&s.id])).collect()
+    }
+
+    /// R-NM-02 «коридор снабжения»: VP of each `supply_vp` entry whose side
+    /// has hex supply ≥ `min_supply` at its hex now (entries in file order,
+    /// 0 for the others). A failed supply count gives no VP.
+    pub fn supply_vp_now(&self) -> Vec<(SideId, i32)> {
+        let mut maps: BTreeMap<SideId, Option<crate::supply::SupplyMap>> = BTreeMap::new();
+        self.conditions
+            .supply_vp
+            .iter()
+            .map(|e| {
+                let map = maps
+                    .entry(e.side)
+                    .or_insert_with(|| self.hex_supply(e.side).ok());
+                let open = map.as_ref().is_some_and(|m| m.get(e.hex) >= e.min_supply);
+                (e.side, if open { e.vp } else { 0 })
+            })
+            .collect()
     }
 
     /// R-NM-02: NM at or below the threshold → the other side wins decisively;

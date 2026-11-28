@@ -366,7 +366,21 @@ struct ScenarioFile {
     /// R-NM-02: VP per enemy step lost, per side.
     #[serde(default)]
     vp_per_enemy_step: Vec<SideVpFile>,
+    /// R-NM-02: VP for a side's hex supply at a hex («коридор снабжения»).
+    #[serde(default)]
+    supply_vp: Vec<SupplyVpFile>,
     units: Vec<UnitFile>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct SupplyVpFile {
+    side: u8,
+    hex: [i32; 2],
+    min_supply: u8,
+    vp: i32,
+    #[serde(default, rename = "_comment")]
+    _comment: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -823,6 +837,16 @@ pub fn load_scenario(
                             per_steps: x.per_steps,
                         },
                     )
+                })
+                .collect(),
+            supply_vp: file
+                .supply_vp
+                .iter()
+                .map(|x| crate::game::SupplyVp {
+                    side: SideId(x.side),
+                    hex: hex(x.hex),
+                    min_supply: x.min_supply,
+                    vp: x.vp,
                 })
                 .collect(),
         },

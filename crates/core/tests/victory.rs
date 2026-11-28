@@ -5,9 +5,10 @@ mod common;
 
 use ceasefire_core::game::{
     Command, Effect, EndReason, Event, ExitZone, GameState, Predicate, ScenarioEvent, StepVp,
-    UnitId,
+    SupplyVp, UnitId,
 };
 use ceasefire_core::hex::Hex;
+use ceasefire_core::supply::SupplySource;
 
 use common::scenario::{board, setup, start, unit, A, B};
 
@@ -190,4 +191,59 @@ fn r_nm_02_vp_per_enemy_steps_in_groups() {
     let s = start(sc);
     let base = s.side(A).unwrap().national_morale_pct as i32;
     assert_eq!(vp(&s, A), base + 3, "7 steps → 3 groups of 2");
+}
+
+/// R-NM-02 «коридор снабжения»: A's town at (5, 0) with its own source 6 and
+/// 15 VP for A's hex supply ≥ 4 there; `corridor` — A holds (3, 0) and (4, 0)
+/// to its main source 10 at (0, 0); `town_side` — who holds the town.
+fn pocket(corridor: bool, town_side: ceasefire_core::side::SideId) -> GameState {
+    let (map, mut control) = board();
+    let town = Hex::new(5, 0);
+    if corridor {
+        control.insert(Hex::new(3, 0), A);
+        control.insert(Hex::new(4, 0), A);
+    }
+    control.insert(town, town_side);
+    let mut sc = setup(map, control, vec![]);
+    sc.sources.push(SupplySource {
+        hex: town,
+        value: 6,
+    });
+    sc.variants.insert("source_isolation".into(), true);
+    sc.conditions.supply_vp = vec![SupplyVp {
+        side: A,
+        hex: town,
+        min_supply: 4,
+        vp: 15,
+    }];
+    start(sc)
+}
+
+#[test]
+fn r_nm_02_supply_corridor_vp_open_corridor_gives_vp() {
+    let s = pocket(true, A);
+    assert!(s.hex_supply(A).unwrap().get(Hex::new(5, 0)) >= 4);
+    assert_eq!(s.supply_vp_now(), vec![(A, 15)]);
+    let base = s.side(A).unwrap().national_morale_pct as i32;
+    assert_eq!(vp(&s, A), base + 15);
+}
+
+#[test]
+fn r_nm_02_supply_corridor_vp_cut_off_gives_none() {
+    let s = pocket(false, A);
+    // R-SUP-01 `source_isolation`: the town's own source 6 gives at most 3.
+    let here = s.hex_supply(A).unwrap().get(Hex::new(5, 0));
+    assert!((1..4).contains(&here), "isolated supply {here}");
+    assert_eq!(s.supply_vp_now(), vec![(A, 0)]);
+    let base = s.side(A).unwrap().national_morale_pct as i32;
+    assert_eq!(vp(&s, A), base);
+}
+
+#[test]
+fn r_nm_02_supply_corridor_vp_town_held_by_enemy_gives_none() {
+    let s = pocket(true, B);
+    assert_eq!(s.hex_supply(A).unwrap().get(Hex::new(5, 0)), 0);
+    assert_eq!(s.supply_vp_now(), vec![(A, 0)]);
+    let base = s.side(A).unwrap().national_morale_pct as i32;
+    assert_eq!(vp(&s, A), base);
 }

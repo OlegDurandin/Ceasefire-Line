@@ -372,6 +372,20 @@ pub struct VictoryConditions {
     pub exits: Vec<ExitZone>,
     /// VP to a side for the steps its enemies have lost.
     pub vp_per_enemy_step: BTreeMap<SideId, StepVp>,
+    /// VP to a side for its hex supply at a hex («коридор снабжения»).
+    #[serde(default)]
+    pub supply_vp: Vec<SupplyVp>,
+}
+
+/// R-NM-02 «коридор снабжения» («Котёл у Велена»): `side` gets `vp` while its
+/// hex supply (R-SUP-02) at `hex` is at least `min_supply`; counted with the
+/// other VP, so it decides at the end by date.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub struct SupplyVp {
+    pub side: SideId,
+    pub hex: Hex,
+    pub min_supply: u8,
+    pub vp: i32,
 }
 
 /// R-NM-02 «очки за шаги противника»: `vp` for every `per_steps` enemy steps

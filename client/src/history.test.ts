@@ -18,6 +18,7 @@ const ru = {
   "ui.victory_line_hold": "{side}: победа, если противник впереди не больше чем на {lead}; решительная — {decisive}",
   "ui.victory_steps": "{side}: {vp} за {per} шагов",
   "ui.victory_last_turn": "Конец — ход {turn}.",
+  "ui.victory_supply": "{side}: {vp} ВО, если в конце снабжение в гексе «{name}» не ниже {min}",
   "ui.objective_line": "{name}: {vp} ВО, {nm} NM",
   "ui.sudden_death_line": "NM ≤ {pct}%",
   "unit.commando": "Коммандос",
@@ -91,6 +92,15 @@ describe("R-UI-07 briefing from data", () => {
       "Израиль: 1 за 2 шагов",
       "Кунейтра: 20 ВО, 10 NM",
       "Израиль: NM ≤ 20%",
+    ]);
+  });
+
+  it("r_nm_02_supply_corridor_vp_line", () => {
+    const pocket: ScenarioFacts = { sides: sc.sides, supply_vp: [{ side: 0, hex: [19, 11], min_supply: 4, vp: 15 }] };
+    expect(victoryLines(pocket, ru, side, () => "Велен", 20)).toEqual([
+      "Израиль: 15 ВО, если в конце снабжение в гексе «Велен» не ниже 4",
+      "Израиль: NM ≤ 20%",
+      "Сирия: NM ≤ 20%",
     ]);
   });
 

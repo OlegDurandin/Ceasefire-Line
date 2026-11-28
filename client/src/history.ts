@@ -35,6 +35,8 @@ export interface ScenarioFacts {
   sudden_death?: { side: number; threshold: number | null }[];
   vp_per_enemy_step?: { side: number; vp: number; per_steps?: number }[];
   exits?: { side: number; vp_per_step: number }[];
+  /** R-NM-02 «коридор снабжения»: VP for the side's hex supply at a hex. */
+  supply_vp?: { side: number; hex: [number, number]; min_supply: number; vp: number }[];
 }
 
 /** A scenario event effect as the core reports it (`scenario_event_fired.effects`). */
@@ -139,6 +141,9 @@ export function victoryLines(sc: ScenarioFacts, ru: Locale, sideName: (id: numbe
   }
   for (const e of sc.exits ?? []) {
     out.push(fill(t("ui.victory_exits"), { side: sideName(e.side), vp: e.vp_per_step }));
+  }
+  for (const c of sc.supply_vp ?? []) {
+    out.push(fill(t("ui.victory_supply"), { side: sideName(c.side), vp: c.vp, name: objectiveName(c.hex), min: c.min_supply }));
   }
   for (const o of sc.objectives ?? []) {
     out.push(fill(t("ui.objective_line"), { name: objectiveName(o.hex), vp: o.vp, nm: o.nm_value }));
