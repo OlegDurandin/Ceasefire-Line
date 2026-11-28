@@ -616,6 +616,11 @@ impl AiV1 {
             .iter()
             .map(|o| (o.hex, f64::from(o.vp.max(1))))
             .collect();
+        // R-NM-02 «коридор снабжения»: the side's own `supply_vp` hex is
+        // worth its VP on top (defended and kept as a goal like an objective).
+        for c in s.conditions().supply_vp.iter().filter(|c| c.side == side) {
+            *objectives.entry(c.hex).or_insert(0.0) += f64::from(c.vp.max(0));
+        }
         if let Some(h) = hints {
             for (hex, w) in &h.priorities {
                 *objectives.entry(*hex).or_insert(0.0) += w;
