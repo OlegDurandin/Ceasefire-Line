@@ -455,6 +455,14 @@
     "isr_atgm_team": "info.model.isr_atgm_team",
     "isr_paratroopers": "info.model.isr_paratroopers",
     "egy_saiqa": "info.model.egy_saiqa",
-    "egy_mig17": "info.model.egy_mig17"
+    "egy_mig17": "info.model.egy_mig17",
+    "isr_amx13": "info.model.isr_amx13",
+    "isr_m50_sp": "info.model.isr_m50_sp",
+    "egy_t34_85": "info.model.egy_t34_85",
+    "egy_is3": "info.model.egy_is3",
+    "egy_su100": "info.model.egy_su100",
+    "syr_pz4": "info.model.syr_pz4",
+    "syr_stug3": "info.model.syr_stug3",
+    "isr_vautour": "info.model.isr_vautour"
   }
 }

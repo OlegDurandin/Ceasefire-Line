@@ -730,9 +730,19 @@ pub fn run(o: &Options) -> Result<(), String> {
             .map_err(|e| format!("{}: {e}", sprites_path.display()))?,
     )
     .map_err(|e| format!("sprites.json: {e}"))?;
-    // R-UI-07: reference notes only for unit pictures the manifest has.
+    // R-UI-07: reference notes only for unit pictures — in the manifest, or a
+    // sprite of a tier (miniature-only models; their files are checked above).
+    let tier_sprite = |id: &str| {
+        sprites.units.values().any(|c| {
+            [&c.isr, &c.egy_syr, &c.jor].iter().any(|tiers| {
+                tiers
+                    .iter()
+                    .any(|t| t.sprite == id || t.variants.iter().any(|v| v == id))
+            })
+        })
+    };
     for id in sprites.model_info.keys() {
-        if !manifest.iter().any(|e| e.group == "unit" && &e.id == id) {
+        if !manifest.iter().any(|e| e.group == "unit" && &e.id == id) && !tier_sprite(id) {
             problems.push(format!(
                 "sprites.json model_info: {id} is not a unit picture"
             ));
