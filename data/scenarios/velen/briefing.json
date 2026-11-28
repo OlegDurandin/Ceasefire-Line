@@ -1,0 +1,13 @@
+{
+  "_comment": "R-UI-07: брифинг сценария. Тексты — ключи локализации (пишет дизайнер, пока TODO); условия победы клиент собирает из scenario.json. Сценарий вымышленный — источников нет.",
+  "image": "briefing_velen",
+  "title": "briefing.velen.title",
+  "dates": "briefing.velen.dates",
+  "essay": "briefing.velen.essay",
+  "question": "briefing.velen.question",
+  "roles": {
+    "mer": "briefing.velen.role.mer",
+    "sal": "briefing.velen.role.sal"
+  },
+  "sources": []
+}

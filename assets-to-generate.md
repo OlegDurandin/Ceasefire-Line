@@ -188,6 +188,34 @@ Painterly gouache realism, muted natural colors, soft upper-left lighting, visib
 Painterly gouache realism, muted natural colors, soft upper-left lighting, visible brush texture, mid-century military history book plate; no text, flags, insignia or identifiable people; neutral tone, no gore; period-correct June 1967 equipment. Generate 1536×1024. Subject: Night: a radio and telex room with teleprinters, a world map on the wall, figures in silhouette reading dispatches by lamplight
 ```
 
+### briefing_velen
+Сохранить: `assets/briefing/briefing_velen.png`
+
+```
+Painterly gouache realism, muted natural colors, soft upper-left lighting, visible brush texture, mid-century military history book plate; no text, flags, insignia or identifiable people; neutral tone, no gore; generic 1970s Cold War era equipment of a fictional country. Generate 1536×1024. Subject: A small European river town in a green temperate valley under smoke, a stone bridge over a wide river, wooded low hills around, distant tank columns on a highway approaching from the west, early autumn
+```
+
+### velen_pocket_closed
+Сохранить: `assets/events/velen_pocket_closed.png`
+
+```
+Painterly gouache realism, muted natural colors, soft upper-left lighting, visible brush texture, mid-century military history book plate; no text, flags, insignia or identifiable people; neutral tone, no gore; generic 1970s Cold War era equipment of a fictional country. Generate 1536×1024. Subject: Dusk on the outskirts of a river town: infantry digging in among brick houses and orchards, a barricaded road, flares and distant gun flashes on the wooded hills around
+```
+
+### velen_relief_breakthrough
+Сохранить: `assets/events/velen_relief_breakthrough.png`
+
+```
+Painterly gouache realism, muted natural colors, soft upper-left lighting, visible brush texture, mid-century military history book plate; no text, flags, insignia or identifiable people; neutral tone, no gore; generic 1970s Cold War era equipment of a fictional country. Generate 1536×1024. Subject: Western-type main battle tanks and armoured personnel carriers race along a tree-lined highway through a forest edge towards a smoking town on the horizon, morning light
+```
+
+### velen_ceasefire_pressure
+Сохранить: `assets/events/velen_ceasefire_pressure.png`
+
+```
+Painterly gouache realism, muted natural colors, soft upper-left lighting, visible brush texture, mid-century military history book plate; no text, flags, insignia or identifiable people; neutral tone, no gore; generic 1970s Cold War era equipment. Generate 1536×1024. Subject: Night: a government communications room with teleprinters and telephones, a map of a river valley pinned to the wall, figures in silhouette reading urgent dispatches by lamplight
+```
+
 ## 5. Текстуры для центра карты
 
 1024 × 1024, бесшовные, строго сверху.

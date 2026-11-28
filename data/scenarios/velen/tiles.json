@@ -1,0 +1,44 @@
+{
+  "_comment": "mapgen bake: painted map tiles (R-UI-01). tiles/<z>/<x>_<y>.webp; level z is 2^z times smaller.",
+  "fnv1a64": "d09684434799e8df",
+  "format": "webp",
+  "height_px": 1980,
+  "hex_radius_km": 5.773502691896258,
+  "levels": [
+    {
+      "cols": 5,
+      "height": 1980,
+      "rows": 4,
+      "width": 2114,
+      "z": 0
+    },
+    {
+      "cols": 3,
+      "height": 990,
+      "rows": 2,
+      "width": 1057,
+      "z": 1
+    },
+    {
+      "cols": 2,
+      "height": 495,
+      "rows": 1,
+      "width": 529,
+      "z": 2
+    },
+    {
+      "cols": 1,
+      "height": 248,
+      "rows": 1,
+      "width": 265,
+      "z": 3
+    }
+  ],
+  "px_per_km": 8.0,
+  "tile_px": 512,
+  "top_left_from_hex00_km": [
+    -5.773502691896258,
+    -5.0
+  ],
+  "width_px": 2114
+}

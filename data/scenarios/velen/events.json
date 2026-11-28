@@ -1,0 +1,365 @@
+{
+  "_comment": "Котёл у Велена: события R-EVT-01. Гексы — offset [col, row], как в map.json.",
+  "events": [
+    {
+      "id": "velen_pocket_closed",
+      "important": true,
+      "window": {
+        "title": "event.velen.pocket_closed.title",
+        "text": "event.velen.pocket_closed.text",
+        "image": "velen_pocket_closed"
+      },
+      "phase_of": 0,
+      "trigger": {
+        "kind": "turn",
+        "turn": 1
+      },
+      "effects": []
+    },
+    {
+      "id": "mer_reserves_2",
+      "phase_of": 0,
+      "trigger": {
+        "kind": "turn",
+        "turn": 2
+      },
+      "effects": [
+        {
+          "kind": "reinforcements",
+          "units": [
+            {
+              "class": "tank",
+              "side": 0,
+              "hex": [
+                4,
+                6
+              ],
+              "morale_pct": 85,
+              "formation": "mer_reserve",
+              "nation": "merid",
+              "name": "formation.mer_10_armored"
+            },
+            {
+              "class": "mech",
+              "side": 0,
+              "hex": [
+                5,
+                6
+              ],
+              "morale_pct": 85,
+              "formation": "mer_reserve",
+              "nation": "merid",
+              "name": "formation.mer_12_mech"
+            }
+          ]
+        },
+        {
+          "kind": "message",
+          "key": "event.velen.mer_reserves"
+        }
+      ]
+    },
+    {
+      "id": "mer_reserves_4",
+      "phase_of": 0,
+      "trigger": {
+        "kind": "turn",
+        "turn": 4
+      },
+      "effects": [
+        {
+          "kind": "reinforcements",
+          "units": [
+            {
+              "class": "infantry",
+              "side": 0,
+              "hex": [
+                4,
+                6
+              ],
+              "morale_pct": 85,
+              "formation": "mer_reserve",
+              "nation": "merid",
+              "name": "formation.mer_13_reserve_infantry"
+            },
+            {
+              "class": "infantry",
+              "side": 0,
+              "hex": [
+                5,
+                6
+              ],
+              "morale_pct": 85,
+              "formation": "mer_reserve",
+              "nation": "merid",
+              "name": "formation.mer_14_reserve_infantry"
+            }
+          ]
+        },
+        {
+          "kind": "message",
+          "key": "event.velen.mer_reserves"
+        }
+      ]
+    },
+    {
+      "id": "mer_reserves_6",
+      "phase_of": 0,
+      "trigger": {
+        "kind": "turn",
+        "turn": 6
+      },
+      "effects": [
+        {
+          "kind": "reinforcements",
+          "units": [
+            {
+              "class": "tank",
+              "side": 0,
+              "hex": [
+                4,
+                6
+              ],
+              "morale_pct": 85,
+              "formation": "mer_reserve",
+              "nation": "merid",
+              "name": "formation.mer_15_armored"
+            }
+          ]
+        },
+        {
+          "kind": "message",
+          "key": "event.velen.mer_reserves"
+        }
+      ]
+    },
+    {
+      "id": "sal_reserves_3",
+      "phase_of": 1,
+      "trigger": {
+        "kind": "turn",
+        "turn": 3
+      },
+      "effects": [
+        {
+          "kind": "reinforcements",
+          "units": [
+            {
+              "class": "tank",
+              "side": 1,
+              "hex": [
+                26,
+                15
+              ],
+              "morale_pct": 80,
+              "formation": "sal_reserve",
+              "nation": "salvera",
+              "name": "formation.sal_8_tank"
+            },
+            {
+              "class": "mech",
+              "side": 1,
+              "hex": [
+                25,
+                15
+              ],
+              "morale_pct": 80,
+              "formation": "sal_reserve",
+              "nation": "salvera",
+              "name": "formation.sal_9_mech"
+            }
+          ]
+        },
+        {
+          "kind": "message",
+          "key": "event.velen.sal_reserves"
+        }
+      ]
+    },
+    {
+      "id": "sal_reserves_5",
+      "phase_of": 1,
+      "trigger": {
+        "kind": "turn",
+        "turn": 5
+      },
+      "effects": [
+        {
+          "kind": "reinforcements",
+          "units": [
+            {
+              "class": "infantry",
+              "side": 1,
+              "hex": [
+                26,
+                15
+              ],
+              "morale_pct": 80,
+              "formation": "sal_reserve",
+              "nation": "salvera",
+              "name": "formation.sal_27_infantry"
+            },
+            {
+              "class": "infantry",
+              "side": 1,
+              "hex": [
+                25,
+                15
+              ],
+              "morale_pct": 80,
+              "formation": "sal_reserve",
+              "nation": "salvera",
+              "name": "formation.sal_28_infantry"
+            }
+          ]
+        },
+        {
+          "kind": "message",
+          "key": "event.velen.sal_reserves"
+        }
+      ]
+    },
+    {
+      "id": "velen_relief_breakthrough",
+      "important": true,
+      "window": {
+        "title": "event.velen.relief_breakthrough.title",
+        "text": "event.velen.relief_breakthrough.text",
+        "image": "velen_relief_breakthrough"
+      },
+      "_comment": "Коридор по шоссе западнее Велена — (16,10) и (17,10) за Меридом (условия по снабжению среди триггеров нет).",
+      "trigger": {
+        "kind": "all_of",
+        "of": [
+          {
+            "kind": "hex_control",
+            "hex": [
+              16,
+              10
+            ],
+            "side": 0
+          },
+          {
+            "kind": "hex_control",
+            "hex": [
+              17,
+              10
+            ],
+            "side": 0
+          }
+        ]
+      },
+      "conditions": [
+        {
+          "kind": "turn",
+          "turn": 2
+        }
+      ],
+      "effects": [
+        {
+          "kind": "nm",
+          "side": 0,
+          "change": 3
+        }
+      ]
+    },
+    {
+      "id": "superpower_pressure_6",
+      "phase_of": 1,
+      "trigger": {
+        "kind": "turn",
+        "turn": 6
+      },
+      "effects": [
+        {
+          "kind": "nm",
+          "side": 1,
+          "change": -2
+        }
+      ],
+      "important": true,
+      "window": {
+        "title": "event.velen.superpower_pressure.title",
+        "text": "event.velen.superpower_pressure.text",
+        "image": "velen_ceasefire_pressure"
+      },
+      "_comment": "Часы сценария: с хода 6 в каждую фазу Сальверы NM −2 (одно событие на ход: каждое срабатывает один раз)."
+    },
+    {
+      "id": "superpower_pressure_7",
+      "phase_of": 1,
+      "trigger": {
+        "kind": "turn",
+        "turn": 7
+      },
+      "effects": [
+        {
+          "kind": "nm",
+          "side": 1,
+          "change": -2
+        },
+        {
+          "kind": "message",
+          "key": "event.velen.pressure_grows"
+        }
+      ]
+    },
+    {
+      "id": "superpower_pressure_8",
+      "phase_of": 1,
+      "trigger": {
+        "kind": "turn",
+        "turn": 8
+      },
+      "effects": [
+        {
+          "kind": "nm",
+          "side": 1,
+          "change": -2
+        },
+        {
+          "kind": "message",
+          "key": "event.velen.pressure_grows"
+        }
+      ]
+    },
+    {
+      "id": "superpower_pressure_9",
+      "phase_of": 1,
+      "trigger": {
+        "kind": "turn",
+        "turn": 9
+      },
+      "effects": [
+        {
+          "kind": "nm",
+          "side": 1,
+          "change": -2
+        },
+        {
+          "kind": "message",
+          "key": "event.velen.pressure_grows"
+        }
+      ]
+    },
+    {
+      "id": "superpower_pressure_10",
+      "phase_of": 1,
+      "trigger": {
+        "kind": "turn",
+        "turn": 10
+      },
+      "effects": [
+        {
+          "kind": "nm",
+          "side": 1,
+          "change": -2
+        },
+        {
+          "kind": "message",
+          "key": "event.velen.pressure_grows"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,687 @@
+{
+  "_comment": "Котёл у Велена (сценарий 8, «Срединные земли»): вымышленный регион, 1970-е годы. Составы, расстановка и числа — предложение агента (docs/reports/2026-11-28-velen.md), источников нет. Мерид (запад) деблокирует окружённый гарнизон Велена, Сальвера (восток) держит кольцо и штурмует город; часы — давление сверхдержав на Сальверу с хода 6 (events.json). Пороги победы 10 / 10; решительные (Мерид 84, Сальвера 36) — верхние ≈ 25% побед стороны по дате в 500 партиях v1 против v1 (docs/decisions.md 2026-11-28).",
+  "id": "velen",
+  "hex_km": 10,
+  "supply_decay_ap": 4,
+  "seed": 1974,
+  "start_turn": 1,
+  "start_date": "1974-09-16",
+  "last_turn": 10,
+  "sides": [
+    {
+      "id": 0,
+      "key": "mer",
+      "color": "#7f9a8c",
+      "facing": "right",
+      "flag": "merid",
+      "tech": {
+        "armor": 2,
+        "aviation": 2
+      },
+      "national_morale_pct": 85,
+      "mpp": 40,
+      "base_income": 10,
+      "loss_sensitivity": 2,
+      "purchase_limits": {
+        "tank": 1,
+        "infantry": 1
+      },
+      "night_combat": [
+        "infantry"
+      ],
+      "night_combat_source": "Вымысел: профессиональная пехота Мерида обучена ночному бою (предложение агента)."
+    },
+    {
+      "id": 1,
+      "key": "sal",
+      "color": "#a8836a",
+      "facing": "left",
+      "flag": "salvera",
+      "tech": {
+        "armor": 2
+      },
+      "national_morale_pct": 80,
+      "mpp": 40,
+      "base_income": 10,
+      "loss_sensitivity": 1,
+      "purchase_limits": {
+        "infantry": 2,
+        "artillery": 1
+      }
+    }
+  ],
+  "sources": [
+    {
+      "hex": [
+        4,
+        6
+      ],
+      "value": 10
+    },
+    {
+      "hex": [
+        5,
+        17
+      ],
+      "value": 8
+    },
+    {
+      "hex": [
+        19,
+        11
+      ],
+      "value": 6
+    },
+    {
+      "hex": [
+        26,
+        15
+      ],
+      "value": 10
+    },
+    {
+      "hex": [
+        27,
+        5
+      ],
+      "value": 10
+    },
+    {
+      "hex": [
+        22,
+        21
+      ],
+      "value": 6
+    }
+  ],
+  "cities": [
+    {
+      "hex": [
+        4,
+        6
+      ],
+      "value": 5
+    },
+    {
+      "hex": [
+        5,
+        17
+      ],
+      "value": 2
+    },
+    {
+      "hex": [
+        10,
+        10
+      ],
+      "value": 1
+    },
+    {
+      "hex": [
+        19,
+        11
+      ],
+      "value": 3
+    },
+    {
+      "hex": [
+        26,
+        15
+      ],
+      "value": 5
+    },
+    {
+      "hex": [
+        27,
+        5
+      ],
+      "value": 2
+    },
+    {
+      "hex": [
+        22,
+        21
+      ],
+      "value": 1
+    }
+  ],
+  "objectives": [
+    {
+      "hex": [
+        19,
+        11
+      ],
+      "nm_value": 15,
+      "vp": 30
+    },
+    {
+      "hex": [
+        10,
+        10
+      ],
+      "nm_value": 3,
+      "vp": 5
+    },
+    {
+      "hex": [
+        4,
+        6
+      ],
+      "nm_value": 5,
+      "vp": 10
+    },
+    {
+      "hex": [
+        5,
+        17
+      ],
+      "nm_value": 3,
+      "vp": 5
+    },
+    {
+      "hex": [
+        26,
+        15
+      ],
+      "nm_value": 5,
+      "vp": 10
+    },
+    {
+      "hex": [
+        27,
+        5
+      ],
+      "nm_value": 3,
+      "vp": 5
+    },
+    {
+      "hex": [
+        22,
+        21
+      ],
+      "nm_value": 3,
+      "vp": 5
+    }
+  ],
+  "key_hexes": [],
+  "victory": [
+    {
+      "side": 0,
+      "decisive": 84,
+      "victory": 10
+    },
+    {
+      "side": 1,
+      "decisive": 36,
+      "victory": 10
+    }
+  ],
+  "scheduled_income": [],
+  "tech_boosts": [],
+  "supply_vp": [
+    {
+      "side": 0,
+      "hex": [
+        19,
+        11
+      ],
+      "min_supply": 4,
+      "vp": 15,
+      "_comment": "R-NM-02 «коридор снабжения» (решение 2026-11-28, docs/decisions.md): снабжение Мерида в гексе Велена ≥ 4 в конце — коридор открыт; отрезанный Велен по source_isolation даёт не больше 3."
+    }
+  ],
+  "ai": {
+    "_comment": "R-AI-01: подсказки ИИ. Мерид пробивает коридор по шоссе к Велену (гексы кольца на западе — приоритеты), затем бьёт по кольцу; Сальвера штурмует Велен и держит заслон.",
+    "sides": [
+      {
+        "side": 0,
+        "aggressiveness": 0.8,
+        "priorities": [
+          {
+            "hex": [
+              16,
+              10
+            ],
+            "weight": 20
+          },
+          {
+            "hex": [
+              17,
+              10
+            ],
+            "weight": 20
+          },
+          {
+            "hex": [
+              17,
+              11
+            ],
+            "weight": 20
+          },
+          {
+            "hex": [
+              18,
+              10
+            ],
+            "weight": 15
+          }
+        ],
+        "sequence": [
+          [
+            19,
+            11
+          ]
+        ],
+        "idle_to_objectives": true
+      },
+      {
+        "side": 1,
+        "aggressiveness": 0.7,
+        "sequence": [
+          [
+            19,
+            11
+          ],
+          [
+            10,
+            10
+          ]
+        ],
+        "idle_to_objectives": true
+      }
+    ]
+  },
+  "units": [
+    {
+      "class": "hq",
+      "side": 0,
+      "hex": [
+        18,
+        12
+      ],
+      "hq_rating": 7,
+      "morale_pct": 85,
+      "formation": "mer_velen_garrison",
+      "nation": "merid",
+      "name": "formation.mer_velen_garrison_hq"
+    },
+    {
+      "class": "infantry",
+      "side": 0,
+      "hex": [
+        19,
+        11
+      ],
+      "exp": 100,
+      "entrenchment": 4,
+      "morale_pct": 85,
+      "formation": "mer_velen_garrison",
+      "nation": "merid",
+      "name": "formation.mer_4_infantry"
+    },
+    {
+      "class": "infantry",
+      "side": 0,
+      "hex": [
+        19,
+        10
+      ],
+      "entrenchment": 3,
+      "morale_pct": 85,
+      "formation": "mer_velen_garrison",
+      "nation": "merid",
+      "name": "formation.mer_9_infantry"
+    },
+    {
+      "class": "mech",
+      "side": 0,
+      "hex": [
+        18,
+        11
+      ],
+      "entrenchment": 2,
+      "morale_pct": 85,
+      "formation": "mer_velen_garrison",
+      "nation": "merid",
+      "name": "formation.mer_2_mech"
+    },
+    {
+      "class": "artillery",
+      "side": 0,
+      "hex": [
+        20,
+        10
+      ],
+      "entrenchment": 1,
+      "morale_pct": 85,
+      "formation": "mer_velen_garrison",
+      "nation": "merid",
+      "name": "formation.mer_velen_artillery"
+    },
+    {
+      "class": "hq",
+      "side": 0,
+      "hex": [
+        8,
+        8
+      ],
+      "hq_rating": 8,
+      "morale_pct": 85,
+      "formation": "mer_1_corps",
+      "nation": "merid",
+      "name": "formation.mer_1_corps_hq"
+    },
+    {
+      "class": "tank",
+      "side": 0,
+      "hex": [
+        10,
+        8
+      ],
+      "exp": 100,
+      "morale_pct": 85,
+      "formation": "mer_1_corps",
+      "nation": "merid",
+      "name": "formation.mer_1_armored"
+    },
+    {
+      "class": "tank",
+      "side": 0,
+      "hex": [
+        9,
+        9
+      ],
+      "morale_pct": 85,
+      "formation": "mer_1_corps",
+      "nation": "merid",
+      "name": "formation.mer_3_armored"
+    },
+    {
+      "class": "mech",
+      "side": 0,
+      "hex": [
+        11,
+        9
+      ],
+      "morale_pct": 85,
+      "formation": "mer_1_corps",
+      "nation": "merid",
+      "name": "formation.mer_5_mech"
+    },
+    {
+      "class": "infantry",
+      "side": 0,
+      "hex": [
+        11,
+        10
+      ],
+      "entrenchment": 1,
+      "morale_pct": 85,
+      "formation": "mer_1_corps",
+      "nation": "merid",
+      "name": "formation.mer_6_infantry"
+    },
+    {
+      "class": "infantry",
+      "side": 0,
+      "hex": [
+        11,
+        7
+      ],
+      "entrenchment": 1,
+      "morale_pct": 85,
+      "formation": "mer_1_corps",
+      "nation": "merid",
+      "name": "formation.mer_7_infantry"
+    },
+    {
+      "class": "artillery",
+      "side": 0,
+      "hex": [
+        10,
+        9
+      ],
+      "morale_pct": 85,
+      "formation": "mer_1_corps",
+      "nation": "merid",
+      "name": "formation.mer_1_corps_artillery"
+    },
+    {
+      "class": "infantry",
+      "side": 0,
+      "hex": [
+        11,
+        13
+      ],
+      "entrenchment": 1,
+      "morale_pct": 85,
+      "formation": "mer_south",
+      "nation": "merid",
+      "name": "formation.mer_8_infantry"
+    },
+    {
+      "class": "fighter",
+      "side": 0,
+      "hex": [
+        4,
+        6
+      ],
+      "morale_pct": 85,
+      "nation": "merid",
+      "name": "formation.mer_air_fighter"
+    },
+    {
+      "class": "strike",
+      "side": 0,
+      "hex": [
+        4,
+        6
+      ],
+      "morale_pct": 85,
+      "nation": "merid",
+      "name": "formation.mer_air_strike_1"
+    },
+    {
+      "class": "strike",
+      "side": 0,
+      "hex": [
+        5,
+        17
+      ],
+      "morale_pct": 85,
+      "nation": "merid",
+      "name": "formation.mer_air_strike_2"
+    },
+    {
+      "class": "hq",
+      "side": 1,
+      "hex": [
+        22,
+        10
+      ],
+      "hq_rating": 5,
+      "morale_pct": 80,
+      "formation": "sal_velen_ring",
+      "nation": "salvera",
+      "name": "formation.sal_ring_hq"
+    },
+    {
+      "class": "infantry",
+      "side": 1,
+      "hex": [
+        17,
+        11
+      ],
+      "strength": 8,
+      "entrenchment": 1,
+      "morale_pct": 80,
+      "formation": "sal_velen_ring",
+      "nation": "salvera",
+      "name": "formation.sal_12_infantry"
+    },
+    {
+      "class": "infantry",
+      "side": 1,
+      "hex": [
+        18,
+        10
+      ],
+      "strength": 8,
+      "entrenchment": 1,
+      "morale_pct": 80,
+      "formation": "sal_velen_ring",
+      "nation": "salvera",
+      "name": "formation.sal_14_infantry"
+    },
+    {
+      "class": "tank",
+      "side": 1,
+      "hex": [
+        21,
+        10
+      ],
+      "morale_pct": 80,
+      "formation": "sal_velen_ring",
+      "nation": "salvera",
+      "name": "formation.sal_3_tank"
+    },
+    {
+      "class": "infantry",
+      "side": 1,
+      "hex": [
+        21,
+        11
+      ],
+      "strength": 8,
+      "entrenchment": 1,
+      "morale_pct": 80,
+      "formation": "sal_velen_ring",
+      "nation": "salvera",
+      "name": "formation.sal_16_infantry"
+    },
+    {
+      "class": "artillery",
+      "side": 1,
+      "hex": [
+        21,
+        9
+      ],
+      "morale_pct": 80,
+      "formation": "sal_velen_ring",
+      "nation": "salvera",
+      "name": "formation.sal_ring_artillery"
+    },
+    {
+      "class": "hq",
+      "side": 1,
+      "hex": [
+        15,
+        8
+      ],
+      "hq_rating": 5,
+      "morale_pct": 80,
+      "formation": "sal_west_group",
+      "nation": "salvera",
+      "name": "formation.sal_west_hq"
+    },
+    {
+      "class": "infantry",
+      "side": 1,
+      "hex": [
+        12,
+        8
+      ],
+      "entrenchment": 2,
+      "morale_pct": 80,
+      "formation": "sal_west_group",
+      "nation": "salvera",
+      "name": "formation.sal_21_infantry"
+    },
+    {
+      "class": "infantry",
+      "side": 1,
+      "hex": [
+        12,
+        10
+      ],
+      "entrenchment": 2,
+      "morale_pct": 80,
+      "formation": "sal_west_group",
+      "nation": "salvera",
+      "name": "formation.sal_22_infantry"
+    },
+    {
+      "class": "infantry",
+      "side": 1,
+      "hex": [
+        12,
+        6
+      ],
+      "entrenchment": 1,
+      "morale_pct": 80,
+      "formation": "sal_west_group",
+      "nation": "salvera",
+      "name": "formation.sal_23_infantry"
+    },
+    {
+      "class": "mech",
+      "side": 1,
+      "hex": [
+        14,
+        9
+      ],
+      "morale_pct": 80,
+      "formation": "sal_west_group",
+      "nation": "salvera",
+      "name": "formation.sal_7_mech"
+    },
+    {
+      "class": "tank",
+      "side": 1,
+      "hex": [
+        15,
+        10
+      ],
+      "morale_pct": 80,
+      "formation": "sal_west_group",
+      "nation": "salvera",
+      "name": "formation.sal_5_tank"
+    },
+    {
+      "class": "artillery",
+      "side": 1,
+      "hex": [
+        14,
+        8
+      ],
+      "morale_pct": 80,
+      "formation": "sal_west_group",
+      "nation": "salvera",
+      "name": "formation.sal_west_artillery"
+    },
+    {
+      "class": "infantry",
+      "side": 1,
+      "hex": [
+        13,
+        14
+      ],
+      "entrenchment": 1,
+      "morale_pct": 80,
+      "formation": "sal_south_group",
+      "nation": "salvera",
+      "name": "formation.sal_24_infantry"
+    },
+    {
+      "class": "fighter",
+      "side": 1,
+      "hex": [
+        27,
+        5
+      ],
+      "morale_pct": 80,
+      "nation": "salvera",
+      "name": "formation.sal_air_fighter"
+    }
+  ]
+}

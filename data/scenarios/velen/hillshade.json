@@ -1,0 +1,11 @@
+{
+  "height_px": 4950,
+  "hex_radius_km": 5.773502691896258,
+  "png": "hillshade.png",
+  "px_per_km": 20.0,
+  "top_left_from_hex00_km": [
+    -5.773502691896258,
+    -5.0
+  ],
+  "width_px": 5283
+}

@@ -1,0 +1,18 @@
+{
+  "_comment": "«Котёл у Велена» (сценарий 8, GDD раздел 14 «Срединные земли»): `mapgen procgen --params data/procgen/velen.json --out data/scenarios/velen`. Сид 83 выбран перебором сидов 1–96 (docs/reports/2026-11-28-velen.md): Вельна течёт с востока на запад через Велен до колонны 12, Велен (19,11) на северном берегу, шоссе Корвен — Велен — Дерна переходит реку мостом у Велена. Подсказки городов: Мерид на западе и северо-западе, Сальвера на востоке и юго-востоке. После генерации карта правлена вручную (контроль, второй мост) — см. map.json `_comment`.",
+  "seed": 83,
+  "cols": 30,
+  "rows": 24,
+  "hex_km": 10,
+  "biome": "temperate",
+  "origin": [24.0, 50.0],
+  "cities": [
+    { "name": "place.velen.velen", "hint": [19, 11], "size": "large" },
+    { "name": "place.velen.korven", "hint": [4, 6], "size": "large" },
+    { "name": "place.velen.ilmara", "hint": [5, 17], "size": "small" },
+    { "name": "place.velen.stevin", "hint": [10, 10], "size": "small" },
+    { "name": "place.velen.derna", "hint": [26, 15], "size": "large" },
+    { "name": "place.velen.kast", "hint": [25, 5], "size": "small" },
+    { "name": "place.velen.lodar", "hint": [22, 21], "size": "small" }
+  ]
+}
