@@ -799,5 +799,386 @@
       1254,
       1254
     ]
+  },
+  {
+    "id": "terrain_forest",
+    "file": "terrain/terrain_forest.png",
+    "width": 1024,
+    "height": 1024,
+    "prompt": "Painterly gouache realism, muted natural colors, upper-left lighting, no text, flags or insignia. Seamless square terrain texture, 1024×1024, strictly orthographic top-down, tileable on all sides, no vignette, no border shadows, no large isolated features at the edges. Subject: Seamless square orthographic top-down terrain: temperate deciduous forest canopy, dense tree crowns of mixed greens with small clearings",
+    "model": "image_gen",
+    "generation_backend": "image_gen",
+    "postprocess": "32 px opposing-edge blend if needed, then seam validation",
+    "model_note": "Built-in image_gen does not expose the underlying model ID",
+    "side": null,
+    "group": "terrain",
+    "template": "terrain",
+    "source": "assets-midlands.md",
+    "prompt_version": "midlands-v1"
+  },
+  {
+    "id": "terrain_forest_pine",
+    "file": "terrain/terrain_forest_pine.png",
+    "width": 1024,
+    "height": 1024,
+    "prompt": "Painterly gouache realism, muted natural colors, upper-left lighting, no text, flags or insignia. Seamless square terrain texture, 1024×1024, strictly orthographic top-down, tileable on all sides, no vignette, no border shadows, no large isolated features at the edges. Subject: Seamless square orthographic top-down terrain: dark coniferous pine forest canopy on slopes, scattered rocks between trees",
+    "model": "image_gen",
+    "generation_backend": "image_gen",
+    "postprocess": "32 px opposing-edge blend if needed, then seam validation",
+    "model_note": "Built-in image_gen does not expose the underlying model ID",
+    "side": null,
+    "group": "terrain",
+    "template": "terrain",
+    "source": "assets-midlands.md",
+    "prompt_version": "midlands-v1"
+  },
+  {
+    "id": "terrain_steppe",
+    "file": "terrain/terrain_steppe.png",
+    "width": 1024,
+    "height": 1024,
+    "prompt": "Painterly gouache realism, muted natural colors, upper-left lighting, no text, flags or insignia. Seamless square terrain texture, 1024×1024, strictly orthographic top-down, tileable on all sides, no vignette, no border shadows, no large isolated features at the edges. Subject: Seamless square orthographic top-down terrain: dry steppe grassland, short yellow-green grass with bare earth patches and faint tracks",
+    "model": "image_gen",
+    "generation_backend": "image_gen",
+    "postprocess": "32 px opposing-edge blend if needed, then seam validation",
+    "model_note": "Built-in image_gen does not expose the underlying model ID",
+    "side": null,
+    "group": "terrain",
+    "template": "terrain",
+    "source": "assets-midlands.md",
+    "prompt_version": "midlands-v1"
+  },
+  {
+    "id": "terrain_alpine_meadow",
+    "file": "terrain/terrain_alpine_meadow.png",
+    "width": 1024,
+    "height": 1024,
+    "prompt": "Painterly gouache realism, muted natural colors, upper-left lighting, no text, flags or insignia. Seamless square terrain texture, 1024×1024, strictly orthographic top-down, tileable on all sides, no vignette, no border shadows, no large isolated features at the edges. Subject: Seamless square orthographic top-down terrain: high mountain meadow, short grass, scattered boulders and scree",
+    "model": "image_gen",
+    "generation_backend": "image_gen",
+    "postprocess": "32 px opposing-edge blend if needed, then seam validation",
+    "model_note": "Built-in image_gen does not expose the underlying model ID",
+    "side": null,
+    "group": "terrain",
+    "template": "terrain",
+    "source": "assets-midlands.md",
+    "prompt_version": "midlands-v1"
+  },
+  {
+    "id": "terrain_town_temperate",
+    "file": "terrain/terrain_town_temperate.png",
+    "width": 1024,
+    "height": 1024,
+    "prompt": "Painterly gouache realism, muted natural colors, upper-left lighting, no text, flags or insignia. Seamless square terrain texture, 1024×1024, strictly orthographic top-down, tileable on all sides, no vignette, no border shadows, no large isolated features at the edges. Subject: Seamless square orthographic top-down terrain: dense small town with pitched red-tiled roofs, narrow streets and small gardens",
+    "model": "image_gen",
+    "generation_backend": "image_gen",
+    "postprocess": "32 px opposing-edge blend if needed, then seam validation",
+    "model_note": "Built-in image_gen does not expose the underlying model ID",
+    "side": null,
+    "group": "terrain",
+    "template": "terrain",
+    "source": "assets-midlands.md",
+    "prompt_version": "midlands-v1"
+  },
+  {
+    "id": "menu_background",
+    "file": "ui/menu_background.webp",
+    "width": 1920,
+    "height": 1080,
+    "prompt": "Painterly gouache realism, muted natural colors, soft upper-left lighting, visible brush texture, mid-century military history book plate; no text, flags, insignia or identifiable people; neutral tone, no gore; period-correct 1967–1973 equipment. Generate 1536×1024. Subject: Wide desert-and-hills panorama at golden hour: an armoured column on a dusty road in the middle distance, low ridges and a ceasefire-line watchtower on the horizon, calm empty sky in the upper third (space for a title), dark foreground rocks at the bottom edge.",
+    "source": "assets-midlands.md",
+    "prompt_version": "midlands-v1",
+    "model": "image_gen",
+    "generation_backend": "image_gen",
+    "model_note": "Built-in image_gen does not expose the underlying model ID",
+    "side": null,
+    "group": "ui",
+    "template": "ui",
+    "generation_prompts": [
+      "Painterly gouache realism, muted natural colors, soft upper-left lighting, visible brush texture, mid-century military history book plate; no text, flags, insignia or identifiable people; neutral tone, no gore; period-correct 1967–1973 equipment. Generate 1536×1024. Subject: Wide desert-and-hills panorama at golden hour: an armoured column on a dusty road in the middle distance, low ridges and a ceasefire-line watchtower on the horizon, calm empty sky in the upper third (space for a title), dark foreground rocks at the bottom edge."
+    ],
+    "generated_source_size": [
+      1536,
+      1024
+    ],
+    "source_sha256": "2caf55e815ce2abe1abe49826d331efb8435fb2e4d993a0693cebe491615bf6f"
+  },
+  {
+    "id": "briefing_velen",
+    "file": "briefing/briefing_velen.webp",
+    "width": 1600,
+    "height": 900,
+    "prompt": "Painterly gouache realism, muted natural colors, soft upper-left lighting, visible brush texture, mid-century military history book plate; no text, flags, insignia or identifiable people; neutral tone, no gore; period-correct 1970s equipment of a fictional country, no real-world national markings. Generate 1536×1024. Subject: A river-valley border town under siege at dawn, low hills and woods around it, smoke over the outskirts, armoured columns on distant roads, autumn colours",
+    "source": "assets-midlands.md",
+    "prompt_version": "midlands-v1",
+    "model": "image_gen",
+    "generation_backend": "image_gen",
+    "model_note": "Built-in image_gen does not expose the underlying model ID",
+    "side": null,
+    "group": "briefing",
+    "template": "illustration",
+    "generation_prompts": [
+      "Painterly gouache realism, muted natural colors, soft upper-left lighting, visible brush texture, mid-century military history book plate; no text, flags, insignia or identifiable people; neutral tone, no gore; period-correct 1970s equipment of a fictional country, no real-world national markings. Generate 1536×1024. Subject: A river-valley border town under siege at dawn, low hills and woods around it, smoke over the outskirts, armoured columns on distant roads, autumn colours Keep all key subjects in the central 16:9 crop."
+    ],
+    "generated_source_size": [
+      1672,
+      941
+    ],
+    "source_sha256": "9d25d68a893fc624bd733b849e5f977b213aea65491d35de4d87244191818dd2"
+  },
+  {
+    "id": "obj_oil_field",
+    "file": "objects/obj_oil_field.png",
+    "width": 512,
+    "height": 512,
+    "prompt": "Painterly gouache realism, muted natural colors, upper-left lighting, no text, flags or insignia. Map object, 512×512, PNG RGBA with transparent background, strictly top-down, all four corners fully transparent, at least 8 px transparent padding. Subject: Orthographic top-down transparent map object: oil field: three oil derricks and pumpjacks with pipes and a small storage tank, compact cluster",
+    "source": "assets-midlands.md",
+    "prompt_version": "midlands-v1",
+    "model": "image_gen",
+    "generation_backend": "image_gen",
+    "postprocess": "Fit full source alpha into 480 px with 16 px transparent padding",
+    "model_note": "Built-in image_gen does not expose the underlying model ID",
+    "side": null,
+    "group": "object",
+    "template": "object",
+    "generation_prompts": [
+      "Painterly gouache realism, muted natural colors, upper-left lighting, no text, flags or insignia. Map object, 512×512, PNG RGBA with transparent background, strictly top-down, all four corners fully transparent, at least 8 px transparent padding. Subject: Orthographic top-down transparent map object: oil field: three oil derricks and pumpjacks with pipes and a small storage tank, compact cluster Keep the entire cluster within the central 75% of the canvas; strictly vertical overhead orthographic camera, NO visible vertical walls or horizon, no tilted perspective; surrounding 12% margin completely transparent."
+    ],
+    "generated_source_size": [
+      1254,
+      1254
+    ],
+    "source_sha256": "38d0675b238196d560a08d5439fe05fc7637110ee42641c6f75210195950c78e"
+  },
+  {
+    "id": "velen_pocket_closed",
+    "file": "events/velen_pocket_closed.webp",
+    "width": 1200,
+    "height": 675,
+    "prompt": "Painterly gouache realism, muted natural colors, soft upper-left lighting, visible brush texture, mid-century military history book plate; no text, flags, insignia or identifiable people; neutral tone, no gore; period-correct 1970s equipment of a fictional country, no real-world national markings. Generate 1536×1024. Subject: Armoured vehicles meet on a country road behind a town, closing a ring, a church spire and smoke in the background",
+    "source": "assets-midlands.md",
+    "prompt_version": "midlands-v1",
+    "model": "image_gen",
+    "generation_backend": "image_gen",
+    "model_note": "Built-in image_gen does not expose the underlying model ID",
+    "side": null,
+    "group": "event",
+    "template": "illustration",
+    "generation_prompts": [
+      "Painterly gouache realism, muted natural colors, soft upper-left lighting, visible brush texture, mid-century military history book plate; no text, flags, insignia or identifiable people; neutral tone, no gore; period-correct 1970s equipment of a fictional country, no real-world national markings. Generate 1536×1024. Subject: Armoured vehicles meet on a country road behind a town, closing a ring, a church spire and smoke in the background Keep all key subjects in the central 16:9 crop."
+    ],
+    "generated_source_size": [
+      1672,
+      941
+    ],
+    "source_sha256": "f6b47c68efc22d87b515275a3b23b877f5271b0efd4a4f9ebaece255d9a93e8f"
+  },
+  {
+    "id": "velen_relief_breakthrough",
+    "file": "events/velen_relief_breakthrough.webp",
+    "width": 1200,
+    "height": 675,
+    "prompt": "Painterly gouache realism, muted natural colors, soft upper-left lighting, visible brush texture, mid-century military history book plate; no text, flags, insignia or identifiable people; neutral tone, no gore; period-correct 1970s equipment of a fictional country, no real-world national markings. Generate 1536×1024. Subject: Tanks and armoured personnel carriers push through a wooded valley road toward a besieged town at noon",
+    "source": "assets-midlands.md",
+    "prompt_version": "midlands-v1",
+    "model": "image_gen",
+    "generation_backend": "image_gen",
+    "model_note": "Built-in image_gen does not expose the underlying model ID",
+    "side": null,
+    "group": "event",
+    "template": "illustration",
+    "generation_prompts": [
+      "Painterly gouache realism, muted natural colors, soft upper-left lighting, visible brush texture, mid-century military history book plate; no text, flags, insignia or identifiable people; neutral tone, no gore; period-correct 1970s equipment of a fictional country, no real-world national markings. Generate 1536×1024. Subject: Tanks and armoured personnel carriers push through a wooded valley road toward a besieged town at noon Keep all key subjects in the central 16:9 crop."
+    ],
+    "generated_source_size": [
+      1672,
+      941
+    ],
+    "source_sha256": "3e9ea1d49cfcc091360cf650dca1c44fded1b960a642f6fff683bc752825f7f6"
+  },
+  {
+    "id": "velen_ceasefire_pressure",
+    "file": "events/velen_ceasefire_pressure.webp",
+    "width": 1200,
+    "height": 675,
+    "prompt": "Painterly gouache realism, muted natural colors, soft upper-left lighting, visible brush texture, mid-century military history book plate; no text, flags, insignia or identifiable people; neutral tone, no gore; period-correct 1970s equipment of a fictional country, no real-world national markings. Generate 1536×1024. Subject: A government building at night, lit windows, cars at the entrance, a radio mast on the roof, rain",
+    "source": "assets-midlands.md",
+    "prompt_version": "midlands-v1",
+    "model": "image_gen",
+    "generation_backend": "image_gen",
+    "model_note": "Built-in image_gen does not expose the underlying model ID",
+    "side": null,
+    "group": "event",
+    "template": "illustration",
+    "generation_prompts": [
+      "Painterly gouache realism, muted natural colors, soft upper-left lighting, visible brush texture, mid-century military history book plate; no text, flags, insignia or identifiable people; neutral tone, no gore; period-correct 1970s equipment of a fictional country, no real-world national markings. Generate 1536×1024. Subject: A government building at night, lit windows, cars at the entrance, a radio mast on the roof, rain Keep all key subjects in the central 16:9 crop."
+    ],
+    "generated_source_size": [
+      1672,
+      941
+    ],
+    "source_sha256": "edca6abf317d442747ae1b6f3d114c3178b1df5dd627f76016b63bb7acad4379"
+  },
+  {
+    "id": "briefing_oil_junction",
+    "file": "briefing/briefing_oil_junction.webp",
+    "width": 1600,
+    "height": 900,
+    "prompt": "Painterly gouache realism, muted natural colors, soft upper-left lighting, visible brush texture, mid-century military history book plate; no text, flags, insignia or identifiable people; neutral tone, no gore; period-correct 1970s equipment of a fictional country, no real-world national markings. Generate 1536×1024. Subject: Steppe at sunrise: two armoured columns raising dust on converging roads toward a cluster of oil derricks on the horizon",
+    "source": "assets-midlands.md",
+    "prompt_version": "midlands-v1",
+    "model": "image_gen",
+    "generation_backend": "image_gen",
+    "model_note": "Built-in image_gen does not expose the underlying model ID",
+    "side": null,
+    "group": "briefing",
+    "template": "illustration",
+    "generation_prompts": [
+      "Painterly gouache realism, muted natural colors, soft upper-left lighting, visible brush texture, mid-century military history book plate; no text, flags, insignia or identifiable people; neutral tone, no gore; period-correct 1970s equipment of a fictional country, no real-world national markings. Generate 1536×1024. Subject: Steppe at sunrise: two armoured columns raising dust on converging roads toward a cluster of oil derricks on the horizon Keep all key subjects in the central 16:9 crop."
+    ],
+    "generated_source_size": [
+      1672,
+      941
+    ],
+    "source_sha256": "6f33df41f6800d9d86706d690cd043b8973514bfd2ddb78dda174d747ff0a84d"
+  },
+  {
+    "id": "oil_junction_contact",
+    "file": "events/oil_junction_contact.webp",
+    "width": 1200,
+    "height": 675,
+    "prompt": "Painterly gouache realism, muted natural colors, soft upper-left lighting, visible brush texture, mid-century military history book plate; no text, flags, insignia or identifiable people; neutral tone, no gore; period-correct 1970s equipment of a fictional country, no real-world national markings. Generate 1536×1024. Subject: Tanks deploying from column into line across open steppe, first shell bursts ahead, oil derricks in the distance",
+    "source": "assets-midlands.md",
+    "prompt_version": "midlands-v1",
+    "model": "image_gen",
+    "generation_backend": "image_gen",
+    "model_note": "Built-in image_gen does not expose the underlying model ID",
+    "side": null,
+    "group": "event",
+    "template": "illustration",
+    "generation_prompts": [
+      "Painterly gouache realism, muted natural colors, soft upper-left lighting, visible brush texture, mid-century military history book plate; no text, flags, insignia or identifiable people; neutral tone, no gore; period-correct 1970s equipment of a fictional country, no real-world national markings. Generate 1536×1024. Subject: Tanks deploying from column into line across open steppe, first shell bursts ahead, oil derricks in the distance Keep all key subjects in the central 16:9 crop."
+    ],
+    "generated_source_size": [
+      1672,
+      941
+    ],
+    "source_sha256": "7252e72ad0c1e926481c9ab0480f4cc8c75cf8b3e9d7c1c389d02385007d0a47"
+  },
+  {
+    "id": "oil_junction_fields_burning",
+    "file": "events/oil_junction_fields_burning.webp",
+    "width": 1200,
+    "height": 675,
+    "prompt": "Painterly gouache realism, muted natural colors, soft upper-left lighting, visible brush texture, mid-century military history book plate; no text, flags, insignia or identifiable people; neutral tone, no gore; period-correct 1970s equipment of a fictional country, no real-world national markings. Generate 1536×1024. Subject: Oil derricks and storage tanks burning on the steppe, black smoke columns, abandoned trucks",
+    "source": "assets-midlands.md",
+    "prompt_version": "midlands-v1",
+    "model": "image_gen",
+    "generation_backend": "image_gen",
+    "model_note": "Built-in image_gen does not expose the underlying model ID",
+    "side": null,
+    "group": "event",
+    "template": "illustration",
+    "generation_prompts": [
+      "Painterly gouache realism, muted natural colors, soft upper-left lighting, visible brush texture, mid-century military history book plate; no text, flags, insignia or identifiable people; neutral tone, no gore; period-correct 1970s equipment of a fictional country, no real-world national markings. Generate 1536×1024. Subject: Oil derricks and storage tanks burning on the steppe, black smoke columns, abandoned trucks Keep all key subjects in the central 16:9 crop."
+    ],
+    "generated_source_size": [
+      1672,
+      941
+    ],
+    "source_sha256": "75d0fde4af95ec57f4e7250027c8936a7511dbddc52d716a3959db8c1d310db4"
+  },
+  {
+    "id": "briefing_sarna",
+    "file": "briefing/briefing_sarna.webp",
+    "width": 1600,
+    "height": 900,
+    "prompt": "Painterly gouache realism, muted natural colors, soft upper-left lighting, visible brush texture, mid-century military history book plate; no text, flags, insignia or identifiable people; neutral tone, no gore; period-correct 1970s equipment of a fictional country, no real-world national markings. Generate 1536×1024. Subject: A wide mountain river in a forested foothill valley, three bridges in the distance, snow-capped peaks behind, missile launchers on a ridge",
+    "source": "assets-midlands.md",
+    "prompt_version": "midlands-v1",
+    "model": "image_gen",
+    "generation_backend": "image_gen",
+    "model_note": "Built-in image_gen does not expose the underlying model ID",
+    "side": null,
+    "group": "briefing",
+    "template": "illustration",
+    "generation_prompts": [
+      "Painterly gouache realism, muted natural colors, soft upper-left lighting, visible brush texture, mid-century military history book plate; no text, flags, insignia or identifiable people; neutral tone, no gore; period-correct 1970s equipment of a fictional country, no real-world national markings. Generate 1536×1024. Subject: A wide mountain river in a forested foothill valley, three bridges in the distance, snow-capped peaks behind, missile launchers on a ridge Keep all key subjects in the central 16:9 crop."
+    ],
+    "generated_source_size": [
+      1672,
+      941
+    ],
+    "source_sha256": "7a174c59006089867efe19362f42b6278a2f185e00f8d04dae4adeee862e035b"
+  },
+  {
+    "id": "sarna_bridge_blown",
+    "file": "events/sarna_bridge_blown.webp",
+    "width": 1200,
+    "height": 675,
+    "prompt": "Painterly gouache realism, muted natural colors, soft upper-left lighting, visible brush texture, mid-century military history book plate; no text, flags, insignia or identifiable people; neutral tone, no gore; period-correct 1970s equipment of a fictional country, no real-world national markings. Generate 1536×1024. Subject: A steel road bridge over a mountain river collapsing in a demolition blast, dust and spray",
+    "source": "assets-midlands.md",
+    "prompt_version": "midlands-v1",
+    "model": "image_gen",
+    "generation_backend": "image_gen",
+    "model_note": "Built-in image_gen does not expose the underlying model ID",
+    "side": null,
+    "group": "event",
+    "template": "illustration",
+    "generation_prompts": [
+      "Painterly gouache realism, muted natural colors, soft upper-left lighting, visible brush texture, mid-century military history book plate; no text, flags, insignia or identifiable people; neutral tone, no gore; period-correct 1970s equipment of a fictional country, no real-world national markings. Generate 1536×1024. Subject: A steel road bridge over a mountain river collapsing in a demolition blast, dust and spray Keep all key subjects in the central 16:9 crop."
+    ],
+    "generated_source_size": [
+      1672,
+      941
+    ],
+    "source_sha256": "2723255b266ccf96f4194ac357e6374ad57854b71dfb52d8e193d109066fe178"
+  },
+  {
+    "id": "sarna_crossing_under_fire",
+    "file": "events/sarna_crossing_under_fire.webp",
+    "width": 1200,
+    "height": 675,
+    "prompt": "Painterly gouache realism, muted natural colors, soft upper-left lighting, visible brush texture, mid-century military history book plate; no text, flags, insignia or identifiable people; neutral tone, no gore; period-correct 1970s equipment of a fictional country, no real-world national markings. Generate 1536×1024. Subject: Engineers launch pontoon rafts across a fast river under artillery fire, jets trailing smoke overhead",
+    "source": "assets-midlands.md",
+    "prompt_version": "midlands-v1",
+    "model": "image_gen",
+    "generation_backend": "image_gen",
+    "model_note": "Built-in image_gen does not expose the underlying model ID",
+    "side": null,
+    "group": "event",
+    "template": "illustration",
+    "generation_prompts": [
+      "Painterly gouache realism, muted natural colors, soft upper-left lighting, visible brush texture, mid-century military history book plate; no text, flags, insignia or identifiable people; neutral tone, no gore; period-correct 1970s equipment of a fictional country, no real-world national markings. Generate 1536×1024. Subject: Engineers launch pontoon rafts across a fast river under artillery fire, jets trailing smoke overhead Keep all key subjects in the central 16:9 crop."
+    ],
+    "generated_source_size": [
+      1672,
+      941
+    ],
+    "source_sha256": "057853960cefbffe0cb6f087a777601935e0385fa2d14ef5a6da38cef422e346"
+  },
+  {
+    "id": "sarna_pass_taken",
+    "file": "events/sarna_pass_taken.webp",
+    "width": 1200,
+    "height": 675,
+    "prompt": "Painterly gouache realism, muted natural colors, soft upper-left lighting, visible brush texture, mid-century military history book plate; no text, flags, insignia or identifiable people; neutral tone, no gore; period-correct 1970s equipment of a fictional country, no real-world national markings. Generate 1536×1024. Subject: A light tank column crests a narrow mountain pass road between pine-covered slopes, low clouds",
+    "source": "assets-midlands.md",
+    "prompt_version": "midlands-v1",
+    "model": "image_gen",
+    "generation_backend": "image_gen",
+    "model_note": "Built-in image_gen does not expose the underlying model ID",
+    "side": null,
+    "group": "event",
+    "template": "illustration",
+    "generation_prompts": [
+      "Painterly gouache realism, muted natural colors, soft upper-left lighting, visible brush texture, mid-century military history book plate; no text, flags, insignia or identifiable people; neutral tone, no gore; period-correct 1970s equipment of a fictional country, no real-world national markings. Generate 1536×1024. Subject: A light tank column crests a narrow mountain pass road between pine-covered slopes, low clouds Keep all key subjects in the central 16:9 crop.",
+      "Painterly gouache realism, muted natural colors, soft upper-left lighting, visible brush texture, mid-century military history book plate; no text, flags, insignia or identifiable people; neutral tone, no gore; period-correct 1970s equipment of a fictional country, no real-world national markings. Generate 1536×1024. Subject: A light tank column crests a narrow mountain pass road between pine-covered slopes, low clouds The light tanks are specifically PT-76 amphibious light tanks with low flat boat-shaped hulls and small angular turrets mounting slender 76 mm guns, six small road wheels per side. No T-54/T-55 or other medium tanks, no rounded hemispherical turrets. Keep all key subjects in the central 16:9 crop."
+    ],
+    "generated_source_size": [
+      1672,
+      941
+    ],
+    "source_sha256": "e9509da52864ffe950de4a0584d0aa3a0ae1f249f9a043bf17b6e51e037a2d7f"
   }
 ]

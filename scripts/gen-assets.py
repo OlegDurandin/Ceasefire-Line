@@ -30,11 +30,13 @@ def jobs(spec: Path) -> list[dict]:
             raise ValueError(f"Asset outside assets/: {filename}")
         mini = "units_minis" in path.parts
         illustration = path.parent.name in ("briefing", "events")
+        kind = "miniature" if mini else "illustration" if illustration else "object" if path.parent.name == "objects" else "ui" if path.parent.name == "ui" else "terrain"
         result.append(dict(id=asset_id, source=filename,
-                           file=str(path.with_suffix(".webp").relative_to(ROOT)) if illustration else filename,
-                           prompt=prompt, size="1536x1024" if illustration else "1024x1024",
-                           background="transparent" if mini else "opaque",
-                           kind="miniature" if mini else "illustration" if illustration else "terrain"))
+                           file=str(path.with_suffix(".webp").relative_to(ROOT)) if illustration or kind == "ui" else filename,
+                           prompt=prompt, prompt_source=str(spec.resolve().relative_to(ROOT)),
+                           prompt_version="midlands-v1" if spec.name == "assets-midlands.md" else "v1", size="1536x1024" if illustration or kind == "ui" else "1024x1024",
+                           background="transparent" if mini or kind == "object" else "opaque",
+                           kind=kind))
     if not result or len({j["id"] for j in result}) != len(result):
         raise ValueError("Spec has no assets or duplicate IDs")
     return result
@@ -66,6 +68,26 @@ def terrain_seams(image):
     def ratio(edge, inner):
         return edge / inner if inner else float("inf") if edge else 1.0
     return ratio(lr, ix), ratio(tb, iy)
+
+
+def wrap_terrain_edges(image, padding=32):
+    """Blend only narrow opposing margins into a continuous periodic tile."""
+    result = image.copy()
+    pixels = result.load()
+    w, h = result.size
+    for x in range(padding):
+        weight = 0.5 * (1 - x / padding) ** 2
+        for y in range(h):
+            a, b = pixels[x, y], pixels[w-1-x, y]
+            pixels[x, y] = tuple(round(v*(1-weight)+z*weight) for v,z in zip(a,b))
+            pixels[w-1-x, y] = tuple(round(z*(1-weight)+v*weight) for v,z in zip(a,b))
+    for y in range(padding):
+        weight = 0.5 * (1 - y / padding) ** 2
+        for x in range(w):
+            a, b = pixels[x, y], pixels[x, h-1-y]
+            pixels[x, y] = tuple(round(v*(1-weight)+z*weight) for v,z in zip(a,b))
+            pixels[x, h-1-y] = tuple(round(z*(1-weight)+v*weight) for v,z in zip(a,b))
+    return result
 
 
 def finish(source: Path, job: dict, output: Path) -> tuple[int, int]:
@@ -109,6 +131,18 @@ def finish(source: Path, job: dict, output: Path) -> tuple[int, int]:
             alpha = image.getchannel("A")
             if any(alpha.getpixel(p) for i in range(512) for p in ((i, 0), (i, 511), (0, i), (511, i))):
                 raise ValueError("Miniature touches the frame")
+        elif job["kind"] == "object":
+            if raw.width != raw.height or min(raw.size) < 512:
+                raise ValueError("Object must be square and at least 512 px")
+            if "A" not in raw.getbands() or raw.getchannel("A").getextrema()[0] != 0:
+                raise ValueError("Object has no genuine transparency")
+            image = Image.new("RGBA", (512, 512))
+            image.alpha_composite(raw.convert("RGBA").resize((480, 480), Image.Resampling.LANCZOS), (16, 16))
+            bounds = image.getchannel("A").getbbox()
+            if bounds is None or min(bounds[0], bounds[1], 512-bounds[2], 512-bounds[3]) < 8:
+                raise ValueError("Object needs at least 8 px transparent padding")
+        elif job["kind"] == "ui":
+            image = ImageOps.fit(raw.convert("RGB"), (1920, 1080), Image.Resampling.LANCZOS)
         elif job["kind"] == "illustration":
             size = (1600, 900) if output.parent.name == "briefing" else (1200, 675)
             image = ImageOps.fit(raw.convert("RGB"), size, Image.Resampling.LANCZOS, centering=(0.5, 0.5))
@@ -117,12 +151,15 @@ def finish(source: Path, job: dict, output: Path) -> tuple[int, int]:
                 raise ValueError("Terrain must be square and at least 1024 px")
             image = raw.convert("RGB").resize((1024, 1024), Image.Resampling.LANCZOS)
             ratios = terrain_seams(image)
+            if job.get("wrap_edges") and max(ratios) > 1.5:
+                image = wrap_terrain_edges(image)
+                ratios = terrain_seams(image)
             if max(ratios) > 1.5:
                 raise ValueError(f"Terrain seam ratios {ratios[0]:.2f}, {ratios[1]:.2f} exceed 1.5")
         output.parent.mkdir(parents=True, exist_ok=True)
         pending = output.with_name(output.stem + ".pending" + output.suffix)
         if output.suffix == ".webp":
-            image.save(pending, format="WEBP", quality=90, method=6)
+            image.save(pending, format="WEBP", quality=85, method=6)
         else:
             image.save(pending, format="PNG", optimize=True)
         with Image.open(pending) as saved:
@@ -142,15 +179,21 @@ def manifest(job: dict, model: str, size: tuple[int, int]):
         entries.append(entry)
     file = ROOT / job["file"]
     entry.update(file=str(file.relative_to(base)), width=size[0], height=size[1], prompt=job["prompt"],
+                 source=job["prompt_source"], prompt_version=job["prompt_version"],
                  model=model, generation_backend="image_gen" if model == "image_gen" else "openai-images-api")
+    if job["kind"] == "object":
+        entry["postprocess"] = "Fit full source alpha into 480 px with 16 px transparent padding"
+    if job.get("wrap_edges"):
+        entry["postprocess"] = "32 px opposing-edge blend if needed, then seam validation"
     if model == "image_gen":
         entry["model_note"] = "Built-in image_gen does not expose the underlying model ID"
     if mini:
         entry.update(side=file.parent.name, template="air" if "In flight" in job["prompt"] else "ground",
                      style="miniature", anchor=[0.5, 0.88])
     else:
-        entry.update(side=None, group="terrain" if job["kind"] == "terrain" else "briefing" if file.parent.name == "briefing" else "event",
-                     template="terrain" if job["kind"] == "terrain" else "illustration")
+        group = {"terrain": "terrain", "object": "object", "ui": "ui"}.get(job["kind"], "briefing" if file.parent.name == "briefing" else "event")
+        entry.update(side=None, group=group,
+                     template=job["kind"] if job["kind"] in ("terrain", "object", "ui") else "illustration")
     write_json(path, entries)
 
 
@@ -195,6 +238,8 @@ def full_sheets(all_jobs: list[dict]):
         ("terrain", 512, 548, 2, "assets/contact_sheet_terrain.png"),
     ]:
         selected = [j for j in all_jobs if j["kind"] == kind]
+        if not selected:
+            continue
         rows = (len(selected) + cols - 1) // cols
         board = Image.new("RGB", (width * cols, height * rows), "#e8e1d2")
         draw = ImageDraw.Draw(board)
@@ -229,6 +274,7 @@ def main() -> int:
     parser.add_argument("--trial", action="store_true", help="Select the three approval samples")
     parser.add_argument("--sheet-all", action="store_true", help="Build complete miniature, illustration and terrain review sheets")
     parser.add_argument("--plan", action="store_true", help="Print built-in image_gen jobs; no generation")
+    parser.add_argument("--wrap-edges", action="store_true", help="Blend terrain margins before seam validation")
     parser.add_argument("--model", help="Explicit API model, or image_gen when importing built-in results")
     parser.add_argument("--import-image", action="append", default=[], metavar="ID=PATH")
     parser.add_argument("--reject", nargs=2, metavar=("ID", "REASON"), help="Record a visual rejection; then regenerate with --only")
@@ -236,6 +282,8 @@ def main() -> int:
     parser.add_argument("--cli", type=Path, default=Path(os.environ.get("CODEX_HOME", str(Path.home() / ".codex"))) / "skills/.system/imagegen/scripts/image_gen.py")
     args = parser.parse_args()
     all_jobs = jobs(args.spec)
+    for job in all_jobs:
+        job["wrap_edges"] = args.wrap_edges and job["kind"] == "terrain"
     known = {j["id"] for j in all_jobs}
     imports = dict(pair.split("=", 1) for pair in args.import_image)
     selected = set(args.only or (TRIAL if args.trial else imports or known))

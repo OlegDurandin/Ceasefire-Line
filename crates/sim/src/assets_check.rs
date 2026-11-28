@@ -22,13 +22,15 @@ const SEAM_MAX_RATIO: f64 = 1.5;
 const UNIT_EDGE_MARGIN_PX: u32 = 1;
 /// Map objects (bridges): same format as unit medallions, top-down.
 const OBJECT_SIZE: u32 = 512;
-/// Packs v1 + v2.
-const EXPECTED_TERRAIN: usize = 12;
+/// Packs v1 + v2 + Midlands.
+const EXPECTED_TERRAIN: usize = 17;
 const EXPECTED_UNITS: usize = 37;
-const EXPECTED_OBJECTS: usize = 2;
+const EXPECTED_OBJECTS: usize = 3;
 /// R-UI-07 illustrations (16:9): briefings and event windows.
 const BRIEFING_SIZE: (u32, u32) = (1600, 900);
 const EVENT_SIZE: (u32, u32) = (1200, 675);
+/// R-UI-06: main-menu panorama.
+const MENU_SIZE: (u32, u32) = (1920, 1080);
 const SPRITE_SIDES: [&str; 3] = ["isr", "egy_syr", "jor"];
 /// Miniatures pack (style `miniature`): `assets/units_minis/<side>/<id>.png`.
 const MINIS_DIR: &str = "units_minis";
@@ -671,11 +673,11 @@ pub fn run(o: &Options) -> Result<(), String> {
                 object_n += 1;
                 (format!("objects/{}.png", e.id), OBJECT_SIZE, false)
             }
-            (group @ ("briefing" | "event"), None) => {
-                let (dir, size) = if group == "briefing" {
-                    ("briefing", BRIEFING_SIZE)
-                } else {
-                    ("events", EVENT_SIZE)
+            (group @ ("briefing" | "event" | "ui"), None) => {
+                let (dir, size) = match group {
+                    "briefing" => ("briefing", BRIEFING_SIZE),
+                    "ui" => ("ui", MENU_SIZE),
+                    _ => ("events", EVENT_SIZE),
                 };
                 let rel = format!("{dir}/{}.webp", e.id);
                 let statuses = check_illustration(&o.assets.join(&rel), size);

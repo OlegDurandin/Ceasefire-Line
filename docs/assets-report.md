@@ -1,6 +1,6 @@
 # Отчёт по ассетам
 
-Сгенерирован `sim assets-check`. Файлов по манифесту: 66, в порядке: 66. PNG всего: 47.5 МБ, из них игровые (terrain + units + objects): 45.3 МБ.
+Сгенерирован `sim assets-check`. Файлов по манифесту: 84, в порядке: 84. PNG всего: 59.9 МБ, из них игровые (terrain + units + objects): 55.9 МБ.
 
 Пороги: шов — отношение средней разницы RGB противоположных краёв к средней разнице соседних пикселей внутри > 1.5; у юнитов и объектов карты прозрачная рамка 1 px. Модели техники визуально не оценивались.
 
@@ -74,6 +74,24 @@
 | sinai67_superpower_pressure | `events/sinai67_superpower_pressure.webp` | ок |  |
 | terrain_terraced_hills | `terrain/terrain_terraced_hills.png` | ок | края л–п 22.8 / внутри 16.7 = 1.36; в–н 23.2 / внутри 18.5 = 1.26 |
 | terrain_orchards | `terrain/terrain_orchards.png` | ок | края л–п 17.2 / внутри 12.6 = 1.37; в–н 16.7 / внутри 13.5 = 1.24 |
+| terrain_forest | `terrain/terrain_forest.png` | ок | края л–п 0.0 / внутри 9.6 = 0.00; в–н 0.0 / внутри 9.6 = 0.00 |
+| terrain_forest_pine | `terrain/terrain_forest_pine.png` | ок | края л–п 0.0 / внутри 7.2 = 0.00; в–н 0.0 / внутри 7.4 = 0.00 |
+| terrain_steppe | `terrain/terrain_steppe.png` | ок | края л–п 12.3 / внутри 9.8 = 1.26; в–н 12.6 / внутри 9.7 = 1.29 |
+| terrain_alpine_meadow | `terrain/terrain_alpine_meadow.png` | ок | края л–п 0.0 / внутри 9.2 = 0.00; в–н 0.0 / внутри 9.8 = 0.00 |
+| terrain_town_temperate | `terrain/terrain_town_temperate.png` | ок | края л–п 18.5 / внутри 16.1 = 1.15; в–н 19.0 / внутри 15.1 = 1.26 |
+| menu_background | `ui/menu_background.webp` | ок |  |
+| briefing_velen | `briefing/briefing_velen.webp` | ок |  |
+| obj_oil_field | `objects/obj_oil_field.png` | ок |  |
+| velen_pocket_closed | `events/velen_pocket_closed.webp` | ок |  |
+| velen_relief_breakthrough | `events/velen_relief_breakthrough.webp` | ок |  |
+| velen_ceasefire_pressure | `events/velen_ceasefire_pressure.webp` | ок |  |
+| briefing_oil_junction | `briefing/briefing_oil_junction.webp` | ок |  |
+| oil_junction_contact | `events/oil_junction_contact.webp` | ок |  |
+| oil_junction_fields_burning | `events/oil_junction_fields_burning.webp` | ок |  |
+| briefing_sarna | `briefing/briefing_sarna.webp` | ок |  |
+| sarna_bridge_blown | `events/sarna_bridge_blown.webp` | ок |  |
+| sarna_crossing_under_fire | `events/sarna_crossing_under_fire.webp` | ок |  |
+| sarna_pass_taken | `events/sarna_pass_taken.webp` | ок |  |
 
 ## Миниатюры (стиль `miniature`)
 

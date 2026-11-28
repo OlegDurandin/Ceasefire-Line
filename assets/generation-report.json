@@ -296,6 +296,150 @@
       "reviewed_by": "agent",
       "style_reference": "user-approved pilot, 2026-11-28",
       "format_validation": "passed"
+    },
+    "terrain_forest": {
+      "attempts": 3,
+      "status": "accepted",
+      "import_sha256": "8880ecd0bc0a9a776e4d49dee68576f6c6d0f96705dbf689a3daf0baf5c7285b",
+      "file": "assets/terrain/terrain_forest.png",
+      "model": "image_gen",
+      "source_size_note": "Built-in tool dimensions may differ; final size validated"
+    },
+    "terrain_forest_pine": {
+      "attempts": 1,
+      "import_sha256": "c4302ea8291376fadfbdfcc59f0bcdd46094fa5a0373329097e86a79583e77ee",
+      "status": "accepted",
+      "file": "assets/terrain/terrain_forest_pine.png",
+      "model": "image_gen",
+      "source_size_note": "Built-in tool dimensions may differ; final size validated"
+    },
+    "terrain_steppe": {
+      "attempts": 1,
+      "import_sha256": "2289ee1d5b067767357e5bc0aa526aa26b70d6fbb0faf57f1a352a5e67f48acd",
+      "status": "accepted",
+      "file": "assets/terrain/terrain_steppe.png",
+      "model": "image_gen",
+      "source_size_note": "Built-in tool dimensions may differ; final size validated"
+    },
+    "terrain_alpine_meadow": {
+      "attempts": 1,
+      "import_sha256": "373baec7db6becdb3649da5a2dcd0c5701310819453988693112c08694531c72",
+      "status": "accepted",
+      "file": "assets/terrain/terrain_alpine_meadow.png",
+      "model": "image_gen",
+      "source_size_note": "Built-in tool dimensions may differ; final size validated"
+    },
+    "terrain_town_temperate": {
+      "attempts": 1,
+      "import_sha256": "da9656dd8e440b6494106a595eebecad651befa7c01d6dac6038d14e98c61d2e",
+      "status": "accepted",
+      "file": "assets/terrain/terrain_town_temperate.png",
+      "model": "image_gen",
+      "source_size_note": "Built-in tool dimensions may differ; final size validated"
+    },
+    "obj_oil_field": {
+      "attempts": 3,
+      "status": "accepted",
+      "import_sha256": "38d0675b238196d560a08d5439fe05fc7637110ee42641c6f75210195950c78e",
+      "file": "assets/objects/obj_oil_field.png",
+      "model": "image_gen",
+      "source_size_note": "Built-in tool dimensions may differ; final size validated"
+    },
+    "menu_background": {
+      "attempts": 1,
+      "import_sha256": "2caf55e815ce2abe1abe49826d331efb8435fb2e4d993a0693cebe491615bf6f",
+      "status": "accepted",
+      "file": "assets/ui/menu_background.webp",
+      "model": "image_gen",
+      "source_size_note": "Built-in tool dimensions may differ; final size validated"
+    },
+    "briefing_velen": {
+      "attempts": 1,
+      "import_sha256": "9d25d68a893fc624bd733b849e5f977b213aea65491d35de4d87244191818dd2",
+      "status": "accepted",
+      "file": "assets/briefing/briefing_velen.webp",
+      "model": "image_gen",
+      "source_size_note": "Built-in tool dimensions may differ; final size validated"
+    },
+    "velen_pocket_closed": {
+      "attempts": 1,
+      "import_sha256": "f6b47c68efc22d87b515275a3b23b877f5271b0efd4a4f9ebaece255d9a93e8f",
+      "status": "accepted",
+      "file": "assets/events/velen_pocket_closed.webp",
+      "model": "image_gen",
+      "source_size_note": "Built-in tool dimensions may differ; final size validated"
+    },
+    "velen_relief_breakthrough": {
+      "attempts": 1,
+      "import_sha256": "3e9ea1d49cfcc091360cf650dca1c44fded1b960a642f6fff683bc752825f7f6",
+      "status": "accepted",
+      "file": "assets/events/velen_relief_breakthrough.webp",
+      "model": "image_gen",
+      "source_size_note": "Built-in tool dimensions may differ; final size validated"
+    },
+    "velen_ceasefire_pressure": {
+      "attempts": 1,
+      "import_sha256": "edca6abf317d442747ae1b6f3d114c3178b1df5dd627f76016b63bb7acad4379",
+      "status": "accepted",
+      "file": "assets/events/velen_ceasefire_pressure.webp",
+      "model": "image_gen",
+      "source_size_note": "Built-in tool dimensions may differ; final size validated"
+    },
+    "briefing_oil_junction": {
+      "attempts": 1,
+      "import_sha256": "6f33df41f6800d9d86706d690cd043b8973514bfd2ddb78dda174d747ff0a84d",
+      "status": "accepted",
+      "file": "assets/briefing/briefing_oil_junction.webp",
+      "model": "image_gen",
+      "source_size_note": "Built-in tool dimensions may differ; final size validated"
+    },
+    "oil_junction_contact": {
+      "attempts": 1,
+      "import_sha256": "7252e72ad0c1e926481c9ab0480f4cc8c75cf8b3e9d7c1c389d02385007d0a47",
+      "status": "accepted",
+      "file": "assets/events/oil_junction_contact.webp",
+      "model": "image_gen",
+      "source_size_note": "Built-in tool dimensions may differ; final size validated"
+    },
+    "oil_junction_fields_burning": {
+      "attempts": 1,
+      "import_sha256": "75d0fde4af95ec57f4e7250027c8936a7511dbddc52d716a3959db8c1d310db4",
+      "status": "accepted",
+      "file": "assets/events/oil_junction_fields_burning.webp",
+      "model": "image_gen",
+      "source_size_note": "Built-in tool dimensions may differ; final size validated"
+    },
+    "briefing_sarna": {
+      "attempts": 1,
+      "import_sha256": "7a174c59006089867efe19362f42b6278a2f185e00f8d04dae4adeee862e035b",
+      "status": "accepted",
+      "file": "assets/briefing/briefing_sarna.webp",
+      "model": "image_gen",
+      "source_size_note": "Built-in tool dimensions may differ; final size validated"
+    },
+    "sarna_bridge_blown": {
+      "attempts": 1,
+      "import_sha256": "2723255b266ccf96f4194ac357e6374ad57854b71dfb52d8e193d109066fe178",
+      "status": "accepted",
+      "file": "assets/events/sarna_bridge_blown.webp",
+      "model": "image_gen",
+      "source_size_note": "Built-in tool dimensions may differ; final size validated"
+    },
+    "sarna_crossing_under_fire": {
+      "attempts": 1,
+      "import_sha256": "057853960cefbffe0cb6f087a777601935e0385fa2d14ef5a6da38cef422e346",
+      "status": "accepted",
+      "file": "assets/events/sarna_crossing_under_fire.webp",
+      "model": "image_gen",
+      "source_size_note": "Built-in tool dimensions may differ; final size validated"
+    },
+    "sarna_pass_taken": {
+      "attempts": 2,
+      "import_sha256": "e9509da52864ffe950de4a0584d0aa3a0ae1f249f9a043bf17b6e51e037a2d7f",
+      "status": "accepted",
+      "file": "assets/events/sarna_pass_taken.webp",
+      "model": "image_gen",
+      "source_size_note": "Built-in tool dimensions may differ; final size validated"
     }
   },
   "rejected": [
@@ -333,6 +477,48 @@
       "kind": "visual",
       "resolved": true,
       "attempt": 2
+    },
+    {
+      "id": "terrain_forest",
+      "attempt": 1,
+      "reason": "Terrain seam ratios 1.57, 1.56 exceed 1.5",
+      "kind": "format_or_generation",
+      "resolved": true
+    },
+    {
+      "id": "terrain_forest",
+      "attempt": 2,
+      "reason": "Terrain seam ratios 1.51, 1.57 exceed 1.5",
+      "kind": "format_or_generation",
+      "resolved": true
+    },
+    {
+      "id": "obj_oil_field",
+      "reason": "Rejected oblique/isometric view; specification requires strict top-down; replacement will include a clean transparent margin.",
+      "kind": "visual",
+      "attempt": 1,
+      "resolved": true
+    },
+    {
+      "id": "obj_oil_field",
+      "attempt": 2,
+      "reason": "Object needs at least 8 px transparent padding",
+      "kind": "format_or_generation",
+      "resolved": true
+    },
+    {
+      "id": "obj_oil_field",
+      "attempt": 3,
+      "reason": "Object needs at least 8 px transparent padding",
+      "kind": "format_or_generation",
+      "resolved": true
+    },
+    {
+      "id": "sarna_pass_taken",
+      "attempt": 1,
+      "kind": "visual",
+      "reason": "Medium-tank silhouettes instead of light tanks; regenerated as PT-76 column.",
+      "resolved": true
     }
   ],
   "summary": {
@@ -341,7 +527,8 @@
     "unresolved": [],
     "generator": "built-in image_gen",
     "model_note": "Underlying model ID is not exposed by the built-in tool",
-    "generation_attempts": 32
+    "generation_attempts": 32,
+    "spec": "assets-to-generate.md"
   },
   "validation": {
     "assets_check": "116 files passed, 0 problems",
@@ -354,5 +541,22 @@
     "python_pipeline_tests": "5 passed",
     "client_build": "passed",
     "wasm_build": "passed"
+  },
+  "midlands_summary": {
+    "spec": "assets-midlands.md",
+    "prompt_version": "midlands-v1",
+    "accepted": 18,
+    "unresolved": [],
+    "generator": "built-in image_gen imported through scripts/gen-assets.py",
+    "assets_check": "134 files passed, 0 problems",
+    "visual_review": "All 18 assets inspected; illustrations and menu checked after 16:9 crop; object alpha preserved with 16 px padding; terrain seams validated",
+    "formats": "5 terrain PNG 1024x1024; 1 object RGBA PNG 512x512; 3 briefings WebP 1600x900; 8 events WebP 1200x675; menu WebP 1920x1080; WebP q85",
+    "validation": {
+      "cargo_fmt": "passed",
+      "cargo_clippy_workspace_all_targets": "passed without warnings",
+      "rust_workspace_release": "all passed",
+      "python_pipeline_tests": "8 passed",
+      "assets_check": "134 files passed, 0 problems"
+    }
   }
 }
