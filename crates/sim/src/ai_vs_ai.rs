@@ -240,6 +240,59 @@ struct Game {
     /// R-NM-02 per side at the end: VP of held objectives and of exits.
     vp_objectives: BTreeMap<u8, i32>,
     vp_exits: BTreeMap<u8, i32>,
+    /// R-NM-02 «коридор снабжения», per `supply_vp` entry (file order).
+    corridors: Vec<Corridor>,
+}
+
+/// One `supply_vp` entry over a game: open at the end of some phase after
+/// turn 1, open at the end, first turn an enemy held the hex.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+struct Corridor {
+    open_once: bool,
+    open_end: bool,
+    lost_turn: Option<u32>,
+}
+
+/// R-NM-02: the entry's side has hex supply ≥ `min_supply` at its hex now.
+fn corridor_open(s: &GameState, e: &ceasefire_core::game::SupplyVp) -> bool {
+    s.hex_supply(e.side)
+        .is_ok_and(|m| m.get(e.hex) >= e.min_supply)
+}
+
+/// Updates the corridors after a phase (`turn` — the turn of that phase).
+fn look_corridors(s: &GameState, turn: u32, cs: &mut Vec<Corridor>) {
+    let entries = &s.conditions().supply_vp;
+    cs.resize(entries.len(), Corridor::default());
+    for (c, e) in cs.iter_mut().zip(entries) {
+        if turn > 1 && corridor_open(s, e) {
+            c.open_once = true;
+        }
+        if c.lost_turn.is_none() && s.controller(e.hex).is_some_and(|h| h != e.side) {
+            c.lost_turn = Some(turn);
+        }
+    }
+}
+
+/// Shares over a series, per `supply_vp` entry: open at least once, open at
+/// the end, hex lost to the enemy, the median turn of the loss.
+fn corridor_summary(games: &[Game]) -> Vec<serde_json::Value> {
+    let n = games.len().max(1) as f64;
+    let k = games.iter().map(|g| g.corridors.len()).max().unwrap_or(0);
+    (0..k)
+        .map(|i| {
+            let at = |g: &Game| g.corridors.get(i).copied().unwrap_or_default();
+            let share =
+                |f: &dyn Fn(Corridor) -> bool| games.iter().filter(|g| f(at(g))).count() as f64 / n;
+            let mut lost: Vec<u32> = games.iter().filter_map(|g| at(g).lost_turn).collect();
+            lost.sort_unstable();
+            serde_json::json!({
+                "open_once": share(&|c| c.open_once),
+                "open_end": share(&|c| c.open_end),
+                "lost": lost.len() as f64 / n,
+                "lost_median_turn": lost.get(lost.len() / 2),
+            })
+        })
+        .collect()
 }
 
 /// Strength and «encircled» of every ground unit at the last look.
@@ -492,6 +545,14 @@ fn play_one(sh: &Shared, seed: u64) -> Result<Game, String> {
         }
         // The closing EndPhase: losses up to the next side's phase start (attrition).
         look(&s, &mut steps);
+        // The phase just played: the next side's phase has begun on this turn,
+        // or side 0's on the next one.
+        let played = if s.active_side() == SideId(0) && s.outcome().is_none() {
+            s.turn().saturating_sub(1)
+        } else {
+            s.turn()
+        };
+        look_corridors(&s, played, &mut g.corridors);
         if g.watch_turn.is_none() && sh.watch.iter().any(|h| s.controller(*h) == Some(SideId(0))) {
             g.watch_turn = Some(s.turn());
         }
@@ -657,6 +718,9 @@ fn play_one(sh: &Shared, seed: u64) -> Result<Game, String> {
     }
     for (side, _) in &o.vp {
         g.vp_exits.insert(side.0, s.exited_vp(*side));
+    }
+    for (c, e) in g.corridors.iter_mut().zip(&s.conditions().supply_vp) {
+        c.open_end = corridor_open(&s, e);
     }
     g.turn = s.turn();
     let mut sides: Vec<SideId> = o.vp.iter().map(|(s, _)| *s).collect();
@@ -921,6 +985,23 @@ fn render(o: &Options, games: &[Game], elapsed: f64, keys: &BTreeMap<u8, String>
             let _ = writeln!(out, "| {m} | {k} | {:.1}% |", f64::from(acc) / n * 100.0);
         }
     }
+    let corridors = corridor_summary(games);
+    if !corridors.is_empty() {
+        let _ = writeln!(out, "\n## Коридор снабжения (R-NM-02, `supply_vp`)\n\nОткрыт — снабжение стороны в гексе не ниже порога в конце фазы после хода 1.\n\n| запись | открыт хотя бы раз | открыт в конце | гекс взят противником | медианный ход потери |\n| --- | --- | --- | --- | --- |");
+        let pct = |v: &serde_json::Value| v.as_f64().unwrap_or(0.0) * 100.0;
+        for (i, c) in corridors.iter().enumerate() {
+            let _ = writeln!(
+                out,
+                "| {i} | {:.1}% | {:.1}% | {:.1}% | {} |",
+                pct(&c["open_once"]),
+                pct(&c["open_end"]),
+                pct(&c["lost"]),
+                c["lost_median_turn"]
+                    .as_u64()
+                    .map_or("—".to_owned(), |t| t.to_string())
+            );
+        }
+    }
     let mut fired: BTreeMap<&str, u32> = BTreeMap::new();
     for g in games {
         for id in &g.fired {
@@ -1090,6 +1171,7 @@ fn summary(o: &Options, games: &[Game]) -> serde_json::Value {
         "ground_attacks": games.iter().map(|g| f64::from(g.ground_attacks)).sum::<f64>() / n,
         "hq_attack_share": hq_share,
         "hq_attacks_in_contact_share": hq_contact_share,
+        "supply_corridors": corridor_summary(games),
     })
 }
 
@@ -1176,4 +1258,46 @@ fn unit_entries(
         }));
     }
     out
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn game(c: Corridor) -> Game {
+        Game {
+            corridors: vec![c],
+            ..Game::default()
+        }
+    }
+
+    /// R-NM-02 «коридор снабжения»: shares per entry and the median turn of the loss.
+    #[test]
+    fn r_nm_02_supply_corridor_metric_shares() {
+        let games = [
+            game(Corridor {
+                open_once: true,
+                open_end: true,
+                lost_turn: None,
+            }),
+            game(Corridor {
+                open_once: true,
+                open_end: false,
+                lost_turn: Some(7),
+            }),
+            game(Corridor {
+                open_once: false,
+                open_end: false,
+                lost_turn: Some(4),
+            }),
+            game(Corridor::default()),
+        ];
+        let s = corridor_summary(&games);
+        assert_eq!(s.len(), 1);
+        assert_eq!(s[0]["open_once"], 0.5);
+        assert_eq!(s[0]["open_end"], 0.25);
+        assert_eq!(s[0]["lost"], 0.5);
+        assert_eq!(s[0]["lost_median_turn"], 7);
+        assert!(corridor_summary(&[Game::default()]).is_empty());
+    }
 }
