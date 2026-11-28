@@ -3,6 +3,8 @@
   "events": [
     {
       "id": "egy_withdrawal_order",
+      "important": true,
+      "window": { "title": "event.sinai67.egy_withdrawal_order.title", "text": "event.sinai67.egy_withdrawal_order.text", "image": "sinai67_egy_withdrawal_order" },
       "_comment": "Общий приказ египетского командования об отходе (решение дизайнера 2026-11-27): 6 июня, после потери Абу-Агейлы или на 4-м ходу, что раньше. Дата — 6 июня (Oren, «Six Days of War»; Dupuy, «Elusive Victory»); точный час в источниках расходится от утра до вечера — ход 4 и условие по Абу-Агейле — предположение. Эффект: −10 морали, окопы −1, открываются гексы выхода Египта (очки за выведенные шаги, R-NM-02). Срабатывает в фазу Израиля, как в «Голанах-67».",
       "phase_of": 0,
       "trigger": {
@@ -45,6 +47,8 @@
     },
     {
       "id": "egy_ferdan_demolition",
+      "important": true,
+      "window": { "title": "event.sinai67.egy_ferdan_demolition.title", "text": "event.sinai67.egy_ferdan_demolition.text", "image": "sinai67_egy_ferdan_demolition" },
       "_comment": "R-MOVE-02, R-EVT-01: Egyptian engineers blow the El Ferdan bridge when an Israeli ground unit is within 20 km of its east end (assumption: exact date unknown).",
       "trigger": {
         "kind": "unit_near",

@@ -31,6 +31,7 @@ import type { FlagStripes } from "./render/token-geom";
 import { airTokenCenter, airTokenRadius, drawAirTokens, drawUnits, expStars, readiness, type AirToken, type Token } from "./render/units";
 import { tokenHtml } from "./ui/token-svg";
 import { pickSprite, styledSprite, type MiniIndex, type SpritesFile, type UnitStyle } from "./sprites";
+import { effectLine, paragraphs, showStory, type Effect, type EventWindow } from "./history";
 import type { HexView } from "./view";
 import type { Game } from "./wasm/ceasefire_wasm.js";
 
@@ -49,6 +50,17 @@ type Cell = { col: number; row: number };
 /** Data the panels explain numbers with (R-UI-04). */
 export interface PlayContext {
   rules: Rules;
+  /** R-UI-07: the scenario briefing (menu «Брифинг»), event windows by event id, reference keys. */
+  history?: {
+    briefing?: () => Promise<void>;
+    events: Map<string, EventWindow>;
+    /** Class → localisation key of its note (units.json `info`). */
+    classInfo: Map<string, string>;
+    /** Unit picture id → localisation key of its note (sprites.json `model_info`). */
+    modelInfo: Record<string, string>;
+    /** `?story=0`: windows become notices (checks). */
+    windows: boolean;
+  };
   /** Terrain id → max entrenchment (data/terrain.json). */
   maxEntrench: Map<string, number>;
   startDate?: string;
@@ -198,6 +210,12 @@ export class Play {
     camera.onTap = (x, y) => this.tap(x, y);
     window.addEventListener("keydown", (e) => this.key(e));
     this.aw = new AttackWindow(document.getElementById("attack")!, ru, ctx.rules);
+    // R-UI-07: «i» on a unit card opens its reference note.
+    document.getElementById("attack")!.addEventListener("click", (ev) => {
+      const b = (ev.target as HTMLElement).closest<HTMLElement>(".aw-about");
+      const u = b ? this.state.units.find((x) => String(x.id) === b.dataset.unit) : undefined;
+      if (u) this.unitInfo(u);
+    });
     camera.onHover = (x, y) => this.hover(x, y);
     // Touch: a long press is the hover («гекс под курсором» and a target's forecast).
     camera.onLongPress = (x, y) => this.hover(x, y);
@@ -1515,10 +1533,17 @@ export class Play {
     const box = modal.querySelector(".panel")!;
     box.innerHTML = `<h2>${this.t("ui.menu")}</h2><p class="muted">${this.t("ui.menu_saved")}</p>
       <div class="menu"><button id="m-continue">${this.t("ui.continue")}</button>
+      ${this.ctx.history?.briefing ? `<button id="m-briefing">${this.t("ui.briefing")}</button>` : ""}
       <button id="m-new">${this.t("ui.new_game")}</button>
       <button id="m-editor">${this.t("ui.open_editor")}</button></div>`;
     modal.style.display = "flex";
     document.getElementById("m-continue")!.onclick = () => (modal.style.display = "none");
+    const briefing = document.getElementById("m-briefing");
+    if (briefing)
+      briefing.onclick = () => {
+        modal.style.display = "none";
+        void this.ctx.history?.briefing?.();
+      };
     document.getElementById("m-new")!.onclick = () => {
       try {
         localStorage.removeItem(this.ctx.saveKey);
@@ -1605,14 +1630,64 @@ export class Play {
   private record(events: unknown[]) {
     const ctx = { ru: this.ru, units: this.known, sideName: (id: number | null) => this.sideName(id) };
     const messages: string[] = [];
+    // R-UI-07: an important event's own message goes into its window, not a notice.
+    let inWindow = false;
     for (const e of events as ({ type: string } & Record<string, unknown>)[]) {
+      if (e.type === "scenario_event_fired") {
+        const w = e.important ? this.ctx.history?.events.get(String(e.id)) : undefined;
+        inWindow = !!w && !!this.ctx.history?.windows;
+        if (w) {
+          const effect = effectLine((e.effects as Effect[]) ?? [], this.ru, (id) => this.sideName(id), (u) => this.t(String(u.name ?? ""), this.t(`unit.${String(u.class ?? "")}`)));
+          this.log.push(`<b>${this.t(w.title)}</b> — ${this.t("ui.game_effect")}: ${effect}`);
+          if (inWindow) this.stories.push({ w, effect });
+        }
+        continue;
+      }
       const line = formatEvent(e, ctx);
       if (!line) continue;
       this.log.push(line);
-      if (e.type === "message") messages.push(line);
+      if (e.type === "message" && !inWindow) messages.push(line);
     }
     if (this.log.length > LOG_LIMIT) this.log.splice(0, this.log.length - LOG_LIMIT);
     if (messages.length) this.toast(messages.join("<br>"), MESSAGE_MS);
+    void this.showStories();
+  }
+
+  /** R-UI-07: important events waiting for their window, shown one by one. */
+  private stories: { w: EventWindow; effect: string }[] = [];
+  private storyOpen = false;
+
+  private async showStories() {
+    if (this.storyOpen) return;
+    this.storyOpen = true;
+    while (this.stories.length) {
+      const { w, effect } = this.stories.shift()!;
+      const date = turnDate(this.ctx.startDate, this.ctx.startTurn, this.state.turn, this.ru);
+      await showStory({
+        title: this.t(w.title),
+        image: w.image ? `/assets/events/${w.image}.png` : undefined,
+        strip: `${date ? `${date}: ` : ""}${this.t(w.title)}`,
+        body: `${paragraphs(this.ru, w.text)}<p class="story-effect"><b>${this.t("ui.game_effect")}:</b> ${effect}</p>`,
+        button: this.t("ui.ok"),
+      });
+    }
+    this.storyOpen = false;
+  }
+
+  /** R-UI-07: the unit's reference note — the model's, else the class's. */
+  private unitInfo(u: LiveUnit) {
+    const h = this.ctx.history;
+    const tech = this.state.sides.find((x) => x.id === u.side)?.tech ?? {};
+    const base = pickSprite(this.sprites, u.class, u.nation, tech);
+    const key = (base && h?.modelInfo[base.id]) || h?.classInfo.get(u.class);
+    const text = key && this.ru[key] ? paragraphs(this.ru, key) : `<p class="muted">${this.t("ui.no_info")}</p>`;
+    const c = this.card(u);
+    void showStory({
+      title: `${c.title}${base && this.ru[`model.${base.id}`] ? ` · ${this.ru[`model.${base.id}`]}` : ""}`,
+      body: `<div class="story-unit"><div class="story-portrait">${c.portrait}</div><div>${text}</div></div>`,
+      button: this.t("ui.ok"),
+      compact: true,
+    });
   }
 
   private toast(html: string, ms = NOTICE_MS) {

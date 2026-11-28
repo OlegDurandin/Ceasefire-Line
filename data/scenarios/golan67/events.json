@@ -3,6 +3,8 @@
   "events": [
     {
       "id": "isr_reserves",
+      "important": true,
+      "window": { "title": "event.golan67.isr_reserves.title", "text": "event.golan67.isr_reserves.text", "image": "golan67_isr_reserves" },
       "phase_of": 0,
       "trigger": { "kind": "turn", "turn": 3 },
       "effects": [
@@ -19,6 +21,8 @@
     },
     {
       "id": "kuneitra_falls",
+      "important": true,
+      "window": { "title": "event.golan67.kuneitra_falls.title", "text": "event.golan67.kuneitra_falls.text", "image": "golan67_kuneitra_falls" },
       "trigger": { "kind": "hex_control", "hex": [7, 6], "side": 0 },
       "effects": [
         { "kind": "nm", "side": 1, "change": -5 },
@@ -27,6 +31,8 @@
     },
     {
       "id": "withdrawal_order",
+      "important": true,
+      "window": { "title": "event.golan67.withdrawal_order.title", "text": "event.golan67.withdrawal_order.text", "image": "golan67_withdrawal_order" },
       "_comment": "Приказ об отходе (R-EVT-01): Израиль взял Масаду (северный прорыв) или NM Сирии опустилась ниже стартовых 70%. Исторически Кунейтра пала после приказа, почти без боя. Срабатывает в фазу Израиля, чтобы −2 окопа действовали при его атаках.",
       "phase_of": 0,
       "trigger": { "kind": "any_of", "of": [
@@ -42,6 +48,8 @@
     },
     {
       "id": "superpower_pressure",
+      "important": true,
+      "window": { "title": "event.golan67.superpower_pressure.title", "text": "event.golan67.superpower_pressure.text", "image": "golan67_superpower_pressure" },
       "trigger": { "kind": "losses_at_least", "side": 1, "steps": 15 },
       "conditions": [ { "kind": "turn", "turn": 2 } ],
       "effects": [

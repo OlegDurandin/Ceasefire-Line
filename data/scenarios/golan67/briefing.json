@@ -1,0 +1,18 @@
+{
+  "_comment": "R-UI-07: брифинг сценария. Тексты — ключи локализации (пишет дизайнер, пока TODO); условия победы и «Отличия от истории» клиент собирает из scenario.json.",
+  "image": "briefing_golan67",
+  "title": "briefing.golan67.title",
+  "dates": "briefing.golan67.dates",
+  "essay": "briefing.golan67.essay",
+  "question": "briefing.golan67.question",
+  "roles": {
+    "isr": "briefing.golan67.role.isr",
+    "syr": "briefing.golan67.role.syr"
+  },
+  "sources": [
+    "M. Oren. Six Days of War: June 1967 and the Making of the Modern Middle East. 2002.",
+    "T. N. Dupuy. Elusive Victory: The Arab-Israeli Wars, 1947–1974. 1978.",
+    "Jewish Virtual Library. Day-by-Day Action Review of the Six-Day War. https://jewishvirtuallibrary.org/day-by-day-action-review-of-the-six-day-war",
+    "Совет по сохранению наследия: «Бронетанковая бригада „Харель“». https://shimur.org/signs/חטיבת-שריון-הראל/"
+  ]
+}

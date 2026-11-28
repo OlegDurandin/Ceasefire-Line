@@ -26,6 +26,9 @@ const OBJECT_SIZE: u32 = 512;
 const EXPECTED_TERRAIN: usize = 10;
 const EXPECTED_UNITS: usize = 37;
 const EXPECTED_OBJECTS: usize = 2;
+/// R-UI-07 illustrations (16:9): briefings and event windows.
+const BRIEFING_SIZE: (u32, u32) = (1600, 900);
+const EVENT_SIZE: (u32, u32) = (1200, 675);
 const SPRITE_SIDES: [&str; 2] = ["isr", "egy_syr"];
 /// Miniatures pack (style `miniature`): `assets/units_minis/<side>/<id>.png`.
 const MINIS_DIR: &str = "units_minis";
@@ -126,6 +129,9 @@ pub struct SpritesFile {
     pub helicopter_transfer: BTreeMap<String, String>,
     /// Map object role → id in assets/objects.
     pub map_objects: BTreeMap<String, String>,
+    /// R-UI-07: unit picture id → localisation key of the model's reference note.
+    #[serde(default)]
+    pub model_info: BTreeMap<String, String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -354,6 +360,18 @@ fn unit_checks(img: &DynamicImage) -> Vec<Status> {
     out
 }
 
+/// R-UI-07: an illustration is a readable PNG of the exact size (opaque).
+fn check_illustration(path: &Path, (w, h): (u32, u32)) -> Vec<Status> {
+    if !path.is_file() {
+        return vec![Status::Missing];
+    }
+    match image::image_dimensions(path) {
+        Ok(d) if d == (w, h) => vec![Status::Ok],
+        Ok((a, b)) => vec![Status::WrongSize(a, b)],
+        Err(e) => vec![Status::Unreadable(e.to_string())],
+    }
+}
+
 fn check_file(
     path: &Path,
     size: u32,
@@ -547,6 +565,22 @@ pub fn run(o: &Options) -> Result<(), String> {
                 object_n += 1;
                 (format!("objects/{}.png", e.id), OBJECT_SIZE, false)
             }
+            (group @ ("briefing" | "event"), None) => {
+                let (dir, size) = if group == "briefing" {
+                    ("briefing", BRIEFING_SIZE)
+                } else {
+                    ("events", EVENT_SIZE)
+                };
+                let rel = format!("{dir}/{}.png", e.id);
+                let statuses = check_illustration(&o.assets.join(&rel), size);
+                rows.push(Row {
+                    id: e.id.clone(),
+                    path: rel,
+                    statuses,
+                    notes: vec![],
+                });
+                continue;
+            }
             _ => {
                 rows.push(Row {
                     id: e.id.clone(),
@@ -590,6 +624,14 @@ pub fn run(o: &Options) -> Result<(), String> {
             .map_err(|e| format!("{}: {e}", sprites_path.display()))?,
     )
     .map_err(|e| format!("sprites.json: {e}"))?;
+    // R-UI-07: reference notes only for unit pictures the manifest has.
+    for id in sprites.model_info.keys() {
+        if !manifest.iter().any(|e| e.group == "unit" && &e.id == id) {
+            problems.push(format!(
+                "sprites.json model_info: {id} is not a unit picture"
+            ));
+        }
+    }
     let (minis, mini_problems, fallback) = check_minis(o, &sprites)?;
     problems.extend(mini_problems);
 

@@ -1,0 +1,19 @@
+{
+  "_comment": "R-UI-07: брифинг сценария. Тексты — ключи локализации (пишет дизайнер, пока TODO); условия победы и «Отличия от истории» клиент собирает из scenario.json.",
+  "image": "briefing_sinai67",
+  "title": "briefing.sinai67.title",
+  "dates": "briefing.sinai67.dates",
+  "essay": "briefing.sinai67.essay",
+  "question": "briefing.sinai67.question",
+  "roles": {
+    "isr": "briefing.sinai67.role.isr",
+    "egy": "briefing.sinai67.role.egy"
+  },
+  "sources": [
+    "M. Oren. Six Days of War: June 1967 and the Making of the Modern Middle East. 2002.",
+    "T. N. Dupuy. Elusive Victory: The Arab-Israeli Wars, 1947–1974. 1978.",
+    "S. Dunstan. The Six Day War 1967: Sinai. Osprey, 2009.",
+    "Архив Министерства обороны Израиля: «The Egyptian Front». https://archives.mod.gov.il/sites/English/Exhibitions/The_Six-Day_War/Pages/The-Egyptian-Front.aspx",
+    "Wikipedia: Six-Day War order of battle. https://en.wikipedia.org/wiki/Six-Day_War_order_of_battle"
+  ]
+}

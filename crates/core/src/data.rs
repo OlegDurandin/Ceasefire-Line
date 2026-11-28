@@ -685,6 +685,9 @@ fn default_entrench_per_turn() -> u32 {
 #[serde(deny_unknown_fields)]
 pub struct UnitClass {
     pub id: String,
+    /// R-UI-07: localisation key of the class's reference note; the rules ignore it.
+    #[serde(default)]
+    pub info: Option<String>,
     pub target_class: TargetClass,
     pub cost_mpp: u32,
     /// Ground and naval units.

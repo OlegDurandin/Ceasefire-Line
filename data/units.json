@@ -1,28 +1,28 @@
 {
   "units": [
     {
-      "id": "infantry", "target_class": "soft", "cost_mpp": 70, "ap": 3, "strikes": 1,
+      "id": "infantry", "info": "info.unit.infantry", "target_class": "soft", "cost_mpp": 70, "ap": 3, "strikes": 1,
       "attack": { "soft": 4, "hard": 2, "air": 1, "naval": 0 },
       "defense": { "ground": 4, "air": 3 },
       "exerts_zoc": true, "entrench_per_turn": 2,
       "tags": ["boat_crossing"]
     },
     {
-      "id": "mech", "target_class": "hard", "cost_mpp": 80, "ap": 4, "strikes": 1,
+      "id": "mech", "info": "info.unit.mech", "target_class": "hard", "cost_mpp": 80, "ap": 4, "strikes": 1,
       "attack": { "soft": 4, "hard": 3, "air": 1, "naval": 0 },
       "defense": { "ground": 4, "air": 3 },
       "exerts_zoc": true,
       "tags": ["exploitation", "occupy_hex"]
     },
     {
-      "id": "tank", "target_class": "hard", "cost_mpp": 105, "ap": 5, "strikes": 2,
+      "id": "tank", "info": "info.unit.tank", "target_class": "hard", "cost_mpp": 105, "ap": 5, "strikes": 2,
       "attack": { "soft": 5, "hard": 5, "air": 0, "naval": 0 },
       "defense": { "ground": 5, "air": 2 },
       "exerts_zoc": true,
       "tags": ["exploitation", "occupy_hex"]
     },
     {
-      "id": "commando", "target_class": "soft", "cost_mpp": 70, "ap": 3, "strikes": 1,
+      "id": "commando", "info": "info.unit.commando", "target_class": "soft", "cost_mpp": 70, "ap": 3, "strikes": 1,
       "attack": { "soft": 3, "hard": 3, "air": 0, "naval": 0 },
       "defense": { "ground": 3, "air": 2 },
       "heli_range_km": 80,
@@ -30,7 +30,7 @@
       "tags": ["heli_transfer", "night_combat"]
     },
     {
-      "id": "artillery", "target_class": "soft", "cost_mpp": 50, "ap": 3, "strikes": 1,
+      "id": "artillery", "info": "info.unit.artillery", "target_class": "soft", "cost_mpp": 50, "ap": 3, "strikes": 1,
       "attack": { "soft": 5, "hard": 3, "air": 0, "naval": 1 },
       "defense": { "ground": 2, "air": 2 },
       "range_km": 20,
@@ -38,14 +38,14 @@
       "tags": ["bombard"]
     },
     {
-      "id": "engineer", "target_class": "soft", "cost_mpp": 50, "ap": 3, "strikes": 0,
+      "id": "engineer", "info": "info.unit.engineer", "target_class": "soft", "cost_mpp": 50, "ap": 3, "strikes": 0,
       "attack": { "soft": 0, "hard": 0, "air": 0, "naval": 0 },
       "defense": { "ground": 2, "air": 1 },
       "exerts_zoc": false,
       "tags": ["build_bridge"]
     },
     {
-      "id": "sam_static", "target_class": "soft", "cost_mpp": 90, "ap": 1, "strikes": 0,
+      "id": "sam_static", "info": "info.unit.sam_static", "target_class": "soft", "cost_mpp": 90, "ap": 1, "strikes": 0,
       "attack": { "soft": 0, "hard": 0, "air": 6, "naval": 0 },
       "defense": { "ground": 2, "air": 5 },
       "sam_radius_km": 30,
@@ -53,7 +53,7 @@
       "tags": ["sam", "no_fire_after_move"]
     },
     {
-      "id": "sam_mobile", "target_class": "hard", "cost_mpp": 110, "ap": 3, "strikes": 0,
+      "id": "sam_mobile", "info": "info.unit.sam_mobile", "target_class": "hard", "cost_mpp": 110, "ap": 3, "strikes": 0,
       "attack": { "soft": 0, "hard": 0, "air": 7, "naval": 0 },
       "defense": { "ground": 3, "air": 6 },
       "sam_radius_km": 20,
@@ -61,21 +61,21 @@
       "tags": ["sam"]
     },
     {
-      "id": "fighter", "target_class": "air", "cost_mpp": 120, "radius_km": 250, "strikes": 1,
+      "id": "fighter", "info": "info.unit.fighter", "target_class": "air", "cost_mpp": 120, "radius_km": 250, "strikes": 1,
       "attack": { "soft": 1, "hard": 1, "air": 6, "naval": 1 },
       "defense": { "ground": null, "air": 5 },
       "exerts_zoc": false,
       "tags": ["intercept", "escort"]
     },
     {
-      "id": "strike", "target_class": "air", "cost_mpp": 130, "radius_km": 300, "strikes": 1,
+      "id": "strike", "info": "info.unit.strike", "target_class": "air", "cost_mpp": 130, "radius_km": 300, "strikes": 1,
       "attack": { "soft": 5, "hard": 4, "air": 2, "naval": 4 },
       "defense": { "ground": null, "air": 4 },
       "exerts_zoc": false,
       "tags": ["strike_infrastructure", "sead"]
     },
     {
-      "id": "missile_boat", "target_class": "naval", "cost_mpp": 60, "ap": 8, "strikes": 1,
+      "id": "missile_boat", "info": "info.unit.missile_boat", "target_class": "naval", "cost_mpp": 60, "ap": 8, "strikes": 1,
       "attack": { "soft": 2, "hard": 1, "air": 1, "naval": 5 },
       "defense": { "ground": 3, "air": 2 },
       "range_km": 10,
@@ -83,7 +83,7 @@
       "tags": ["blockade", "shore_bombard"]
     },
     {
-      "id": "hq", "target_class": "soft", "cost_mpp": 120, "ap": 4, "strikes": 0,
+      "id": "hq", "info": "info.unit.hq", "target_class": "soft", "cost_mpp": 120, "ap": 4, "strikes": 0,
       "attack": { "soft": 1, "hard": 1, "air": 0, "naval": 0 },
       "defense": { "ground": 3, "air": 2 },
       "exerts_zoc": false, "strips_entrenchment": 0,

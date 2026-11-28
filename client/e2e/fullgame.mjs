@@ -26,6 +26,20 @@ await page.waitForSelector("#mode-hotseat", { visible: true, timeout: 60000 });
 await page.click("#mode-hotseat");
 await page.waitForFunction(() => document.getElementById("top")?.textContent?.includes("Ход"));
 await new Promise(r => setTimeout(r, 600));
+// R-UI-07: a new game opens with the briefing (picture, victory conditions from the data).
+await page.waitForSelector("#story .story-ok", { visible: true, timeout: 10000 });
+await page.waitForFunction(() => { const i = document.querySelector("#story .story-img"); return i && i.complete && i.naturalWidth > 0; }, { timeout: 10000 });
+const briefing = await page.evaluate(() => document.querySelector("#story")?.innerText ?? "");
+if (process.env.E2E_SHOTS) await page.screenshot({ path: `${process.env.E2E_SHOTS}/00-briefing.png` });
+await page.click("#story .story-ok");
+// Event windows (important events) close by themselves during the run; each one is counted.
+await page.evaluate(() => {
+  window.__stories = [];
+  setInterval(() => {
+    const b = document.querySelector("#story .story-ok");
+    if (b && document.getElementById("story").style.display === "flex") { window.__stories.push(document.querySelector("#story .story-title")?.textContent ?? ""); b.click(); }
+  }, 100);
+});
 const wait = (ms) => new Promise(r => setTimeout(r, ms));
 const state = () => page.evaluate(() => JSON.parse(window.__cl.game.state()));
 const shot = async (name) => { if (shots) await page.screenshot({ path: `${shots}/${name}.png` }); };
@@ -33,6 +47,7 @@ const stats = { attacks: 0, moves: 0, phases: 0, offscreen: 0, noReach: 0, boost
 /** HUD checks: name → passed. */
 const ui = {};
 const check = (name, ok) => { ui[name] = ui[name] || !!ok; };
+check("briefing: victory conditions", briefing.includes("Условия победы") && briefing.includes("Кунейтра"));
 // Shown on screen (fixed panels have no offsetParent, so the box decides).
 const visible = (sel) => page.evaluate((sel) => { const e = document.querySelector(sel); if (!e) return false; const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0 && getComputedStyle(e).visibility !== "hidden"; }, sel);
 const click = async (sel) => { if (!(await visible(sel))) return false; await page.click(sel); await wait(150); return true; };
@@ -76,6 +91,8 @@ async function hudTour() {
   // back to the front: N selects and centres the next unit
   await page.keyboard.press("n"); await wait(200);
   check("N selects a unit", await page.evaluate(() => !!document.querySelector("#attack .aw-card.left .aw-title")));
+  // R-UI-07: «i» on the card opens the unit's note (closed by the watcher above).
+  if (await click("#attack .aw-card.left .aw-about")) { await wait(300); check("unit note", (await page.evaluate(() => window.__stories.length)) > 0); }
   await page.keyboard.press("i"); await wait(150);
   check("i: hex mode", await page.evaluate(() => !!document.querySelector("#attack .aw.hexmode")));
   await page.keyboard.press("i"); await wait(150);
@@ -212,6 +229,8 @@ const missing = wanted.filter(c => !used.has(c));
 console.log("outcome:", JSON.stringify(s.outcome), "turn", s.turn, JSON.stringify(stats));
 console.log("commands given:", [...used].sort().join(", "));
 console.log("not in this scenario:", [classes.has("engineer") ? null : "build_bridge (no engineers)", "purchase (no force limits)", stats.boosts ? null : "buy_tech_boost (no boosts)"].filter(Boolean).join("; "));
+check("event windows", (await page.evaluate(() => window.__stories.length)) > 1);
+console.log("story windows:", JSON.stringify(await page.evaluate(() => window.__stories)));
 console.log("HUD checks:", Object.entries(ui).map(([k, v]) => `${v ? "ok" : "FAIL"} ${k}`).join(" · "));
 console.log("modal:", await page.evaluate(() => document.querySelector("#modal")?.style.display + " | " + document.querySelector("#modal .panel")?.innerText.replace(/\n/g, " / ")));
 console.log("errors:", JSON.stringify(errs));

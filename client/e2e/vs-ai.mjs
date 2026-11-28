@@ -17,6 +17,8 @@ await page.goto(BASE, { waitUntil: "networkidle0", timeout: 60000 });
 await page.evaluate(() => localStorage.clear());
 await page.goto(`${BASE}?vs=isr`, { waitUntil: "networkidle0", timeout: 60000 });
 await page.waitForFunction(() => document.getElementById("top")?.textContent?.includes("Ход"));
+// R-UI-07: the briefing and event windows close by themselves.
+await page.evaluate(() => setInterval(() => { const b = document.querySelector("#story .story-ok"); if (b && document.getElementById("story").style.display === "flex") b.click(); }, 100));
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 const state = () => page.evaluate(() => JSON.parse(window.__cl.game.state()));
 const HUMAN = 0;

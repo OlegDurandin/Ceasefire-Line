@@ -218,6 +218,7 @@ export class AttackWindow {
     return `<div class="aw-card ${side}">
       <div class="aw-portrait">${c.portrait}</div>
       <div class="aw-info">
+        <button type="button" class="aw-about" data-unit="${c.unit.id}" aria-label="${attrText(this.t("ui.info"))}" title="${attrText(this.t("ui.info"))}">i</button>
         <div class="aw-title">${c.title}</div>
         <div class="aw-sub" title="${attrText(c.subtitle)}">${c.subtitle}</div>
         ${stars}

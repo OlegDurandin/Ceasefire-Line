@@ -21,6 +21,7 @@ import { BakedMap, pickLevel, worldPerBakePx, type TilesMeta } from "./render/ti
 import { drawUnits, expStars, sideColors, type Token } from "./render/units";
 import { miniIndex, pickSprite, styledSprite, terrainTextureUrl, type MiniIndex, type SpritesFile, type UnitStyle } from "./sprites";
 import type { ScenarioView } from "./view";
+import { briefingWindow, showStory, type BriefingFile, type EventWindow, type ScenarioFacts } from "./history";
 import init, { Core, Game } from "./wasm/ceasefire_wasm.js";
 
 /** Hex corner radius in world pixels. */
@@ -77,11 +78,21 @@ async function main() {
     : new Map();
   const ru = JSON.parse(ruText) as Record<string, string>;
   const base = `/data/scenarios/${SCENARIO}`;
-  const [scenario, map, events] = await Promise.all([
+  const [scenario, map, events, briefingText] = await Promise.all([
     text(`${base}/scenario.json`),
     text(`${base}/map.json`),
     optionalText(`${base}/events.json`),
+    optionalText(`${base}/briefing.json`),
   ]);
+  // R-UI-07: briefing, event windows and reference keys (texts are locale keys).
+  const briefing = briefingText ? (JSON.parse(briefingText) as BriefingFile) : null;
+  const eventWindows = new Map<string, EventWindow>(
+    events
+      ? (JSON.parse(events) as { events: { id: string; important?: boolean; window?: EventWindow }[] }).events
+          .filter((e) => e.important && e.window)
+          .map((e) => [e.id, e.window!] as const)
+      : [],
+  );
   const scenarioSides = (JSON.parse(scenario) as { sides: { id: number; key: string; color?: string }[] }).sides;
   const sideKeys = scenarioSides.reduce<string[]>((acc, s) => {
     acc[s.id] = s.key;
@@ -289,6 +300,7 @@ async function main() {
       }
     }
     // R-AI-01: a new game asks who plays (or `?vs=hotseat|<side key>`).
+    const newGame = aiSide === undefined;
     if (aiSide === undefined) {
       const index = await optionalText("/data/scenarios/index.json");
       const scenarios = index ? ((JSON.parse(index) as { scenarios?: string[] }).scenarios ?? [SCENARIO]) : [SCENARIO];
@@ -298,6 +310,22 @@ async function main() {
     if (aiSeed === null) aiSeed = crypto.getRandomValues(new Uint32Array(1))[0]!;
     game.setAi(aiText, scenario, aiSeed);
     devGame = game;
+    const facts = JSON.parse(scenario) as ScenarioFacts;
+    const sideLabel = (id: number) => ru[`side.${sideKeys[id] ?? ""}`] ?? String(id);
+    const objectiveName = (hex: [number, number]) => ru[`place.${SCENARIO}.${hex[0]}_${hex[1]}`] ?? `[${hex[0]}, ${hex[1]}]`;
+    const suddenDeath = (JSON.parse(rules) as { national_morale: { sudden_death_pct: number } }).national_morale.sudden_death_pct;
+    const showBriefing = briefing
+      ? () =>
+          showStory(
+            briefingWindow(briefing, facts, ru, {
+              sideName: sideLabel,
+              objectiveName,
+              suddenDeath,
+              role: aiSide === null || aiSide === undefined ? undefined : sideKeys[1 - aiSide],
+            }),
+          )
+      : undefined;
+    const stories = PARAMS.get("story") !== "0";
     const play = new Play(game, world, camera, sprites, ru, sideKeys, colors, HEX_SIZE, { terrain: terrainTex, bridge, bridgeDestroyed }, {
       rules: JSON.parse(rules) as Rules,
       maxEntrench: new Map(
@@ -328,6 +356,15 @@ async function main() {
         return acc;
       }, []),
       classAp: new Map((JSON.parse(units) as { units: { id: string; ap?: number }[] }).units.filter((u) => u.ap !== undefined).map((u) => [u.id, u.ap!] as const)),
+      history: {
+        briefing: showBriefing,
+        events: eventWindows,
+        classInfo: new Map(
+          (JSON.parse(units) as { units: { id: string; info?: string }[] }).units.filter((u) => u.info).map((u) => [u.id, u.info!] as const),
+        ),
+        modelInfo: (sprites as { model_info?: Record<string, string> }).model_info ?? {},
+        windows: stories,
+      },
     });
     const onCamera = camera.onChange;
     camera.onChange = (v) => {
@@ -352,6 +389,8 @@ async function main() {
     camera.fit();
     window.addEventListener("resize", () => camera.setBounds(mapRect, insets()));
     if (!view.issues.length) panel.style.display = "none";
+    // R-UI-07: a new game opens with the briefing.
+    if (newGame && stories && showBriefing) void showBriefing();
   }
 
   // Dev-only hook for end-to-end checks: hex → screen coordinates.

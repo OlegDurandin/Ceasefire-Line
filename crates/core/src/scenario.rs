@@ -551,6 +551,10 @@ struct EventFile {
     /// R-UI-07: show as a window until clicked.
     #[serde(default)]
     important: bool,
+    /// R-UI-07: the window's title and text keys and illustration id (client data).
+    #[serde(default)]
+    #[allow(dead_code)]
+    window: Option<serde_json::Value>,
     trigger: PredicateFile,
     #[serde(default)]
     conditions: Vec<PredicateFile>,

@@ -488,5 +488,101 @@
     "width": 512,
     "height": 512,
     "prompt": "Painterly gouache realism, muted natural colors, upper-left lighting, no text, flags or insignia. Air unit token, 512×512, PNG RGBA with transparent background, three-quarter aerial view, heading upper-left, 1967–1973 era, all four corners fully transparent, at least 8 px transparent padding, no clouds, no ground, no scenery. Subject: MiG-17 fighter-bomber in flight, carrying rockets"
+  },
+  {
+    "id": "briefing_golan67",
+    "file": "briefing/briefing_golan67.png",
+    "group": "briefing",
+    "side": null,
+    "template": "illustration",
+    "width": 1600,
+    "height": 900,
+    "source": "сгенерировано (ChatGPT, 2026-11-28)",
+    "prompt_version": "r-ui-07 v1",
+    "prompt": "Painterly gouache realism, muted natural colors, soft upper-left lighting, visible brush texture, mid-century military history book plate; no text, flags, insignia or identifiable people; neutral tone, no gore; period-correct June 1967 equipment. Generated 1536×1024, cropped to 16:9. Subject: Golan Heights, 9 June 1967: armoured column climbs the basalt escarpment above the Hula valley toward fortified positions on the rim."
+  },
+  {
+    "id": "briefing_sinai67",
+    "file": "briefing/briefing_sinai67.png",
+    "group": "briefing",
+    "side": null,
+    "template": "illustration",
+    "width": 1600,
+    "height": 900,
+    "source": "сгенерировано (ChatGPT, 2026-11-28)",
+    "prompt_version": "r-ui-07 v1",
+    "prompt": "Painterly gouache realism, muted natural colors, soft upper-left lighting, visible brush texture, mid-century military history book plate; no text, flags, insignia or identifiable people; neutral tone, no gore; period-correct June 1967 equipment. Generated 1536×1024, cropped to 16:9. Subject: Sinai, 5 June 1967: armoured columns with dust trails across a gravel plain between dune belts, entrenched positions on a low ridge."
+  },
+  {
+    "id": "golan67_isr_reserves",
+    "file": "events/golan67_isr_reserves.png",
+    "group": "event",
+    "side": null,
+    "template": "illustration",
+    "width": 1200,
+    "height": 675,
+    "source": "сгенерировано (ChatGPT, 2026-11-28)",
+    "prompt_version": "r-ui-07 v1",
+    "prompt": "Painterly gouache realism, muted natural colors, soft upper-left lighting, visible brush texture, mid-century military history book plate; no text, flags, insignia or identifiable people; neutral tone, no gore; period-correct June 1967 equipment. Generated 1536×1024, cropped to 16:9. Subject: Reserve armour and half-tracks move up a road from the valley toward the plateau at late afternoon."
+  },
+  {
+    "id": "golan67_kuneitra_falls",
+    "file": "events/golan67_kuneitra_falls.png",
+    "group": "event",
+    "side": null,
+    "template": "illustration",
+    "width": 1200,
+    "height": 675,
+    "source": "сгенерировано (ChatGPT, 2026-11-28)",
+    "prompt_version": "r-ui-07 v1",
+    "prompt": "Painterly gouache realism, muted natural colors, soft upper-left lighting, visible brush texture, mid-century military history book plate; no text, flags, insignia or identifiable people; neutral tone, no gore; period-correct June 1967 equipment. Generated 1536×1024, cropped to 16:9. Subject: A small stone town on a basalt plateau, empty streets, abandoned vehicles, thin smoke, tanks approaching."
+  },
+  {
+    "id": "golan67_withdrawal_order",
+    "file": "events/golan67_withdrawal_order.png",
+    "group": "event",
+    "side": null,
+    "template": "illustration",
+    "width": 1200,
+    "height": 675,
+    "source": "сгенерировано (ChatGPT, 2026-11-28)",
+    "prompt_version": "r-ui-07 v1",
+    "prompt": "Painterly gouache realism, muted natural colors, soft upper-left lighting, visible brush texture, mid-century military history book plate; no text, flags, insignia or identifiable people; neutral tone, no gore; period-correct June 1967 equipment. Generated 1536×1024, cropped to 16:9. Subject: Trucks, towed guns and tanks withdraw east along a plateau road at dusk; empty trenches in the foreground."
+  },
+  {
+    "id": "golan67_superpower_pressure",
+    "file": "events/golan67_superpower_pressure.png",
+    "group": "event",
+    "side": null,
+    "template": "illustration",
+    "width": 1200,
+    "height": 675,
+    "source": "сгенерировано (ChatGPT, 2026-11-28)",
+    "prompt_version": "r-ui-07 v1",
+    "prompt": "Painterly gouache realism, muted natural colors, soft upper-left lighting, visible brush texture, mid-century military history book plate; no text, flags, insignia or identifiable people; neutral tone, no gore; period-correct June 1967 equipment. Generated 1536×1024, cropped to 16:9. Subject: Field command post at night: map table under a lamp, field telephones and radio, figures in silhouette; silent guns outside."
+  },
+  {
+    "id": "sinai67_egy_withdrawal_order",
+    "file": "events/sinai67_egy_withdrawal_order.png",
+    "group": "event",
+    "side": null,
+    "template": "illustration",
+    "width": 1200,
+    "height": 675,
+    "source": "сгенерировано (ChatGPT, 2026-11-28)",
+    "prompt_version": "r-ui-07 v1",
+    "prompt": "Painterly gouache realism, muted natural colors, soft upper-left lighting, visible brush texture, mid-century military history book plate; no text, flags, insignia or identifiable people; neutral tone, no gore; period-correct June 1967 equipment. Generated 1536×1024, cropped to 16:9. Subject: Long columns of vehicles stream west along a desert road toward a mountain pass at sunset."
+  },
+  {
+    "id": "sinai67_egy_ferdan_demolition",
+    "file": "events/sinai67_egy_ferdan_demolition.png",
+    "group": "event",
+    "side": null,
+    "template": "illustration",
+    "width": 1200,
+    "height": 675,
+    "source": "сгенерировано (ChatGPT, 2026-11-28)",
+    "prompt_version": "r-ui-07 v1",
+    "prompt": "Painterly gouache realism, muted natural colors, soft upper-left lighting, visible brush texture, mid-century military history book plate; no text, flags, insignia or identifiable people; neutral tone, no gore; period-correct June 1967 equipment. Generated 1536×1024, cropped to 16:9. Subject: A steel swing bridge over the Suez Canal, its span broken and sagging into the water after a demolition."
   }
 ]

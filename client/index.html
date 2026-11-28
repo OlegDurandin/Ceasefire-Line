@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
     <title>Ceasefire Line</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600&family=PT+Sans:wght@400;700&display=swap" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600&family=PT+Sans:wght@400;700&family=PT+Serif:wght@400;700&display=swap" />
     <link rel="icon" href="data:," />
     <style>
       :root { --panel: #1c1a17; --bronze: #b08d57; --text: #e8e1d3; --muted: #a49a88; --good: #9bc28a; --bad: #e08a7a; }
@@ -37,6 +37,31 @@
       #modal .panel { position: static; padding: 18px 24px; max-width: min(420px, calc(100vw - 32px)); text-align: center; }
       #modal h2 { margin: 0 0 8px; color: var(--bronze); }
       button:disabled { opacity: 0.45; cursor: default; }
+      /* R-UI-07: story window (briefing, important events, unit notes) — dark frame, serif small caps, inset picture, wide strip below. */
+      #story { position: fixed; inset: 0; z-index: 50; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 14px; background: rgba(8,7,6,0.55); padding: 16px; box-sizing: border-box; }
+      #story .story-box { width: min(820px, 100%); max-height: calc(100vh - 120px); display: flex; flex-direction: column; color: var(--text);
+        background: repeating-linear-gradient(45deg, rgba(255,240,210,0.025) 0 1px, transparent 1px 3px), linear-gradient(#34302b, #26231f);
+        border: 1px solid #0d0c0a; box-shadow: 0 0 0 1px #4a443b inset, 0 18px 50px rgba(0,0,0,0.65); }
+      #story .story-box.compact { width: min(520px, 100%); }
+      #story .story-title { font-family: 'PT Serif', Georgia, serif; font-variant: small-caps; letter-spacing: 0.06em; font-size: 26px; text-align: center; color: #f1ead9;
+        padding: 14px 18px 12px; border-bottom: 1px solid #0d0c0a; box-shadow: 0 1px 0 #4a443b; background: rgba(0,0,0,0.18); }
+      #story .story-frame { margin: 18px 36px 0; border: 1px solid #0b0a09; box-shadow: 0 0 0 3px #3b362f, 0 0 0 4px #15130f, inset 0 0 18px rgba(0,0,0,0.6); background: #191714; aspect-ratio: 16 / 9; overflow: hidden; flex: none; }
+      #story .compact .story-frame { display: none; }
+      #story .story-img { display: block; width: 100%; height: 100%; object-fit: cover; }
+      #story .story-plate { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: radial-gradient(ellipse at 50% 45%, #2b2722, #121110); }
+      #story .story-plate span { font-family: 'PT Serif', Georgia, serif; font-variant: small-caps; letter-spacing: 0.08em; font-size: 22px; color: #8d8473; padding: 0 24px; text-align: center; }
+      #story .story-body { padding: 14px 36px 4px; overflow: auto; font-family: 'PT Serif', Georgia, serif; font-size: 15px; line-height: 1.5; }
+      #story .story-body h3 { font-family: 'PT Serif', Georgia, serif; font-variant: small-caps; letter-spacing: 0.05em; font-size: 17px; color: var(--bronze); margin: 14px 0 4px; }
+      #story .story-body ul { margin: 4px 0; padding-left: 20px; }
+      #story .story-body p { margin: 6px 0; }
+      #story .story-effect { margin-top: 10px; padding-top: 8px; border-top: 1px solid #4a443b; font-family: system-ui, sans-serif; font-size: 13px; color: #d9cdb5; }
+      #story .story-unit { display: flex; gap: 14px; align-items: flex-start; }
+      #story .story-portrait { flex: none; }
+      #story .story-actions { padding: 10px 36px 16px; text-align: right; }
+      #story .story-strip { width: min(1300px, 100%); box-sizing: border-box; padding: 12px 28px; font-family: 'PT Serif', Georgia, serif; font-variant: small-caps; letter-spacing: 0.04em; font-size: 24px; color: #f1ead9;
+        background: rgba(20,18,15,0.88); border: 1px solid #0d0c0a; box-shadow: 0 0 0 1px #4a443b inset; }
+      @media (max-width: 640px) { #story .story-title { font-size: 20px; } #story .story-frame, #story .story-body, #story .story-actions { margin-left: 0; margin-right: 0; padding-left: 14px; padding-right: 14px; } #story .story-frame { margin: 12px 14px 0; } #story .story-strip { font-size: 17px; padding: 10px 14px; } }
+      .aw-about { float: right; width: 22px; height: 22px; padding: 0; border-radius: 50%; font: italic 700 13px/20px 'PT Serif', Georgia, serif; }
       button.on { background: #4a3f2c; }
       #panel select { background: #2a2620; color: var(--text); border: 1px solid var(--bronze); border-radius: 4px; }
       #panel { max-height: calc(100vh - 140px); overflow: auto; }
