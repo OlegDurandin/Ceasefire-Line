@@ -234,7 +234,7 @@ export function briefingWindow(b: BriefingFile, sc: ScenarioFacts, ru: Locale, o
   ].join("");
   return {
     title: t(b.title),
-    image: `/assets/briefing/${b.image}.png`,
+    image: `/assets/briefing/${b.image}.webp`,
     strip: `${t(b.dates)}: ${t(b.title)}`,
     body,
     button: t("ui.to_battle"),

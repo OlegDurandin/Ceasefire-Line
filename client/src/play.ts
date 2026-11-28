@@ -1665,7 +1665,7 @@ export class Play {
       const date = turnDate(this.ctx.startDate, this.ctx.startTurn, this.state.turn, this.ru);
       await showStory({
         title: this.t(w.title),
-        image: w.image ? `/assets/events/${w.image}.png` : undefined,
+        image: w.image ? `/assets/events/${w.image}.webp` : undefined,
         strip: `${date ? `${date}: ` : ""}${this.t(w.title)}`,
         body: `${paragraphs(this.ru, w.text)}<p class="story-effect"><b>${this.t("ui.game_effect")}:</b> ${effect}</p>`,
         button: this.t("ui.ok"),

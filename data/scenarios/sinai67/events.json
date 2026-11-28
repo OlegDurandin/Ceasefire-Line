@@ -76,6 +76,14 @@
           "key": "event.ferdan_demolished"
         }
       ]
+    },
+    {
+      "id": "superpower_pressure",
+      "important": true,
+      "window": { "title": "event.sinai67.superpower_pressure.title", "text": "event.sinai67.superpower_pressure.text", "image": "sinai67_superpower_pressure" },
+      "_comment": "R-UI-07 (решение дизайнера 2026-11-28): давление сверхдержав и перемирие. Ход 7 — 8 июня, день; прекращение огня по дате сценария (ход 8). Эффектов нет, чтобы не менять баланс (предположение агента; сдвиг срока — как в «Голанах-67» — по решению дизайнера). Картинки пока нет — заглушка.",
+      "trigger": { "kind": "turn", "turn": 7 },
+      "effects": []
     }
   ]
 }

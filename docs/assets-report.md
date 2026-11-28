@@ -1,6 +1,6 @@
 # Отчёт по ассетам
 
-Сгенерирован `sim assets-check`. Файлов по манифесту: 57, в порядке: 57. PNG всего: 49.2 МБ, из них игровые (terrain + units + objects): 35.9 МБ.
+Сгенерирован `sim assets-check`. Файлов по манифесту: 57, в порядке: 57. PNG всего: 35.9 МБ, из них игровые (terrain + units + objects): 35.9 МБ.
 
 Пороги: шов — отношение средней разницы RGB противоположных краёв к средней разнице соседних пикселей внутри > 1.5; у юнитов и объектов карты прозрачная рамка 1 px. Модели техники визуально не оценивались.
 
@@ -57,14 +57,14 @@
 | isr_paratroopers | `units/isr/isr_paratroopers.png` | ок |  |
 | egy_saiqa | `units/egy_syr/egy_saiqa.png` | ок |  |
 | egy_mig17 | `units/egy_syr/egy_mig17.png` | ок |  |
-| briefing_golan67 | `briefing/briefing_golan67.png` | ок |  |
-| briefing_sinai67 | `briefing/briefing_sinai67.png` | ок |  |
-| golan67_isr_reserves | `events/golan67_isr_reserves.png` | ок |  |
-| golan67_kuneitra_falls | `events/golan67_kuneitra_falls.png` | ок |  |
-| golan67_withdrawal_order | `events/golan67_withdrawal_order.png` | ок |  |
-| golan67_superpower_pressure | `events/golan67_superpower_pressure.png` | ок |  |
-| sinai67_egy_withdrawal_order | `events/sinai67_egy_withdrawal_order.png` | ок |  |
-| sinai67_egy_ferdan_demolition | `events/sinai67_egy_ferdan_demolition.png` | ок |  |
+| briefing_golan67 | `briefing/briefing_golan67.webp` | ок |  |
+| briefing_sinai67 | `briefing/briefing_sinai67.webp` | ок |  |
+| golan67_isr_reserves | `events/golan67_isr_reserves.webp` | ок |  |
+| golan67_kuneitra_falls | `events/golan67_kuneitra_falls.webp` | ок |  |
+| golan67_withdrawal_order | `events/golan67_withdrawal_order.webp` | ок |  |
+| golan67_superpower_pressure | `events/golan67_superpower_pressure.webp` | ок |  |
+| sinai67_egy_withdrawal_order | `events/sinai67_egy_withdrawal_order.webp` | ок |  |
+| sinai67_egy_ferdan_demolition | `events/sinai67_egy_ferdan_demolition.webp` | ок |  |
 
 ## Миниатюры (стиль `miniature`)
 

@@ -491,7 +491,7 @@
   },
   {
     "id": "briefing_golan67",
-    "file": "briefing/briefing_golan67.png",
+    "file": "briefing/briefing_golan67.webp",
     "group": "briefing",
     "side": null,
     "template": "illustration",
@@ -503,7 +503,7 @@
   },
   {
     "id": "briefing_sinai67",
-    "file": "briefing/briefing_sinai67.png",
+    "file": "briefing/briefing_sinai67.webp",
     "group": "briefing",
     "side": null,
     "template": "illustration",
@@ -515,7 +515,7 @@
   },
   {
     "id": "golan67_isr_reserves",
-    "file": "events/golan67_isr_reserves.png",
+    "file": "events/golan67_isr_reserves.webp",
     "group": "event",
     "side": null,
     "template": "illustration",
@@ -527,7 +527,7 @@
   },
   {
     "id": "golan67_kuneitra_falls",
-    "file": "events/golan67_kuneitra_falls.png",
+    "file": "events/golan67_kuneitra_falls.webp",
     "group": "event",
     "side": null,
     "template": "illustration",
@@ -539,7 +539,7 @@
   },
   {
     "id": "golan67_withdrawal_order",
-    "file": "events/golan67_withdrawal_order.png",
+    "file": "events/golan67_withdrawal_order.webp",
     "group": "event",
     "side": null,
     "template": "illustration",
@@ -551,7 +551,7 @@
   },
   {
     "id": "golan67_superpower_pressure",
-    "file": "events/golan67_superpower_pressure.png",
+    "file": "events/golan67_superpower_pressure.webp",
     "group": "event",
     "side": null,
     "template": "illustration",
@@ -563,7 +563,7 @@
   },
   {
     "id": "sinai67_egy_withdrawal_order",
-    "file": "events/sinai67_egy_withdrawal_order.png",
+    "file": "events/sinai67_egy_withdrawal_order.webp",
     "group": "event",
     "side": null,
     "template": "illustration",
@@ -575,7 +575,7 @@
   },
   {
     "id": "sinai67_egy_ferdan_demolition",
-    "file": "events/sinai67_egy_ferdan_demolition.png",
+    "file": "events/sinai67_egy_ferdan_demolition.webp",
     "group": "event",
     "side": null,
     "template": "illustration",

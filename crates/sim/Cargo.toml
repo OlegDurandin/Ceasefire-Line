@@ -12,4 +12,4 @@ ceasefire-tactical.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 # PNG decoding for `sim assets-check` only; never a core dependency.
-image = { version = "0.25", default-features = false, features = ["png"] }
+image = { version = "0.25", default-features = false, features = ["png", "webp"] }

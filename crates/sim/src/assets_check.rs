@@ -360,7 +360,7 @@ fn unit_checks(img: &DynamicImage) -> Vec<Status> {
     out
 }
 
-/// R-UI-07: an illustration is a readable PNG of the exact size (opaque).
+/// R-UI-07: an illustration is a readable WebP of the exact size (PNG only for transparent tokens and textures).
 fn check_illustration(path: &Path, (w, h): (u32, u32)) -> Vec<Status> {
     if !path.is_file() {
         return vec![Status::Missing];
@@ -571,7 +571,7 @@ pub fn run(o: &Options) -> Result<(), String> {
                 } else {
                     ("events", EVENT_SIZE)
                 };
-                let rel = format!("{dir}/{}.png", e.id);
+                let rel = format!("{dir}/{}.webp", e.id);
                 let statuses = check_illustration(&o.assets.join(&rel), size);
                 rows.push(Row {
                     id: e.id.clone(),
