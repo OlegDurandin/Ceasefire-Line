@@ -38,7 +38,8 @@
     "marsh": "terrain_saltmarsh",
     "city": "terrain_town",
     "fortified": "terrain_fortified",
-    "water": "terrain_water"
+    "water": "terrain_water",
+    "forest": "terrain_farmland"
   },
   "unused_terrain_textures": [
     "terrain_basalt_plateau",

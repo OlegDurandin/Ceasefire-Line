@@ -35,6 +35,13 @@
       "max_entrench": 1
     },
     {
+      "id": "forest",
+      "ap": 2,
+      "defense_mult": 1.3,
+      "hard_defense_mult": 1.1,
+      "max_entrench": 3
+    },
+    {
       "id": "city",
       "ap": 1,
       "defense_mult": 1.5,
