@@ -18,13 +18,40 @@ describe("sprites.json binding", () => {
     expect(pickSprite(sprites, "infantry", "syria", { antitank: 2 })?.id).toBe("egy_atgm_team");
   });
 
+  it("fictional nations (GDD section 14): Merid and Tarvia western, Salvera Soviet", () => {
+    expect(spriteSide(sprites, "merid")).toBe("isr");
+    expect(spriteSide(sprites, "tarvia")).toBe("isr");
+    expect(spriteSide(sprites, "salvera")).toBe("egy_syr");
+    expect(pickSprite(sprites, "tank", "merid", {}, 1975)?.id).toBe("isr_centurion");
+    expect(pickSprite(sprites, "tank", "salvera", { armor: 2 }, 1975)?.id).toBe("egy_t62");
+    expect(pickSprite(sprites, "fighter", "tarvia", {}, 1975)?.id).toBe("isr_mirage3");
+  });
+
+  it("Tarvia fields 1967 tanks: Super Sherman by default, AMX-13 and T-34-85 as models", () => {
+    expect(pickSprite(sprites, "tank", "tarvia", {}, 1975)).toEqual({
+      side: "isr",
+      id: "isr_super_sherman",
+      url: "/assets/units_minis/isr/isr_super_sherman.png",
+    });
+    expect(pickSprite(sprites, "tank", "tarvia", {}, 1975, "isr_amx13")?.url).toBe("/assets/units_minis/isr/isr_amx13.png");
+    // A Soviet model from the other side's folder.
+    expect(pickSprite(sprites, "tank", "tarvia", {}, 1975, "egy_t34_85")).toEqual({
+      side: "egy_syr",
+      id: "egy_t34_85",
+      url: "/assets/units_minis/egy_syr/egy_t34_85.png",
+    });
+    // Israel 1967 does not get Tarvia's tier, nor Tarvia Israel's.
+    expect(pickSprite(sprites, "tank", "israel", {}, 1967)?.id).toBe("isr_centurion");
+    expect(pickSprite(sprites, "tank", "merid", {}, 1975, "egy_t34_85")?.id).toBe("isr_centurion");
+  });
+
   it("unknown nation or class falls back to APP-6 (null)", () => {
     expect(pickSprite(sprites, "tank", null, {})).toBeNull();
     expect(pickSprite(sprites, "battleship", "israel", {})).toBeNull();
   });
 
   it("every terrain type has a texture", () => {
-    for (const t of ["plain", "dunes", "hills", "mountains", "marsh", "city", "fortified"])
+    for (const t of ["plain", "dunes", "hills", "mountains", "marsh", "city", "fortified", "forest"])
       expect(terrainTextureUrl(sprites, t)).toMatch(/^\/assets\/terrain\/terrain_\w+\.png$/);
   });
 });

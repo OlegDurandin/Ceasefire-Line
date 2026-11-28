@@ -7,6 +7,7 @@
 import { attrText } from "../explain";
 import { fill } from "../log";
 import { icon } from "./icons";
+import { flagCss } from "../render/flag";
 
 type Locale = Record<string, string>;
 
@@ -42,17 +43,8 @@ export function turnLine(turn: number, lastTurn: number | null, ru: Locale): str
   return `${of} · ${fill(ru["ui.to_ceasefire_n"] ?? "{k}", { k: Math.max(0, lastTurn - turn) })}`;
 }
 
-/** CSS stripes of a flag, top to bottom (scenario.json `sides[].flag`). */
-export function flagCss(stripes: [string, number][] | null, fallback: string): string {
-  if (!stripes) return fallback;
-  let y = 0;
-  const parts = stripes.map(([c, k]) => {
-    const from = y;
-    y += k * 100;
-    return `${c} ${Math.round(from * 10) / 10}% ${Math.round(y * 10) / 10}%`;
-  });
-  return `linear-gradient(${parts.join(", ")})`;
-}
+/** CSS background of a side's flag (scenario.json `sides[].flag`). */
+export { flagCss };
 
 export function topBarHtml(d: TopBarData, ru: Locale): string {
   const t = (k: string) => ru[k] ?? k;

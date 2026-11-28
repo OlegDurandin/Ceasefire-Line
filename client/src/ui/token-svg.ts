@@ -2,6 +2,7 @@
 // portraits — the same geometry as on the map (render/token-geom.ts), the
 // approved mock's component with the real miniature in place of a sketch.
 
+import { flagCss, plainFlag } from "../render/flag";
 import { GROUND_STOPS, sideGradient, sidePath, tokenGeom, type FlagStripes } from "../render/token-geom";
 
 let uid = 0;
@@ -25,14 +26,7 @@ export function tokenHtml(t: TokenSvgInput): string {
   const [top, bottom] = sideGradient(t.color);
   const specks = g.specks.map((s) => `<circle cx="${r1(s.x)}" cy="${r1(s.y)}" r="${r1(s.r)}" fill="${s.c}"></circle>`).join("");
   const stops = GROUND_STOPS.map(([o, c]) => `<stop offset="${o}" stop-color="${c}"></stop>`).join("");
-  let y = 0;
-  const flag = (t.flag ?? [[hex(t.color), 1]])
-    .map(([c, k]) => {
-      const from = y;
-      y += k * 100;
-      return `${c} ${r1(from)}% ${r1(y)}%`;
-    })
-    .join(", ");
+  const flag = flagCss(t.flag ?? plainFlag(hex(t.color)), hex(t.color));
   const model = t.model
     ? `<img src="${t.model}" alt="" style="position: absolute; left: ${r1(g.cx - g.mW * t.anchor[0])}px; top: ${r1(g.contactY - g.mW * t.anchor[1])}px; width: ${g.mW}px; height: ${g.mW}px;${t.mirrored ? " transform: scaleX(-1);" : ""}">`
     : "";
@@ -49,7 +43,7 @@ export function tokenHtml(t: TokenSvgInput): string {
   </svg>
   ${model}
   <div style="position: absolute; left: 50%; top: ${r1(g.plT)}px; transform: translateX(-50%); display: flex; align-items: center; gap: 4px; padding: 0 6px 0 4px; background: #1c1e21; border: 1px solid #c9a46a; border-radius: 3px">
-    <span aria-hidden="true" style="display: block; width: ${g.fW}px; height: ${g.fH}px; background: linear-gradient(${flag}); border: 1px solid rgba(255, 255, 255, 0.7)"></span>
+    <span aria-hidden="true" style="display: block; width: ${g.fW}px; height: ${g.fH}px; background: ${flag}; border: 1px solid rgba(255, 255, 255, 0.7)"></span>
     <span style="color: #ffffff; font-weight: 700; font-size: ${g.fs}px; line-height: 1.2">${t.label}</span>
   </div>
 </div>`;

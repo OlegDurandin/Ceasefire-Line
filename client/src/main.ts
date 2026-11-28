@@ -12,7 +12,7 @@ import { hillshadePlacement, type HillshadeMeta } from "./hillshade";
 import type { Rules } from "./explain";
 import type { Facing } from "./facing";
 import { decodeSave } from "./save";
-import { parseFlag } from "./render/token-geom";
+import { parseFlag, type FlagBook } from "./render/flag";
 import { Play } from "./play";
 import { installTooltips } from "./ui/tooltip";
 import { drawControl } from "./render/control";
@@ -50,7 +50,7 @@ async function main() {
     panel.style.display = "block";
   };
   stage("Загрузка данных…");
-  const [rules, terrain, units, tech, spritesText, ruText, aiText] = await Promise.all([
+  const [rules, terrain, units, tech, spritesText, ruText, aiText, flagsText] = await Promise.all([
     text("/data/rules.json"),
     text("/data/terrain.json"),
     text("/data/units.json"),
@@ -58,8 +58,11 @@ async function main() {
     text("/data/sprites.json"),
     text("/data/locale/ru.json"),
     text("/data/ai.json"),
+    text("/data/flags.json"),
   ]);
   const sprites = JSON.parse(spritesText) as SpritesFile;
+  // R-UI-03: flags of fictional nations, referenced by id from scenario.json.
+  const flagBook = JSON.parse(flagsText) as FlagBook;
   // R-UI-03: miniatures by default (sprites.json), medallions with ?units=medallion or the U key.
   // The settings (gear button) remember the choice per browser.
   const settingsKey = "cl.settings";
@@ -241,7 +244,7 @@ async function main() {
           HEX_SIZE,
           colors,
           scenarioSides.reduce<ReturnType<typeof parseFlag>[]>((acc, x) => {
-            acc[x.id] = parseFlag((x as { flag?: unknown }).flag);
+            acc[x.id] = parseFlag((x as { flag?: unknown }).flag, flagBook);
             return acc;
           }, []),
         ),
@@ -352,7 +355,7 @@ async function main() {
       terrainTexture: (t: string) => terrainTextureUrl(sprites, t),
       minimap: { world: mapRect, image: overview },
       flags: scenarioSides.reduce<ReturnType<typeof parseFlag>[]>((acc, s) => {
-        acc[s.id] = parseFlag((s as { flag?: unknown }).flag);
+        acc[s.id] = parseFlag((s as { flag?: unknown }).flag, flagBook);
         return acc;
       }, []),
       classAp: new Map((JSON.parse(units) as { units: { id: string; ap?: number }[] }).units.filter((u) => u.ap !== undefined).map((u) => [u.id, u.ap!] as const)),

@@ -91,6 +91,8 @@ pub struct SpriteTier {
     pub model_only: bool,
     #[serde(default)]
     pub nations: Vec<String>,
+    /// Sprite folder of another side (a Soviet model for a western-equipped nation).
+    pub side: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -224,6 +226,12 @@ pub fn check_sprites(data: &Path, assets: &Path) -> Result<Vec<String>, String> 
                         ));
                     }
                 }
+                if t.side
+                    .as_deref()
+                    .is_some_and(|s| !SPRITE_SIDES.contains(&s))
+                {
+                    problems.push(format!("`{class}`/{side}: unknown sprite folder side"));
+                }
                 if t.tech_min == 0 || t.year_min.zip(t.year_max).is_some_and(|(a, b)| a > b) {
                     problems.push(format!(
                         "`{class}`/{side}: invalid technology or year range"
@@ -241,7 +249,11 @@ pub fn check_sprites(data: &Path, assets: &Path) -> Result<Vec<String>, String> 
                 for b in &defaults[i + 1..] {
                     let overlap = a.year_min.unwrap_or(0) <= b.year_max.unwrap_or(u16::MAX)
                         && b.year_min.unwrap_or(0) <= a.year_max.unwrap_or(u16::MAX);
-                    if a.tech_min == b.tech_min && overlap {
+                    // A tier for some nations may sit beside a general one: it wins for them.
+                    let same_nations = a.nations.is_empty() == b.nations.is_empty()
+                        && (a.nations.is_empty()
+                            || a.nations.iter().any(|n| b.nations.contains(n)));
+                    if a.tech_min == b.tech_min && overlap && same_nations {
                         problems.push(format!(
                             "`{class}`/{side}: overlapping year ranges at the same technology"
                         ));
@@ -289,7 +301,7 @@ pub fn check_sprites(data: &Path, assets: &Path) -> Result<Vec<String>, String> 
                 for id in std::iter::once(&t.sprite).chain(&t.variants) {
                     let path = assets
                         .join(t.dir.as_deref().unwrap_or("units"))
-                        .join(side)
+                        .join(t.side.as_deref().unwrap_or(side))
                         .join(format!("{id}.png"));
                     check_dimensions(&path, (UNIT_SIZE, UNIT_SIZE), &mut problems);
                 }

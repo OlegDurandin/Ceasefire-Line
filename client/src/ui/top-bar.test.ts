@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 
 import { describe, expect, it } from "vitest";
 
+import { parseFlag } from "../render/flag";
 import { flagCss, topBarHtml, turnLine } from "./top-bar";
 
 const ru = JSON.parse(readFileSync(new URL("../../../data/locale/ru.json", import.meta.url), "utf8")) as Record<string, string>;
@@ -14,7 +15,7 @@ describe("top bar (R-UI-04)", () => {
   });
 
   it("flag stripes as a CSS gradient", () => {
-    expect(flagCss([["#ffffff", 0.5], ["#2b59c3", 0.5]], "#999")).toBe("linear-gradient(#ffffff 0% 50%, #2b59c3 50% 100%)");
+    expect(flagCss(parseFlag([["#ffffff", 0.5], ["#2b59c3", 0.5]]), "#999")).toBe("linear-gradient(#ffffff 0% 50%, #2b59c3 50% 100%)");
     expect(flagCss(null, "#999")).toBe("#999");
   });
 

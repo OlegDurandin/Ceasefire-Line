@@ -4,6 +4,8 @@
 // which sits on the hex centre on the map. Shared by the map (Pixi) and the
 // attack window's portrait (SVG) so both look the same.
 
+import { parseFlag, type FlagSpec } from "./flag";
+
 export interface TokenGeom {
   w: number;
   h: number;
@@ -117,17 +119,6 @@ export function sidePath(g: TokenGeom): string {
   return `M ${cx - rx} ${cy} L ${cx - rx} ${cy + t} A ${rx} ${ry} 0 0 0 ${cx + rx} ${cy + t} L ${cx + rx} ${cy} A ${rx} ${ry} 0 0 1 ${cx - rx} ${cy} Z`;
 }
 
-/** Flag stripes from scenario.json (`[[colour, share], …]`), normalised. */
-export type FlagStripes = [string, number][];
-
-export function parseFlag(v: unknown): FlagStripes | null {
-  if (!Array.isArray(v)) return null;
-  const out: FlagStripes = [];
-  for (const s of v) {
-    if (Array.isArray(s) && typeof s[0] === "string" && /^#[0-9a-fA-F]{6}$/.test(s[0]) && typeof s[1] === "number" && s[1] > 0) {
-      out.push([s[0], s[1]]);
-    }
-  }
-  const sum = out.reduce((a, [, k]) => a + k, 0);
-  return out.length && sum > 0 ? out.map(([c, k]) => [c, k / sum] as [string, number]) : null;
-}
+/** A side's flag (scenario.json `sides[].flag`), see ./flag. */
+export type FlagStripes = FlagSpec;
+export { parseFlag };

@@ -14,6 +14,7 @@
 import { ColorMatrixFilter, Container, FillGradient, Graphics, Sprite, Text, type Texture } from "pixi.js";
 
 import { hexCenter, offsetToAxial } from "../hex";
+import { flagShapes, plainFlag } from "./flag";
 import { GROUND_STOPS, HALO, sideGradient, tokenGeom, type FlagStripes, type TokenGeom } from "./token-geom";
 
 export interface Token {
@@ -96,11 +97,13 @@ function drawPlate(label: string, g: TokenGeom, flag: FlagStripes | null, color:
   const fx = -w / 2 + 4;
   const fy = (h - g.fH) / 2;
   const f = new Graphics();
-  let y = fy;
-  const stripes: FlagStripes = flag ?? [[`#${color.toString(16).padStart(6, "0")}`, 1]];
-  for (const [c, k] of stripes) {
-    f.rect(fx, y, g.fW, g.fH * k).fill(parseInt(c.slice(1), 16));
-    y += g.fH * k;
+  const spec: FlagStripes = flag ?? plainFlag(`#${color.toString(16).padStart(6, "0")}`);
+  for (const s of flagShapes(spec, g.fW, g.fH)) {
+    const fill = parseInt(s.color.slice(1), 16);
+    if (s.kind === "rect") f.rect(fx + s.x, fy + s.y, s.w, s.h).fill(fill);
+    else if (s.kind === "circle") f.circle(fx + s.cx, fy + s.cy, s.r).fill(fill);
+    else if (s.kind === "ring") f.circle(fx + s.cx, fy + s.cy, s.r).stroke({ width: s.width, color: fill });
+    else f.poly(s.pts.map((v, i) => v + (i % 2 === 0 ? fx : fy))).fill(fill);
   }
   f.rect(fx, fy, g.fW, g.fH).stroke({ width: 1, color: 0xffffff, alpha: 0.7 });
   plate.addChild(f);

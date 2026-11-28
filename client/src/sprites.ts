@@ -10,6 +10,8 @@ export interface SpriteTier {
   /** Preferred source when a model has no medallion. */
   dir?: string;
   model_only?: boolean;
+  /** Sprite folder of another side (e.g. a Soviet model for a western-equipped nation). */
+  side?: string;
 }
 
 export interface SpriteClass {
@@ -103,12 +105,18 @@ export function pickSprite(
   // An explicit model overrides technology within its nation and historical period.
   if (model) {
     const tier = tiers.find((t) => inPeriod(t) && (t.sprite === model || t.variants?.includes(model)));
-    if (tier) return { side, id: model, url: `/assets/${tier.dir ?? "units"}/${side}/${model}.png` };
+    if (tier) return ref(tier, model);
   }
+  // Highest technology first; at the same level a tier for the unit's nation beats a general one.
+  const rank = (t: SpriteTier) => t.tech_min * 2 + (t.nations ? 1 : 0);
   for (const t of tiers) {
-    if (!t.model_only && inPeriod(t) && t.tech_min <= level && (!best || t.tech_min >= best.tech_min)) best = t;
+    if (!t.model_only && inPeriod(t) && t.tech_min <= level && (!best || rank(t) >= rank(best))) best = t;
   }
-  return best ? { side, id: best.sprite, url: `/assets/${best.dir ?? "units"}/${side}/${best.sprite}.png` } : null;
+  return best ? ref(best, best.sprite) : null;
+  function ref(t: SpriteTier, id: string): SpriteRef {
+    const folder = t.side ?? side!;
+    return { side: folder, id, url: `/assets/${t.dir ?? "units"}/${folder}/${id}.png` };
+  }
 }
 
 export function terrainTextureUrl(sprites: SpritesFile, terrain: string): string | null {

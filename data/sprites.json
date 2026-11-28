@@ -2,13 +2,16 @@
   "sprite_sides": {
     "isr": {
       "nations": [
-        "israel"
+        "israel",
+        "merid",
+        "tarvia"
       ]
     },
     "egy_syr": {
       "nations": [
         "egypt",
-        "syria"
+        "syria",
+        "salvera"
       ]
     },
     "jor": {
@@ -67,6 +70,27 @@
         {
           "tech_min": 2,
           "sprite": "isr_m60"
+        },
+        {
+          "tech_min": 1,
+          "sprite": "isr_super_sherman",
+          "variants": [
+            "isr_amx13"
+          ],
+          "nations": [
+            "tarvia"
+          ],
+          "dir": "units_minis"
+        },
+        {
+          "tech_min": 1,
+          "sprite": "egy_t34_85",
+          "side": "egy_syr",
+          "nations": [
+            "tarvia"
+          ],
+          "dir": "units_minis",
+          "model_only": true
         },
         {
           "tech_min": 1,
